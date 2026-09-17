@@ -1,0 +1,110 @@
+# ──────────────────────────────────────────────────────────────
+# Switchly — .gitignore
+# ──────────────────────────────────────────────────────────────
+
+## ── macOS ────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+## ── Xcode: build products ────────────────────────────────────
+build/
+DerivedData/
+DerivedData-*/
+*.dSYM
+*.xcarchive
+buildServer.json
+
+## ── Xcode: user-specific state ───────────────────────────────
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
+# NOTE: Switchly.xcodeproj/project.pbxproj and the workspace's
+# xcshareddata (Package.resolved) ARE tracked on purpose, so that people
+# without XcodeGen can still open the project and dependency resolution
+# stays reproducible. `make bootstrap` regenerates them via XcodeGen.
+
+## ── Coverage / profiling ─────────────────────────────────────
+*.profraw
+*.profdata
+*.gcda
+*.gcno
+coverage/
+*.sample
+
+## ── Swift Package Manager ────────────────────────────────────
+.swiftpm/
+.build/
+Packages/
+Package.pins
+
+## ── Carthage ─────────────────────────────────────────────────
+Carthage/
+
+## ── Signing / credentials — NEVER commit ─────────────────────
+Config/Local.xcconfig
+*.pem
+*.key
+*.cer
+*.crt
+*.p12
+*.pfx
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+!.env.example
+Credentials/
+credentials/
+secrets/
+
+## ── Release / distribution artifacts ─────────────────────────
+*.app
+*.dmg
+*.pkg
+*.zip
+*.tar.gz
+
+## ── Build & tool logs ────────────────────────────────────────
+*.log
+build_log/
+
+## ── Editors & IDEs ───────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*~.nib
+
+## ── AI coding assistants (local state, never share) ──────────
+.claude/
+.commandcode/
+.agents/
+.zcode/
+.workbuddy/
+.cursor/
+.aider*
+
+## ── Internal design notes ─────────────────────────────────────
+# Working design documents kept on the maintainer's machine. The public
+# repository documents behaviour in README.md and CONTRIBUTING.md; these are
+# scratch planning notes with local machine details and half-finished ideas.
+docs/plan/

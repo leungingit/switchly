@@ -1,0 +1,35 @@
+version: 2
+updates:
+  # Keep GitHub Actions in the workflows up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Keep the Swift Package Manager dependency (HotKey) up to date.
+  - package-ecosystem: swift
+    directory: /
+    schedule:
+      interval: monthly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+      - swift

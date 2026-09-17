@@ -1,0 +1,20 @@
+// ─────────────────────────────────────────────────────────────
+// Switchly — 公共构建配置（提交到仓库）
+//
+// 由 project.yml 的 configFiles 挂到 Debug / Release 配置上。
+//
+// 默认 ad-hoc 签名：fresh clone 和 CI 零配置即可构建。
+//
+// 注意：ad-hoc 签名没有稳定的代码身份（cdhash 每次构建都不同），
+// macOS 会把每次构建出的 App 当成"另一个 App"，导致辅助功能 /
+// 屏幕录制授权反复丢失。想要"一次授权、重建不丢"，请参考
+// Config/Local.xcconfig.example 配置本机私有签名（不进 git）。
+// ─────────────────────────────────────────────────────────────
+
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+
+// 本机私有配置（已被 .gitignore 忽略，绝不提交）。
+// 放在最后 include：xcconfig 按顺序解析，后出现的赋值覆盖先出现的，
+// 因此 Local.xcconfig 可以覆盖上面的默认值。
+#include? "Local.xcconfig"

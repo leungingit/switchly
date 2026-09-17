@@ -1,0 +1,29 @@
+// ─────────────────────────────────────────────────────────────
+// Switchly — 本机私有构建配置（模板）
+//
+// 用法：
+//   cp Config/Local.xcconfig.example Config/Local.xcconfig
+// 然后按需取消注释（下面两种方案二选一，不要同时启用）。
+//
+// Config/Local.xcconfig 已被 .gitignore 忽略：写在这里的一切——
+// 包括证书名和开发者 Team ID——都只存在于本机，不会上传 GitHub。
+// ─────────────────────────────────────────────────────────────
+
+// ── 方案 A（推荐）：本机自签名证书，无需 Apple 开发者账号 ─────
+// 先执行一次 Scripts/create-dev-cert.sh，创建名为 SwitchlyDev 的
+// 自签名代码签名证书（也可以在「钥匙串访问 → 证书助理 → 创建证书」
+// 手动创建：名称 SwitchlyDev，身份类型"自签名根证书"，
+// 证书类型"代码签名"）。
+//
+// 签名身份固定后，辅助功能 / 屏幕录制授权一次即可，
+// 之后随便怎么重新构建都不会再被 macOS 重置。
+//
+// CODE_SIGN_IDENTITY = SwitchlyDev
+
+// ── 方案 B：使用你自己的 Apple 开发者账号 ─────────────────────
+// 取消注释并填入你的 Team ID（Xcode → Settings → Accounts，
+// 或 developer.apple.com → Membership details 页面可查）。
+//
+// CODE_SIGN_STYLE = Automatic
+// CODE_SIGN_IDENTITY = Apple Development
+// DEVELOPMENT_TEAM = 把你的TEAMID粘贴到这里

@@ -1,0 +1,228 @@
+/* PreferencesView - Tabs */
+"General" = "General";
+"Apps" = "Apps";
+"Permissions" = "Permissions";
+"Shortcuts" = "Shortcuts";
+
+/* PreferencesView - General Tab */
+"Error" = "Error";
+"OK" = "OK";
+"Preview behavior and system integration" = "Preview behavior and system integration";
+"Preview" = "Preview";
+"Window source" = "Window source";
+"Thumbnail size" = "Thumbnail size";
+"Preview interaction" = "Preview interaction";
+"Highlight only" = "Highlight only";
+"Window replica" = "Window replica";
+"Preview hover delay" = "Preview hover delay";
+"Grid of thumbnails; selection is highlighted in place." = "Grid of thumbnails; selection is highlighted in place.";
+"The grid stays in front; the highlighted window is replayed behind it at its original size and position." = "The grid stays in front; the highlighted window is replayed behind it at its original size and position.";
+"Window is minimized" = "Window is minimized";
+"Monitor frequency" = "Monitor frequency";
+"Fast" = "Fast";
+"Balanced" = "Balanced";
+"Quiet" = "Quiet";
+/* PreferencesView - Pointer triggers (preview panel summoning) */
+"Pointer triggers" = "Pointer triggers";
+"Edge hotspot" = "Edge hotspot";
+"Hotspot edge" = "Hotspot edge";
+"Top edge" = "Top edge";
+"Left edge" = "Left edge";
+"Right edge" = "Right edge";
+"Rest the pointer against the selected edge of the screen briefly to open the preview." = "Rest the pointer against the selected edge of the screen briefly to open the preview.";
+"Shake to open" = "Shake to open";
+"Shake the pointer back and forth quickly, like shaking to find the macOS cursor, to open the preview." = "Shake the pointer back and forth quickly, like shaking to find the macOS cursor, to open the preview.";
+"Display" = "Display";
+"Show window titles" = "Show window titles";
+"Show app name" = "Show app name";
+"Show window number" = "Show window number";
+"Show process ID" = "Show process ID";
+"Show window size" = "Show window size";
+"Show window position" = "Show window position";
+"Enable background blur" = "Enable Liquid Glass";
+"Background opacity" = "Glass opacity";
+"Appearance" = "Appearance";
+"Language" = "Language";
+"Theme" = "Theme";
+"System" = "System";
+"Launch at login" = "Launch at login";
+"Hide main window on launch" = "Hide main window on launch";
+
+/* PreferencesView - Dock Preview */
+"Dock Preview" = "Dock Preview";
+"Enable dock preview" = "Enable dock preview";
+"Hover to show" = "Hover to show";
+"Hover delay" = "Hover delay";
+"Card size" = "Card size";
+
+/* DockPreviewView */
+"No windows" = "No windows";
+"Window" = "Window";
+"Close" = "Close";
+"Minimize" = "Minimize";
+"Zoom" = "Zoom";
+
+/* PreferencesView - Permissions Tab */
+"Required macOS permissions for switching and thumbnails" = "Required macOS permissions for switching and thumbnails";
+"Required" = "Required";
+"Accessibility" = "Accessibility";
+"Used to focus and switch windows." = "Used to focus and switch windows.";
+"Open Settings" = "Open Settings";
+"Screen & System Audio Recording" = "Screen & System Audio Recording";
+"Used by macOS to allow window thumbnails and related recording access." = "Used by macOS to allow window thumbnails and related recording access.";
+"Refresh Status" = "Refresh Status";
+"Last checked" = "Last checked";
+"Enabled" = "Enabled";
+
+/* PreferencesView - Apps Tab */
+"Monitored Apps" = "Monitored Apps";
+"%d configured" = "%d configured";
+"No monitored apps" = "No monitored apps";
+"No monitored apps match your search" = "No monitored apps match your search";
+"Remove" = "Remove";
+"Available Apps" = "Available Apps";
+"Installed apps" = "Installed apps";
+"No available apps" = "No available apps";
+"No available apps match your search" = "No available apps match your search";
+"Add" = "Add";
+"Search apps" = "Search apps";
+
+/* PreferencesView - Shortcuts Tab */
+"Global and app shortcuts use the selected prefix." = "Global and app shortcuts use the selected prefix.";
+"Global" = "Global";
+"Shortcut prefix" = "Shortcut prefix";
+"Toggle Preview" = "Toggle Preview";
+"Show or hide the preview panel" = "Show or hide the preview panel";
+"Applications" = "Applications";
+"Add apps in the Apps tab before assigning app shortcuts." = "Add apps in the Apps tab before assigning app shortcuts.";
+"None" = "None";
+
+/* PreviewPanel */
+"%d windows" = "%d windows";
+"Search windows" = "Search windows";
+"No windows found" = "No windows found";
+"Switch General > Window source to Preview All Windows, or add running apps in the Apps tab." = "Switch General > Window source to Preview All Windows, or add running apps in the Apps tab.";
+"Preview unavailable" = "Preview unavailable";
+"Loading preview" = "Loading preview";
+"Current window" = "Current window";
+
+/* StatusBar */
+"Open Preview" = "Open Preview";
+"Preferences..." = "Preferences...";
+"Workspaces..." = "Workspaces...";
+"About Switchly" = "About Switchly";
+"Quit Switchly" = "Quit Switchly";
+"Quit" = "Quit";
+
+/* AppDelegate */
+"Switchly Preferences" = "Switchly Preferences";
+"Workspaces" = "Workspaces";
+
+/* Workspaces */
+"Workspace" = "Workspace";
+"Apps, shortcut, and display behavior" = "Apps, shortcut, and display behavior";
+"Details" = "Details";
+"Name" = "Name";
+"Shortcut" = "Shortcut";
+"Missing apps" = "Missing apps";
+"Window sort" = "Window sort";
+"Add Apps" = "Add Apps";
+"No workspace selected" = "No workspace selected";
+"Create Workspace" = "Create Workspace";
+"No apps in this workspace" = "No apps in this workspace";
+"No windows in this workspace" = "No windows in this workspace";
+"Add apps in the Workspaces window." = "Add apps in the Workspaces window.";
+"Open app" = "Open app";
+"Switch workspace" = "Switch workspace";
+"Not running" = "Not running";
+"Select window" = "Select window";
+"Switch" = "Switch";
+"Move Up" = "Move Up";
+"Move Down" = "Move Down";
+"Delete" = "Delete";
+"Hide missing apps" = "Hide missing apps";
+"Show placeholders" = "Show placeholders";
+"Title" = "Title";
+
+/* Enums */
+"Preview All Windows" = "Preview All Windows";
+"Only Configured Apps" = "Only Configured Apps";
+"Small" = "Small";
+"Medium" = "Medium";
+"Large" = "Large";
+"Follow System" = "Follow System";
+"Light" = "Light";
+"Dark" = "Dark";
+
+/* PreferencesViewModel */
+"Failed to save settings: %@" = "Failed to save settings: %@";
+
+/* Onboarding */
+"Welcome to Switchly" = "Welcome to Switchly";
+"Switchly needs two permissions to work properly." = "Switchly needs two permissions to work properly.";
+"Used to focus, switch and manage application windows." = "Used to focus, switch and manage application windows.";
+"Used to capture window thumbnails for preview." = "Used to capture window thumbnails for preview.";
+"Granted" = "Granted";
+"Not Granted" = "Not Granted";
+"Get Started" = "Get Started";
+"Grant permissions above to continue" = "Grant permissions above to continue";
+"Screen Recording" = "Screen Recording";
+
+/* Statistics */
+"Statistics..." = "Statistics...";
+"Statistics" = "Statistics";
+"Usage statistics" = "Usage statistics";
+"Day" = "Day";
+"Week" = "Week";
+"Month" = "Month";
+"Preview · shortcut" = "Preview · shortcut";
+"Preview · mouse" = "Preview · mouse";
+"Quick switch" = "Quick switch";
+"Confirmed · keyboard" = "Confirmed · keyboard";
+"Confirmed · mouse" = "Confirmed · mouse";
+"Estimated savings" = "Estimated savings";
+"Efficiency gain" = "Efficiency gain";
+"Mouse-only would take %@" = "Mouse-only would take %@";
+"Keyboard share %@" = "Keyboard share %@";
+"By feature" = "By feature";
+"Feature" = "Feature";
+"Keyboard" = "Keyboard";
+"Mouse" = "Mouse";
+"Per use" = "Per use";
+"Saved" = "Saved";
+"Total" = "Total";
+"Preview + switch" = "Preview + switch";
+"Savings are estimates based on your baseline" = "Savings are estimates based on your baseline";
+"Today" = "Today";
+"This week" = "This week";
+"This month" = "This month";
+"All time" = "All time";
+"No data yet" = "No data yet";
+"Open the preview once with your shortcut, then come back." = "Open the preview once with your shortcut, then come back.";
+"Last %d days" = "Last %d days";
+"Last %d weeks" = "Last %d weeks";
+"Last %d months" = "Last %d months";
+"Data kept for %d days" = "Data kept for %d days";
+"Clear Statistics..." = "Clear Statistics...";
+"Clear" = "Clear";
+"Cancel" = "Cancel";
+"This permanently deletes all locally recorded counts." = "This permanently deletes all locally recorded counts.";
+"Usage statistics are turned off in Preferences." = "Usage statistics are turned off in Preferences.";
+"%d shortcuts · %d mouse" = "%d shortcuts · %d mouse";
+"Efficiency baseline" = "Efficiency baseline";
+"Conservative" = "Conservative";
+"Default" = "Default";
+"Aggressive" = "Aggressive";
+"Custom" = "Custom";
+"Adjust baseline" = "Adjust baseline";
+"Restore recommended defaults" = "Restore recommended defaults";
+"Per shortcut" = "Per shortcut";
+"Per mouse action" = "Per mouse action";
+"Baseline (mouse/shortcut): preview %@/%@ · quick switch %@/%@ · workspace %@/%@" = "Baseline (mouse/shortcut): preview %@/%@ · quick switch %@/%@ · workspace %@/%@";
+"%d sec" = "%d sec";
+"%d min" = "%d min";
+"%d min %d sec" = "%d min %d sec";
+"%d hr" = "%d hr";
+"%d hr %d min" = "%d hr %d min";
+"Record how often you use preview and quick switch. Stored locally, never uploaded." = "Record how often you use preview and quick switch. Stored locally, never uploaded.";
+"Enabled" = "Enabled";

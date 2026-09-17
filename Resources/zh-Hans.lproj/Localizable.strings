@@ -1,0 +1,228 @@
+/* PreferencesView - Tabs */
+"General" = "通用";
+"Apps" = "应用";
+"Permissions" = "权限";
+"Shortcuts" = "快捷键";
+
+/* PreferencesView - General Tab */
+"Error" = "错误";
+"OK" = "好";
+"Preview behavior and system integration" = "预览行为与系统集成";
+"Preview" = "预览";
+"Window source" = "窗口来源";
+"Thumbnail size" = "缩略图大小";
+"Preview interaction" = "预览方式";
+"Highlight only" = "仅高亮";
+"Window replica" = "窗口还原";
+"Preview hover delay" = "预览悬停延迟";
+"Grid of thumbnails; selection is highlighted in place." = "缩略图网格，选中项原地高亮。";
+"The grid stays in front; the highlighted window is replayed behind it at its original size and position." = "缩略图网格保持最前，高亮窗口以原始大小和位置在其后还原显示。";
+"Window is minimized" = "窗口已最小化";
+"Monitor frequency" = "监控频率";
+"Fast" = "快速";
+"Balanced" = "均衡";
+"Quiet" = "安静";
+/* PreferencesView - Pointer triggers (preview panel summoning) */
+"Pointer triggers" = "指针触发";
+"Edge hotspot" = "边缘热区";
+"Hotspot edge" = "热区边缘";
+"Top edge" = "上边缘";
+"Left edge" = "左边缘";
+"Right edge" = "右边缘";
+"Rest the pointer against the selected edge of the screen briefly to open the preview." = "将指针贴住屏幕所选边缘并稍作停留，即可打开预览。";
+"Shake to open" = "甩动打开";
+"Shake the pointer back and forth quickly, like shaking to find the macOS cursor, to open the preview." = "快速来回甩动指针（类似 macOS 甩动找鼠标），即可打开预览。";
+"Display" = "显示";
+"Show window titles" = "显示窗口标题";
+"Show app name" = "显示应用名称";
+"Show window number" = "显示窗口编号";
+"Show process ID" = "显示进程 ID";
+"Show window size" = "显示窗口大小";
+"Show window position" = "显示窗口位置";
+"Enable background blur" = "启用液态玻璃";
+"Background opacity" = "玻璃透明度";
+"Appearance" = "外观";
+"Language" = "语言";
+"Theme" = "主题";
+"System" = "系统";
+"Launch at login" = "登录时启动";
+"Hide main window on launch" = "启动时隐藏主窗口";
+
+/* PreferencesView - Dock Preview */
+"Dock Preview" = "Dock 预览";
+"Enable dock preview" = "启用 Dock 预览";
+"Hover to show" = "悬停显示";
+"Hover delay" = "悬停延迟";
+"Card size" = "卡片大小";
+
+/* DockPreviewView */
+"No windows" = "无窗口";
+"Window" = "窗口";
+"Close" = "关闭";
+"Minimize" = "最小化";
+"Zoom" = "缩放";
+
+/* PreferencesView - Permissions Tab */
+"Required macOS permissions for switching and thumbnails" = "窗口切换和缩略图所需的 macOS 权限";
+"Required" = "必需";
+"Accessibility" = "辅助功能";
+"Used to focus and switch windows." = "用于聚焦和切换窗口。";
+"Open Settings" = "打开设置";
+"Screen & System Audio Recording" = "屏幕与系统音频录制";
+"Used by macOS to allow window thumbnails and related recording access." = "用于允许 macOS 生成窗口缩略图及相关录制权限。";
+"Refresh Status" = "刷新状态";
+"Last checked" = "上次检查";
+"Enabled" = "已启用";
+
+/* PreferencesView - Apps Tab */
+"Monitored Apps" = "已监控应用";
+"%d configured" = "已配置 %d 个";
+"No monitored apps" = "暂无已监控应用";
+"No monitored apps match your search" = "没有匹配搜索的已监控应用";
+"Remove" = "移除";
+"Available Apps" = "可用应用";
+"Installed apps" = "已安装的应用";
+"No available apps" = "暂无可用应用";
+"No available apps match your search" = "没有匹配搜索的可用应用";
+"Add" = "添加";
+"Search apps" = "搜索应用";
+
+/* PreferencesView - Shortcuts Tab */
+"Global and app shortcuts use the selected prefix." = "全局和应用快捷键使用所选前缀。";
+"Global" = "全局";
+"Shortcut prefix" = "快捷键前缀";
+"Toggle Preview" = "切换预览";
+"Show or hide the preview panel" = "显示或隐藏预览面板";
+"Applications" = "应用";
+"Add apps in the Apps tab before assigning app shortcuts." = "先在\"应用\"标签页添加应用，再分配应用快捷键。";
+"None" = "无";
+
+/* PreviewPanel */
+"%d windows" = "%d 个窗口";
+"Search windows" = "搜索窗口";
+"No windows found" = "未找到窗口";
+"Switch General > Window source to Preview All Windows, or add running apps in the Apps tab." = "在\"通用 > 窗口来源\"中切换为\"预览所有窗口\"，或在\"应用\"标签页添加正在运行的应用。";
+"Preview unavailable" = "预览不可用";
+"Loading preview" = "正在加载预览";
+"Current window" = "当前窗口";
+
+/* StatusBar */
+"Open Preview" = "打开预览";
+"Preferences..." = "偏好设置...";
+"Workspaces..." = "工作区...";
+"About Switchly" = "关于 Switchly";
+"Quit Switchly" = "退出 Switchly";
+"Quit" = "退出";
+
+/* AppDelegate */
+"Switchly Preferences" = "Switchly 偏好设置";
+"Workspaces" = "工作区";
+
+/* Workspaces */
+"Workspace" = "工作区";
+"Apps, shortcut, and display behavior" = "应用、快捷键和展示行为";
+"Details" = "详情";
+"Name" = "名称";
+"Shortcut" = "快捷键";
+"Missing apps" = "缺失应用";
+"Window sort" = "窗口排序";
+"Add Apps" = "添加应用";
+"No workspace selected" = "未选择工作区";
+"Create Workspace" = "创建工作区";
+"No apps in this workspace" = "此工作区暂无应用";
+"No windows in this workspace" = "此工作区暂无窗口";
+"Add apps in the Workspaces window." = "在「工作区」窗口中添加应用。";
+"Open app" = "打开应用";
+"Switch workspace" = "切换工作区";
+"Not running" = "未运行";
+"Select window" = "选择窗口";
+"Switch" = "切换";
+"Move Up" = "上移";
+"Move Down" = "下移";
+"Delete" = "删除";
+"Hide missing apps" = "隐藏缺失应用";
+"Show placeholders" = "显示占位卡片";
+"Title" = "标题";
+
+/* Enums */
+"Preview All Windows" = "预览所有窗口";
+"Only Configured Apps" = "仅已配置应用";
+"Small" = "小";
+"Medium" = "中";
+"Large" = "大";
+"Follow System" = "跟随系统";
+"Light" = "亮色";
+"Dark" = "暗色";
+
+/* PreferencesViewModel */
+"Failed to save settings: %@" = "保存设置失败：%@";
+
+/* Onboarding */
+"Welcome to Switchly" = "欢迎使用 Switchly";
+"Switchly needs two permissions to work properly." = "Switchly 需要两项权限才能正常工作。";
+"Used to focus, switch and manage application windows." = "用于聚焦、切换和管理应用程序窗口。";
+"Used to capture window thumbnails for preview." = "用于截取窗口缩略图以进行预览。";
+"Granted" = "已授权";
+"Not Granted" = "未授权";
+"Get Started" = "开始使用";
+"Grant permissions above to continue" = "请先授予以上权限";
+"Screen Recording" = "屏幕录制";
+
+/* Statistics */
+"Statistics..." = "统计数据...";
+"Statistics" = "统计数据";
+"Usage statistics" = "使用统计";
+"Day" = "天";
+"Week" = "周";
+"Month" = "月";
+"Preview · shortcut" = "预览 · 快捷键";
+"Preview · mouse" = "预览 · 鼠标";
+"Quick switch" = "快速切换";
+"Confirmed · keyboard" = "确认切换 · 键盘";
+"Confirmed · mouse" = "确认切换 · 鼠标";
+"Estimated savings" = "估算节省";
+"Efficiency gain" = "效率提升";
+"Mouse-only would take %@" = "只用鼠标需 %@";
+"Keyboard share %@" = "键盘占比 %@";
+"By feature" = "按功能明细";
+"Feature" = "功能";
+"Keyboard" = "键盘";
+"Mouse" = "鼠标";
+"Per use" = "单次节省";
+"Saved" = "累计节省";
+"Total" = "合计";
+"Preview + switch" = "预览 + 切换";
+"Savings are estimates based on your baseline" = "效率为按基准耗时估算的值";
+"Today" = "今日";
+"This week" = "本周";
+"This month" = "本月";
+"All time" = "累计";
+"No data yet" = "暂无数据";
+"Open the preview once with your shortcut, then come back." = "用快捷键打开一次预览后再回来看看。";
+"Last %d days" = "最近 %d 天";
+"Last %d weeks" = "最近 %d 周";
+"Last %d months" = "最近 %d 个月";
+"Data kept for %d days" = "数据保留 %d 天";
+"Clear Statistics..." = "清除统计数据...";
+"Clear" = "清除";
+"Cancel" = "取消";
+"This permanently deletes all locally recorded counts." = "将永久删除本机记录的全部统计计数。";
+"Usage statistics are turned off in Preferences." = "使用统计已在偏好设置中关闭。";
+"%d shortcuts · %d mouse" = "%d 次快捷键 · %d 次鼠标";
+"Efficiency baseline" = "效率基准";
+"Conservative" = "保守";
+"Default" = "默认";
+"Aggressive" = "激进";
+"Custom" = "自定义";
+"Adjust baseline" = "调整基准";
+"Restore recommended defaults" = "恢复推荐默认";
+"Per shortcut" = "每次快捷键";
+"Per mouse action" = "每次鼠标操作";
+"Baseline (mouse/shortcut): preview %@/%@ · quick switch %@/%@ · workspace %@/%@" = "基准（鼠标/快捷键）：预览 %@/%@ · 快速切换 %@/%@ · 工作区 %@/%@";
+"%d sec" = "%d 秒";
+"%d min" = "%d 分";
+"%d min %d sec" = "%d 分 %d 秒";
+"%d hr" = "%d 小时";
+"%d hr %d min" = "%d 小时 %d 分";
+"Record how often you use preview and quick switch. Stored locally, never uploaded." = "记录预览与快速切换的使用次数。仅保存在本地，不联网上传。";
+"Enabled" = "启用";
