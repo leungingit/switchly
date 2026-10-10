@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: CI only needs to read the repository.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref to save runner minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test (macOS)
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Runs before anything is generated, so the "working tree is clean" check
+      # reflects the committed state rather than a freshly generated project.
+      - name: Pre-flight checks (verify.sh)
+        run: ./verify.sh
+
+      - name: Show toolchain versions
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Cache Homebrew bottles
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew/downloads
+          key: ${{ runner.os }}-brew-xcodegen-v1
+          restore-keys: |
+            ${{ runner.os }}-brew-
+
+      - name: Install XcodeGen
+        env:
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+          HOMEBREW_NO_ENV_HINTS: 1
+        run: command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+
+      - name: Cache Swift Package Manager checkouts
+        uses: actions/cache@v4
+        with:
+          path: |
+            DerivedData/SourcePackages
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('project.yml', 'Switchly.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Generate Xcode project
+        run: make bootstrap
+
+      - name: Build (Debug)
+        run: make build
+
+      - name: Run unit tests
+        run: make test-unit
+
+      - name: Guard — no build artifacts committed
+        run: |
+          if git ls-files --error-unmatch build/Switchly.app >/dev/null 2>&1; then
+            echo "::error::build/Switchly.app is tracked; build artifacts must not be committed."
+            exit 1
+          fi
+          if git ls-files --error-unmatch DerivedData >/dev/null 2>&1; then
+            echo "::error::DerivedData is tracked; build caches must not be committed."
+            exit 1
+          fi
+          echo "OK: no tracked build artifacts."
