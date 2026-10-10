@@ -9,6 +9,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- `PreviewTriggerMonitor` did not compile on Xcode 15:
+  `ShakeGestureClassifier` declared an implicit memberwise initializer
+  that is private (every stored property it does not take is private), and
+  `PreviewTriggerMonitor` builds the classifier from another type in the same
+  file. An explicit `init` restores internal access.
 - CI could not build the project: `xcodegen` 2.46 defaults to the `xcode16_0`
   project format (`objectVersion = 77`), which the `macos-14` runner's Xcode 15.4
   refuses to open. `project.yml` now pins `projectFormat: xcode15_0`

@@ -92,6 +92,16 @@ struct ShakeGestureClassifier {
     private var yPending: CGFloat = 0
     private var lastLocation: NSPoint?
 
+    /// Declared explicitly so the initializer stays internal: the implicit
+    /// memberwise initializer is private, because the mutable state above is
+    /// private, and PreviewTriggerMonitor builds the classifier from another
+    /// type in this file. Swift 5.10 (Xcode 15) rejects the implicit form.
+    init(window: TimeInterval, reversalAmplitude: CGFloat, reversalsToTrigger: Int) {
+        self.window = window
+        self.reversalAmplitude = reversalAmplitude
+        self.reversalsToTrigger = reversalsToTrigger
+    }
+
     /// Feeds one sample. Returns true exactly once per completed gesture.
     mutating func add(location: NSPoint, time: TimeInterval) -> Bool {
         guard let last = lastLocation else {
