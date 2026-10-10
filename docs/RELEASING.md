@@ -227,7 +227,7 @@ shasum -a 256 -c Switchly-1.1.0.zip.sha256
 git push origin main --tags
         │
         ▼
-Release workflow (macos-14, contents: write)
+Release workflow (macos-26, contents: write)
   1. Resolve tag            reject anything not matching vX.Y.Z
   2. Checkout the tag       fetch-depth: 0
   3. verify.sh --release    publication + CHANGELOG gate

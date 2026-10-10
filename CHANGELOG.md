@@ -9,17 +9,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- `PreviewTriggerMonitor` did not compile on Xcode 15:
-  `ShakeGestureClassifier` declared an implicit memberwise initializer
-  that is private (every stored property it does not take is private), and
-  `PreviewTriggerMonitor` builds the classifier from another type in the same
-  file. An explicit `init` restores internal access.
-- CI could not build the project: `xcodegen` 2.46 defaults to the `xcode16_0`
-  project format (`objectVersion = 77`), which the `macos-14` runner's Xcode 15.4
-  refuses to open. `project.yml` now pins `projectFormat: xcode15_0`
-  (`objectVersion = 60`), so the generated project matches the Xcode 15.0
-  minimum the README advertises — and can be opened by Xcode 15.x again, which
-  the committed project could not.
+- CI could not build the project. Three separate causes, all fixed. The runner
+  had Xcode 15.4, which cannot read the project format XcodeGen 2.46 emits by
+  default (`objectVersion = 77`); `PreviewTriggerMonitor` declared an implicit
+  memberwise initializer that is private — every stored property it does not
+  take is private — and built the classifier from another type in the same
+  file, which Swift 5.10 rejects; and `GlassEffect.swift` needs the macOS 26
+  SDK for `View.glassEffect`, which Xcode 15.4 does not ship. The workflows
+  now run on `macos-26`, and the documented requirement is Xcode 26.0 or
+  later — which is what the Liquid Glass code has needed all along.
 - Documentation corrected against the shipped build. `README.md` and
   `docs/RELEASING.md` both claimed published builds were Apple Silicon
   (arm64) only; a `Release` build is in fact **universal** (`ARCHS = arm64

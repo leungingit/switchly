@@ -45,7 +45,9 @@ network access, and nothing leaves your Mac.**
 ## Requirements
 
 - macOS 12.0 or later
-- Xcode 15.0 or later
+- Xcode 26.0 or later — the Liquid Glass appearance is built against the
+  macOS 26 SDK (`View.glassEffect`), so an older toolchain cannot compile the
+  project even though the app itself still runs on macOS 12
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the Xcode project is
   generated from `project.yml`
 
