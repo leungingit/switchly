@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -436,6 +436,7 @@
 				};
 			};
 			buildConfigurationList = 73DF027F3090BA311AF757F1 /* Build configuration list for PBXProject "Switchly" */;
+			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -447,7 +448,6 @@
 			packageReferences = (
 				1DB358598CC7A6C11BAC7AA9 /* XCRemoteSwiftPackageReference "HotKey" */,
 			);
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 0D507505C12F158F87991F93 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";

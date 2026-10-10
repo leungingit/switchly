@@ -4,6 +4,11 @@ options:
   deploymentTarget:
     macOS: "12.0"
   xcodeVersion: "15.0"
+  # XcodeGen 2.46 defaults to the xcode16_0 project format (objectVersion 77),
+  # which Xcode 15.x cannot open. Pin the format to the oldest Xcode we claim to
+  # support so a fresh clone builds on Xcode 15.0+ — and so the macos-14 CI
+  # runner (Xcode 15.4) can read the project it just generated.
+  projectFormat: xcode15_0
   settings:
     base:
       # Signing defaults live in Config/Base.xcconfig (attached below via

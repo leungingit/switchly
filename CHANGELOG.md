@@ -9,6 +9,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- CI could not build the project: `xcodegen` 2.46 defaults to the `xcode16_0`
+  project format (`objectVersion = 77`), which the `macos-14` runner's Xcode 15.4
+  refuses to open. `project.yml` now pins `projectFormat: xcode15_0`
+  (`objectVersion = 60`), so the generated project matches the Xcode 15.0
+  minimum the README advertises — and can be opened by Xcode 15.x again, which
+  the committed project could not.
 - Documentation corrected against the shipped build. `README.md` and
   `docs/RELEASING.md` both claimed published builds were Apple Silicon
   (arm64) only; a `Release` build is in fact **universal** (`ARCHS = arm64
