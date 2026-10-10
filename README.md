@@ -125,6 +125,12 @@ make build SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
 make dist  SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 ```
 
+That is the same knob the release workflow uses: it runs `make dist
+SIGN_IDENTITY="…"` with the Developer ID identity imported from the repository
+secrets, and falls back to `-` (ad-hoc) when they are absent. A certificate
+secret without the notarization secrets is a hard failure, so a release is never
+half-signed — see [docs/RELEASING.md](docs/RELEASING.md).
+
 Developing on Switchly itself? You probably want a **stable** signing identity
 so macOS stops resetting the Accessibility / Screen Recording permissions after
 every rebuild: run `Scripts/create-dev-cert.sh` once, then copy
