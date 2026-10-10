@@ -15,19 +15,32 @@ network access, and nothing leaves your Mac.**
 ## Features
 
 - **Window preview panel** — press a global shortcut to see live thumbnails of
-  open windows and click through to any of them
+  open windows, search them, and click through to any of them
+- **Pointer triggers** — open the panel from a screen-edge hotspot (top, left or
+  right) or by shaking the pointer
 - **Per-app shortcuts** — bind your own hotkeys to the apps you use most, with
   several apps allowed to share one shortcut
-- **Workspace bar** — a dock-style hover strip for previewing and jumping
-  between windows
+- **Workspaces** — group apps into named workspaces, each with its own shortcut
+  and window ordering, and switch between them from a centred bar
+- **Dock preview** — hover a Dock icon to see that app's window thumbnails
+  without opening the full panel
 - **Preview strategies** — "all windows" or "configured apps only"
+- **Preview interaction modes** — highlight in place, window replica, a large
+  preview beside the list, or full screen
+- **Window controls** — close, minimize and zoom, the real macOS buttons backed
+  by the Accessibility API, from any preview surface
 - **Auto-switch** — when a targeted app has exactly one window, switch straight
   to it without showing the panel
 - **Thumbnail pre-warming** — background monitoring keeps previews instant
 - **Usage statistics** — a local-only chart of how often you use preview and
   quick switch, split by keyboard and mouse, with an estimate of the time saved
   versus mouse-only workflows; stored on this Mac, never uploaded, one-click clear
-- **Menu-bar only** — no Dock icon (`LSUIElement`), minimal footprint
+- **Appearance** — light / dark / follow-system themes with an optional Liquid
+  Glass background
+- **Menu-bar only** — no Dock icon (`LSUIElement`), optional launch at login,
+  minimal footprint
+- **Localized** — English and Simplified Chinese
+- **Accessible** — every animation honours the system "Reduce motion" setting
 
 ## Requirements
 
@@ -48,9 +61,9 @@ Verify the download first:
 shasum -a 256 -c Switchly-<version>.zip.sha256
 ```
 
-> **Architecture:** published builds are **Apple Silicon (arm64) only** and will
-> not launch on Intel Macs. Building from source on an Intel Mac still works —
-> Xcode targets the host architecture by default.
+> **Architecture:** published builds are **universal** — the app bundle carries
+> both `arm64` and `x86_64` slices, so it runs natively on Apple Silicon and on
+> Intel Macs. Only Apple Silicon has been tested.
 
 > Unless the release notes say otherwise, published builds are **ad-hoc signed
 > and not notarized**, so Gatekeeper warns on first launch. Right-click the app
@@ -84,7 +97,9 @@ Switchly needs two system permissions to work:
 - **Accessibility** — required to enumerate and focus application windows via
   `AXUIElement`
 - **Screen Recording** — required to capture window thumbnails; without it the
-  app falls back to app icons plus window titles, and switching still works
+  app falls back to app icons plus window titles, and switching still works.
+  Recent macOS versions list this as *Screen & System Audio Recording*;
+  Switchly records no audio
 
 Grant them in *System Settings → Privacy & Security*. All processing happens
 locally in memory: thumbnails are never persisted or uploaded. See
@@ -124,9 +139,10 @@ App/          → app entry point (SwitchlyApp, AppDelegate)
 Models/       → data models and enums
 ViewModels/   → view models (MVVM)
 Views/        → SwiftUI and AppKit views
-Services/     → accessibility, window monitoring, thumbnails, shortcuts, settings
-Utilities/    → logging, theming, window-match rules
-Resources/    → Info.plist, asset catalog, localizations
+Services/     → accessibility, window monitoring, thumbnails, shortcuts,
+                settings, usage statistics
+Utilities/    → logging, theming, motion, window-match rules
+Resources/    → Info.plist, asset catalog, localizations (en, zh-Hans)
 Supporting/   → entitlements
 Tests/        → unit tests and UI tests (skeleton)
 Scripts/      → one-off tooling

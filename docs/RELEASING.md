@@ -260,8 +260,11 @@ Artifacts published per release:
 | `Switchly-<version>.zip` | `Switchly.app`, ad-hoc or Developer ID signed |
 | `Switchly-<version>.zip.sha256` | SHA-256 of the zip |
 
-Published builds are **Apple Silicon (arm64) only** — the workflow builds on an
-arm64 runner with Xcode's default `ARCHS`, and the release notes say so.
+Published builds are **universal** — `xcodebuild -configuration Release` uses
+Xcode's default `ARCHS` (`arm64 x86_64`) with `ONLY_ACTIVE_ARCH = NO`, so the
+bundle carries both an Apple Silicon and an Intel slice. `Debug` builds only the
+active architecture, because `ONLY_ACTIVE_ARCH = YES` there. To publish an
+arm64-only build instead, set `ARCHS: arm64` in `project.yml`.
 
 ---
 

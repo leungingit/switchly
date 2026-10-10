@@ -7,6 +7,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Documentation corrected against the shipped build. `README.md` and
+  `docs/RELEASING.md` both claimed published builds were Apple Silicon
+  (arm64) only; a `Release` build is in fact **universal** (`ARCHS = arm64
+  x86_64`, `ONLY_ACTIVE_ARCH = NO`) and runs on Intel Macs too. The README
+  feature list also conflated the workspace bar with the Dock preview, and was
+  missing pointer triggers, workspaces, Dock preview, preview interaction modes,
+  window controls, appearance options, launch at login and localization.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added
