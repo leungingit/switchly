@@ -253,6 +253,19 @@ Two deliberate design choices:
   is worse than an ad-hoc one: Gatekeeper still blocks it, but it no longer looks
   like an ordinary unsigned local build.
 
+### Verifying the pipeline without publishing
+
+The workflow takes a `dry_run` flag through `workflow_dispatch`:
+
+```sh
+gh workflow run release.yml -f tag=v1.1.0 -f dry_run=true
+```
+
+Every step runs — the tag checks, `verify.sh --release`, the build, the tests, the
+packaging and the notes — and only the final `gh release create` is skipped. That
+checks a pipeline change against an already-published tag without touching the
+Release itself.
+
 Artifacts published per release:
 
 | Asset | Contents |

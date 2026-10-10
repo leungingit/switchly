@@ -12,6 +12,11 @@ on:
         description: "Existing tag to publish (e.g. v1.0.0)"
         required: true
         type: string
+      dry_run:
+        description: "Build and package without publishing a Release"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -216,6 +221,9 @@ jobs:
           cat "$NOTES"
 
       - name: Publish GitHub Release
+        # A workflow_dispatch dry run stops here. Every step above has run,
+        # so the pipeline can be exercised without publishing a Release.
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         env:
           TAG: ${{ steps.meta.outputs.tag }}
           ASSET: ${{ steps.package.outputs.asset }}
