@@ -56,6 +56,38 @@ enum DockHoverState {
                               pointerInPanel: Bool) -> Bool {
         panelVisible && !pointerInDockArea && !pointerInPanel
     }
+
+    /// Which Dock icon does the pointer rest on?
+    ///
+    /// The AX position coordinate system does not always match NSEvent's
+    /// bottom-left origin (it varies across macOS versions and Dock states),
+    /// so only the axis the icons are laid out along is trusted: x for a
+    /// bottom Dock, y for a left/right Dock. Matching a side Dock by x (the
+    /// old behaviour) hit every icon in the column — they share the x span —
+    /// and the near-identical x distances made the pick arbitrary, so
+    /// hovering one icon previewed another.
+    static func bestIcon(in icons: [DockIconInfo],
+                         at location: NSPoint,
+                         orientation: String) -> DockIconInfo? {
+        let vertical = (orientation == "left" || orientation == "right")
+        var bestIcon: DockIconInfo?
+        var bestDistance: CGFloat = .greatestFiniteMagnitude
+
+        for icon in icons {
+            let frame = icon.frame
+            let along = vertical ? location.y : location.x
+            let spanMin = vertical ? frame.minY : frame.minX
+            let spanMax = vertical ? frame.maxY : frame.maxX
+            guard along >= spanMin, along <= spanMax else { continue }
+
+            let distance = abs(along - (spanMin + spanMax) / 2)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestIcon = icon
+            }
+        }
+        return bestIcon
+    }
 }
 
 class DockHoverMonitor {
@@ -89,6 +121,23 @@ class DockHoverMonitor {
     private var cachedHoverDelay: Double = 0.4
     private var cachedDockAutohide = false
     private var cachedDockOrientation = "bottom"
+
+    /// Dock icon layout from the last Accessibility walk, with the time it was
+    /// taken. Rebuilding the layout costs 5+ AX IPC calls per Dock icon, and
+    /// the pointer loop samples at up to mouseMoved frequency while the cursor
+    /// is inside the Dock strip, so the walk is throttled: within
+    /// `dockIconCacheInterval` the cached frames decide which icon is hovered.
+    /// Icons do not move on that timescale (Dock magnification shifts frames,
+    /// but a ≤120 ms stale frame is imperceptible for preview switching).
+    private var dockIconCache: (date: Date, icons: [DockIconInfo])?
+    /// How long a Dock icon layout stays authoritative between AX walks.
+    private let dockIconCacheInterval: TimeInterval = 0.12
+
+    /// Whether the Dock area is currently obscured by a full-screen app. The
+    /// check walks the full on-screen window list, so it is throttled the same
+    /// way as the icon layout.
+    private var dockObscuredCache: (date: Date, obscured: Bool)?
+    private let dockObscuredCacheInterval: TimeInterval = 0.25
 
     private init() {}
 
@@ -128,6 +177,8 @@ class DockHoverMonitor {
         currentIcon = nil
         lastProcessedLocation = nil
         isDockRevealed = false
+        dockIconCache = nil
+        dockObscuredCache = nil
         AppLogger.info("DockHoverMonitor stopped")
     }
 
@@ -328,6 +379,16 @@ class DockHoverMonitor {
     /// When the frontmost app is full-screen, the Dock is hidden by macOS
     /// and the preview should not trigger, regardless of the cursor position.
     private func isDockAreaObscured() -> Bool {
+        if let cache = dockObscuredCache,
+           Date().timeIntervalSince(cache.date) < dockObscuredCacheInterval {
+            return cache.obscured
+        }
+        let obscured = computeDockAreaObscured()
+        dockObscuredCache = (Date(), obscured)
+        return obscured
+    }
+
+    private func computeDockAreaObscured() -> Bool {
         // Skip check if Switchly itself is frontmost (our panel is showing).
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication,
               frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier,
@@ -395,15 +456,39 @@ class DockHoverMonitor {
         return lhs.appName == rhs.appName
     }
 
-    /// Finds the Dock icon at the given screen location by querying the Dock's
-    /// Accessibility tree. Returns nil if the cursor is not over a Dock icon.
+    /// Finds the Dock icon at the given screen location.
     ///
-    /// The AX position coordinate system does not always match NSEvent's
-    /// bottom-left origin (it varies across macOS versions and Dock states),
-    /// so we match by horizontal proximity rather than strict `contains`.
+    /// The Dock's Accessibility tree is walked at most once per
+    /// `dockIconCacheInterval` (see `dockIconCache`); in between, the cached
+    /// frames decide. The Dock's own orientation/autohide preferences are
+    /// refreshed on the same cadence, so a Dock moved to a screen side
+    /// mid-session is matched against the right axis instead of a stale one.
     private func dockIconAtLocation(_ location: NSPoint) -> DockIconInfo? {
+        if let cache = dockIconCache,
+           Date().timeIntervalSince(cache.date) < dockIconCacheInterval {
+            return DockHoverState.bestIcon(in: cache.icons, at: location, orientation: cachedDockOrientation)
+        }
+        refreshDockDefaultsCache()
+        let icons = queryDockIcons()
+        dockIconCache = (Date(), icons)
+        return DockHoverState.bestIcon(in: icons, at: location, orientation: cachedDockOrientation)
+    }
+
+    /// Re-reads the Dock's own preference keys. CFPreferences caches in
+    /// process, so reading them at the icon-cache cadence (≈8/s while
+    /// hovering) is cheap next to the AX walk it accompanies.
+    private func refreshDockDefaultsCache() {
+        let dockDefaults = UserDefaults(suiteName: "com.apple.dock")
+        cachedDockAutohide = dockDefaults?.bool(forKey: "autohide") ?? false
+        cachedDockOrientation = dockDefaults?.string(forKey: "orientation") ?? "bottom"
+    }
+
+    /// Walks the Dock's Accessibility tree and returns every app icon with its
+    /// frame and product-root bundle URL. Location matching is not done here —
+    /// see `DockHoverState.bestIcon` for why only the layout axis is trusted.
+    private func queryDockIcons() -> [DockIconInfo] {
         guard let dockApp = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == "Dock" }) else {
-            return nil
+            return []
         }
 
         let dockElement = AXUIElementCreateApplication(dockApp.processIdentifier)
@@ -414,22 +499,18 @@ class DockHoverMonitor {
         guard AXUIElementCopyAttributeValue(dockElement, kAXChildrenAttribute as CFString, &childrenValue) == .success,
               let children = childrenValue as? [AXUIElement],
               let listElement = children.first else {
-            return nil
+            return []
         }
 
         var iconsValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(listElement, kAXChildrenAttribute as CFString, &iconsValue) == .success,
-              let icons = iconsValue as? [AXUIElement] else {
-            return nil
+              let axIcons = iconsValue as? [AXUIElement] else {
+            return []
         }
 
-        // Find the icon whose horizontal center is closest to the cursor.
-        // For a bottom Dock, icons are laid out horizontally, so x proximity
-        // is the primary discriminator.
-        var bestIcon: DockIconInfo?
-        var bestDistance: CGFloat = .greatestFiniteMagnitude
+        var icons: [DockIconInfo] = []
 
-        for icon in icons {
+        for icon in axIcons {
             var subroleValue: CFTypeRef?
             AXUIElementCopyAttributeValue(icon, kAXSubroleAttribute as CFString, &subroleValue)
             let subrole = subroleValue as? String ?? ""
@@ -473,18 +554,10 @@ class DockHoverMonitor {
             // shows the product's windows instead of "No windows".
             let productURL = WindowAttribution.productRootURL(for: bundleURL)
 
-            // Match by horizontal proximity (within the icon's width).
-            // The cursor's x should be within the icon's x span.
-            if location.x >= frame.minX && location.x <= frame.maxX {
-                let distance = abs(location.x - frame.midX)
-                if distance < bestDistance {
-                    bestDistance = distance
-                    bestIcon = DockIconInfo(appName: appName, frame: frame, bundleURL: productURL)
-                }
-            }
+            icons.append(DockIconInfo(appName: appName, frame: frame, bundleURL: productURL))
         }
 
-        return bestIcon
+        return icons
     }
 
     private func showPreview() {

@@ -167,7 +167,11 @@ class DockPreviewViewModel: ObservableObject {
             return first
         }
 
-        let pidsWithWindows = Set(windowMonitorService.getAllWindows().map(\.ownerPID))
+        // On-screen windows are all this decision needs (which of two
+        // same-named apps has anything visible), and the fast path skips the
+        // Accessibility-heavy full enumeration this refresh runs again right
+        // afterwards anyway.
+        let pidsWithWindows = Set(windowMonitorService.getOnScreenWindows().map(\.ownerPID))
         if let withWindows = candidates.first(where: { pidsWithWindows.contains($0.processIdentifier) }) {
             AppLogger.debug("Dock preview: disambiguated duplicate app name by visible windows. pid=\(withWindows.processIdentifier), candidates=\(candidates.map { $0.processIdentifier })")
             return withWindows

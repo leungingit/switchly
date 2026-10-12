@@ -394,6 +394,118 @@ final class ThumbnailCacheTests: XCTestCase {
         XCTAssertFalse(service.failedRecently(for: window, tier: .grid))
     }
 
+    // MARK: - 4c. Timeout circuit breaker
+
+    /// Every timed-out CG capture leaks the global-queue thread it was
+    /// dispatched to (the call cannot be cancelled), so consecutive timeouts
+    /// must escalate the cooldown instead of retrying at the tick cadence
+    /// forever: 8 s → 16 s → 32 s … capped at 600 s.
+    func testConsecutiveTimeoutsEscalateTheFailureCooldown() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 700)
+
+        service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        let first = service.failureCooldownRemainingForTesting(window: window, tier: .grid)
+        XCTAssertGreaterThan(first, 7, "first timeout is roughly the base cooldown")
+        XCTAssertLessThanOrEqual(first, 9)
+
+        service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        let second = service.failureCooldownRemainingForTesting(window: window, tier: .grid)
+        XCTAssertGreaterThan(second, 15, "second timeout doubles the cooldown")
+        XCTAssertLessThanOrEqual(second, 17)
+
+        for _ in 0..<10 {
+            service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        }
+        let capped = service.failureCooldownRemainingForTesting(window: window, tier: .grid)
+        XCTAssertLessThanOrEqual(capped, 600, "the escalating cooldown is capped")
+        XCTAssertGreaterThan(capped, 500)
+    }
+
+    /// Plain failures (nil image, blank capture) keep the flat cooldown —
+    /// they cost nothing but a round trip, so there is nothing to escalate
+    /// against.
+    func testPlainFailuresKeepTheFlatCooldown() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 701)
+
+        for _ in 0..<4 {
+            service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureFailed)
+        }
+        let remaining = service.failureCooldownRemainingForTesting(window: window, tier: .grid)
+        XCTAssertGreaterThan(remaining, 7)
+        XCTAssertLessThanOrEqual(remaining, 9)
+    }
+
+    /// A successful capture resets the strike count, so a window that recovers
+    /// after one timeout is back to the base cooldown on its next failure.
+    func testSuccessfulStoreResetsTimeoutStrikes() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 702)
+
+        service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        XCTAssertGreaterThan(
+            service.failureCooldownRemainingForTesting(window: window, tier: .grid), 15
+        )
+
+        service.storeEntryForTesting(window: window, tier: .grid, pixelSize: CGSize(width: 4, height: 4))
+        service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        let reset = service.failureCooldownRemainingForTesting(window: window, tier: .grid)
+        XCTAssertLessThanOrEqual(reset, 9, "success must reset the strike counter")
+    }
+
+    // MARK: - 4d. Owner-scoped refresh interest
+
+    /// Refresh interest is merged across every registered surface: the preview
+    /// panel and the dock preview panel used to overwrite each other's
+    /// whole-tier set every second while both were visible, so whichever
+    /// published last was the only one whose windows auto-refreshed.
+    func testRefreshInterestIsMergedAcrossOwners() {
+        let service = ThumbnailService()
+        let panelA = NSObject()
+        let panelB = NSObject()
+
+        service.setRefreshInterest([1, 2], owner: panelA, tier: .grid)
+        service.setRefreshInterest([3], owner: panelB, tier: .grid)
+
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .grid), [1, 2, 3], "interest must be the union of all owners")
+    }
+
+    /// One panel going away clears only its own registration; the other
+    /// panel's windows keep auto-refreshing.
+    func testClearingOneOwnerKeepsTheOthersInterest() {
+        let service = ThumbnailService()
+        let panelA = NSObject()
+        let panelB = NSObject()
+
+        service.setRefreshInterest([1, 2], owner: panelA, tier: .grid)
+        service.setRefreshInterest([3], owner: panelB, tier: .grid)
+        service.clearRefreshInterest(owner: panelA)
+
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .grid), [3])
+
+        // An empty publish removes just that owner's registration too.
+        service.setRefreshInterest([], owner: panelB, tier: .grid)
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .grid), [])
+    }
+
+    /// The replica tier is independent of the grid tier's registrations.
+    func testInterestTiersStaySeparate() {
+        let service = ThumbnailService()
+        let panel = NSObject()
+
+        service.setRefreshInterest([1], owner: panel, tier: .grid)
+        service.setRefreshInterest([2], owner: panel, tier: .native)
+
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .grid), [1])
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .native), [2])
+
+        service.clearRefreshInterest(owner: panel)
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .grid), [])
+        XCTAssertEqual(service.refreshInterestForTesting(tier: .native), [])
+    }
+
     // MARK: - 5. Stale / recycled window IDs
 
     /// macOS recycles CGWindowIDs. A recycled ID with a different owner must

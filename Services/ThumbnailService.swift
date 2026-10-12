@@ -14,7 +14,14 @@ protocol ThumbnailServiceProtocol {
     func captureThumbnail(for window: WindowInfo, size: CGSize, tier: ThumbnailTier) async throws -> NSImage
     func getCachedThumbnail(for window: WindowInfo, tier: ThumbnailTier) -> NSImage?
     func preheatThumbnails(for windows: [WindowInfo], size: CGSize, tier: ThumbnailTier, reason: String)
-    func setRefreshInterest(_ windowIDs: Set<CGWindowID>, tier: ThumbnailTier)
+    /// Publishes the window IDs one interested surface (panel) is showing for
+    /// one tier. Registrations are owner-scoped and merged, so two visible
+    /// panels never overwrite each other's interest. Pass an empty set to
+    /// remove the owner's registration for that tier.
+    func setRefreshInterest(_ windowIDs: Set<CGWindowID>, owner: AnyObject, tier: ThumbnailTier)
+    /// Removes one owner's registrations from every tier (its panel went
+    /// away) without touching other panels' registrations.
+    func clearRefreshInterest(owner: AnyObject)
     func startAutoRefresh()
     func stopAutoRefresh()
 }
@@ -40,8 +47,8 @@ extension ThumbnailServiceProtocol {
         preheatThumbnails(for: windows, size: size, tier: .grid, reason: reason)
     }
 
-    func setRefreshInterest(_ windowIDs: Set<CGWindowID>) {
-        setRefreshInterest(windowIDs, tier: .grid)
+    func setRefreshInterest(_ windowIDs: Set<CGWindowID>, owner: AnyObject) {
+        setRefreshInterest(windowIDs, owner: owner, tier: .grid)
     }
 }
 
@@ -101,6 +108,16 @@ class ThumbnailService: ThumbnailServiceProtocol {
         attributes: .concurrent
     )
 
+    /// Upper bound on capture pipelines running at once. Each pipeline parks a
+    /// coordinator thread on `captureQueue` (waiting out the CG timeout) plus
+    /// the thread that actually runs `CGWindowListCreateImage`, so an
+    /// unbounded cold-start burst — a grid of cards whose `.task`s all fire
+    /// together — can push the process toward the GCD thread ceiling. Waiters
+    /// are suspended continuations, never blocked threads.
+    private static let maxConcurrentCaptures = 6
+    private var activeCaptureCount = 0
+    private var captureAdmissionWaiters: [CheckedContinuation<Void, Never>] = []
+
     /// Window identity, size independent. Keyed by window id alone so the
     /// auto-refresh tick can rebuild a `WindowInfo` for any tier.
     private var windowMeta: [CGWindowID: WindowMetadata] = [:]
@@ -122,12 +139,23 @@ class ThumbnailService: ThumbnailServiceProtocol {
     private var tierCounts: [ThumbnailTier: Int] = [:]
 
     private var inFlightKeys = Set<ThumbnailCacheKey>()
+    /// Suspended callers waiting for the in-flight attempt of a key to finish.
+    /// Waiters are continuations, never blocked threads — see `claimInFlight`.
+    private var inFlightWaiters: [ThumbnailCacheKey: [CheckedContinuation<Void, Never>]] = [:]
     private var failedUntil: [ThumbnailCacheKey: Date] = [:]
+    /// Consecutive capture timeouts per key. Every timed-out CG attempt leaks
+    /// the global-queue thread it was dispatched to (the call cannot be
+    /// cancelled once dispatched), so a window whose capture consistently
+    /// hangs must stop being retried at the tick cadence: each strike doubles
+    /// the failure cooldown, capped by `maxFailureCooldown`.
+    private var timeoutStrikes: [ThumbnailCacheKey: Int] = [:]
 
     private let budgets: [ThumbnailTier: TierBudget]
 
     private let cacheExpiration: TimeInterval = 60.0
     private let failureCooldown: TimeInterval = 8.0
+    /// Ceiling for the escalating timeout cooldown — see `timeoutStrikes`.
+    private let maxFailureCooldown: TimeInterval = 600.0
 
     /// Interval at which the auto-refresh timer scans cached entries and
     /// re-captures windows that are not in-flight or in failure cooldown.
@@ -147,11 +175,13 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// never leak a timer that no one will invalidate.
     private var autoRefreshClientCount: Int = 0
 
-    /// Window IDs the visible panels currently display, per tier. The
-    /// auto-refresh tick only re-captures these, so an idle app (no panel on
-    /// screen) performs zero capture work. Panels publish while visible and
-    /// clear on dismiss. Main-thread only.
-    private var refreshInterest: [ThumbnailTier: Set<CGWindowID>] = [:]
+    /// Window IDs the visible panels currently display, per tier — merged
+    /// across every interested surface (owner-scoped), so two visible panels
+    /// never overwrite each other's interest the way a plain per-tier set
+    /// did. The auto-refresh tick only re-captures these, so an idle app (no
+    /// panel on screen) performs zero capture work. Panels publish while
+    /// visible and clear their own registration on dismiss.
+    private var refreshInterest: [ThumbnailTier: [ObjectIdentifier: Set<CGWindowID>]] = [:]
 
     /// Max time a single `CGWindowListCreateImage` call may block before we
     /// give up. On macOS 26 the CG path is internally proxied through
@@ -193,18 +223,48 @@ class ThumbnailService: ThumbnailServiceProtocol {
             return cached
         }
 
-        let pixelSize = Self.pixelSize(forPoints: size, scale: Self.displayScale, tier: tier)
+        // A window that just failed stays failed until the cooldown expires:
+        // re-hammering the window server on every card rebuild only queues
+        // work behind the same failure. The auto-refresh tick retries once
+        // the cooldown lifts. (Views gate on this too; the service is the
+        // backstop for surfaces that do not.)
+        if failedRecently(for: window, tier: tier) {
+            throw ThumbnailError.captureFailed
+        }
+
+        let scale = Self.displayScale
+        let pixelSize = Self.pixelSize(forPoints: size, scale: scale, tier: tier)
         recordCaptureSize(pixelSize, tier: tier)
         recordWindowMeta(window)
 
-        // Some apps (especially Electron apps) return a blank/white backing
-        // store right after a window appears or is switched to. Retry with
-        // short delays so the real content is captured on the first attempt.
         AppLogger.debug("Capturing thumbnail. windowID=\(window.id), tier=\(tier.rawValue), pixelSize=\(pixelSize)")
         let key = ThumbnailCacheKey(window.id, tier)
-        let captured = try await attemptCapture(window: window, pixelSize: pixelSize)
-        store(captured.image, key: key, window: window, pixelSize: captured.pixelSize)
-        return captured.image
+
+        // On-demand captures coordinate with the preheat path through the
+        // same in-flight set, so a card's `.task` and a background preheat
+        // never run two full capture pipelines for the same (window, tier)
+        // — which, at native tier, means two window-sized bitmaps at once.
+        while !claimInFlight(key) {
+            await waitUntilCaptureFinishes(key)
+            if let cached = getCachedThumbnail(for: window, tier: tier) {
+                AppLogger.verbose("Using thumbnail captured by a concurrent attempt. windowID=\(window.id), tier=\(tier.rawValue)")
+                return cached
+            }
+            if failedRecently(for: window, tier: tier) {
+                throw ThumbnailError.captureFailed
+            }
+        }
+
+        do {
+            let captured = try await attemptCapture(window: window, pixelSize: pixelSize, scale: scale)
+            store(captured.image, key: key, window: window, pixelSize: captured.pixelSize)
+            markFinished(key)
+            return captured.image
+        } catch {
+            markFailed(key, error: error)
+            markFinished(key)
+            throw error
+        }
     }
 
     /// One full capture attempt: the CoreGraphics path with short retries, then
@@ -217,7 +277,37 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// forever and never succeed, even though the very same window captures fine
     /// through the on-demand path. The enlarged preview reads preheated entries,
     /// so it spun forever on exactly those windows.
-    private func attemptCapture(window: WindowInfo, pixelSize: CGSize) async throws -> CapturedThumbnail {
+    private func attemptCapture(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async throws -> CapturedThumbnail {
+        // Screen-recording permission is a process-wide state: when it is not
+        // granted, neither the CG retries nor the SCK fallback can succeed,
+        // and burning three attempts plus a shareable-content round-trip on
+        // every capture only queues work behind the same denial.
+        guard CGPreflightScreenCaptureAccess() else {
+            throw ThumbnailError.screenCapturePermissionDenied
+        }
+
+        await waitForCaptureSlot()
+        do {
+            let captured = try await performCaptureAttempts(window: window, pixelSize: pixelSize, scale: scale)
+            releaseCaptureSlot()
+            return captured
+        } catch {
+            releaseCaptureSlot()
+            throw error
+        }
+    }
+
+    /// The capture body proper: the CoreGraphics path with short retries, then
+    /// the ScreenCaptureKit fallback.
+    ///
+    /// Both the on-demand and the background path go through here on purpose.
+    /// The preheat path used to call the CoreGraphics capture directly, so it
+    /// had no ScreenCaptureKit fallback: a window whose CG capture comes back
+    /// blank (Electron apps such as Lark/Feishu do this) could be preheated
+    /// forever and never succeed, even though the very same window captures fine
+    /// through the on-demand path. The enlarged preview reads preheated entries,
+    /// so it spun forever on exactly those windows.
+    private func performCaptureAttempts(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async throws -> CapturedThumbnail {
         // Some apps (especially Electron apps) return a blank/white backing
         // store right after a window appears or is switched to. Retry with
         // short delays so the real content is captured on the first attempt.
@@ -233,7 +323,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
                     guard let self else {
                         throw ThumbnailError.captureFailed
                     }
-                    return try self.captureWindowThumbnail(window, pixelSize: pixelSize)
+                    return try self.captureWindowThumbnail(window, pixelSize: pixelSize, scale: scale)
                 }
             } catch {
                 lastError = error
@@ -244,7 +334,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         // such as NoMachine, GPU/OpenGL-composited content, Electron windows).
         // Fall back to ScreenCaptureKit, which can capture content the CG API
         // cannot.
-        if let captured = await captureWithScreenCaptureKit(window: window, pixelSize: pixelSize) {
+        if let captured = await captureWithScreenCaptureKit(window: window, pixelSize: pixelSize, scale: scale) {
             return captured
         }
 
@@ -273,7 +363,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// Synchronous bridge for the preheat queue, which is an `OperationQueue`.
     /// Parks its caller (a queue thread, never the main actor) while the shared
     /// attempt pipeline runs.
-    private func awaitAttempt(window: WindowInfo, pixelSize: CGSize) throws -> CapturedThumbnail {
+    private func awaitAttempt(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) throws -> CapturedThumbnail {
         let box = CaptureBox()
         let done = DispatchSemaphore(value: 0)
         Task { [weak self] in
@@ -282,7 +372,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
                 return
             }
             do {
-                box.result = .success(try await self.attemptCapture(window: window, pixelSize: pixelSize))
+                box.result = .success(try await self.attemptCapture(window: window, pixelSize: pixelSize, scale: scale))
             } catch {
                 box.result = .failure(error)
             }
@@ -341,7 +431,8 @@ class ThumbnailService: ThumbnailServiceProtocol {
     // MARK: - Preheat
 
     func preheatThumbnails(for windows: [WindowInfo], size: CGSize, tier: ThumbnailTier, reason: String) {
-        let pixelSize = Self.pixelSize(forPoints: size, scale: Self.displayScale, tier: tier)
+        let scale = Self.displayScale
+        let pixelSize = Self.pixelSize(forPoints: size, scale: scale, tier: tier)
         recordCaptureSize(pixelSize, tier: tier)
 
         let candidates = windows.filter { shouldPreheat(windowID: $0.id, tier: tier) }
@@ -352,12 +443,13 @@ class ThumbnailService: ThumbnailServiceProtocol {
         AppLogger.info("Preheating thumbnails. reason=\(reason), tier=\(tier.rawValue), count=\(candidates.count)")
         for window in candidates {
             let key = ThumbnailCacheKey(window.id, tier)
-            markInFlight(key)
+            _ = claimInFlight(key)
             preheatQueue.addOperation { [weak self] in
                 self?.captureAndCache(
                     window: window,
                     key: key,
                     pixelSize: pixelSize,
+                    scale: scale,
                     reason: reason
                 )
             }
@@ -366,22 +458,54 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
     // MARK: - Refresh interest
 
-    /// Publishes the window IDs a visible panel is showing for one tier.
-    /// Pass an empty set when no panel of that tier is on screen.
-    /// Called on the main thread.
-    func setRefreshInterest(_ windowIDs: Set<CGWindowID>, tier: ThumbnailTier) {
+    /// Publishes the window IDs one visible surface is showing for one tier;
+    /// an empty set removes that owner's registration. The merged union of all
+    /// owners is what the auto-refresh tick sees, so a panel can never clear
+    /// another panel's interest again (the old whole-tier replacement let the
+    /// preview panel and the dock preview panel overwrite each other every
+    /// second while both were visible). Called on the main thread.
+    func setRefreshInterest(_ windowIDs: Set<CGWindowID>, owner: AnyObject, tier: ThumbnailTier) {
+        let ownerKey = ObjectIdentifier(owner)
         lock.lock()
-        let unchanged = refreshInterest[tier] == windowIDs
-        refreshInterest[tier] = windowIDs
+        let previous = interestedWindowIDsLocked(tier: tier)
+        if windowIDs.isEmpty {
+            refreshInterest[tier]?.removeValue(forKey: ownerKey)
+        } else {
+            refreshInterest[tier, default: [:]][ownerKey] = windowIDs
+        }
+        let current = interestedWindowIDsLocked(tier: tier)
         lock.unlock()
 
         // Only real changes are logged. Every panel republishes its interest on
         // each window-list refresh (about once a second) for up to three tiers,
         // which filled the rotating log with identical "count=0" lines.
-        guard !unchanged else {
+        guard current != previous else {
             return
         }
-        AppLogger.debug("Refresh interest updated. tier=\(tier.rawValue), count=\(windowIDs.count)")
+        AppLogger.debug("Refresh interest updated. tier=\(tier.rawValue), count=\(current.count)")
+    }
+
+    /// Removes one owner's registrations from every tier — its panel went
+    /// away — without touching what other panels still show.
+    func clearRefreshInterest(owner: AnyObject) {
+        let ownerKey = ObjectIdentifier(owner)
+        lock.lock()
+        for tier in ThumbnailTier.allCases {
+            refreshInterest[tier]?.removeValue(forKey: ownerKey)
+        }
+        lock.unlock()
+    }
+
+    /// Merged window IDs every interested surface is showing for one tier.
+    /// Caller must hold `lock`.
+    private func interestedWindowIDsLocked(tier: ThumbnailTier) -> Set<CGWindowID> {
+        var merged: Set<CGWindowID> = []
+        if let owners = refreshInterest[tier] {
+            for set in owners.values {
+                merged.formUnion(set)
+            }
+        }
+        return merged
     }
 
     // MARK: - Auto refresh
@@ -401,14 +525,17 @@ class ThumbnailService: ThumbnailServiceProtocol {
             return
         }
 
-        let timer = Timer.scheduledTimer(
-            withTimeInterval: autoRefreshInterval,
+        // Built unscheduled and registered exactly once, in the common
+        // run-loop mode so it keeps firing during UI interaction:
+        // `Timer.scheduledTimer` would already have registered it in the
+        // default mode, making the `add` below a redundant second
+        // registration of the same timer.
+        let timer = Timer(
+            timeInterval: autoRefreshInterval,
             repeats: true
         ) { [weak self] _ in
             self?.runRefreshTick()
         }
-        // Add to the common run-loop mode so the timer keeps firing during
-        // normal UI interaction (matches WindowMonitorService / DockHoverMonitor).
         RunLoop.main.add(timer, forMode: .common)
 
         lock.lock()
@@ -448,8 +575,14 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// cached image (we only `markFailed`, never evict), so the user always sees
     /// the last good frame rather than a loading spinner.
     private func runRefreshTick() {
+        // `displayScale` reads NSScreen; this tick runs on the main thread
+        // (main-RunLoop timer), and the value is captured before any capture
+        // work goes off-main — see `makeThumbnail`.
+        let scale = Self.displayScale
         lock.lock()
-        let interest = refreshInterest
+        let interest: [ThumbnailTier: Set<CGWindowID>] = refreshInterest.mapValues { owners in
+            owners.values.reduce(into: Set<CGWindowID>()) { $0.formUnion($1) }
+        }
         let sizes = lastCaptureSize
         lock.unlock()
 
@@ -471,12 +604,13 @@ class ThumbnailService: ThumbnailServiceProtocol {
                     continue
                 }
                 let key = ThumbnailCacheKey(windowID, tier)
-                markInFlight(key)
+                _ = claimInFlight(key)
                 preheatQueue.addOperation { [weak self] in
                     self?.captureAndCache(
                         window: window,
                         key: key,
                         pixelSize: pixelSize,
+                        scale: scale,
                         reason: "auto-refresh"
                     )
                 }
@@ -538,7 +672,8 @@ class ThumbnailService: ThumbnailServiceProtocol {
             ownerName: window.ownerName,
             title: window.windowTitle,
             bounds: window.bounds,
-            isOnCurrentSpace: window.isOnCurrentSpace
+            isOnCurrentSpace: window.isOnCurrentSpace,
+            recordedAt: Date()
         )
         if let existing = entries[key] {
             tierCosts[key.tier, default: 0] -= existing.cost
@@ -550,6 +685,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         evictionOrder[key.tier, default: []].append(key)
         tierCosts[key.tier, default: 0] += cost
         failedUntil.removeValue(forKey: key)
+        timeoutStrikes.removeValue(forKey: key)
         evictIfNeededLocked(tier: key.tier)
         let liveCost = tierCosts[key.tier] ?? 0
         let liveCount = tierCounts[key.tier] ?? 0
@@ -662,8 +798,8 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// Test seam: marks a key as recently failed, exactly as a capture failure
     /// does. Lets a test lock down the contract the views rely on — a window
     /// that cannot be captured reports failure instead of re-arming a spinner.
-    func markFailedForTesting(window: WindowInfo, tier: ThumbnailTier) {
-        markFailed(ThumbnailCacheKey(window.id, tier))
+    func markFailedForTesting(window: WindowInfo, tier: ThumbnailTier, error: Error = ThumbnailError.captureFailed) {
+        markFailed(ThumbnailCacheKey(window.id, tier), error: error)
     }
 
     /// Test seam: number of entries currently under a given tier. Lets a test
@@ -673,6 +809,28 @@ class ThumbnailService: ThumbnailServiceProtocol {
         let count = tierCounts[tier] ?? 0
         lock.unlock()
         return count
+    }
+
+    /// Test seam: the merged auto-refresh interest for one tier — the union of
+    /// every registered surface's window IDs.
+    func refreshInterestForTesting(tier: ThumbnailTier) -> Set<CGWindowID> {
+        lock.lock()
+        let merged = interestedWindowIDsLocked(tier: tier)
+        lock.unlock()
+        return merged
+    }
+
+    /// Test seam: seconds of failure cooldown remaining for a key
+    /// (0 when none is active).
+    func failureCooldownRemainingForTesting(window: WindowInfo, tier: ThumbnailTier) -> TimeInterval {
+        let key = ThumbnailCacheKey(window.id, tier)
+        lock.lock()
+        let blockedUntil = failedUntil[key]
+        lock.unlock()
+        guard let blockedUntil else {
+            return 0
+        }
+        return max(0, blockedUntil.timeIntervalSinceNow)
     }
 
     // MARK: - Capture helpers
@@ -700,9 +858,27 @@ class ThumbnailService: ThumbnailServiceProtocol {
             ownerName: window.ownerName,
             title: window.windowTitle,
             bounds: window.bounds,
-            isOnCurrentSpace: window.isOnCurrentSpace
+            isOnCurrentSpace: window.isOnCurrentSpace,
+            recordedAt: Date()
         )
+        pruneWindowMetaLocked()
         lock.unlock()
+    }
+
+    /// Caps `windowMeta`. The table used to be append-only: every window ever
+    /// captured left a record behind, and nothing removed records for closed
+    /// windows — a long session grew it without bound (slowly, but without
+    /// limit). Live panels re-publish their windows' metadata on every
+    /// capture, so dropping stale records cannot evict anything a visible
+    /// panel still needs.
+    private func pruneWindowMetaLocked() {
+        guard windowMeta.count > 256 else {
+            return
+        }
+        let ranked = windowMeta.sorted { $0.value.recordedAt < $1.value.recordedAt }
+        for (id, _) in ranked.prefix(windowMeta.count - 192) {
+            windowMeta.removeValue(forKey: id)
+        }
     }
 
     /// Whether this key failed a capture recently enough that we are still
@@ -761,7 +937,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         )
     }
 
-    private func captureWindowThumbnail(_ window: WindowInfo, pixelSize: CGSize) throws -> CapturedThumbnail {
+    private func captureWindowThumbnail(_ window: WindowInfo, pixelSize: CGSize, scale: CGFloat) throws -> CapturedThumbnail {
         guard CGPreflightScreenCaptureAccess() else {
             AppLogger.error("Screen capture permission is not granted. Cannot capture thumbnail. windowID=\(window.id), owner=\(window.ownerName)")
             throw ThumbnailError.screenCapturePermissionDenied
@@ -797,7 +973,10 @@ class ThumbnailService: ThumbnailServiceProtocol {
         let waitResult = semaphore.wait(timeout: .now() + captureTimeout)
         if waitResult == .timedOut {
             AppLogger.error("CGWindowListCreateImage timed out after \(captureTimeout)s. windowID=\(window.id), owner=\(window.ownerName)")
-            throw ThumbnailError.captureFailed
+            // Distinct from a plain failure: timed-out attempts leak the
+            // global-queue thread they were dispatched to, so `markFailed`
+            // escalates the cooldown for them — see `timeoutStrikes`.
+            throw ThumbnailError.captureTimedOut
         }
 
         guard let cgImage = captured else {
@@ -813,7 +992,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
             throw ThumbnailError.blankCapture
         }
 
-        return try makeThumbnail(from: cgImage, pixelSize: pixelSize)
+        return try makeThumbnail(from: cgImage, pixelSize: pixelSize, scale: scale)
     }
 
     /// ScreenCaptureKit fallback for windows the CG capture API cannot read
@@ -824,7 +1003,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// Wrapped in a `Task` with a hard timeout because SCK can also hang on the
     /// same system-level stall that makes `CGWindowListCreateImage`
     /// block forever on macOS 26.
-    private func captureWithScreenCaptureKit(window: WindowInfo, pixelSize: CGSize) async -> CapturedThumbnail? {
+    private func captureWithScreenCaptureKit(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async -> CapturedThumbnail? {
         guard #available(macOS 14.0, *),
               CGPreflightScreenCaptureAccess() else {
             return nil
@@ -837,7 +1016,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
         return await withTaskGroup(of: CapturedThumbnail?.self, returning: CapturedThumbnail?.self) { group in
             group.addTask { [weak self] in
-                await self?.performSCKCapture(window: window, pixelSize: pixelSize) ?? nil
+                await self?.performSCKCapture(window: window, pixelSize: pixelSize, scale: scale) ?? nil
             }
             group.addTask {
                 try? await Task.sleep(nanoseconds: UInt64(self.sckCaptureTimeout * 1_000_000_000))
@@ -854,7 +1033,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     }
 
     @available(macOS 14.0, *)
-    private func performSCKCapture(window: WindowInfo, pixelSize: CGSize) async -> CapturedThumbnail? {
+    private func performSCKCapture(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async -> CapturedThumbnail? {
         // Resolve the CG window ID to an SCWindow. `SCShareableContent.current`
         // is slow on some systems, so this stays on the fallback path only.
         let content: SCShareableContent
@@ -886,7 +1065,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
                 configuration: configuration
             )
             AppLogger.info("SCK fallback captured thumbnail. windowID=\(window.id), size=\(cgImage.width)x\(cgImage.height)")
-            return try makeThumbnail(from: cgImage, pixelSize: pixelSize)
+            return try makeThumbnail(from: cgImage, pixelSize: pixelSize, scale: scale)
         } catch {
             AppLogger.warning("SCK fallback capture failed. windowID=\(window.id), error=\(error)")
             return nil
@@ -904,7 +1083,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     ///
     /// Upscaling is deliberately skipped: a window smaller than the target would
     /// only waste memory and add interpolation blur.
-    private func makeThumbnail(from cgImage: CGImage, pixelSize: CGSize) throws -> CapturedThumbnail {
+    private func makeThumbnail(from cgImage: CGImage, pixelSize: CGSize, scale: CGFloat) throws -> CapturedThumbnail {
         let source = CGSize(width: cgImage.width, height: cgImage.height)
         let fitted = Self.fittedPixelSize(source: source, into: pixelSize)
         let targetWidth = max(1, Int(fitted.width.rounded()))
@@ -921,8 +1100,10 @@ class ThumbnailService: ThumbnailServiceProtocol {
         }
 
         // Declare the logical size that matches the bitmap at the display's
-        // pixel scale so SwiftUI never re-scales the representation.
-        let scale = NSScreen.main?.backingScaleFactor ?? NSScreen.screens.first?.backingScaleFactor ?? 2.0
+        // pixel scale so SwiftUI never re-scales the representation. `scale`
+        // was captured on the main thread by the caller — this function runs
+        // on capture queues and Task executors, where reading `NSScreen` is
+        // undefined AppKit behaviour (the old code did exactly that).
         let logicalScale = scale > 0 ? scale : 1
         let logicalSize = CGSize(
             width: CGFloat(bitmap.width) / logicalScale,
@@ -1032,6 +1213,16 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
     // MARK: - Preheat gating
 
+    /// Age at which the auto-refresh tick re-captures an entry. Deliberately
+    /// shorter than `cacheExpiration`: the tick must land *before* the cache
+    /// read expires, otherwise there is a window (expiry → next tick, up to
+    /// `autoRefreshInterval`) in which `getCachedThumbnail` returns nil while
+    /// a panel is still showing the window — the replica fell back to its
+    /// low-resolution grid stand-in for that gap.
+    private var refreshAgeThreshold: TimeInterval {
+        cacheExpiration * 0.75
+    }
+
     private func shouldPreheat(windowID: CGWindowID, tier: ThumbnailTier) -> Bool {
         let key = ThumbnailCacheKey(windowID, tier)
         let now = Date()
@@ -1044,7 +1235,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         }
 
         if let entry = entries[key],
-           now.timeIntervalSince(entry.timestamp) < cacheExpiration {
+           now.timeIntervalSince(entry.timestamp) < refreshAgeThreshold {
             return false
         }
 
@@ -1056,32 +1247,105 @@ class ThumbnailService: ThumbnailServiceProtocol {
         return true
     }
 
-    private func markInFlight(_ key: ThumbnailCacheKey) {
+    /// Claims the in-flight slot for a key; returns false when another
+    /// attempt (preheat or another view's on-demand capture) is already
+    /// running. The caller should then await `waitUntilCaptureFinishes` and
+    /// read the cache, instead of starting a duplicate capture pipeline.
+    private func claimInFlight(_ key: ThumbnailCacheKey) -> Bool {
         lock.lock()
+        defer { lock.unlock() }
+        if inFlightKeys.contains(key) {
+            return false
+        }
         inFlightKeys.insert(key)
-        lock.unlock()
+        return true
+    }
+
+    /// Suspends until the in-flight attempt for `key` finishes. Waiters are
+    /// continuations — never blocked threads — resumed by `markFinished`.
+    private func waitUntilCaptureFinishes(_ key: ThumbnailCacheKey) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            lock.lock()
+            if !inFlightKeys.contains(key) {
+                lock.unlock()
+                continuation.resume()
+                return
+            }
+            inFlightWaiters[key, default: []].append(continuation)
+            lock.unlock()
+        }
     }
 
     private func markFinished(_ key: ThumbnailCacheKey) {
         lock.lock()
         inFlightKeys.remove(key)
+        let waiters = inFlightWaiters.removeValue(forKey: key) ?? []
         lock.unlock()
+        for waiter in waiters {
+            waiter.resume()
+        }
     }
 
-    private func markFailed(_ key: ThumbnailCacheKey) {
+    /// Records a capture failure. Timeouts escalate: every consecutive CG
+    /// timeout doubles the cooldown (8 s → 16 s → … → 600 s), because each
+    /// timed-out attempt has already leaked the global-queue thread it ran
+    /// on — an unthrottled retry loop against a hung window server call
+    /// accumulates threads until the process runs out of them.
+    private func markFailed(_ key: ThumbnailCacheKey, error: Error) {
+        let cooldown: TimeInterval
+        if let thumbnailError = error as? ThumbnailError,
+           case .captureTimedOut = thumbnailError {
+            let strikes = timeoutStrikes[key, default: 0] + 1
+            timeoutStrikes[key] = strikes
+            cooldown = min(failureCooldown * pow(2, Double(strikes - 1)), maxFailureCooldown)
+        } else {
+            cooldown = failureCooldown
+        }
+
         lock.lock()
-        failedUntil[key] = Date().addingTimeInterval(failureCooldown)
+        failedUntil[key] = Date().addingTimeInterval(cooldown)
         lock.unlock()
     }
 
-    private func captureAndCache(window: WindowInfo, key: ThumbnailCacheKey, pixelSize: CGSize, reason: String) {
+    // MARK: - Capture admission
+
+    /// Suspends until a capture-pipeline slot is free — see
+    /// `maxConcurrentCaptures`. Waiters are FIFO continuations, never
+    /// blocked threads.
+    private func waitForCaptureSlot() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            lock.lock()
+            if activeCaptureCount < Self.maxConcurrentCaptures {
+                activeCaptureCount += 1
+                lock.unlock()
+                continuation.resume()
+                return
+            }
+            captureAdmissionWaiters.append(continuation)
+            lock.unlock()
+        }
+    }
+
+    private func releaseCaptureSlot() {
+        lock.lock()
+        activeCaptureCount -= 1
+        var next: CheckedContinuation<Void, Never>?
+        if !captureAdmissionWaiters.isEmpty {
+            next = captureAdmissionWaiters.removeFirst()
+            activeCaptureCount += 1
+        }
+        lock.unlock()
+        next?.resume()
+    }
+
+    private func captureAndCache(window: WindowInfo, key: ThumbnailCacheKey, pixelSize: CGSize, scale: CGFloat, reason: String) {
         defer {
             markFinished(key)
         }
 
         do {
             recordWindowMeta(window)
-            let captured = try awaitAttempt(window: window, pixelSize: pixelSize)
+            let captured = try awaitAttempt(window: window, pixelSize: pixelSize, scale: scale)
             // Only the auto-refresh tick suppresses the crossfade; event-
             // driven preheat keeps it so a freshly opened panel still fades
             // its first frames in.
@@ -1089,7 +1353,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
             store(captured.image, key: key, window: window, pixelSize: captured.pixelSize, animated: animated)
             AppLogger.verbose("Preheated thumbnail. reason=\(reason), \(key.description)")
         } catch {
-            markFailed(key)
+            markFailed(key, error: error)
             AppLogger.throttledWarning(
                 key: "preheat:\(key.description)",
                 "Failed to preheat thumbnail. reason=\(reason), \(key.description), error=\(error)"
@@ -1162,11 +1426,16 @@ struct TierBudget {
 /// Window identity recorded alongside each cached thumbnail. Size independent:
 /// it is the same for every tier, and it is what the auto-refresh tick needs to
 /// rebuild a `WindowInfo` without re-querying the window server.
-private struct WindowMetadata {    let ownerPID: pid_t
+private struct WindowMetadata {
+    let ownerPID: pid_t
     let ownerName: String
     let title: String
     let bounds: CGRect
     let isOnCurrentSpace: Bool
+    /// When this record was last written. The table used to grow without
+    /// bound (nothing removed records for closed windows); records are now
+    /// pruned by age once it passes its cap.
+    let recordedAt: Date
 }
 
 /// One cached thumbnail for a (window, tier) pair.
@@ -1179,6 +1448,11 @@ private struct ThumbnailEntry {
 
 enum ThumbnailError: LocalizedError {
     case captureFailed
+    /// The CG capture was abandoned after `captureTimeout`. Distinct from
+    /// `captureFailed` because timed-out attempts leak the thread they were
+    /// dispatched to, which the failure cooldown escalates on — see
+    /// `ThumbnailService.timeoutStrikes`.
+    case captureTimedOut
     case screenCapturePermissionDenied
     case blankCapture
 
@@ -1186,6 +1460,8 @@ enum ThumbnailError: LocalizedError {
         switch self {
         case .captureFailed:
             return NSLocalizedString("Failed to capture window thumbnail", comment: "")
+        case .captureTimedOut:
+            return NSLocalizedString("Capturing the window timed out", comment: "")
         case .screenCapturePermissionDenied:
             return NSLocalizedString("Screen capture permission is not granted", comment: "")
         case .blankCapture:

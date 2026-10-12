@@ -13,6 +13,9 @@ protocol WindowMonitorServiceProtocol {
     func startMonitoring()
     func stopMonitoring()
     func getAllWindows() -> [WindowInfo]
+    /// On-screen windows only — the fast path without the per-app
+    /// Accessibility enumeration (see the concrete `getOnScreenWindows`).
+    func getOnScreenWindows() -> [WindowInfo]
     func getWindows(for bundleIdentifier: String) -> [WindowInfo]
     func getWindows(for bundleIdentifier: String, appName: String) -> [WindowInfo]
     func getWindows(for app: MonitoredApp) -> [WindowInfo]
@@ -28,6 +31,9 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     private var workspaceObservers: [NSObjectProtocol] = []
     private var lastWindowSnapshots: [CGWindowID: WindowSnapshot] = [:]
     private var activeBundleIdentifier: String?
+    /// Interval the running timer was built with, so a settings change can be
+    /// compared against it (see `restartMonitoringIfFrequencyChanged`).
+    private var monitorInterval: TimeInterval = 0
     private let maxPreheatWindowsPerTick = 8
 
     /// Cache of the AX-minimized-window enumeration so the main thread is not
@@ -44,6 +50,7 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     
     func startMonitoring() {
         let settings = settingsService.loadSettings()
+        monitorInterval = settings.monitorFrequency.interval
         AppLogger.info("Starting window monitoring. interval=\(settings.monitorFrequency.interval), frequency=\(settings.monitorFrequency.rawValue)")
         setupWorkspaceObservers()
         activeBundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
@@ -51,6 +58,22 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         monitorTimer = Timer.scheduledTimer(withTimeInterval: settings.monitorFrequency.interval, repeats: true) { [weak self] _ in
             self?.processWindowChanges(reason: "timer")
         }
+    }
+
+    /// Re-applies the monitor cadence after a settings change. The timer used
+    /// to be built once at launch and keep the launch-time interval forever,
+    /// so changing the monitoring frequency did nothing until the app was
+    /// relaunched. Only the cadence is rebuilt — everything else about
+    /// monitoring is idempotent, but an unnecessary restart would re-run the
+    /// full window pass for no reason.
+    func restartMonitoringIfFrequencyChanged() {
+        let interval = settingsService.loadSettings().monitorFrequency.interval
+        guard interval != monitorInterval else {
+            return
+        }
+        AppLogger.info("Monitor frequency changed. oldInterval=\(monitorInterval), newInterval=\(interval)")
+        stopMonitoring()
+        startMonitoring()
     }
     
     func stopMonitoring() {
@@ -673,16 +696,24 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         let monitoredBundleIDs = Set(settings.monitoredApps.filter(\.isEnabled).map(\.bundleIdentifier))
         let activeBundleID = activeBundleIdentifier
 
+        // One LaunchServices lookup per window, up front. `score` used to call
+        // `NSRunningApplication(processIdentifier:)` inside `sorted`'s
+        // comparator — O(n log n) IPC round-trips on the main thread per
+        // monitor tick.
+        let bundleIDs: [CGWindowID: String?] = Dictionary(
+            uniqueKeysWithValues: windows.map { ($0.id, NSRunningApplication(processIdentifier: $0.ownerPID)?.bundleIdentifier) }
+        )
+
         let highValueWindows = windows.filter { window in
-            let bundleID = NSRunningApplication(processIdentifier: window.ownerPID)?.bundleIdentifier
+            let bundleID = bundleIDs[window.id] ?? nil
             return changedWindowIDs.contains(window.id)
                 || bundleID == activeBundleID
                 || bundleID.map { monitoredBundleIDs.contains($0) } == true
         }
 
         let prioritizedWindows = highValueWindows.sorted { lhs, rhs in
-            score(window: lhs, changedWindowIDs: changedWindowIDs, monitoredBundleIDs: monitoredBundleIDs, activeBundleID: activeBundleID)
-                > score(window: rhs, changedWindowIDs: changedWindowIDs, monitoredBundleIDs: monitoredBundleIDs, activeBundleID: activeBundleID)
+            score(window: lhs, bundleID: bundleIDs[lhs.id] ?? nil, changedWindowIDs: changedWindowIDs, monitoredBundleIDs: monitoredBundleIDs, activeBundleID: activeBundleID)
+                > score(window: rhs, bundleID: bundleIDs[rhs.id] ?? nil, changedWindowIDs: changedWindowIDs, monitoredBundleIDs: monitoredBundleIDs, activeBundleID: activeBundleID)
         }
         .prefix(maxPreheatWindowsPerTick)
 
@@ -695,11 +726,11 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
 
     private func score(
         window: WindowInfo,
+        bundleID: String?,
         changedWindowIDs: Set<CGWindowID>,
         monitoredBundleIDs: Set<String>,
         activeBundleID: String?
     ) -> Int {
-        let bundleID = NSRunningApplication(processIdentifier: window.ownerPID)?.bundleIdentifier
         var score = 0
         if changedWindowIDs.contains(window.id) {
             score += 40

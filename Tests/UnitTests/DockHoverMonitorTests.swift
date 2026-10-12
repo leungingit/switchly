@@ -85,4 +85,47 @@ final class DockHoverMonitorTests: XCTestCase {
                                                     pointerInDockArea: false,
                                                     pointerInPanel: false))
     }
+
+    // MARK: Icon matching
+
+    private func icon(_ name: String, x: CGFloat, y: CGFloat, size: CGFloat = 40) -> DockIconInfo {
+        DockIconInfo(appName: name, frame: CGRect(x: x, y: y, width: size, height: size), bundleURL: nil)
+    }
+
+    /// A bottom Dock lays icons out horizontally: the x span decides.
+    func testBottomDockMatchesAlongX() {
+        let icons = [
+            icon("A", x: 0, y: 0),
+            icon("B", x: 40, y: 0),
+            icon("C", x: 80, y: 0),
+        ]
+        XCTAssertEqual(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 50, y: 20), orientation: "bottom")?.appName, "B")
+        XCTAssertEqual(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 5, y: 20), orientation: "bottom")?.appName, "A")
+    }
+
+    /// Regression: a left/right Dock stacks icons vertically, so they all
+    /// share the x span. The old x-only matching hit every icon in the column
+    /// and the near-identical x distances made the pick arbitrary — hovering
+    /// one icon previewed another.
+    func testSideDockMatchesAlongYNotX() {
+        let icons = [
+            icon("A", x: 0, y: 0),
+            icon("B", x: 0, y: 40),
+            icon("C", x: 0, y: 80),
+        ]
+        // Same x for all three; only the y coordinate discriminates.
+        XCTAssertEqual(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 20, y: 10), orientation: "left")?.appName, "A")
+        XCTAssertEqual(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 20, y: 50), orientation: "left")?.appName, "B")
+        XCTAssertEqual(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 20, y: 90), orientation: "right")?.appName, "C")
+    }
+
+    /// A point outside every icon's layout-axis span matches nothing.
+    func testPointOutsideEveryIconReturnsNil() {
+        let icons = [
+            icon("A", x: 0, y: 0),
+            icon("B", x: 40, y: 0),
+        ]
+        XCTAssertNil(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 200, y: 20), orientation: "bottom"))
+        XCTAssertNil(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 20, y: 200), orientation: "left"))
+    }
 }

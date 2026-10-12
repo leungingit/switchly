@@ -207,7 +207,7 @@ class PreviewPanel: NSPanel {
             clearRefreshInterest()
             return
         }
-        ThumbnailService.shared.setRefreshInterest(Set(windows.map(\.id)))
+        ThumbnailService.shared.setRefreshInterest(Set(windows.map(\.id)), owner: self)
         publishReplicaRefreshInterest()
     }
 
@@ -220,14 +220,15 @@ class PreviewPanel: NSPanel {
         let replicaIDs = mode.showsWindowReplica
             ? viewModel.replicaWindow.map { Set([$0.id]) } ?? []
             : []
-        ThumbnailService.shared.setRefreshInterest(replicaIDs, tier: mode.replicaTier)
+        ThumbnailService.shared.setRefreshInterest(replicaIDs, owner: self, tier: mode.replicaTier)
     }
 
     private func clearRefreshInterest() {
-        ThumbnailService.shared.setRefreshInterest([])
-        for tier in ThumbnailTier.allCases {
-            ThumbnailService.shared.setRefreshInterest([], tier: tier)
-        }
+        // Owner-scoped: drops only this panel's registration. The old form
+        // cleared every tier globally, which also erased the Dock preview
+        // panel's interest — its windows then stopped auto-refreshing until
+        // its next publish (~1 s later).
+        ThumbnailService.shared.clearRefreshInterest(owner: self)
     }
 
     override var canBecomeKey: Bool {
@@ -1153,7 +1154,9 @@ struct WindowThumbnailView: View {
     }
     
     private func loadThumbnail() async {
-        let settings = SettingsService.shared.loadSettings()
+        // `settings` is resolved once by the panel and passed into the card;
+        // decoding it here again was one full settings decode per card per
+        // panel open — the exact cost the card's own doc comment forbids.
         if let cached = ThumbnailService.shared.getCachedThumbnail(for: window) {
             // The initial `@State` already shows this cached image; avoid
             // re-assigning (which would trigger an unnecessary redraw) and
@@ -1189,7 +1192,7 @@ struct WindowThumbnailView: View {
         do {
             let image = try await ThumbnailService.shared.captureThumbnail(
                 for: window,
-                size: settings.thumbnailSize.dimensions
+                size: self.settings.thumbnailSize.dimensions
             )
             await MainActor.run {
                 self.thumbnailState = .loaded(image)

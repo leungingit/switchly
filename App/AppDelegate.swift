@@ -205,6 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NotificationCenter.default.publisher(for: .settingsDidChange)
             .sink { _ in
+                WindowMonitorService.shared.restartMonitoringIfFrequencyChanged()
                 DockHoverMonitor.shared.updateSettings()
                 PreviewTriggerMonitor.shared.updateSettings()
                 let latest = SettingsService.shared.loadSettings()

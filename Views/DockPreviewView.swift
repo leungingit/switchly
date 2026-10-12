@@ -273,6 +273,10 @@ struct DockWindowCard: View {
         .onReceive(NotificationCenter.default.publisher(for: .thumbnailDidUpdate)) { notification in
             guard let windowID = notification.object as? CGWindowID,
                   windowID == window.id,
+                  // Cards only ever show the grid tier; a native capture of
+                  // the same window must not reach them (mirrors
+                  // WindowThumbnailView).
+                  (notification.userInfo?["tier"] as? String) == ThumbnailTier.grid.rawValue,
                   let cached = ThumbnailService.shared.getCachedThumbnail(for: window) else {
                 return
             }
@@ -338,6 +342,20 @@ struct DockWindowCard: View {
         }
 
         let fallbackIcon = appIcon()
+
+        // A window whose capture just failed reports that instead of spinning:
+        // the card is rebuilt on every hover, and re-arming a spinner (and
+        // re-hitting the window server) for a window we already know cannot
+        // be captured right now is worse than saying so. Mirrors
+        // `WindowThumbnailView.loadThumbnail`; the background tick retries
+        // once the cooldown expires.
+        if ThumbnailService.shared.failedRecently(for: window, tier: .grid) {
+            await MainActor.run {
+                thumbnailState = .failed(fallbackIcon)
+            }
+            return
+        }
+
         await MainActor.run { thumbnailState = .placeholder(fallbackIcon) }
 
         do {

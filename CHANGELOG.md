@@ -7,6 +7,71 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Hovering one icon on a left/right Dock previewed another. Icon matching
+  trusted only the x axis, which every icon in a vertical column shares — and
+  the near-identical x distances made the pick effectively arbitrary. Matching
+  now uses the axis the Dock actually lays icons out along (x for a bottom
+  Dock, y for a side Dock), requires the pointer to sit inside the icon's
+  span on that axis, and picks the closest centre otherwise.
+- The per-app shortcut could raise a fully transparent panel: the app-scoped
+  entry point drove the body's opacity and scale through the view model's
+  `isPanelVisible` but never set it, so the panel appeared invisible until
+  another trigger came along. Every entry path now shows the panel.
+- Clicking a card in the per-app panel left an invisible `NSPanel` floating
+  above the Dock: the switch only flipped the SwiftUI visibility flag, which
+  fades the content but not the window, and the hover monitor happened to be
+  the only thing that eventually dismissed it. The click path now hides the
+  panel itself, like the keyboard path always did.
+- A hidden panel kept refreshing on every monitor tick (1–5 s, plus every app
+  activation), and each refresh walks the full window list through Core
+  Graphics and Accessibility on the main thread. Both show paths refresh
+  synchronously before the panel appears, so hidden panels now skip the tick
+  entirely.
+- Changing the monitoring frequency in Preferences did nothing until the app
+  was relaunched: the monitor timer was built once at launch and kept that
+  interval forever. The cadence is now re-applied when the setting changes —
+  and only when it actually changed.
+- Two visible panels erased each other's thumbnail auto-refresh interest. The
+  service kept one window-ID set per tier, so the second panel's publish
+  overwrote the first's, and the Dock preview's thumbnails stopped refreshing
+  until its next publish a second later. Interest is now owner-scoped and
+  merged across panels (`setRefreshInterest(_:owner:tier:)` /
+  `clearRefreshInterest(owner:)`), so dismissing one panel never drops
+  another's.
+- A window whose thumbnail capture just failed kept a spinner on screen and
+  re-hit the window server on every card rebuild. The failure is now reported
+  instead (`.failed` with the app icon), and the background tick retries once
+  the failure cooldown has lifted.
+- Thumbnail capture could push the process toward the GCD thread ceiling: an
+  unbounded cold-start burst (a grid of cards whose `.task`s all fire at
+  once) parks one thread per waiting capture, and every timed-out
+  `CGWindowListCreateImage` dispatch leaks its global-queue thread, which
+  cannot be cancelled. Capture pipelines are now admitted up to six at a time
+  (waiters are suspended continuations, never blocked threads), on-demand
+  captures join an in-flight preheat of the same window instead of running a
+  duplicate pipeline, consecutive timeouts back off exponentially (8 s → up to
+  10 min per key), and a window inside its failure cooldown short-circuits new
+  captures at the service level as well as in the views.
+- Log formatting raced. `DateFormatter` is not thread-safe, but the
+  `verbose` level formatted timestamps outside the logger's lock while
+  capture queues, preheat operations and ScreenCaptureKit tasks logged
+  concurrently. All formatter use now goes through the lock.
+- Hot-path waste that added up while panels were open: `loadSettings` decoded
+  the settings JSON on the main thread several times a second (it now hands
+  out a cached `AppSettings` that only `saveSettings` invalidates); the
+  pointer loop re-walked the Dock layout at mouse-move frequency, at 5+
+  Accessibility IPC calls per icon (the layout and the obscured-by-full-screen
+  check are now cached for 120 ms / 250 ms); window sorting called
+  `NSRunningApplication(processIdentifier:)` inside the sort comparator —
+  O(n log n) IPC round-trips per tick (one LaunchServices lookup per window up
+  front, plus an on-screen-only enumeration where the full one was not
+  needed); and the synchronous Accessibility focus pipeline — up to ~1.2 s of
+  deliberate `Thread.sleep` and AX timeouts — ran on a Swift-concurrency
+  cooperative thread (it now runs on a dedicated serial queue, awaited as one
+  unit).
+
 ## [1.1.1] - 2026-10-10
 
 ### Fixed

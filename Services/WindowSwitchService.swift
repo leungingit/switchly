@@ -17,6 +17,18 @@ protocol WindowSwitchServiceProtocol {
 class WindowSwitchService: WindowSwitchServiceProtocol {
     static let shared = WindowSwitchService()
 
+    /// Serial queue for the synchronous, sleep-based AX focus pipeline. That
+    /// pipeline parks its thread in `Thread.sleep` and AX messaging timeouts
+    /// for up to ~1.2 s by design; running it on the caller's executor would
+    /// block a Swift-concurrency cooperative thread for the whole duration
+    /// (and several concurrent switches could starve the pool). A dedicated
+    /// serial queue also keeps concurrent switches from interleaving their
+    /// raise/verify cycles.
+    private static let focusQueue = DispatchQueue(
+        label: "com.switchly.windowFocus",
+        qos: .userInitiated
+    )
+
     /// Activation is asynchronous and can race with the AppKit transition that
     /// happens when our own preview panel closes, so it is re-asserted.
     private static let activationAttempts = 5
@@ -56,8 +68,15 @@ class WindowSwitchService: WindowSwitchServiceProtocol {
         // Identification, the raise and the CoreGraphics verification all live in
         // the service: a wrong guess has to rotate to another element instead of
         // aborting the switch, and only the service can see the window ordering
-        // that proves which element was raised.
-        guard AccessibilityService.shared.resolveAndFocus(window) else {
+        // that proves which element was raised. The synchronous pipeline runs
+        // on `focusQueue` — see its declaration for why not the caller's
+        // executor — and is awaited here as one unit.
+        let focused = await withCheckedContinuation { continuation in
+            Self.focusQueue.async {
+                continuation.resume(returning: AccessibilityService.shared.resolveAndFocus(window))
+            }
+        }
+        guard focused else {
             throw SwitchError.accessibilityFailed("Unable to focus window \(window.id)")
         }
     }

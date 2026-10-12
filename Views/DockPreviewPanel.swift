@@ -72,13 +72,13 @@ class DockPreviewPanel: NSPanel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] windows in
                 guard let self, self.isVisible else { return }
-                ThumbnailService.shared.setRefreshInterest(Set(windows.map(\.id)))
+                ThumbnailService.shared.setRefreshInterest(Set(windows.map(\.id)), owner: self)
             }
     }
 
     private func publishRefreshInterest() {
         guard isVisible else { return }
-        ThumbnailService.shared.setRefreshInterest(Set(viewModel.windows.map(\.id)))
+        ThumbnailService.shared.setRefreshInterest(Set(viewModel.windows.map(\.id)), owner: self)
     }
 
     private func observePanelWidth() {
@@ -238,7 +238,7 @@ class DockPreviewPanel: NSPanel {
                 self.isDismissing = false
                 return
             }
-            ThumbnailService.shared.setRefreshInterest([])
+            ThumbnailService.shared.clearRefreshInterest(owner: self)
             self.orderOut(nil)
             self.alphaValue = 1
             self.isDismissing = false
@@ -284,6 +284,15 @@ class DockPreviewPanel: NSPanel {
             viewModel.selectWindow(offset: 1)
             return true
         case 36, 76: // Enter
+            guard viewModel.selectedWindow != nil else {
+                return true
+            }
+            // Hide the panel itself, not just the view model: the switch only
+            // flips `isPanelVisible`, which fades the SwiftUI content but
+            // leaves an invisible NSPanel floating above the Dock until the
+            // hover monitor happens to dismiss it. The click path
+            // (`switchToWindowAndHide`) already went through `hide()`.
+            hide()
             Task {
                 await viewModel.switchToSelectedWindow()
             }

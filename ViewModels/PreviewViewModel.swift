@@ -264,6 +264,11 @@ class PreviewViewModel: ObservableObject {
     func showWindows(for apps: [MonitoredApp]) {
         scope = .apps(apps)
         searchText = ""
+        // The panel content is driven by `isPanelVisible` (opacity/scale in
+        // `PreviewView`); `presentPanel` flips it via `showPanel()`, but this
+        // app-scoped entry point never did — the panel appeared with a fully
+        // transparent body ("blank panel" on every per-app shortcut).
+        isPanelVisible = true
         refreshWindows(for: apps)
 
         if apps.count == 1,
@@ -324,7 +329,15 @@ class PreviewViewModel: ObservableObject {
         
         NotificationCenter.default.publisher(for: .windowListDidRefresh)
             .sink { [weak self] _ in
-                self?.refreshWindows()
+                // Hidden panels skip the refresh: the tick fires every
+                // 1–5 s plus on every app activation, and each refresh walks
+                // the full window list (CG + Accessibility) on the main
+                // thread. Both show paths (showPanel / showWindows) refresh
+                // synchronously before the panel appears, so nothing is lost.
+                guard let self, self.isPanelVisible else {
+                    return
+                }
+                self.refreshWindows()
             }
             .store(in: &cancellables)
 

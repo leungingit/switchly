@@ -43,4 +43,30 @@ final class SettingsServiceTests: XCTestCase {
             XCTFail("Save failed: \(error)")
         }
     }
+    
+    /// The decoded-settings cache must never serve a stale value after a
+    /// save: `loadSettings` sits on hot paths (monitor ticks, card captures)
+    /// and observers read settings immediately after the change notification.
+    func testCacheReflectsSavesImmediately() {
+        var settings = AppSettings.default
+        settings.thumbnailSize = .small
+        try? settingsService.saveSettings(settings)
+        XCTAssertEqual(settingsService.loadSettings().thumbnailSize, .small)
+        
+        settings.thumbnailSize = .large
+        try? settingsService.saveSettings(settings)
+        XCTAssertEqual(settingsService.loadSettings().thumbnailSize, .large)
+    }
+    
+    /// The cache is per-instance: a fresh service (new app launch) still reads
+    /// what was persisted, not another instance's memory.
+    func testFreshInstanceStillReadsWhatWasPersisted() {
+        var settings = AppSettings.default
+        settings.launchAtLogin = true
+        try? settingsService.saveSettings(settings)
+        
+        let freshDefaults = UserDefaults(suiteName: suiteName)!
+        let freshService = SettingsService(defaults: freshDefaults)
+        XCTAssertTrue(freshService.loadSettings().launchAtLogin)
+    }
 }

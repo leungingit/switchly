@@ -68,7 +68,7 @@ enum AppLogger {
     /// of `debug` so the rotated log keeps weeks of switch history instead of
     /// hours of thumbnail chatter.
     static func verbose(_ message: String, file: String = #fileID, line: Int = #line) {
-        print("[Switchly] \(dateFormatter.string(from: Date())) [VERBOSE] \(file):\(line) \(message)")
+        print("[Switchly] \(timestamp()) [VERBOSE] \(file):\(line) \(message)")
     }
 
     static func info(_ message: String, file: String = #fileID, line: Int = #line) {
@@ -111,6 +111,17 @@ enum AppLogger {
         error(message, file: file, line: line)
     }
 
+    /// `DateFormatter` is not thread-safe, and log calls arrive concurrently
+    /// from the main thread, the thumbnail capture queues, preheat operations
+    /// and Task-based ScreenCaptureKit fallbacks. All formatter use therefore
+    /// goes through the lock — `verbose` included, which previously formatted
+    /// with no synchronization at all.
+    private static func timestamp() -> String {
+        lock.lock()
+        defer { lock.unlock() }
+        return dateFormatter.string(from: Date())
+    }
+
     private static func shouldEmit(key: String, interval: TimeInterval) -> Bool {
         let now = Date()
         lock.lock()
@@ -126,7 +137,7 @@ enum AppLogger {
     }
 
     private static func write(level: String, message: String, file: String, line: Int) {
-        let timestamp = dateFormatter.string(from: Date())
+        let timestamp = self.timestamp()
         let entry = "\(timestamp) [\(level)] \(file):\(line) \(message)\n"
         print("[Switchly] \(entry)", terminator: "")
 

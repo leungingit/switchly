@@ -597,6 +597,7 @@ private final class FixtureWindowMonitor: WindowMonitorServiceProtocol {
     func startMonitoring() {}
     func stopMonitoring() {}
     func getAllWindows() -> [WindowInfo] { fixtures }
+    func getOnScreenWindows() -> [WindowInfo] { fixtures }
     func getWindows(for bundleIdentifier: String) -> [WindowInfo] { fixtures }
     func getWindows(for bundleIdentifier: String, appName: String) -> [WindowInfo] { fixtures }
     func getWindows(for app: MonitoredApp) -> [WindowInfo] { fixtures }

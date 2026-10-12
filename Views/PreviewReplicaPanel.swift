@@ -37,6 +37,14 @@ final class PreviewReplicaPanel: NSPanel {
 
     private let imageView = NSImageView()
 
+    /// Bumped on every show. A dismissal fade-out only orders the panel out
+    /// when the generation it started with is still current — the same guard
+    /// PreviewPanel and DockPreviewPanel use. Without it, a capture that
+    /// lands while the fade-out is still running re-shows the replica, and the
+    /// interrupted dismiss completion then orders the freshly shown panel out
+    /// (the replica disappears until the next selection change).
+    private var generation = 0
+
     private init() {
         super.init(
             contentRect: .zero,
@@ -82,6 +90,9 @@ final class PreviewReplicaPanel: NSPanel {
             return
         }
 
+        // Any dismissal animation still in flight was superseded: its
+        // completion must not order this panel out.
+        generation += 1
         imageView.image = image
         // The frame is set directly rather than animated: the replica must land
         // exactly on the window it replays, not slide there.
@@ -107,9 +118,18 @@ final class PreviewReplicaPanel: NSPanel {
         guard isVisible else {
             return
         }
+        let generationAtDismiss = generation
         Motion.fadePanel(self, to: 0, duration: fadeDuration) { [weak self] in
-            self?.orderOut(nil)
-            self?.imageView.image = nil
+            guard let self else {
+                return
+            }
+            guard generationAtDismiss == self.generation else {
+                // Re-shown while the fade-out was still running; the replica
+                // must stay on screen.
+                return
+            }
+            self.orderOut(nil)
+            self.imageView.image = nil
         }
     }
 

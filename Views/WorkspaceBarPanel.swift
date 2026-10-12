@@ -157,7 +157,7 @@ class WorkspaceBarPanel: NSPanel {
                 self.isDismissing = false
                 return
             }
-            ThumbnailService.shared.setRefreshInterest([])
+            ThumbnailService.shared.clearRefreshInterest(owner: self)
             self.orderOut(nil)
             self.alphaValue = 1
             self.isDismissing = false
@@ -292,7 +292,7 @@ class WorkspaceBarPanel: NSPanel {
                 if visible {
                     self.publishRefreshInterest()
                 } else {
-                    ThumbnailService.shared.setRefreshInterest([])
+                    ThumbnailService.shared.clearRefreshInterest(owner: self)
                 }
             }
     }
@@ -305,7 +305,7 @@ class WorkspaceBarPanel: NSPanel {
             }
             return nil
         }
-        ThumbnailService.shared.setRefreshInterest(Set(windowIDs))
+        ThumbnailService.shared.setRefreshInterest(Set(windowIDs), owner: self)
     }
 }
 
@@ -1143,12 +1143,17 @@ private struct WorkspaceBarCard: View {
         }
 
         do {
-            // Request at 2x so the thumbnail stays crisp on Retina displays.
+            // Point size: ThumbnailService converts to device pixels itself
+            // (× backingScaleFactor). The old `* 2` here predates that
+            // conversion and double-scaled the request — 4x the needed pixels
+            // on a 2x display, 9x on 3x — while sharing the grid cache key
+            // with the preview panel, so the two surfaces kept overwriting
+            // each other's entries at different resolutions.
             let image = try await ThumbnailService.shared.captureThumbnail(
                 for: window,
                 size: CGSize(
-                    width: WorkspaceBarMetrics.thumbnailWidth * 2,
-                    height: WorkspaceBarMetrics.thumbnailHeight * 2
+                    width: WorkspaceBarMetrics.thumbnailWidth,
+                    height: WorkspaceBarMetrics.thumbnailHeight
                 )
             )
             await MainActor.run {
