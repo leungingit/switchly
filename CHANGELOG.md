@@ -7,6 +7,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-12
+
 ### Fixed
 
 - Hovering one icon on a left/right Dock previewed another. Icon matching
@@ -336,7 +338,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - English and Simplified Chinese localizations.
 - MIT license and privacy policy.
 
-[Unreleased]: https://github.com/leungingit/switchly/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/leungingit/switchly/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/leungingit/switchly/releases/tag/v1.1.2
 [1.1.1]: https://github.com/leungingit/switchly/releases/tag/v1.1.1
 [1.1.0]: https://github.com/leungingit/switchly/releases/tag/v1.1.0
 [1.0.0]: https://github.com/leungingit/switchly/releases/tag/v1.0.0
