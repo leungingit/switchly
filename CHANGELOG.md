@@ -7,6 +7,31 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- The question-mark hints in Preferences (and every other regular window)
+  never appeared on hover. Switchly is a menu bar (accessory) app: opening a
+  window does not make the application active — the preferences window logged
+  an isKeyWindow=false state even after makeKeyAndOrderFront plus
+  NSApp.activate — and AppKit suppresses tooltips for inactive applications.
+  The Preferences, Workspaces and Statistics windows now set
+  allowsToolTipsWhenApplicationIsInactive, so the .help() hints show
+  regardless of the app's activation state.
+- Hovering a Dock icon sometimes did nothing, and the preview only came back
+  after switching windows a few times. The "obscured by a full-screen app"
+  gate treated *any* frontmost app with no on-screen window as a full-screen
+  app: closing the frontmost app's last window, ⌘-tabbing to an app whose
+  windows are all minimized, or clicking the desktop (Finder frontmost, no
+  windows) all silently disabled the Dock hover while the Dock itself stayed
+  fully usable, and the preview returned only once a windowed app was
+  frontmost again. A full-screen app never actually hit that gate — its
+  full-screen window does appear in the on-screen window list — so the
+  check's only real-world effect was the false positive. The gate is removed:
+  whether the preview can trigger is now decided purely by the Dock's real
+  geometry, the same conditions under which macOS shows the Dock (the
+  visible-frame reservation for a pinned Dock, the edge-reveal band for an
+  auto-hidden one).
+
 ## [1.1.2] - 2026-10-12
 
 ### Fixed

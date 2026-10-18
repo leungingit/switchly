@@ -133,12 +133,6 @@ class DockHoverMonitor {
     /// How long a Dock icon layout stays authoritative between AX walks.
     private let dockIconCacheInterval: TimeInterval = 0.12
 
-    /// Whether the Dock area is currently obscured by a full-screen app. The
-    /// check walks the full on-screen window list, so it is throttled the same
-    /// way as the icon layout.
-    private var dockObscuredCache: (date: Date, obscured: Bool)?
-    private let dockObscuredCacheInterval: TimeInterval = 0.25
-
     private init() {}
 
     func start() {
@@ -178,7 +172,6 @@ class DockHoverMonitor {
         lastProcessedLocation = nil
         isDockRevealed = false
         dockIconCache = nil
-        dockObscuredCache = nil
         AppLogger.info("DockHoverMonitor stopped")
     }
 
@@ -234,10 +227,17 @@ class DockHoverMonitor {
         }
         lastProcessedLocation = location
 
-        // Don't trigger the preview if the Dock area is obscured by the
-        // frontmost application's window (e.g. full-screen IDE, maximized
-        // browser). The Dock is not accessible to the user in this state.
-        let inDockArea = isInDockArea(location) && !isDockAreaObscured()
+        // The Dock-area decision is purely geometric: the visible-frame
+        // reservation for a pinned Dock, and the edge-reveal band for an
+        // auto-hidden Dock — the same conditions under which macOS itself
+        // shows the Dock. There is deliberately no "frontmost app obscures
+        // the Dock" gate: a full-screen window still appears in the on-screen
+        // window list (so the old check never caught full-screen apps), and
+        // the frontmost app legitimately having no on-screen windows (its
+        // last window closed, all windows minimized, Finder after a desktop
+        // click) left the Dock fully usable while the gate silently disabled
+        // the preview until a windowed app was frontmost again.
+        let inDockArea = isInDockArea(location)
         // Membership is derived from the panel itself: a panel that is on
         // screen keeps the preview alive even if the monitor's own bookkeeping
         // was reset, so the pointer can still travel up to it and click a card.
@@ -373,77 +373,6 @@ class DockHoverMonitor {
             }
         }
         return false
-    }
-
-    /// Checks whether the frontmost application is in full-screen mode.
-    /// When the frontmost app is full-screen, the Dock is hidden by macOS
-    /// and the preview should not trigger, regardless of the cursor position.
-    private func isDockAreaObscured() -> Bool {
-        if let cache = dockObscuredCache,
-           Date().timeIntervalSince(cache.date) < dockObscuredCacheInterval {
-            return cache.obscured
-        }
-        let obscured = computeDockAreaObscured()
-        dockObscuredCache = (Date(), obscured)
-        return obscured
-    }
-
-    private func computeDockAreaObscured() -> Bool {
-        // Skip check if Switchly itself is frontmost (our panel is showing).
-        guard let frontmostApp = NSWorkspace.shared.frontmostApplication,
-              frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier,
-              frontmostApp.activationPolicy == .regular else {
-            return false
-        }
-
-        // Check if the frontmost app has any windows on the current space.
-        // A full-screen app lives on its own space and has no windows on the
-        // current space, even though the app is the frontmost application.
-        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
-        guard let windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
-            return false
-        }
-
-        let frontmostPID = frontmostApp.processIdentifier
-        var hasWindowOnCurrentSpace = false
-
-        for dict in windowList {
-            guard let ownerPID = dict[kCGWindowOwnerPID as String] as? pid_t,
-                  ownerPID == frontmostPID,
-                  let layer = dict[kCGWindowLayer as String] as? Int,
-                  layer == 0 else { continue }
-            guard let boundsDict = dict[kCGWindowBounds as String] as? [String: Any] else { continue }
-
-            let bounds = extractCGRect(from: boundsDict)
-            // A valid window on the current space has non-zero size.
-            if bounds.width > 0 && bounds.height > 0 {
-                hasWindowOnCurrentSpace = true
-                break
-            }
-        }
-
-        // If the frontmost app has no windows on the current space, it is
-        // likely in full-screen mode (or has no visible windows). In either
-        // case, the Dock preview should not trigger.
-        return !hasWindowOnCurrentSpace
-    }
-
-    private func extractCGRect(from dict: [String: Any]) -> CGRect {
-        let x = cgFloatValue(dict["X"])
-        let y = cgFloatValue(dict["Y"])
-        let width = cgFloatValue(dict["Width"])
-        let height = cgFloatValue(dict["Height"])
-        return CGRect(x: x, y: y, width: width, height: height)
-    }
-
-    private func cgFloatValue(_ value: Any?) -> CGFloat {
-        switch value {
-        case let v as CGFloat: return v
-        case let v as Double: return CGFloat(v)
-        case let v as Int: return CGFloat(v)
-        case let v as NSNumber: return CGFloat(truncating: v)
-        default: return 0
-        }
     }
 
     /// Two icons are the same product when both expose a bundle URL and they

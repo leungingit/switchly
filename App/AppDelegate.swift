@@ -323,6 +323,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        // Switchly is a menu bar (accessory) app: opening a window does not
+        // make the application active — the logs show the preferences window
+        // staying isKeyWindow=false even after makeKeyAndOrderFront +
+        // NSApp.activate — and AppKit suppresses tooltips for inactive
+        // applications, which silently killed every .help() hint in these
+        // windows (the setting rows' question marks among them). Opt the
+        // window out so hover hints show regardless of the app's state.
+        window.allowsToolTipsWhenApplicationIsInactive = true
         window.contentView = NSHostingView(rootView: PreferencesView(initialTab: selectedTab))
         window.isReleasedWhenClosed = false
         
@@ -358,6 +366,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        // See openPreferences: tooltips are suppressed for inactive apps, and
+        // a menu bar app's windows never make it active.
+        window.allowsToolTipsWhenApplicationIsInactive = true
         window.contentView = NSHostingView(rootView: WorkspacesView())
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -391,6 +402,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        // See openPreferences: tooltips are suppressed for inactive apps, and
+        // a menu bar app's windows never make it active.
+        window.allowsToolTipsWhenApplicationIsInactive = true
         window.contentView = NSHostingView(rootView: StatisticsView())
         window.isReleasedWhenClosed = false
         window.delegate = self
