@@ -123,6 +123,8 @@ shasum -a 256 -c Switchly-<version>.zip.sha256
 
 缓存图片可能包含窗口内容，未进行额外加密。完整存储与保留规则见[隐私政策](PRIVACY_POLICY.md)和[缩略图缓存说明](docs/thumbnail-cache.md)。
 
+设计与界面开发遵循[设计系统](docs/design-system.md)和[界面工程约束](docs/ui-guidelines.md)。
+
 ## 从源码构建
 
 使用 **Xcode 26+**、Swift 5.9 和 [XcodeGen](https://github.com/yonaskolb/XcodeGen)。工程配置以 `project.yml` 为准，最低运行系统为 macOS 12。目前玻璃外观使用统一的 AppKit / SwiftUI 材质实现，不宣称使用 macOS 原生 `View.glassEffect`。

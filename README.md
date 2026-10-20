@@ -123,6 +123,8 @@ Window contents are personal. Switchly processes them locally, with no account, 
 
 Cached images can contain window content and are not additionally encrypted. See the [privacy policy](PRIVACY_POLICY.md) and [thumbnail cache details](docs/thumbnail-cache.md) for storage and retention behavior.
 
+Design and interface work follows the [design system](docs/design-system.md) and [UI engineering guidelines](docs/ui-guidelines.md).
+
 ## Build from source
 
 Use **Xcode 26+**, Swift 5.9, and [XcodeGen](https://github.com/yonaskolb/XcodeGen). `project.yml` defines the project configuration and macOS 12 deployment target. Glass styling currently uses shared AppKit/SwiftUI materials; it does not claim a native macOS `View.glassEffect` implementation.
