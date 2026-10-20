@@ -108,7 +108,10 @@ class PreviewViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        let appWindows = apps.flatMap { windowMonitorService.getWindows(for: $0) }
+        let snapshot = apps.isEmpty ? [] : windowMonitorService.getAllWindows()
+        let appWindows = apps.flatMap {
+            windowMonitorService.filterWindows(snapshot, for: $0.bundleIdentifier, appName: $0.appName)
+        }
         AppLogger.info("Refreshing app-scoped preview windows. apps=\(apps.map { $0.appName }.joined(separator: ",")), count=\(appWindows.count)")
         windows = appWindows
         applyFilter()
@@ -199,12 +202,15 @@ class PreviewViewModel: ObservableObject {
     }
 
     func updateGridColumnCount(width: CGFloat, settings: AppSettings) {
-        // Both modes draw the same grid — the merged mode adds a window behind
-        // the panel, it does not turn the panel into a list — so one arrow key
-        // always moves by one row and the column count is a geometry question.
+        // The preview/highlight mode adds a window behind the panel, it does not
+        // turn the panel into a list — so one arrow key always moves by one row
+        // and the column count is a geometry question. It is still layout-aware:
+        // the stage layout loses the ornament rail's width and runs narrower
+        // cells, and arrow-key navigation must step by the count actually drawn.
         let spacing: CGFloat = 14
-        let contentWidth = width - 32
-        let minWidth = settings.thumbnailSize.previewCardMinWidth
+        let railWidth: CGFloat = settings.previewPanelStyle == .stage ? 58 : 0
+        let contentWidth = width - 32 - railWidth
+        let minWidth = settings.previewPanelStyle.minimumCardWidth(for: settings.thumbnailSize)
         gridColumnCount = max(1, Int((contentWidth + spacing) / (minWidth + spacing)))
     }
 

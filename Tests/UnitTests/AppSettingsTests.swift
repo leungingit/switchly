@@ -6,6 +6,8 @@
 //
 
 import XCTest
+import SwiftUI
+import AppKit
 @testable import Switchly
 
 final class AppSettingsTests: XCTestCase {
@@ -29,6 +31,8 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertFalse(settings.previewHotspotEnabled)
         XCTAssertEqual(settings.previewHotspotEdge, .left)
         XCTAssertFalse(settings.previewShakeEnabled)
+        XCTAssertEqual(settings.crystalMaterial, .legacyDefault)
+        XCTAssertEqual(settings.previewPanelStyle, .classicGrid)
     }
     
     func testSettingsCodable() {
@@ -148,5 +152,146 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertTrue(decoded.previewHotspotEnabled)
         XCTAssertEqual(decoded.previewHotspotEdge, .right)
         XCTAssertTrue(decoded.previewShakeEnabled)
+    }
+    // MARK: - Optical crystal settings (redesign)
+
+    /// A settings file written by the pre-redesign build has neither crystal
+    /// key; decoding it must land on the documented defaults instead of
+    /// failing, or every upgrade resets the user's other preferences too.
+    func testMissingCrystalKeysFallBackToDefaults() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "crystalMaterial")
+        object.removeValue(forKey: "previewPanelStyle")
+        XCTAssertNil(object["crystalMaterial"])
+        XCTAssertNil(object["previewPanelStyle"])
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertEqual(decoded.crystalMaterial, .legacyDefault)
+        XCTAssertEqual(decoded.previewPanelStyle, .classicGrid)
+    }
+
+    func testCrystalMaterialRoundTrip() throws {
+        var settings = AppSettings.default
+        settings.crystalMaterial = CrystalMaterial(
+            tintColor: Color(red: 0.9, green: 0.2, blue: 0.1),
+            topSheenOpacity: 0.31,
+            panelTintCap: 0.42,
+            rimTopOpacity: 0.73,
+            panelMaterial: .clear
+        )
+        settings.previewPanelStyle = .stage
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertEqual(decoded.crystalMaterial.topSheenOpacity, 0.31, accuracy: 0.0001)
+        XCTAssertEqual(decoded.crystalMaterial.panelTintCap, 0.42, accuracy: 0.0001)
+        XCTAssertEqual(decoded.crystalMaterial.rimTopOpacity, 0.73, accuracy: 0.0001)
+        XCTAssertEqual(decoded.crystalMaterial.panelMaterial, .clear)
+        let rgb = NSColor(decoded.crystalMaterial.tintColor).usingColorSpace(.sRGB) ?? .white
+        XCTAssertEqual(Double(rgb.redComponent), 0.9, accuracy: 0.01)
+        XCTAssertEqual(decoded.previewPanelStyle, .stage)
+    }
+
+    /// A settings file written before the four knobs existed carries one of
+    /// the retired presets. Each must expand into the parameters it stood for,
+    /// or an upgrade would silently repaint the panel.
+    func testRetiredPresetsExpandIntoParameters() throws {
+        let quartz = CrystalMaterial.legacy(expandedFrom: "quartz")
+        XCTAssertEqual(quartz.topSheenOpacity, 0.20, accuracy: 0.0001)
+        XCTAssertEqual(quartz.rimTopOpacity, 0.62, accuracy: 0.0001)
+        XCTAssertEqual(quartz.panelTintCap, 1.0, accuracy: 0.0001)
+        XCTAssertEqual(quartz.panelMaterial, .glass)
+
+        // "frameless" meant no panel surface at all; that facet now lives on
+        // the material switch, so it must land on .clear rather than a wash.
+        let frameless = CrystalMaterial.legacy(expandedFrom: "frameless")
+        XCTAssertEqual(frameless.panelMaterial, .clear)
+        XCTAssertEqual(frameless.topSheenOpacity, 0.24, accuracy: 0.0001)
+        XCTAssertEqual(frameless.rimTopOpacity, 0.68, accuracy: 0.0001)
+
+        XCTAssertEqual(CrystalMaterial.legacy(expandedFrom: "ice"), .legacyDefault)
+        XCTAssertEqual(CrystalMaterial.legacy(expandedFrom: nil), .legacyDefault)
+    }
+
+    /// Decoding a settings blob that still holds only the retired key must
+    /// carry it over instead of reverting to the factory defaults.
+    func testRetiredPresetKeyIsMigratedOnDecode() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "crystalMaterial")
+        object["crystalThemePreset"] = "quartz"
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertEqual(decoded.crystalMaterial.topSheenOpacity, 0.20, accuracy: 0.0001)
+        XCTAssertEqual(decoded.crystalMaterial.panelMaterial, .glass)
+    }
+
+    /// The settings window and the floating panels must not share one wash
+    /// value: tuning the panels used to change the window the user was
+    /// reading the slider in.
+    func testPreferencesGlassIsIndependentOfPanelGlass() throws {
+        var settings = AppSettings.default
+        settings.backgroundBlurOpacity = 0.10
+        settings.preferencesGlassOpacity = 0.95
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertEqual(decoded.backgroundBlurOpacity, 0.10, accuracy: 0.0001)
+        XCTAssertEqual(decoded.preferencesGlassOpacity, 0.95, accuracy: 0.0001)
+    }
+
+    /// A settings file written before the window had its own slider must not
+    /// leave the settings window fully transparent.
+    func testMissingPreferencesGlassFallsBackToReadableDefault() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "preferencesGlassOpacity")
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertEqual(decoded.preferencesGlassOpacity, 0.70, accuracy: 0.0001)
+    }
+
+    /// The sliders are bounded, and a hand-edited settings file must not be
+    /// able to push the render outside them.
+    func testCrystalMaterialClampsToSliderRanges() {
+        let wild = CrystalMaterial(
+            tintColor: .white,
+            topSheenOpacity: 5,
+            panelTintCap: -3,
+            rimTopOpacity: 9,
+            panelMaterial: .glass
+        ).clamped()
+        XCTAssertEqual(wild.topSheenOpacity, CrystalMaterial.Range.sheen.upperBound, accuracy: 0.0001)
+        XCTAssertEqual(wild.panelTintCap, CrystalMaterial.Range.panelTint.lowerBound, accuracy: 0.0001)
+        XCTAssertEqual(wild.rimTopOpacity, CrystalMaterial.Range.rim.upperBound, accuracy: 0.0001)
+    }
+
+    /// The panel material switch is the one facet the four numeric knobs
+    /// cannot express, so it must keep both cases — a single-case enum would
+    /// be a dead control.
+    func testPanelMaterialHasBothCases() {
+        XCTAssertEqual(CrystalPanelMaterial.allCases, [.glass, .clear])
+    }
+
+    /// Every layout case must change the layout it names. A case that draws
+    /// like another one is a dead setting (this is how two of them shipped).
+    func testPreviewPanelStylesHaveDistinctGeometry() {
+        XCTAssertEqual(Set(PreviewPanelStyle.allCases.map(\.cell)).count,
+                       PreviewPanelStyle.allCases.count,
+                       "two layout styles share the same cell geometry")
+
+        let size = ThumbnailSize.medium
+        for style in PreviewPanelStyle.allCases {
+            XCTAssertGreaterThan(style.minimumCardWidth(for: size), 0)
+            XCTAssertGreaterThan(style.thumbnailHeightScale, 0)
+        }
+        XCTAssertNotEqual(PreviewPanelStyle.stage.minimumCardWidth(for: size),
+                          PreviewPanelStyle.classicGrid.minimumCardWidth(for: size))
+        XCTAssertNotEqual(PreviewPanelStyle.stage.thumbnailHeightScale,
+                          PreviewPanelStyle.classicGrid.thumbnailHeightScale)
     }
 }

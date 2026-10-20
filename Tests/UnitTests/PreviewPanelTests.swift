@@ -601,6 +601,7 @@ private final class FixtureWindowMonitor: WindowMonitorServiceProtocol {
     func getWindows(for bundleIdentifier: String) -> [WindowInfo] { fixtures }
     func getWindows(for bundleIdentifier: String, appName: String) -> [WindowInfo] { fixtures }
     func getWindows(for app: MonitoredApp) -> [WindowInfo] { fixtures }
+    func filterWindows(_ windows: [WindowInfo], for bundleIdentifier: String, appName: String?) -> [WindowInfo] { fixtures }
     func windows(ownedBy bundleURL: URL) -> [WindowInfo] { fixtures }
     func getVisibleWindowCount(for bundleIdentifier: String) -> Int { fixtures.count }
     func filterWindows(_ windows: [WindowInfo], by strategy: PreviewStrategy) -> [WindowInfo] { windows }

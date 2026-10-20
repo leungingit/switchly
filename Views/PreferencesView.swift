@@ -94,22 +94,11 @@ struct PreferencesView: View {
     }
 
     private var panelBackground: some View {
-        ZStack {
-            GlassBackground(material: .hudWindow, cornerRadius: 0)
-
-            Color(nsColor: .windowBackgroundColor)
-                .opacity(viewModel.settings.backgroundBlurOpacity * 0.6)
-
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.08),
-                    Color.white.opacity(0.02),
-                    Color.clear
-                ],
-                startPoint: .top,
-                endPoint: .center
-            )
-        }
+        WindowGlassSurface(
+            opacity: viewModel.settings.preferencesGlassOpacity,
+            material: viewModel.settings.crystalMaterial,
+            style: .preferences
+        )
     }
 
     private var titleBar: some View {
@@ -215,24 +204,108 @@ struct PreferencesView: View {
                               help: t("Shake the pointer back and forth quickly, like shaking to find the macOS cursor, to open the preview."))
                 }
 
-                settingsGroup(t("Display")) {
+                settingsGroup(t("Preview panel")) {
                     toggleRow(t("Show window titles"), systemImage: "textformat", isOn: showWindowTitlesBinding)
                     toggleRow(t("Show app name"), systemImage: "app", isOn: previewInfoShowsAppNameBinding)
                     toggleRow(t("Show window number"), systemImage: "number", isOn: previewInfoShowsWindowNumberBinding)
                     toggleRow(t("Show process ID"), systemImage: "cpu", isOn: previewInfoShowsProcessIDBinding)
                     toggleRow(t("Show window size"), systemImage: "ruler", isOn: previewInfoShowsSizeBinding)
                     toggleRow(t("Show window position"), systemImage: "point.3.connected.trianglepath.dotted", isOn: previewInfoShowsPositionBinding)
+                }
+
+                settingsGroup(t("Floating panels")) {
                     toggleRow(t("Enable background blur"), systemImage: "sparkles", isOn: backgroundBlurBinding)
                     if viewModel.settings.enableBackgroundBlur {
-                        settingRow(t("Background opacity"), systemImage: "slider.horizontal.3") {
+                        settingRow(t("Panel glass wash"), systemImage: "slider.horizontal.3",
+                                   help: t("Floating panels (preview, Dock preview, workspace bar) only. Lower values let more of the wallpaper's own colours through the glass; higher values let the frosted wash dominate.")) {
                             HStack(spacing: 16) {
-                                Slider(value: backgroundBlurOpacityBinding, in: 0...1, step: 0.05)
-                                    .frame(width: 220)
-                                GlassPreviewCard(
-                                    opacity: viewModel.settings.backgroundBlurOpacity,
-                                    cornerRadius: 8
-                                )
+                                VStack(spacing: 6) {
+                                    Slider(value: backgroundBlurOpacityBinding, in: 0...1, step: 0.05)
+                                        .frame(width: 180)
+                                    // 材质示意使用当前窗口背景，不代表独立面板的 wash。
+                                    GlassPreviewCard(
+                                        opacity: viewModel.settings.backgroundBlurOpacity,
+                                        cornerRadius: 14,
+                                        material: viewModel.settings.crystalMaterial,
+                                        panelStyle: viewModel.settings.previewPanelStyle,
+                                        sampleOfPanelGlass: true,
+                                        localize: { viewModel.settings.language.localizedString($0) }
+                                    )
+                                }
                             }
+                        }
+                    }
+
+                    settingRow(t("Panel material"), systemImage: "rectangle.on.rectangle.slash",
+                               help: t("No panel removes the glass surface entirely so the cards float directly on the desktop.")) {
+                        Picker("", selection: crystalPanelMaterialBinding) {
+                            ForEach(CrystalPanelMaterial.allCases, id: \.self) { material in
+                                Text(material.displayName(language: viewModel.settings.language)).tag(material)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 260)
+                    }
+
+                    settingRow(t("Spatial panel layout"), systemImage: "rectangle.3.group") {
+                        Picker("", selection: previewPanelStyleBinding) {
+                            ForEach(PreviewPanelStyle.allCases, id: \.self) { style in
+                                Text(style.displayName(language: viewModel.settings.language)).tag(style)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 380)
+                    }
+                }
+
+                settingsGroup(t("Crystal material")) {
+                    settingRow(t("Crystal tint"), systemImage: "paintpalette") {
+                        HStack(spacing: 10) {
+                            ColorPicker("", selection: crystalTintBinding, supportsOpacity: false)
+                                .labelsHidden()
+                                .frame(width: 52)
+                            Text(crystalTintHex)
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .frame(width: 72, alignment: .leading)
+                        }
+                    }
+
+                    crystalSliderRow(t("Top sheen"), systemImage: "sun.max",
+                                     value: crystalSheenBinding,
+                                     range: CrystalMaterial.Range.sheen,
+                                     displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.topSheenOpacity),
+                                     help: t("Strength of the highlight across the top edge of cards and panels."))
+
+                    crystalSliderRow(t("Shared crystal tint strength"), systemImage: "circle.lefthalf.filled",
+                                     value: crystalPanelTintBinding,
+                                     range: CrystalMaterial.Range.panelTint,
+                                     displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.panelTintCap * 100),
+                                     help: t("Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows."))
+
+                    crystalSliderRow(t("Rim highlight"), systemImage: "hexagon",
+                                     value: crystalRimBinding,
+                                     range: CrystalMaterial.Range.rim,
+                                     displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.rimTopOpacity),
+                                     help: t("Strength of the specular bevel along the panel and card edges."))
+                }
+
+                settingsGroup(t("Standard windows")) {
+                    settingRow(t("Window glass wash"), systemImage: "macwindow",
+                               help: t("Settings, Workspaces and Statistics windows share this control. It does not change floating panels.")) {
+                        HStack(spacing: 10) {
+                            Slider(value: preferencesGlassOpacityBinding, in: 0...1, step: 0.05)
+                                .frame(width: 200)
+                            Text(String(format: "%.0f%%", viewModel.settings.preferencesGlassOpacity * 100))
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .frame(width: 44, alignment: .trailing)
                         }
                     }
                 }
@@ -359,6 +432,10 @@ struct PreferencesView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 18)
                 .padding(.bottom, 10)
+                // The search field must never be pushed out of the fixed
+                // 760x560 window by the two list columns under it.
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
 
             HStack(spacing: 0) {
                 appList(
@@ -425,7 +502,7 @@ struct PreferencesView: View {
         .liquidGlass(
             isActive: true,
             opacity: 0.06,
-            cornerRadius: 8,
+            cornerRadius: DesignTokens.Radius.control,
             tintColor: Color(nsColor: .textBackgroundColor),
             interactive: true,
             fallbackColor: Color(nsColor: .textBackgroundColor)
@@ -570,6 +647,106 @@ struct PreferencesView: View {
             get: { viewModel.settings.enableBackgroundBlur },
             set: { newValue in
                 viewModel.updateSettings { $0.enableBackgroundBlur = newValue }
+            }
+        )
+    }
+
+    // MARK: - Crystal material bindings
+
+    private var preferencesGlassOpacityBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.settings.preferencesGlassOpacity },
+            set: { newValue in
+                viewModel.updateSettings { $0.preferencesGlassOpacity = newValue }
+            }
+        )
+    }
+
+    private var crystalTintBinding: Binding<Color> {
+        Binding(
+            get: { viewModel.settings.crystalMaterial.tintColor },
+            set: { newValue in
+                viewModel.updateSettings { $0.crystalMaterial.tintColor = newValue }
+            }
+        )
+    }
+
+    private var crystalSheenBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.settings.crystalMaterial.topSheenOpacity },
+            set: { newValue in
+                viewModel.updateSettings { $0.crystalMaterial.topSheenOpacity = newValue }
+            }
+        )
+    }
+
+    private var crystalPanelTintBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.settings.crystalMaterial.panelTintCap },
+            set: { newValue in
+                viewModel.updateSettings { $0.crystalMaterial.panelTintCap = newValue }
+            }
+        )
+    }
+
+    private var crystalRimBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.settings.crystalMaterial.rimTopOpacity },
+            set: { newValue in
+                viewModel.updateSettings { $0.crystalMaterial.rimTopOpacity = newValue }
+            }
+        )
+    }
+
+    private var crystalPanelMaterialBinding: Binding<CrystalPanelMaterial> {
+        Binding(
+            get: { viewModel.settings.crystalMaterial.panelMaterial },
+            set: { newValue in
+                viewModel.updateSettings { $0.crystalMaterial.panelMaterial = newValue }
+            }
+        )
+    }
+
+    /// The tint as `#RRGGBB`. Compared side by side with the swatch so the
+    /// value is readable rather than only visible.
+    private var crystalTintHex: String {
+        let resolved = NSColor(viewModel.settings.crystalMaterial.tintColor).usingColorSpace(.sRGB) ?? .systemBlue
+        return String(format: "#%02X%02X%02X",
+                      Int((resolved.redComponent * 255).rounded()),
+                      Int((resolved.greenComponent * 255).rounded()),
+                      Int((resolved.blueComponent * 255).rounded()))
+    }
+
+    /// One material knob: label, slider, and the value it is currently at.
+    private func crystalSliderRow(_ title: String,
+                                  systemImage: String,
+                                  value: Binding<Double>,
+                                  range: ClosedRange<Double>,
+                                  displayed: String,
+                                  help: String) -> some View {
+        settingRow(title, systemImage: systemImage, help: help) {
+            HStack(spacing: 10) {
+                Slider(value: value, in: range)
+                    .frame(width: 220)
+                Text(displayed)
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(.secondary)
+                    // Fixed width + no wrapping: the readout changes length as
+                    // the slider moves ("0.05" → "0.40", "0%" → "100%"), and
+                    // an unconstrained Text let that push the row's label into
+                    // re-wrapping on every drag.
+                    .lineLimit(1)
+                    .fixedSize()
+                    .frame(width: 52, alignment: .trailing)
+            }
+        }
+    }
+
+    private var previewPanelStyleBinding: Binding<PreviewPanelStyle> {
+        Binding(
+            get: { viewModel.settings.previewPanelStyle },
+            set: { newValue in
+                viewModel.updateSettings { $0.previewPanelStyle = newValue }
             }
         )
     }
@@ -763,10 +940,14 @@ struct PreferencesView: View {
             // -- the exact per-card material cost cardSurface's doc comment
             // warns about. The window-level panelBackground provides the
             // glass; groups hold solid content on top of it.
-            .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45), cornerRadius: 8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            .cardSurface(
+                fill: Color.crystalSurfaceBase.opacity(0.10),
+                cornerRadius: DesignTokens.Radius.card,
+                material: viewModel.settings.crystalMaterial
+            )
+            .crystalSpecularRim(
+                cornerRadius: DesignTokens.Radius.card,
+                material: viewModel.settings.crystalMaterial
             )
         }
     }
@@ -785,12 +966,7 @@ struct PreferencesView: View {
                 .font(.body)
 
             if let help {
-                // Hover explanation instead of a full-width caption row:
-                // native tooltip, zero layout cost.
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .help(help)
+                SettingsHelpButton(help: help)
             }
 
             Spacer(minLength: 16)
@@ -910,7 +1086,8 @@ struct PreferencesView: View {
                                 // recycled while scrolling, and a live
                                 // glassEffect per row is the most expensive
                                 // thing a scrolling list can carry.
-                                .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45), cornerRadius: 8)
+                                .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45),
+                                            cornerRadius: DesignTokens.Radius.card)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -944,9 +1121,9 @@ struct PreferencesView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 28, height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.chip))
         } else {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.chip)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.45))
                 .frame(width: 28, height: 28)
                 .overlay(
@@ -992,6 +1169,32 @@ struct PreferencesView: View {
 
     private func t(_ key: String) -> String {
         viewModel.settings.language.localizedString(key)
+    }
+}
+
+/// 使用悬停状态直接打开说明，不等待系统 tooltip 的默认延迟。
+private struct SettingsHelpButton: View {
+    let help: String
+    @State private var isPresented = false
+
+    var body: some View {
+        Button { isPresented = true } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .padding(4)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(help))
+        .onHover { isPresented = $0 }
+        .popover(isPresented: $isPresented, arrowEdge: .bottom) {
+            Text(help)
+                .font(.callout)
+                .frame(width: 280, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(12)
+        }
     }
 }
 

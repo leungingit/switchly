@@ -65,6 +65,91 @@ final class ThumbnailCacheTests: XCTestCase {
         return context.makeImage()!
     }
 
+    func testMemoryPressureCanReleaseCachedImage() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 42)
+        weak var releasedImage: NSImage?
+        autoreleasepool {
+            let image = service.storeEntryForTesting(window: window, tier: .grid, pixelSize: CGSize(width: 100, height: 100))
+            releasedImage = image
+            XCTAssertNotNil(service.getCachedThumbnail(for: window, tier: .grid))
+        }
+        service.purgeImagesForTesting()
+
+        XCTAssertNil(releasedImage, "元数据不得强引用图片，否则 NSCache 无法响应内存压力")
+        XCTAssertNil(service.getCachedThumbnail(for: window, tier: .grid))
+        XCTAssertEqual(service.cacheStatistics(tier: .grid).totalCost, 0)
+    }
+
+    func testDifferentTierCannotReattributeAnOldImageToARecycledWindowID() {
+        let service = ThumbnailService()
+        let original = makeWindow(id: 42, pid: 100, title: "旧窗口")
+        let replacement = makeWindow(id: 42, pid: 101, title: "新窗口")
+        service.storeEntryForTesting(window: original, tier: .grid, pixelSize: CGSize(width: 240, height: 150))
+        service.storeEntryForTesting(window: replacement, tier: .native, pixelSize: CGSize(width: 800, height: 600))
+
+        XCTAssertNil(service.getCachedThumbnail(for: replacement, tier: .grid), "另一层级的元数据更新不能让旧图属于新窗口")
+        XCTAssertNotNil(service.getCachedThumbnail(for: replacement, tier: .native))
+    }
+
+    func testPurgingFallbackImageDoesNotReleaseAnActiveCaptureClaim() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 42)
+        XCTAssertTrue(service.claimPreheat(windowID: window.id, tier: .grid))
+        service.storeEntryForTesting(window: window, tier: .grid, pixelSize: CGSize(width: 240, height: 150))
+        service.purgeImagesForTesting()
+        XCTAssertNil(service.getCachedThumbnail(for: window))
+        XCTAssertFalse(service.claimPreheat(windowID: window.id, tier: .grid), "缓存清理不能结束仍在进行的后台截图")
+    }
+
+    func testConcurrentPreheatClaimsOnlyScheduleOneCapture() {
+        let service = ThumbnailService()
+        let countLock = NSLock()
+        var admitted = 0
+        DispatchQueue.concurrentPerform(iterations: 100) { _ in
+            if service.claimPreheat(windowID: 42, tier: .grid) {
+                countLock.lock()
+                admitted += 1
+                countLock.unlock()
+            }
+        }
+        XCTAssertEqual(admitted, 1, "同一窗口同一层级只能有一个捕获任务")
+        XCTAssertTrue(service.claimPreheat(windowID: 42, tier: .native), "不同层级仍可独立捕获")
+        XCTAssertTrue(service.claimPreheat(windowID: 43, tier: .grid), "不同窗口仍可独立捕获")
+    }
+
+    func testOversizedImageIsReleasedImmediately() {
+        let service = ThumbnailService(nativeBudget: TierBudget(byteLimit: 1, countLimit: 1))
+        weak var releasedImage: NSImage?
+        autoreleasepool {
+            releasedImage = service.storeEntryForTesting(
+                window: makeWindow(id: 42), tier: .native, pixelSize: CGSize(width: 100, height: 100)
+            )
+        }
+        XCTAssertNil(releasedImage, "超预算图片淘汰后不能重新放回 NSCache")
+        XCTAssertEqual(service.cacheStatistics(tier: .native).totalCost, 0)
+    }
+
+    func testConcurrentTimeoutFailuresKeepCooldownBounded() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 42)
+        DispatchQueue.concurrentPerform(iterations: 100) { _ in
+            service.markFailedForTesting(window: window, tier: .grid, error: ThumbnailError.captureTimedOut)
+        }
+        let cooldown = service.failureCooldownRemainingForTesting(window: window, tier: .grid)
+        XCTAssertGreaterThan(cooldown, 590)
+        XCTAssertLessThanOrEqual(cooldown, 600)
+    }
+
+    func testPreheatSkipsFreshImagesAndFailureCooldown() {
+        let service = ThumbnailService()
+        let window = makeWindow(id: 42)
+        service.storeEntryForTesting(window: window, tier: .grid, pixelSize: CGSize(width: 100, height: 100))
+        XCTAssertFalse(service.claimPreheat(windowID: window.id, tier: .grid))
+        service.markFailedForTesting(window: window, tier: .native)
+        XCTAssertFalse(service.claimPreheat(windowID: window.id, tier: .native))
+    }
+
     // MARK: - 1. Downsampling resamples the bitmap for real
 
     func testDownsampleReturnsExactRequestedPixelSize() {

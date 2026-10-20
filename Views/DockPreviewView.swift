@@ -38,15 +38,13 @@ struct DockPreviewView: View {
         .panelGlass(
             isActive: settings.enableBackgroundBlur,
             opacity: backgroundOpacity,
-            cornerRadius: GlassPanelCorner.radius
+            cornerRadius: GlassPanelCorner.radius,
+            material: settings.crystalMaterial
         )
-        .overlay(
-            // Liquid Glass border highlight for depth
-            RoundedRectangle(cornerRadius: GlassPanelCorner.radius, style: .continuous)
-                .strokeBorder(
-                    Color.white.opacity(settings.enableBackgroundBlur ? 0.12 : 0),
-                    lineWidth: DesignTokens.hairline
-                )
+        .crystalSpecularRim(
+            cornerRadius: GlassPanelCorner.radius,
+            material: settings.crystalMaterial,
+            lineWidth: settings.enableBackgroundBlur ? 0.75 : 0
         )
         .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 8)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
@@ -255,10 +253,16 @@ struct DockWindowCard: View {
                 .frame(width: cardThumbnailWidth, alignment: .leading)
         }
         .padding(6)
-        .cardSurface(fill: cardFill)
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                .strokeBorder(cardBorder, lineWidth: DesignTokens.hairline)
+        .cardSurface(
+            fill: cardFill,
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isSelected: isSelected || isHovered
+        )
+        .crystalSpecularRim(
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isHighlighted: isSelected || isHovered
         )
         .scaleEffect(cardScale)
         .shadow(color: .black.opacity(isSelected ? 0.28 : 0), radius: isSelected ? 10 : 0, x: 0, y: 4)
@@ -343,25 +347,15 @@ struct DockWindowCard: View {
 
         let fallbackIcon = appIcon()
 
-        // A window whose capture just failed reports that instead of spinning:
-        // the card is rebuilt on every hover, and re-arming a spinner (and
-        // re-hitting the window server) for a window we already know cannot
-        // be captured right now is worse than saying so. Mirrors
-        // `WindowThumbnailView.loadThumbnail`; the background tick retries
-        // once the cooldown expires.
-        if ThumbnailService.shared.failedRecently(for: window, tier: .grid) {
-            await MainActor.run {
-                thumbnailState = .failed(fallbackIcon)
-            }
-            return
-        }
-
+        // 磁盘旧图可在截图失败冷却期间恢复；冷却由服务在尝试读盘后统一判断。
         await MainActor.run { thumbnailState = .placeholder(fallbackIcon) }
 
         do {
             let image = try await ThumbnailService.shared.captureThumbnail(for: window, size: settings.thumbnailSize.dimensions)
+            guard !Task.isCancelled else { return }
             await MainActor.run { thumbnailState = .loaded(image) }
         } catch {
+            guard !Task.isCancelled else { return }
             AppLogger.warning("Dock card thumbnail failed. windowID=\(window.id), error=\(error)")
             await MainActor.run { thumbnailState = .failed(appIcon()) }
         }
@@ -420,17 +414,17 @@ struct DockWindowCard: View {
     /// Solid card fill — see WindowThumbnailView.cardFill.
     private var cardFill: Color {
         if isHovered {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.16 : 0.10)
+            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.18 : 0.10)
         }
         if isSelected {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.09 : 0.06)
+            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.06)
         }
-        return Color(nsColor: .controlBackgroundColor).opacity(cardFillOpacity)
+        return Color.crystalSurfaceBase.opacity(cardFillOpacity)
     }
 
     private var cardFillOpacity: Double {
         guard settings.enableBackgroundBlur else { return 1 }
-        return min(max(settings.backgroundBlurOpacity + 0.45, 0.55), 0.9)
+        return min(max(settings.backgroundBlurOpacity * 0.35 + 0.04, 0.06), 0.28)
     }
 
     private var cardBorder: Color {

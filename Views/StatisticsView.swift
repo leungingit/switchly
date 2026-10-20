@@ -113,11 +113,8 @@ struct StatisticsView: View {
             }
         }
         .padding(DesignTokens.Spacing.md)
-        .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45))
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: DesignTokens.hairline)
-        )
+        .cardSurface(fill: Color.crystalSurfaceBase.opacity(0.10), material: settings.crystalMaterial)
+        .crystalSpecularRim(cornerRadius: DesignTokens.Radius.card, material: settings.crystalMaterial)
     }
 
     private var emptyState: some View {
@@ -232,11 +229,8 @@ struct StatisticsView: View {
         }
         .padding(DesignTokens.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45))
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: DesignTokens.hairline)
-        )
+        .cardSurface(fill: Color.crystalSurfaceBase.opacity(0.10), material: settings.crystalMaterial)
+        .crystalSpecularRim(cornerRadius: DesignTokens.Radius.card, material: settings.crystalMaterial)
     }
 
     private var footer: some View {
@@ -258,11 +252,11 @@ struct StatisticsView: View {
     }
 
     private var panelBackground: some View {
-        ZStack {
-            GlassBackground(material: .hudWindow, cornerRadius: 0)
-            Color(nsColor: .windowBackgroundColor)
-                .opacity(0.02)
-        }
+        WindowGlassSurface(
+            opacity: settings.preferencesGlassOpacity,
+            material: settings.crystalMaterial,
+            style: .statistics
+        )
     }
 
     private var rangeTitle: String {

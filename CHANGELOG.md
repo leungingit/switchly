@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### 新增
+
+- 小尺寸窗口缩略图支持跨次启动 Switchly 复用：仅在本地保存 24 小时内的压缩小图，磁盘上限 64 MB、最多 200 个文件。按系统启动会话、目标进程启动时间及窗口身份校验，先显示旧图再后台刷新，刷新失败保留有效旧图。放大预览原图不落盘，图片不上传；同步更新隐私说明。
+
 ### Fixed
 
 - The question-mark hints in Preferences (and every other regular window)

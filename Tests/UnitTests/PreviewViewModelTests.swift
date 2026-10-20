@@ -16,6 +16,8 @@ private final class MockWindowMonitorService: WindowMonitorServiceProtocol {
     var windows: [WindowInfo] = []
     var visibleWindowCount = 0
     private(set) var allWindowsCallCount = 0
+    private(set) var appWindowsCallCount = 0
+    var windowsByBundle: [String: [WindowInfo]] = [:]
 
     func startMonitoring() {}
     func stopMonitoring() {}
@@ -38,7 +40,12 @@ private final class MockWindowMonitorService: WindowMonitorServiceProtocol {
     }
 
     func getWindows(for app: MonitoredApp) -> [WindowInfo] {
-        windows
+        appWindowsCallCount += 1
+        return windowsByBundle[app.bundleIdentifier] ?? windows
+    }
+
+    func filterWindows(_ windows: [WindowInfo], for bundleIdentifier: String, appName: String?) -> [WindowInfo] {
+        windowsByBundle[bundleIdentifier] ?? windows
     }
 
     func windows(ownedBy bundleURL: URL) -> [WindowInfo] {
@@ -120,6 +127,71 @@ final class PreviewViewModelTests: XCTestCase {
             isOnCurrentSpace: true,
             windowNumber: Int(id)
         )
+    }
+
+    func testSnapshotFilteringPreservesAppIdentityAndOwnerNameFallback() throws {
+        let app = NSRunningApplication.current
+        let bundleID = try XCTUnwrap(app.bundleIdentifier)
+        let name = try XCTUnwrap(app.localizedName)
+        let window = WindowInfo(
+            id: 42, ownerPID: app.processIdentifier, ownerName: "窗口所属应用",
+            windowTitle: "测试窗口", bounds: CGRect(x: 0, y: 0, width: 800, height: 600),
+            isOnCurrentSpace: true, windowNumber: 42
+        )
+        let monitor = WindowMonitorService.shared
+        XCTAssertEqual(monitor.filterWindows([window], for: bundleID, appName: name.uppercased()).map(\.id), [42])
+        XCTAssertEqual(monitor.filterWindows([window], for: bundleID, appName: window.ownerName).map(\.id), [42])
+        XCTAssertEqual(monitor.filterWindows([window], for: bundleID, appName: nil).map(\.id), [42])
+        XCTAssertEqual(monitor.filterWindows([window], for: bundleID, appName: "").map(\.id), [42])
+        XCTAssertTrue(monitor.filterWindows([window], for: bundleID, appName: "其他产品").isEmpty)
+        XCTAssertTrue(monitor.filterWindows([window], for: "com.example.other", appName: name).isEmpty)
+    }
+
+    func testMultipleAppsShareOneWindowSnapshotPerRefresh() {
+        let monitor = MockWindowMonitorService()
+        let first = makeWindow(id: 1)
+        let second = makeWindow(id: 2)
+        monitor.windows = [first, second]
+        monitor.windowsByBundle = ["com.example.a": [first], "com.example.b": [second]]
+        let viewModel = makeViewModel(monitor: monitor)
+        viewModel.showWindows(for: [
+            MonitoredApp(bundleIdentifier: "com.example.a", appName: "甲"),
+            MonitoredApp(bundleIdentifier: "com.example.b", appName: "乙")
+        ])
+
+        XCTAssertEqual(viewModel.windows.map(\.id), [1, 2])
+        XCTAssertEqual(monitor.allWindowsCallCount, 1, "多应用首次展示只应枚举一次")
+        XCTAssertEqual(monitor.appWindowsCallCount, 0, "不应逐应用重新枚举窗口")
+        viewModel.refreshWindows()
+        XCTAssertEqual(monitor.allWindowsCallCount, 2, "每轮刷新各取一次新快照")
+        XCTAssertEqual(viewModel.windows.map(\.id), [1, 2])
+    }
+
+    @MainActor
+    func testWorkspaceAppsShareOneWindowSnapshotAndKeepPlaceholders() {
+        let monitor = MockWindowMonitorService()
+        let first = makeWindow(id: 1)
+        monitor.windows = [first]
+        monitor.windowsByBundle = ["com.example.a": [first], "com.example.b": []]
+        let viewModel = WorkspaceBarViewModel(
+            settingsService: MockSettingsService(),
+            windowMonitorService: monitor,
+            windowSwitchService: MockWindowSwitchService()
+        )
+        viewModel.workspace = Workspace(name: "工作区", appItems: [
+            WorkspaceAppItem(bundleIdentifier: "com.example.a", appName: "甲"),
+            WorkspaceAppItem(bundleIdentifier: "com.example.b", appName: "乙")
+        ], missingAppDisplayMode: .placeholder)
+        viewModel.refreshItems()
+
+        XCTAssertEqual(monitor.allWindowsCallCount, 1)
+        XCTAssertEqual(viewModel.items.count, 2)
+        guard case .window(let window, _) = viewModel.items[0],
+              case .placeholder(let missing, _) = viewModel.items[1] else {
+            return XCTFail("应保留应用顺序、窗口及缺失应用占位")
+        }
+        XCTAssertEqual(window.id, first.id)
+        XCTAssertEqual(missing.bundleIdentifier, "com.example.b")
     }
 
     /// Regression: the app-scoped entry point (per-app shortcuts) used to

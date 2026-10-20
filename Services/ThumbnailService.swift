@@ -90,6 +90,8 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// `evictIfNeededLocked`.
     private let cache = NSCache<ThumbnailCacheKey, NSImage>()
     private let lock = NSLock()
+    private let diskCache: ThumbnailDiskCaching?
+    private let screenCaptureAccess: () -> Bool
     private let preheatQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "com.switchly.thumbnailPreheat"
@@ -194,15 +196,19 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// Max time a single ScreenCaptureKit fallback attempt may run.
     private let sckCaptureTimeout: TimeInterval = 3.0
 
-    static let shared = ThumbnailService()
+    static let shared = ThumbnailService(diskCache: ThumbnailDiskCache())
 
     /// Budgets are injectable so tests can drive eviction with a handful of
     /// entries instead of hundreds, and so a measurement that says a limit
     /// should differ changes a `TierBudget` rather than the class body.
     init(
         gridBudget: TierBudget = .grid,
-        nativeBudget: TierBudget = .native
+        nativeBudget: TierBudget = .native,
+        diskCache: ThumbnailDiskCaching? = nil,
+        screenCaptureAccess: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() }
     ) {
+        self.diskCache = diskCache
+        self.screenCaptureAccess = screenCaptureAccess
         self.budgets = [
             .grid: gridBudget,
             .native: nativeBudget
@@ -217,11 +223,25 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
     // MARK: - Capture
 
+    func flushPersistentCache(timeout: TimeInterval) {
+        diskCache?.flush(timeout: timeout)
+    }
+
     func captureThumbnail(for window: WindowInfo, size: CGSize, tier: ThumbnailTier) async throws -> NSImage {
         if let cached = getCachedThumbnail(for: window, tier: tier) {
+            if tier == .grid {
+                preheatThumbnails(for: [window], size: size, tier: tier, reason: "cached-fallback")
+            }
             AppLogger.verbose("Using cached thumbnail. windowID=\(window.id), tier=\(tier.rawValue)")
             return cached
         }
+
+        // 磁盘恢复不等待正在进行的截图：冷启动时先交付旧图，再由预热刷新。
+        if tier == .grid, let restored = await restoreCachedThumbnail(for: window) {
+            preheatThumbnails(for: [window], size: size, tier: tier, reason: "disk-restore")
+            return restored
+        }
+        try Task.checkCancellation()
 
         // A window that just failed stays failed until the cooldown expires:
         // re-hammering the window server on every card rebuild only queues
@@ -282,7 +302,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         // granted, neither the CG retries nor the SCK fallback can succeed,
         // and burning three attempts plus a shareable-content round-trip on
         // every capture only queues work behind the same denial.
-        guard CGPreflightScreenCaptureAccess() else {
+        guard screenCaptureAccess() else {
             throw ThumbnailError.screenCapturePermissionDenied
         }
 
@@ -363,7 +383,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// Synchronous bridge for the preheat queue, which is an `OperationQueue`.
     /// Parks its caller (a queue thread, never the main actor) while the shared
     /// attempt pipeline runs.
-    private func awaitAttempt(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) throws -> CapturedThumbnail {
+    private func awaitAttempt(window: WindowInfo, pixelSize: CGSize, scale: CGFloat, tier: ThumbnailTier) throws -> CapturedThumbnail {
         let box = CaptureBox()
         let done = DispatchSemaphore(value: 0)
         Task { [weak self] in
@@ -372,6 +392,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
                 return
             }
             do {
+                if tier == .grid { _ = await self.restoreCachedThumbnail(for: window) }
                 box.result = .success(try await self.attemptCapture(window: window, pixelSize: pixelSize, scale: scale))
             } catch {
                 box.result = .failure(error)
@@ -392,7 +413,6 @@ class ThumbnailService: ThumbnailServiceProtocol {
         let key = ThumbnailCacheKey(window.id, tier)
 
         lock.lock()
-        let meta = windowMeta[window.id]
         let entry = entries[key]
         let cached = cache.object(forKey: key)
         if cached == nil, entry != nil {
@@ -402,20 +422,33 @@ class ThumbnailService: ThumbnailServiceProtocol {
         }
         lock.unlock()
 
-        guard let meta = meta,
-              let entry = entry,
+        let expiration = tier == .grid ? ThumbnailDiskCache.retention : cacheExpiration
+        guard let entry = entry,
               let cached = cached,
               // The cache is keyed by CG window ID, which macOS recycles.
               // Verify the cached image still belongs to this exact window
               // (same owner and title) so a recycled ID can never show
               // another window's preview.
-              meta.ownerPID == window.ownerPID,
-              meta.title == window.windowTitle,
-              Date().timeIntervalSince(entry.timestamp) < cacheExpiration else {
+              entry.ownerPID == window.ownerPID,
+              entry.title == window.windowTitle,
+              Date().timeIntervalSince(entry.timestamp) >= 0,
+              Date().timeIntervalSince(entry.timestamp) < expiration else {
             return nil
         }
         AppLogger.verbose("Thumbnail cache hit. windowID=\(window.id), tier=\(tier.rawValue)")
         return cached
+    }
+
+    /// 只恢复小图，保留原始截图时间；恢复和失败重试不能延长 24 小时有效期。
+    func restoreCachedThumbnail(for window: WindowInfo) async -> NSImage? {
+        if let cached = getCachedThumbnail(for: window, tier: .grid) { return cached }
+        guard screenCaptureAccess(), let diskCache,
+              let saved = await diskCache.load(for: window), !Task.isCancelled,
+              screenCaptureAccess(), saved.capturedAt <= Date(),
+              Date().timeIntervalSince(saved.capturedAt) < ThumbnailDiskCache.retention else { return nil }
+        store(saved.image, key: ThumbnailCacheKey(window.id, .grid), window: window,
+              pixelSize: saved.pixelSize, animated: false, capturedAt: saved.capturedAt, persist: false)
+        return getCachedThumbnail(for: window, tier: .grid)
     }
 
     /// Resolution actually stored for a key, if any. Lets a caller detect that
@@ -435,7 +468,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         let pixelSize = Self.pixelSize(forPoints: size, scale: scale, tier: tier)
         recordCaptureSize(pixelSize, tier: tier)
 
-        let candidates = windows.filter { shouldPreheat(windowID: $0.id, tier: tier) }
+        let candidates = windows.filter { claimPreheat(windowID: $0.id, tier: tier) }
         guard !candidates.isEmpty else {
             return
         }
@@ -443,7 +476,6 @@ class ThumbnailService: ThumbnailServiceProtocol {
         AppLogger.info("Preheating thumbnails. reason=\(reason), tier=\(tier.rawValue), count=\(candidates.count)")
         for window in candidates {
             let key = ThumbnailCacheKey(window.id, tier)
-            _ = claimInFlight(key)
             preheatQueue.addOperation { [weak self] in
                 self?.captureAndCache(
                     window: window,
@@ -570,7 +602,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
     /// One tick of the auto-refresh timer: for every tier a visible panel is
     /// showing, re-capture the interested windows that are not in-flight or in
-    /// failure cooldown. Reuses `shouldPreheat` so the gating logic stays
+    /// failure cooldown. Reuses `claimPreheat` so the gating logic stays
     /// identical to the event-driven preheat path; failures keep the existing
     /// cached image (we only `markFailed`, never evict), so the user always sees
     /// the last good frame rather than a loading spinner.
@@ -597,14 +629,13 @@ class ThumbnailService: ThumbnailServiceProtocol {
             }
 
             for windowID in interested {
-                guard shouldPreheat(windowID: windowID, tier: tier) else {
-                    continue
-                }
                 guard let window = windowInfo(forRefresh: windowID) else {
                     continue
                 }
+                guard claimPreheat(windowID: windowID, tier: tier) else {
+                    continue
+                }
                 let key = ThumbnailCacheKey(windowID, tier)
-                _ = claimInFlight(key)
                 preheatQueue.addOperation { [weak self] in
                     self?.captureAndCache(
                         window: window,
@@ -660,13 +691,23 @@ class ThumbnailService: ThumbnailServiceProtocol {
         key: ThumbnailCacheKey,
         window: WindowInfo,
         pixelSize: CGSize,
-        animated: Bool = true
+        animated: Bool = true,
+        capturedAt: Date = Date(),
+        persist: Bool = true
     ) {
         // Byte cost of the bitmap backing this image. 4 bytes per pixel is the
         // format `downsample` produces (BGRA, alpha channel skipped).
         let cost = Int(pixelSize.width * pixelSize.height) * 4
 
         lock.lock()
+        // 截图可能在读盘期间完成，较旧磁盘图不能覆盖新的内存图。
+        if !persist, let existing = entries[key], existing.timestamp >= capturedAt,
+           cache.object(forKey: key) != nil,
+           existing.ownerPID == window.ownerPID,
+           existing.title == window.windowTitle {
+            lock.unlock()
+            return
+        }
         windowMeta[window.id] = WindowMetadata(
             ownerPID: window.ownerPID,
             ownerName: window.ownerName,
@@ -681,18 +722,23 @@ class ThumbnailService: ThumbnailServiceProtocol {
             tierCounts[key.tier, default: 0] += 1
         }
         evictionOrder[key.tier]?.removeAll { $0 == key }
-        entries[key] = ThumbnailEntry(image: image, cost: cost, pixelSize: pixelSize, timestamp: Date())
+        entries[key] = ThumbnailEntry(ownerPID: window.ownerPID, title: window.windowTitle,
+                                      cost: cost, pixelSize: pixelSize, timestamp: capturedAt)
         evictionOrder[key.tier, default: []].append(key)
         tierCosts[key.tier, default: 0] += cost
-        failedUntil.removeValue(forKey: key)
-        timeoutStrikes.removeValue(forKey: key)
+        if persist {
+            failedUntil.removeValue(forKey: key)
+            timeoutStrikes.removeValue(forKey: key)
+        }
+        cache.setObject(image, forKey: key)
         evictIfNeededLocked(tier: key.tier)
         let liveCost = tierCosts[key.tier] ?? 0
         let liveCount = tierCounts[key.tier] ?? 0
         lock.unlock()
 
-        cache.setObject(image, forKey: key)
-
+        if persist, key.tier == .grid {
+            diskCache?.save(PersistedThumbnail(image: image, capturedAt: capturedAt, pixelSize: pixelSize), for: window)
+        }
         notifyThumbnailDidUpdate(windowID: window.id, tier: key.tier, animated: animated, failed: false)
         AppLogger.verbose("Cached thumbnail. \(key.description), pixelSize=\(pixelSize), tierCost=\(liveCost), tierEntries=\(liveCount)")
     }
@@ -748,8 +794,6 @@ class ThumbnailService: ThumbnailServiceProtocol {
             tierCosts[key.tier, default: 0] -= removed.cost
             tierCounts[key.tier, default: 0] -= 1
         }
-        failedUntil.removeValue(forKey: key)
-        inFlightKeys.remove(key)
         evictionOrder[key.tier]?.removeAll { $0 == key }
         cache.removeObject(forKey: key)
     }
@@ -783,14 +827,16 @@ class ThumbnailService: ThumbnailServiceProtocol {
     func storeEntryForTesting(
         window: WindowInfo,
         tier: ThumbnailTier,
-        pixelSize: CGSize
+        pixelSize: CGSize,
+        capturedAt: Date = Date()
     ) -> NSImage {
         let image = NSImage(size: NSSize(width: max(1, pixelSize.width), height: max(1, pixelSize.height)))
         store(
             image,
             key: ThumbnailCacheKey(window.id, tier),
             window: window,
-            pixelSize: pixelSize
+            pixelSize: pixelSize,
+            capturedAt: capturedAt
         )
         return image
     }
@@ -809,6 +855,13 @@ class ThumbnailService: ThumbnailServiceProtocol {
         let count = tierCounts[tier] ?? 0
         lock.unlock()
         return count
+    }
+
+    /// 模拟系统在内存压力下清理 NSCache，不改动元数据记账。
+    func purgeImagesForTesting() {
+        lock.lock()
+        cache.removeAllObjects()
+        lock.unlock()
     }
 
     /// Test seam: the merged auto-refresh interest for one tier — the union of
@@ -938,7 +991,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     }
 
     private func captureWindowThumbnail(_ window: WindowInfo, pixelSize: CGSize, scale: CGFloat) throws -> CapturedThumbnail {
-        guard CGPreflightScreenCaptureAccess() else {
+        guard screenCaptureAccess() else {
             AppLogger.error("Screen capture permission is not granted. Cannot capture thumbnail. windowID=\(window.id), owner=\(window.ownerName)")
             throw ThumbnailError.screenCapturePermissionDenied
         }
@@ -1005,7 +1058,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// block forever on macOS 26.
     private func captureWithScreenCaptureKit(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async -> CapturedThumbnail? {
         guard #available(macOS 14.0, *),
-              CGPreflightScreenCaptureAccess() else {
+              screenCaptureAccess() else {
             return nil
         }
 
@@ -1213,17 +1266,14 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
     // MARK: - Preheat gating
 
-    /// Age at which the auto-refresh tick re-captures an entry. Deliberately
-    /// shorter than `cacheExpiration`: the tick must land *before* the cache
-    /// read expires, otherwise there is a window (expiry → next tick, up to
-    /// `autoRefreshInterval`) in which `getCachedThumbnail` returns nil while
-    /// a panel is still showing the window — the replica fell back to its
-    /// low-resolution grid stand-in for that gap.
+    /// 45 秒后可后台刷新。小图的新鲜度与 24 小时兜底有效期分开计时；
+    /// 放大预览仍使用原有 60 秒有效期，刷新在过期之前发生。
     private var refreshAgeThreshold: TimeInterval {
         cacheExpiration * 0.75
     }
 
-    private func shouldPreheat(windowID: CGWindowID, tier: ThumbnailTier) -> Bool {
+    /// 检查缓存与退避，并在同一把锁内占用捕获任务，防止并发预热重复排队。
+    func claimPreheat(windowID: CGWindowID, tier: ThumbnailTier) -> Bool {
         let key = ThumbnailCacheKey(windowID, tier)
         let now = Date()
 
@@ -1244,6 +1294,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
             return false
         }
 
+        inFlightKeys.insert(key)
         return true
     }
 
@@ -1292,6 +1343,8 @@ class ThumbnailService: ThumbnailServiceProtocol {
     /// on — an unthrottled retry loop against a hung window server call
     /// accumulates threads until the process runs out of them.
     private func markFailed(_ key: ThumbnailCacheKey, error: Error) {
+        lock.lock()
+        defer { lock.unlock() }
         let cooldown: TimeInterval
         if let thumbnailError = error as? ThumbnailError,
            case .captureTimedOut = thumbnailError {
@@ -1302,9 +1355,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
             cooldown = failureCooldown
         }
 
-        lock.lock()
         failedUntil[key] = Date().addingTimeInterval(cooldown)
-        lock.unlock()
     }
 
     // MARK: - Capture admission
@@ -1345,7 +1396,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
 
         do {
             recordWindowMeta(window)
-            let captured = try awaitAttempt(window: window, pixelSize: pixelSize, scale: scale)
+            let captured = try awaitAttempt(window: window, pixelSize: pixelSize, scale: scale, tier: key.tier)
             // Only the auto-refresh tick suppresses the crossfade; event-
             // driven preheat keeps it so a freshly opened panel still fades
             // its first frames in.
@@ -1440,7 +1491,8 @@ private struct WindowMetadata {
 
 /// One cached thumbnail for a (window, tier) pair.
 private struct ThumbnailEntry {
-    let image: NSImage
+    let ownerPID: pid_t
+    let title: String
     let cost: Int
     let pixelSize: CGSize
     let timestamp: Date

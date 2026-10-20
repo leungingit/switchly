@@ -443,13 +443,14 @@ final class WorkspaceBarViewModel: ObservableObject {
             return
         }
 
+        let snapshot = workspace.appItems.isEmpty ? [] : windowMonitorService.getAllWindows()
         let nextItems = workspace.appItems.flatMap { appItem -> [WorkspaceBarItem] in
             // Match by name as well as bundle ID: several products can share a
             // bundle identifier (e.g. ChatGPT and ChatGPT Atlas), and without
             // the name check one product's windows would show up under the
             // other's card and switching would jump to the wrong app.
             let windows = sortedWindows(
-                windowMonitorService.getWindows(for: appItem.bundleIdentifier, appName: appItem.appName),
+                windowMonitorService.filterWindows(snapshot, for: appItem.bundleIdentifier, appName: appItem.appName),
                 strategy: workspace.windowSortStrategy
             )
 
@@ -656,15 +657,13 @@ struct WorkspaceBarView: View {
         .panelGlass(
             isActive: settings.enableBackgroundBlur,
             opacity: backgroundOpacity,
-            cornerRadius: GlassPanelCorner.radius
+            cornerRadius: GlassPanelCorner.radius,
+            material: settings.crystalMaterial
         )
-        .overlay(
-            // Liquid Glass border highlight for depth
-            RoundedRectangle(cornerRadius: GlassPanelCorner.radius, style: .continuous)
-                .strokeBorder(
-                    Color.white.opacity(settings.enableBackgroundBlur ? 0.12 : 0),
-                    lineWidth: DesignTokens.hairline
-                )
+        .crystalSpecularRim(
+            cornerRadius: GlassPanelCorner.radius,
+            material: settings.crystalMaterial,
+            lineWidth: settings.enableBackgroundBlur ? 0.75 : 0
         )
         .shadow(color: .black.opacity(0.24), radius: 22, x: 0, y: 12)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
@@ -949,13 +948,16 @@ private struct WorkspaceBarCard: View {
             height: WorkspaceBarMetrics.cardHeight,
             alignment: .topLeading
         )
-        .cardSurface(fill: cardFill)
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                .strokeBorder(
-                    isSelected ? Color.accentColor : cardBorder,
-                    lineWidth: isSelected ? 2 : DesignTokens.hairline
-                )
+        .cardSurface(
+            fill: cardFill,
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isSelected: isSelected || isHovered
+        )
+        .crystalSpecularRim(
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isHighlighted: isSelected || isHovered
         )
         .overlay(alignment: .topLeading) {
             // Window controls, as in the dock preview and the preview grid.
@@ -1156,10 +1158,12 @@ private struct WorkspaceBarCard: View {
                     height: WorkspaceBarMetrics.thumbnailHeight
                 )
             )
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 self.thumbnailState = .loaded(image)
             }
         } catch {
+            guard !Task.isCancelled else { return }
             AppLogger.warning("Workspace bar thumbnail failed. windowID=\(window.id), error=\(error)")
             await MainActor.run {
                 thumbnailState = .failed(appIcon)
@@ -1172,17 +1176,17 @@ private struct WorkspaceBarCard: View {
     /// Solid card fill — see WindowThumbnailView.cardFill.
     private var cardFill: Color {
         if isHovered {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.16 : 0.10)
+            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.18 : 0.10)
         }
         if isSelected {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.08)
+            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.06)
         }
-        return Color(nsColor: .controlBackgroundColor).opacity(cardFillOpacity)
+        return Color.crystalSurfaceBase.opacity(cardFillOpacity)
     }
 
     private var cardFillOpacity: Double {
         guard settings.enableBackgroundBlur else { return 1 }
-        return min(max(settings.backgroundBlurOpacity + 0.45, 0.55), 0.9)
+        return min(max(settings.backgroundBlurOpacity * 0.35 + 0.04, 0.06), 0.28)
     }
 
     private var cardBorder: Color {

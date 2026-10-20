@@ -18,7 +18,12 @@ struct AppSettings: Codable, Equatable {
     var showWindowTitles: Bool
     var refreshInterval: TimeInterval
     var enableBackgroundBlur: Bool
+    /// Glass wash strength for the floating panels (preview, Dock preview,
+    /// workspace bar) — surfaces that appear over the user's work and vanish.
     var backgroundBlurOpacity: Double
+    /// 设置、工作区管理和统计等普通窗口共用的玻璃强度。
+    /// 与临时浮动面板独立；沿用 preferencesGlassOpacity 存储键以兼容旧设置。
+    var preferencesGlassOpacity: Double
     
     var previewDisplayMode: PreviewDisplayMode
     var notificationStrategy: NotificationStrategy
@@ -68,6 +73,11 @@ struct AppSettings: Codable, Equatable {
     /// custom values. See docs/plan/2026-09-29-statistics-panel.md section 8.5.
     var efficiencyBaselinePreset: EfficiencyBaselinePreset
     var efficiencyBaselineCustom: EfficiencyBaselineValues?
+    /// Optical crystal material: the four tunable parameters that replaced the
+    /// former Ice / Quartz / Frameless presets.
+    var crystalMaterial: CrystalMaterial
+    /// Spatial layout style for the preview panel (Stage / Pill Matrix / Classic Grid / Frameless Tiles).
+    var previewPanelStyle: PreviewPanelStyle
 
     init(
         previewStrategy: PreviewStrategy,
@@ -79,6 +89,7 @@ struct AppSettings: Codable, Equatable {
         refreshInterval: TimeInterval,
         enableBackgroundBlur: Bool,
         backgroundBlurOpacity: Double = 0.30,
+        preferencesGlassOpacity: Double = 0.70,
         previewDisplayMode: PreviewDisplayMode,
         notificationStrategy: NotificationStrategy,
         launchAtLogin: Bool,
@@ -105,7 +116,9 @@ struct AppSettings: Codable, Equatable {
         previewShakeEnabled: Bool = false,
         usageStatisticsEnabled: Bool = true,
         efficiencyBaselinePreset: EfficiencyBaselinePreset = .standard,
-        efficiencyBaselineCustom: EfficiencyBaselineValues? = nil
+        efficiencyBaselineCustom: EfficiencyBaselineValues? = nil,
+        crystalMaterial: CrystalMaterial = .legacyDefault,
+        previewPanelStyle: PreviewPanelStyle = .classicGrid
     ) {
         self.previewStrategy = previewStrategy
         self.shortcutPrefix = shortcutPrefix
@@ -116,6 +129,7 @@ struct AppSettings: Codable, Equatable {
         self.refreshInterval = refreshInterval
         self.enableBackgroundBlur = enableBackgroundBlur
         self.backgroundBlurOpacity = backgroundBlurOpacity
+        self.preferencesGlassOpacity = preferencesGlassOpacity
         self.previewDisplayMode = previewDisplayMode
         self.notificationStrategy = notificationStrategy
         self.launchAtLogin = launchAtLogin
@@ -143,6 +157,8 @@ struct AppSettings: Codable, Equatable {
         self.usageStatisticsEnabled = usageStatisticsEnabled
         self.efficiencyBaselinePreset = efficiencyBaselinePreset
         self.efficiencyBaselineCustom = efficiencyBaselineCustom
+        self.crystalMaterial = crystalMaterial
+        self.previewPanelStyle = previewPanelStyle
     }
 
     enum CodingKeys: String, CodingKey {
@@ -155,6 +171,7 @@ struct AppSettings: Codable, Equatable {
         case refreshInterval
         case enableBackgroundBlur
         case backgroundBlurOpacity
+        case preferencesGlassOpacity
         case previewDisplayMode
         case notificationStrategy
         case launchAtLogin
@@ -182,6 +199,8 @@ struct AppSettings: Codable, Equatable {
         case usageStatisticsEnabled
         case efficiencyBaselinePreset
         case efficiencyBaselineCustom
+        case crystalMaterial
+        case previewPanelStyle
     }
 
     /// Keys that are read but never written.
@@ -192,6 +211,10 @@ struct AppSettings: Codable, Equatable {
     private enum RetiredCodingKeys: String, CodingKey {
         /// The delay's name before the enlarged pane became a window replica.
         case previewHeroHoverDelay
+        /// The three material presets, replaced by the four tunable parameters
+        /// in `CrystalMaterial`. Read once so an existing choice is carried
+        /// over, never written again.
+        case crystalThemePreset
     }
 
     init(from decoder: Decoder) throws {
@@ -205,6 +228,10 @@ struct AppSettings: Codable, Equatable {
         self.refreshInterval = try container.decode(TimeInterval.self, forKey: .refreshInterval)
         self.enableBackgroundBlur = try container.decode(Bool.self, forKey: .enableBackgroundBlur)
         self.backgroundBlurOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundBlurOpacity) ?? 0.30
+        // Absent before the settings window got its own control: keep the
+        // window opaque enough that text over a bright desktop stays readable,
+        // which is what the fixed value effectively was.
+        self.preferencesGlassOpacity = try container.decodeIfPresent(Double.self, forKey: .preferencesGlassOpacity) ?? 0.70
         self.previewDisplayMode = try container.decode(PreviewDisplayMode.self, forKey: .previewDisplayMode)
         self.notificationStrategy = try container.decode(NotificationStrategy.self, forKey: .notificationStrategy)
         self.launchAtLogin = try container.decode(Bool.self, forKey: .launchAtLogin)
@@ -253,6 +280,16 @@ struct AppSettings: Codable, Equatable {
         self.usageStatisticsEnabled = try container.decodeIfPresent(Bool.self, forKey: .usageStatisticsEnabled) ?? true
         self.efficiencyBaselinePreset = try container.decodeIfPresent(EfficiencyBaselinePreset.self, forKey: .efficiencyBaselinePreset) ?? .standard
         self.efficiencyBaselineCustom = try container.decodeIfPresent(EfficiencyBaselineValues.self, forKey: .efficiencyBaselineCustom)
+        // The material used to be one of three presets. Each preset is now
+        // expanded into the four parameters it stood for, so an existing user
+        // keeps the look they chose instead of silently reverting to Ice.
+        if let material = try container.decodeIfPresent(CrystalMaterial.self, forKey: .crystalMaterial) {
+            self.crystalMaterial = material.clamped()
+        } else {
+            let legacyPreset = try retired.decodeIfPresent(String.self, forKey: .crystalThemePreset)
+            self.crystalMaterial = CrystalMaterial.legacy(expandedFrom: legacyPreset)
+        }
+        self.previewPanelStyle = try container.decodeIfPresent(PreviewPanelStyle.self, forKey: .previewPanelStyle) ?? .classicGrid
     }
     
     static var `default`: AppSettings {
@@ -424,6 +461,211 @@ enum MonitorFrequency: String, Codable, CaseIterable {
             return 2.0
         case .powerSaving:
             return 5.0
+        }
+    }
+}
+
+/// Which surface the floating panels are drawn on.
+///
+/// The crystal material used to be one of three fixed presets. It is now four
+/// independent parameters (see `CrystalMaterial`); this enum only keeps the one
+/// difference those parameters cannot express: whether a panel draws its glass
+/// at all. `clear` dissolves the outer box so the cards float directly on the
+/// desktop, which is a structure, not a colour.
+enum CrystalPanelMaterial: String, Codable, CaseIterable, Hashable {
+    case glass = "glass"
+    case clear = "clear"
+
+    func displayName(language: AppLanguage) -> String {
+        switch self {
+        case .glass:
+            return language.localizedString("Glass panel")
+        case .clear:
+            return language.localizedString("No panel")
+        }
+    }
+}
+
+/// The crystal material, as four independent, user-editable parameters.
+///
+/// This replaced the former Ice / Quartz / Frameless presets. The presets were
+/// only ever a colour plus three near-identical alphas (0.18/0.20/0.24 sheen,
+/// 0.57/0.62/0.68 rim) — differences too small to see — so they added a
+/// choice without adding a change. Each knob here maps to one line of the
+/// render and is visible on its own.
+struct CrystalMaterial: Hashable {
+    /// Hue of the panel wash, card sheen and specular rim.
+    var tintColor: Color
+    /// Top specular sheen alpha for cards and panels (0–0.40).
+    var topSheenOpacity: Double
+    /// 面板和普通窗口共用的水晶染色强度（0–1）。保留旧存储键。
+    /// 普通窗口仍沿用既有光泽衰减公式，避免本次整理改变光泽表现。
+    var panelTintCap: Double
+    /// Specular rim highlight top alpha (0–1).
+    var rimTopOpacity: Double
+    /// Whether panels draw their glass surface at all.
+    var panelMaterial: CrystalPanelMaterial
+
+    /// The values the presets shipped with, so an upgrade looks unchanged.
+    ///
+    /// These are the `ice` values (cold blue, 0.18 sheen, full panel tint,
+    /// 0.57 rim), which were also the defaults for a fresh install.
+    static let legacyDefault = CrystalMaterial(
+        tintColor: Color(red: 60.0 / 255, green: 150.0 / 255, blue: 240.0 / 255),
+        topSheenOpacity: 0.18,
+        panelTintCap: 1.0,
+        rimTopOpacity: 0.57,
+        panelMaterial: .glass
+    )
+
+    /// Ranges the Preferences sliders offer. Kept here so the controls, the
+    /// decode clamp and the QA checks cannot drift apart.
+    enum Range {
+        static let sheen: ClosedRange<Double> = 0...0.40
+        static let panelTint: ClosedRange<Double> = 0...1
+        static let rim: ClosedRange<Double> = 0...1
+    }
+
+    func clamped() -> CrystalMaterial {
+        var copy = self
+        copy.topSheenOpacity = min(max(copy.topSheenOpacity, Range.sheen.lowerBound), Range.sheen.upperBound)
+        copy.panelTintCap = min(max(copy.panelTintCap, Range.panelTint.lowerBound), Range.panelTint.upperBound)
+        copy.rimTopOpacity = min(max(copy.rimTopOpacity, Range.rim.lowerBound), Range.rim.upperBound)
+        return copy
+    }
+
+    /// Expands a retired preset into the parameters it used to stand for.
+    ///
+    /// The numbers are the ones the preset table held before it was removed;
+    /// they are repeated here (rather than kept in a live enum) solely so a
+    /// settings file written by an older build decodes to the same pixels.
+    static func legacy(expandedFrom raw: String?) -> CrystalMaterial {
+        switch raw {
+        case "quartz":
+            return CrystalMaterial(
+                tintColor: Color(red: 235.0 / 255, green: 163.0 / 255, blue: 110.0 / 255),
+                topSheenOpacity: 0.20,
+                panelTintCap: 1.0,
+                rimTopOpacity: 0.62,
+                panelMaterial: .glass
+            )
+        case "frameless":
+            // "Frameless" meant two things: a near-zero panel wash and no
+            // panel surface at all. The second is structural and now lives on
+            // the material switch, so carry it there instead of leaving the
+            // user with an invisible 0.02 wash.
+            return CrystalMaterial(
+                tintColor: Color(red: 178.0 / 255, green: 178.0 / 255, blue: 178.0 / 255),
+                topSheenOpacity: 0.24,
+                panelTintCap: 1.0,
+                rimTopOpacity: 0.68,
+                panelMaterial: .clear
+            )
+        default:
+            return .legacyDefault
+        }
+    }
+}
+
+// MARK: - CrystalMaterial Codable
+
+extension CrystalMaterial: Codable {
+    enum CodingKeys: String, CodingKey {
+        case tintColor
+        case topSheenOpacity
+        case panelTintCap
+        case rimTopOpacity
+        case panelMaterial
+    }
+
+    /// The tint is stored as three sRGB components rather than an archived
+    /// colour: the settings file is JSON and `Color` has no canonical encoded
+    /// form, so a component triple is what survives a round trip on every OS.
+    private struct RGB: Codable {
+        var red: Double
+        var green: Double
+        var blue: Double
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = CrystalMaterial.legacyDefault
+        let rgb = try container.decodeIfPresent(RGB.self, forKey: .tintColor)
+        self.tintColor = rgb.map { Color(red: $0.red, green: $0.green, blue: $0.blue) } ?? fallback.tintColor
+        self.topSheenOpacity = try container.decodeIfPresent(Double.self, forKey: .topSheenOpacity) ?? fallback.topSheenOpacity
+        self.panelTintCap = try container.decodeIfPresent(Double.self, forKey: .panelTintCap) ?? fallback.panelTintCap
+        self.rimTopOpacity = try container.decodeIfPresent(Double.self, forKey: .rimTopOpacity) ?? fallback.rimTopOpacity
+        self.panelMaterial = try container.decodeIfPresent(CrystalPanelMaterial.self, forKey: .panelMaterial) ?? fallback.panelMaterial
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let resolved = NSColor(tintColor).usingColorSpace(.sRGB) ?? .systemBlue
+        try container.encode(RGB(red: Double(resolved.redComponent),
+                                  green: Double(resolved.greenComponent),
+                                  blue: Double(resolved.blueComponent)),
+                             forKey: .tintColor)
+        try container.encode(topSheenOpacity, forKey: .topSheenOpacity)
+        try container.encode(panelTintCap, forKey: .panelTintCap)
+        try container.encode(rimTopOpacity, forKey: .rimTopOpacity)
+        try container.encode(panelMaterial, forKey: .panelMaterial)
+    }
+}
+
+/// Spatial layout presets for the floating preview panel, selectable in Preferences.
+///
+/// Every case must change the layout it names — a case that renders like
+/// another one is a dead setting. `pillMatrix` and `framelessTiles` were
+/// removed for exactly that reason: they were selectable but rendered the
+/// classic grid (work/qa/report.md §1).
+enum PreviewPanelStyle: String, Codable, CaseIterable, Hashable {
+    case stage = "stage"
+    case classicGrid = "classicGrid"
+
+    func displayName(language: AppLanguage) -> String {
+        switch self {
+        case .stage:
+            return language.localizedString("Spatial Stage")
+        case .classicGrid:
+            return language.localizedString("Crystal Grid")
+        }
+    }
+
+    /// Grid cell shape. Cards keep the same information; the stage variant
+    /// shows a shorter thumbnail so the focus banner fits above it.
+    enum Cell {
+        case grid
+        case stage
+    }
+
+    var cell: Cell {
+        switch self {
+        case .stage:
+            return .stage
+        case .classicGrid:
+            return .grid
+        }
+    }
+
+    /// Minimum cell width. The stage layout runs tighter so the four-column
+    /// matrix still fits beside the ornament rail.
+    func minimumCardWidth(for size: ThumbnailSize) -> CGFloat {
+        switch cell {
+        case .grid:
+            return size.previewCardMinWidth
+        case .stage:
+            return size.previewCardMinWidth * 0.75
+        }
+    }
+
+    /// Thumbnail height multiplier. Stage is authoritative about the focused
+    /// window (the banner), so its grid cells are shorter than the classic grid.
+    var thumbnailHeightScale: CGFloat {
+        switch cell {
+        case .grid:
+            return 1.0
+        case .stage:
+            return 0.65
         }
     }
 }

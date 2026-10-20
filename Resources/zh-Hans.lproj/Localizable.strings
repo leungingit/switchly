@@ -226,3 +226,43 @@
 "%d hr %d min" = "%d 小时 %d 分";
 "Record how often you use preview and quick switch. Stored locally, never uploaded." = "记录预览与快速切换的使用次数。仅保存在本地，不联网上传。";
 "Enabled" = "启用";
+
+/* PreferencesView - Panel appearance / Crystal material / This window */
+"Preview panel" = "预览面板";
+"Panel appearance" = "面板外观";
+"Crystal material" = "水晶材质";
+"This window" = "本窗口";
+"Spatial panel layout" = "面板空间布局";
+"Panel glass wash" = "面板玻璃底色";
+"Panel material" = "面板材质";
+"Crystal tint" = "水晶色相";
+"Top sheen" = "顶部高光";
+"Panel tint" = "面板着色";
+"Rim highlight" = "边缘高光";
+"Settings window glass" = "设置窗口玻璃";
+"Floating panels (preview, Dock preview, workspace bar) only. Lower values let more of the wallpaper's own colours through the glass; higher values let the frosted wash dominate." = "仅作用于浮动面板（预览面板、Dock 预览、工作区栏）。数值越低，壁纸本身的颜色越容易透过玻璃；数值越高，磨砂底色越明显。";
+"No panel removes the glass surface entirely so the cards float directly on the desktop." = "选择\"无面板\"会完全去掉玻璃表面，卡片直接浮在桌面上。";
+"Strength of the highlight across the top edge of cards and panels." = "卡片与面板顶部边缘高光的强度。";
+"How much colour the panel itself carries. At 0 the glass stays frosted but takes on no hue." = "面板自身所带的颜色浓度。为 0 时玻璃仍保持磨砂，但不带任何色调。";
+"Strength of the specular bevel along the panel and card edges." = "面板与卡片边缘镜面倒角的强度。";
+"How much of the desktop shows through this window. It is independent of the floating panels' glass wash." = "桌面透过本窗口的程度，与浮动面板的玻璃底色互不影响。";
+"Glass panel" = "玻璃面板";
+"No panel" = "无面板";
+"Spatial Stage" = "主焦舞台";
+"Crystal Grid" = "经典网格";
+"Sampled from this window's live glass" = "采样自本窗口的实时玻璃";
+"Simulated wallpaper background, not the app's own colours" = "背景为模拟壁纸，非应用配色";
+
+"Floating panels" = "浮动面板";
+
+"Standard windows" = "普通窗口";
+
+"Window glass wash" = "窗口玻璃洗";
+
+"Settings, Workspaces and Statistics windows share this control. It does not change floating panels." = "设置、工作区管理和统计窗口共用此设置，不影响浮动面板。";
+
+"Shared crystal tint strength" = "共享水晶染色强度";
+
+"Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows." = "浮动面板与普通窗口共用的染色强度，也会影响普通窗口的光泽。";
+
+"Material sample uses this window's background; it does not preview an independent panel wash." = "材质示意使用当前窗口的背景，不预览独立的面板玻璃洗。";

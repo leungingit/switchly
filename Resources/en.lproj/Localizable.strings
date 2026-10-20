@@ -226,3 +226,43 @@
 "%d hr %d min" = "%d hr %d min";
 "Record how often you use preview and quick switch. Stored locally, never uploaded." = "Record how often you use preview and quick switch. Stored locally, never uploaded.";
 "Enabled" = "Enabled";
+
+/* PreferencesView - Panel appearance / Crystal material / This window */
+"Preview panel" = "Preview panel";
+"Panel appearance" = "Panel appearance";
+"Crystal material" = "Crystal material";
+"This window" = "This window";
+"Spatial panel layout" = "Spatial panel layout";
+"Panel glass wash" = "Panel glass wash";
+"Panel material" = "Panel material";
+"Crystal tint" = "Crystal tint";
+"Top sheen" = "Top sheen";
+"Panel tint" = "Panel tint";
+"Rim highlight" = "Rim highlight";
+"Settings window glass" = "Settings window glass";
+"Floating panels (preview, Dock preview, workspace bar) only. Lower values let more of the wallpaper's own colours through the glass; higher values let the frosted wash dominate." = "Floating panels (preview, Dock preview, workspace bar) only. Lower values let more of the wallpaper's own colours through the glass; higher values let the frosted wash dominate.";
+"No panel removes the glass surface entirely so the cards float directly on the desktop." = "No panel removes the glass surface entirely so the cards float directly on the desktop.";
+"Strength of the highlight across the top edge of cards and panels." = "Strength of the highlight across the top edge of cards and panels.";
+"How much colour the panel itself carries. At 0 the glass stays frosted but takes on no hue." = "How much colour the panel itself carries. At 0 the glass stays frosted but takes on no hue.";
+"Strength of the specular bevel along the panel and card edges." = "Strength of the specular bevel along the panel and card edges.";
+"How much of the desktop shows through this window. It is independent of the floating panels' glass wash." = "How much of the desktop shows through this window. It is independent of the floating panels' glass wash.";
+"Glass panel" = "Glass panel";
+"No panel" = "No panel";
+"Spatial Stage" = "Spatial Stage";
+"Crystal Grid" = "Crystal Grid";
+"Sampled from this window's live glass" = "Sampled from this window's live glass";
+"Simulated wallpaper background, not the app's own colours" = "Simulated wallpaper background, not the app's own colours";
+
+"Floating panels" = "Floating panels";
+
+"Standard windows" = "Standard windows";
+
+"Window glass wash" = "Window glass wash";
+
+"Settings, Workspaces and Statistics windows share this control. It does not change floating panels." = "Settings, Workspaces and Statistics windows share this control. It does not change floating panels.";
+
+"Shared crystal tint strength" = "Shared crystal tint strength";
+
+"Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows." = "Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows.";
+
+"Material sample uses this window's background; it does not preview an independent panel wash." = "Material sample uses this window's background; it does not preview an independent panel wash.";
