@@ -122,6 +122,7 @@ class PreviewPanel: NSPanel {
         let hostingView = NSHostingView(rootView: PreviewView(viewModel: viewModel))
         hostingView.autoresizingMask = [.width, .height]
         self.contentView = hostingView
+        applyAppearanceOverride()
         applyRoundedCorners()
 
         layoutForDisplayMode()
@@ -431,6 +432,30 @@ class PreviewPanel: NSPanel {
         contentView.layer?.masksToBounds = true
     }
 
+    /// Applies the user's theme choice to this borderless panel.
+    ///
+    /// The crystal tokens resolve against the window appearance, and a
+    /// borderless panel does not follow `NSApp.appearance` on its own. Without
+    /// this, cutting the theme over to Light/Dark left the panel painting the
+    /// previous polarity until the next launch.
+    func applyAppearanceOverride() {
+        let appearance: NSAppearance?
+
+        switch SettingsService.shared.loadSettings().theme {
+        case .system:
+            appearance = nil
+        case .light:
+            appearance = NSAppearance(named: .aqua)
+        case .dark:
+            appearance = NSAppearance(named: .darkAqua)
+        }
+
+        self.appearance = appearance
+        contentView?.appearance = appearance
+        contentView?.needsDisplay = true
+        invalidateShadow()
+    }
+
     /// Resolves the screen the panel opens on for the current display mode.
     private func targetScreen(for settings: AppSettings) -> NSScreen? {
         switch settings.previewDisplayMode {
@@ -583,13 +608,23 @@ struct PreviewView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            // One layout for every mode. The enlarged mode adds the window
-            // replica *behind* the panel; it does not change what the panel
-            // shows, which is what makes it able to stay in front and keep
-            // working (docs/plan/2026-09-28-preview-panel-live-switch.md §15).
-            windowGrid
+        // Each style draws its own structure. The stage adds the ornament rail
+        // and the focus banner and runs tighter cells; the classic grid draws a
+        // plain matrix. Sharing one body is fine — sharing one *layout* was not
+        // (D20: layouts must follow each surface's function).
+        HStack(spacing: 14) {
+            if settings.previewPanelStyle == .stage {
+                spatialOrnamentRail
+            }
+
+            VStack(spacing: 0) {
+                header
+                if settings.previewPanelStyle == .stage,
+                   let focused = viewModel.selectedWindow ?? viewModel.filteredWindows.first {
+                    spatialFocusStageBanner(for: focused)
+                }
+                windowGrid
+            }
         }
         .frame(width: viewModel.panelSize.width, height: viewModel.panelSize.height)
         .scaleEffect(viewModel.isPanelVisible ? 1 : 0.94, anchor: viewModel.dismissAnchor)
@@ -602,15 +637,13 @@ struct PreviewView: View {
         .panelGlass(
             isActive: settings.enableBackgroundBlur,
             opacity: backgroundOpacity,
-            cornerRadius: GlassPanelCorner.radius
+            cornerRadius: GlassPanelCorner.radius,
+            material: settings.crystalMaterial
         )
-        .overlay(
-            // Liquid Glass border highlight for depth
-            RoundedRectangle(cornerRadius: GlassPanelCorner.radius, style: .continuous)
-                .strokeBorder(
-                    Color.white.opacity(settings.enableBackgroundBlur ? 0.12 : 0),
-                    lineWidth: 0.5
-                )
+        .crystalSpecularRim(
+            cornerRadius: GlassPanelCorner.radius,
+            material: settings.crystalMaterial,
+            lineWidth: settings.enableBackgroundBlur ? 0.75 : 0
         )
         .shadow(color: .black.opacity(0.24), radius: 22, x: 0, y: 12)
         .onAppear {
@@ -631,8 +664,13 @@ struct PreviewView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             settings = SettingsService.shared.loadSettings()
-            // A mode change resizes the panel; refit first so the column count
-            // below is computed from the new width.
+            // The window appearance is the ground truth for the crystal tokens
+            // (Color.crystalSheenTop & co. read it), so a theme switch has to
+            // repaint the content: the NSPanel is chrome-less and never redraws
+            // itself just because its appearance changed.
+            PreviewPanel.shared.applyAppearanceOverride()
+            // A mode or layout change resizes/refits the panel; refit first so
+            // the column count below is computed from the new width.
             PreviewPanel.shared.refitToDisplayMode()
             viewModel.updateGridColumnCount(width: viewModel.panelSize.width, settings: settings)
         }
@@ -661,13 +699,22 @@ struct PreviewView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
         .background(sectionBackground)
         .overlay(alignment: .bottom) {
-            // Hairline separator so the header reads as its own zone on top
-            // of the glass panel instead of floating over the grid.
             Rectangle()
-                .fill(Color(nsColor: .separatorColor).opacity(0.5))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.clear,
+                            Color.crystalPanelHairline.opacity(settings.enableBackgroundBlur ? 0.22 : 0.08),
+                            Color.clear
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .frame(height: DesignTokens.hairline)
         }
     }
@@ -711,20 +758,26 @@ struct PreviewView: View {
         .liquidGlass(
             isActive: settings.enableBackgroundBlur,
             opacity: controlOpacity,
-            cornerRadius: DesignTokens.Radius.control,
-            tintColor: Color(nsColor: .textBackgroundColor),
+            cornerRadius: DesignTokens.Radius.pill,
+            tintColor: settings.crystalMaterial.tintColor,
             interactive: true,
-            fallbackColor: Color(nsColor: .textBackgroundColor)
+            fallbackColor: Color(nsColor: .textBackgroundColor),
+            material: settings.crystalMaterial
         )
         .overlay(
-            // Focus ring — keyboard users otherwise get no signal that the
-            // search field is active after the panel opens.
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.control, style: .continuous)
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.pill, style: .continuous)
                 .strokeBorder(
-                    Color.accentColor.opacity(searchFocused ? 0.85 : 0),
-                    lineWidth: searchFocused ? 1.5 : 0
+                    LinearGradient(
+                        colors: searchFocused
+                            ? [Color.crystalPanelHairline.opacity(0.92), Color.accentColor.opacity(0.85)]
+                            : [Color.crystalPanelHairline.opacity(0.42), Color.crystalPanelHairline.opacity(0.12)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: searchFocused ? 1.25 : DesignTokens.hairline
                 )
         )
+        .shadow(color: Color.accentColor.opacity(searchFocused ? 0.28 : 0), radius: 8, x: 0, y: 2)
         .animation(MotionTokens.animated(.easeOut(duration: MotionTokens.microDuration)), value: searchFocused)
     }
     
@@ -770,16 +823,100 @@ struct PreviewView: View {
         }
     }
 
+    private var spatialOrnamentRail: some View {
+        VStack(spacing: 12) {
+            ForEach(PreviewPanelStyle.allCases, id: \.self) { style in
+                let isCurrent = settings.previewPanelStyle == style
+                Button {
+                    var updated = settings
+                    updated.previewPanelStyle = style
+                    try? SettingsService.shared.saveSettings(updated)
+                } label: {
+                    Image(systemName: ornamentIcon(for: style))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(isCurrent ? .white : .secondary)
+                        .frame(width: 34, height: 34)
+                        .background(
+                            Circle()
+                                .fill(isCurrent ? Color.accentColor.opacity(0.55) : Color.crystalPanelHairline.opacity(0.08))
+                        )
+                        .overlay(
+                            Circle()
+                                .strokeBorder(Color.crystalPanelHairline.opacity(isCurrent ? 0.85 : 0.24),
+                                              lineWidth: DesignTokens.hairline)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(style.displayName(language: settings.language))
+            }
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 8)
+        .liquidGlass(
+            isActive: settings.enableBackgroundBlur,
+            opacity: 0.18,
+            cornerRadius: DesignTokens.Radius.pill,
+            material: settings.crystalMaterial
+        )
+        .padding(.leading, 12)
+    }
+
+    private func ornamentIcon(for style: PreviewPanelStyle) -> String {
+        switch style {
+        case .stage: return "sparkles.rectangle.stack"
+        case .classicGrid: return "square.grid.2x2"
+        }
+    }
+
+    private func spatialFocusStageBanner(for window: WindowInfo) -> some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text("#\(window.windowNumber)")
+                        .font(.caption2.monospacedDigit().weight(.semibold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.crystalPanelHairline.opacity(0.16)))
+                    Text(window.ownerName)
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.secondary)
+                }
+                Text(window.displayName)
+                    .font(.headline.weight(.semibold))
+                    .lineLimit(1)
+            }
+            Spacer()
+            Text("↵ " + t("Switch"))
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color.crystalPanelHairline.opacity(0.16)))
+                .overlay(Capsule().strokeBorder(Color.crystalPanelHairline.opacity(0.45),
+                                                lineWidth: DesignTokens.hairline))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .cardSurface(
+            fill: Color.crystalSurfaceBase.opacity(0.10),
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isSelected: true
+        )
+        .crystalSpecularRim(
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isHighlighted: true
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+    }
+
     @ViewBuilder
     private var sectionBackground: some View {
         if settings.enableBackgroundBlur {
-            if #available(macOS 26, *) {
-                // On macOS 26+, the panel-level glassEffect provides visual
-                // separation. Sections use a very subtle tint to differentiate.
-                Color(nsColor: .controlBackgroundColor).opacity(0.03)
-            } else {
-                Color(nsColor: .controlBackgroundColor).opacity(max(backgroundOpacity * 0.5, 0.04))
-            }
+            // A 2% white wash only separates zones on a dark panel; on the
+            // light one it is invisible at best and a white band at worst.
+            Color.crystalSheenTop.opacity(0.02)
         } else {
             Color(nsColor: .controlBackgroundColor)
         }
@@ -800,7 +937,7 @@ struct PreviewView: View {
         [
             GridItem(
                 .adaptive(
-                    minimum: settings.thumbnailSize.previewCardMinWidth,
+                    minimum: settings.previewPanelStyle.minimumCardWidth(for: settings.thumbnailSize),
                     maximum: settings.thumbnailSize.previewCardMaxWidth
                 ),
                 spacing: 14
@@ -902,7 +1039,8 @@ struct WindowThumbnailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             thumbnailContainer
-                .frame(height: settings.thumbnailSize.previewThumbnailHeight)
+                .frame(height: settings.thumbnailSize.previewThumbnailHeight
+                        * settings.previewPanelStyle.thumbnailHeightScale)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
@@ -917,7 +1055,7 @@ struct WindowThumbnailView: View {
                     if settings.previewInfoShowsWindowNumber {
                         Text("#\(window.windowNumber)")
                             .font(.caption2.monospacedDigit())
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.crystalSecondary(on: cardFill))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
                             .cardSurface(fill: chipFill, cornerRadius: DesignTokens.Radius.chip)
@@ -955,10 +1093,16 @@ struct WindowThumbnailView: View {
         }
         .padding(12)
         // Solid surface instead of a per-card material — see View.cardSurface.
-        .cardSurface(fill: cardFill)
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                .strokeBorder(cardBorder, lineWidth: DesignTokens.hairline)
+        .cardSurface(
+            fill: cardFill,
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isSelected: isSelected || isHovered
+        )
+        .crystalSpecularRim(
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            isHighlighted: isSelected || isHovered
         )
         .overlay(alignment: .topTrailing) {
             // "Current window" badge. Keyboard navigation moves the selection
@@ -1086,19 +1230,23 @@ struct WindowThumbnailView: View {
     /// even when the user turns the glass opacity all the way down.
     private var cardFill: Color {
         if isHovered {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.16 : 0.10)
+            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.18 : 0.10)
         }
         if isSelected {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.09 : 0.06)
+            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.06)
         }
-        return Color(nsColor: .controlBackgroundColor).opacity(cardFillOpacity)
+        return Color.crystalSurfaceBase.opacity(cardFillOpacity)
     }
 
+    /// The resting card keeps the window's semantic background at 6–28% so the
+    /// glass panel shows through while dark/light label text keeps its
+    /// contrast. A tinted resting fill used to sit under light-mode text at
+    /// ~1.2:1; the crystal identity is now the preset sheen above it.
     private var cardFillOpacity: Double {
         guard settings.enableBackgroundBlur else {
             return 1
         }
-        return min(max(settings.backgroundBlurOpacity + 0.45, 0.55), 0.9)
+        return min(max(settings.backgroundBlurOpacity * 0.35 + 0.04, 0.06), 0.28)
     }
 
     private var cardBorder: Color {
@@ -1111,8 +1259,10 @@ struct WindowThumbnailView: View {
     /// Fill for small chips (window-number badge, app-icon chip) and the
     /// loading skeleton — solid, like the card, never a material.
     private var chipFill: Color {
-        let opacity: Double = settings.enableBackgroundBlur ? 0.5 : 1
-        return Color(nsColor: .textBackgroundColor).opacity(opacity)
+        if settings.enableBackgroundBlur {
+            return Color.crystalChipBase.opacity(0.14)
+        }
+        return Color(nsColor: .textBackgroundColor)
     }
 
     private var skeletonFill: Color {
@@ -1173,18 +1323,7 @@ struct WindowThumbnailView: View {
 
         let fallbackIcon = appIcon()
 
-        // A window whose capture just failed reports that instead of spinning:
-        // the card is rebuilt on every panel open, and re-arming a spinner (and
-        // re-hitting the window server) for a window we already know cannot be
-        // captured right now is worse than saying so. The background tick
-        // retries once the cooldown expires.
-        if ThumbnailService.shared.failedRecently(for: window, tier: .grid) {
-            await MainActor.run {
-                thumbnailState = .failed(fallbackIcon)
-            }
-            return
-        }
-
+        // 磁盘旧图可在截图失败冷却期间恢复；冷却由服务在尝试读盘后统一判断。
         await MainActor.run {
             thumbnailState = .placeholder(fallbackIcon)
         }
@@ -1194,10 +1333,12 @@ struct WindowThumbnailView: View {
                 for: window,
                 size: self.settings.thumbnailSize.dimensions
             )
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 self.thumbnailState = .loaded(image)
             }
         } catch {
+            guard !Task.isCancelled else { return }
             AppLogger.warning("Using fallback thumbnail. windowID=\(window.id), error=\(error)")
             await MainActor.run {
                 self.thumbnailState = .failed(appIcon())
@@ -1237,7 +1378,10 @@ struct WindowThumbnailView: View {
     private func detailText(_ text: String) -> some View {
         Text(text)
             .font(.caption2.monospacedDigit())
-            .foregroundColor(.secondary)
+            // Crystal-aware secondary: the semantic .secondary only knows the
+            // window appearance, and the panel's wash can invert the surface
+            // luminance under it (see Color.crystalSecondary).
+            .foregroundColor(.crystalSecondary(on: cardFill))
             .lineLimit(1)
     }
 

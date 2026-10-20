@@ -108,3 +108,6 @@ build_log/
 # repository documents behaviour in README.md and CONTRIBUTING.md; these are
 # scratch planning notes with local machine details and half-finished ideas.
 docs/plan/
+
+# Local temporary investigation and process files
+/work/

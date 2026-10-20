@@ -96,11 +96,8 @@ struct EfficiencyHighlightRow: View {
         content()
             .padding(DesignTokens.Spacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.55))
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: DesignTokens.hairline)
-            )
+            .cardSurface(fill: Color.crystalSurfaceBase.opacity(0.12))
+            .crystalSpecularRim(cornerRadius: DesignTokens.Radius.card)
     }
 }
 
@@ -125,11 +122,8 @@ struct EfficiencyDetailTable: View {
                 Divider().opacity(0.5)
                 totalRow
             }
-            .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45))
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: DesignTokens.hairline)
-            )
+            .cardSurface(fill: Color.crystalSurfaceBase.opacity(0.10))
+            .crystalSpecularRim(cornerRadius: DesignTokens.Radius.card)
         }
     }
 

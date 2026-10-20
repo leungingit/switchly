@@ -7,6 +7,18 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-20
+
+### Added
+
+- 小尺寸窗口缩略图支持跨次启动 Switchly 复用：仅在本地保存 24 小时内的压缩小图，磁盘上限 64 MB、最多 200 个文件。按系统启动会话、目标进程启动时间及窗口身份校验，先显示旧图再后台刷新，刷新失败保留有效旧图。放大预览原图不落盘，图片不上传；同步更新隐私说明。
+
+### Changed
+
+- Refined the shared crystal appearance with adjustable material parameters and distinct preview layouts, while preserving each surface's own structure and legacy settings compatibility.
+- Rebuilt the English README and added a Simplified Chinese README with illustrated workflows and first-run guidance.
+- Consolidated the design system and native UI engineering constraints into maintained documentation; local temporary work is excluded from version control.
+
 ### Fixed
 
 - The question-mark hints in Preferences (and every other regular window)

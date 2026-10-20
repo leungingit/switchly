@@ -23,6 +23,25 @@ protocol WindowMonitorServiceProtocol {
     func getVisibleWindowCount(for bundleIdentifier: String) -> Int
     func filterWindows(_ windows: [WindowInfo], by strategy: PreviewStrategy) -> [WindowInfo]
     func filterWindows(_ windows: [WindowInfo], by searchText: String) -> [WindowInfo]
+    func filterWindows(_ windows: [WindowInfo], for bundleIdentifier: String, appName: String?) -> [WindowInfo]
+}
+
+extension WindowMonitorServiceProtocol {
+    /// 在同一份窗口快照中匹配应用，避免每个应用都重新枚举系统窗口。
+    func filterWindows(_ windows: [WindowInfo], for bundleIdentifier: String, appName: String?) -> [WindowInfo] {
+        let normalizedName = appName?.lowercased()
+        let applications = Dictionary(uniqueKeysWithValues: Set(windows.map(\.ownerPID)).map { pid in
+            let app = NSRunningApplication(processIdentifier: pid)
+            return (pid, (bundleID: app?.bundleIdentifier, name: app?.localizedName?.lowercased()))
+        })
+        return windows.filter { window in
+            guard let app = applications[window.ownerPID], app.bundleID == bundleIdentifier else {
+                return false
+            }
+            guard let normalizedName, !normalizedName.isEmpty else { return true }
+            return app.name == normalizedName || window.ownerName.lowercased() == normalizedName
+        }
+    }
 }
 
 class WindowMonitorService: WindowMonitorServiceProtocol {
@@ -49,6 +68,7 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     }
     
     func startMonitoring() {
+        guard monitorTimer == nil else { return }
         let settings = settingsService.loadSettings()
         monitorInterval = settings.monitorFrequency.interval
         AppLogger.info("Starting window monitoring. interval=\(settings.monitorFrequency.interval), frequency=\(settings.monitorFrequency.rawValue)")
@@ -531,22 +551,7 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
 
     private func windows(matching bundleIdentifier: String, appName: String?) -> [WindowInfo] {
         let allWindows = getAllWindows()
-        let windows = allWindows.filter { window in
-            guard let runningApp = NSRunningApplication(processIdentifier: window.ownerPID) else {
-                return false
-            }
-            guard runningApp.bundleIdentifier == bundleIdentifier else {
-                return false
-            }
-            // The same bundle ID can belong to several running products;
-            // narrow by the application name when one is given so only windows
-            // of that specific app are returned.
-            guard let appName, !appName.isEmpty else {
-                return true
-            }
-            return runningApp.localizedName?.lowercased() == appName.lowercased()
-                || window.ownerName.lowercased() == appName.lowercased()
-        }
+        let windows = filterWindows(allWindows, for: bundleIdentifier, appName: appName)
         AppLogger.debug("Filtered windows for app. bundleID=\(bundleIdentifier), appName=\(appName ?? "nil"), count=\(windows.count)")
         return windows
     }

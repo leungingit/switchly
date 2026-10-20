@@ -35,6 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         PreviewTriggerMonitor.shared.stop()
         WindowMonitorService.shared.stopMonitoring()
         ThumbnailService.shared.stopAutoRefresh()
+        ThumbnailService.shared.flushPersistentCache(timeout: 0.5)
         // The only synchronous wait in the statistics pipeline, and the only
         // place it is acceptable: quitting. Bounded so a slow disk cannot hang
         // the app on the way out.
@@ -323,6 +324,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        window.isOpaque = false
         // Switchly is a menu bar (accessory) app: opening a window does not
         // make the application active — the logs show the preferences window
         // staying isKeyWindow=false even after makeKeyAndOrderFront +
@@ -366,6 +368,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        window.isOpaque = false
         // See openPreferences: tooltips are suppressed for inactive apps, and
         // a menu bar app's windows never make it active.
         window.allowsToolTipsWhenApplicationIsInactive = true
@@ -402,6 +405,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear
+        window.isOpaque = false
         // See openPreferences: tooltips are suppressed for inactive apps, and
         // a menu bar app's windows never make it active.
         window.allowsToolTipsWhenApplicationIsInactive = true

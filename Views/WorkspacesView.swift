@@ -29,6 +29,7 @@ final class WorkspacesViewModel: ObservableObject {
         self.settings = settingsService.loadSettings()
         self.selectedWorkspaceID = settings.workspaces.first?.id
         loadAvailableApps()
+        observeAppearanceChanges()
     }
 
     var selectedWorkspace: Workspace? {
@@ -194,6 +195,21 @@ final class WorkspacesViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
+
+    private func observeAppearanceChanges() {
+        NotificationCenter.default.publisher(for: .settingsDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                let latestSettings = settingsService.loadSettings()
+                // 只同步外观，保留正在编辑的工作区及当前选择。
+                settings.theme = latestSettings.theme
+                settings.preferencesGlassOpacity = latestSettings.preferencesGlassOpacity
+                settings.crystalMaterial = latestSettings.crystalMaterial
+                ThemeApplier.apply(settings.theme)
+            }
+            .store(in: &cancellables)
+    }
 }
 
 struct WorkspacesView: View {
@@ -224,22 +240,11 @@ struct WorkspacesView: View {
     }
 
     private var panelBackground: some View {
-        ZStack {
-            GlassBackground(material: .hudWindow, cornerRadius: 0)
-
-            Color(nsColor: .windowBackgroundColor)
-                .opacity(0.03 * 0.6)
-
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.08),
-                    Color.white.opacity(0.02),
-                    Color.clear
-                ],
-                startPoint: .top,
-                endPoint: .center
-            )
-        }
+        WindowGlassSurface(
+            opacity: viewModel.settings.preferencesGlassOpacity,
+            material: viewModel.settings.crystalMaterial,
+            style: .workspace
+        )
     }
 
     private var sidebar: some View {
@@ -489,16 +494,14 @@ struct WorkspacesView: View {
             VStack(spacing: 0) {
                 content()
             }
-            .panelGlass(
-                isActive: true,
-                opacity: 0.06,
-                cornerRadius: 8,
-                tintColor: Color(nsColor: .controlBackgroundColor)
+            .cardSurface(
+                fill: Color.crystalSurfaceBase.opacity(0.10),
+                cornerRadius: DesignTokens.Radius.card,
+                material: viewModel.settings.crystalMaterial
             )
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            .crystalSpecularRim(
+                cornerRadius: DesignTokens.Radius.card,
+                material: viewModel.settings.crystalMaterial
             )
         }
     }

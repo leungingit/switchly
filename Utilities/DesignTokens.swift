@@ -23,24 +23,26 @@ enum DesignTokens {
     }
 
     enum Radius {
-        /// Floating panel outer curve — matches standard macOS windows.
+        /// Floating panel outer curve — matches visionOS-inspired spatial crystal curvature.
         /// Single source of truth shared with GlassPanelCorner.
         static let panel: CGFloat = GlassPanelCorner.radius
 
         /// Cards inside a panel (window cards, workspace cards).
-        static let card: CGFloat = 10
+        static let card: CGFloat = 16
 
         /// Window thumbnails inside a card.
-        static let thumbnail: CGFloat = 6
+        static let thumbnail: CGFloat = 10
 
         /// Interactive controls (search field, buttons).
-        static let control: CGFloat = 8
+        static let control: CGFloat = 12
+
+        /// Floating spatial pills (search pill, ornament rail).
+        static let pill: CGFloat = 999
 
         /// Tiny chips (window-number badge, app-icon chip).
-        static let chip: CGFloat = 5
+        static let chip: CGFloat = 6
     }
 
-    /// Hairline border weight. 0.5pt reads as a crisp line on Retina; 1pt
-    /// looks heavy next to the system's own separators.
+    /// Hairline border weight. 0.5pt reads as a crisp specular line on Retina.
     static let hairline: CGFloat = 0.5
 }
