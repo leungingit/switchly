@@ -294,4 +294,102 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertNotEqual(PreviewPanelStyle.stage.thumbnailHeightScale,
                           PreviewPanelStyle.classicGrid.thumbnailHeightScale)
     }
+    // MARK: - Thumbnail backdrop
+
+    /// The backdrop of a window thumbnail was a fixed black wash before it
+    /// became adjustable. A settings file written back then carries no
+    /// backdrop key, and it must decode to the wash that file rendered —
+    /// otherwise the upgrade repaints every thumbnail.
+    func testMissingThumbnailBackdropFallsBackToLegacyWash() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "thumbnailBackdrop")
+        XCTAssertNil(object["thumbnailBackdrop"])
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertEqual(decoded.thumbnailBackdrop, .legacyDefault)
+    }
+
+    func testThumbnailBackdropRoundTrip() throws {
+        var settings = AppSettings.default
+        settings.thumbnailBackdrop = ThumbnailBackdrop(
+            tintColor: Color(red: 0.1, green: 0.4, blue: 0.8),
+            opacity: 0.33
+        )
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertEqual(decoded.thumbnailBackdrop.opacity, 0.33, accuracy: 0.0001)
+        let rgb = NSColor(decoded.thumbnailBackdrop.tintColor).usingColorSpace(.sRGB) ?? .black
+        XCTAssertEqual(Double(rgb.redComponent), 0.1, accuracy: 0.01)
+        XCTAssertEqual(Double(rgb.greenComponent), 0.4, accuracy: 0.01)
+        XCTAssertEqual(Double(rgb.blueComponent), 0.8, accuracy: 0.01)
+    }
+
+    /// A hand-edited settings file can carry an opacity outside the slider's
+    /// range; decoding must clamp it, not carry it into the drawing code.
+    func testThumbnailBackdropClampsToSliderRange() {
+        let tooStrong = ThumbnailBackdrop(tintColor: .black, opacity: 4.0).clamped()
+        XCTAssertEqual(tooStrong.opacity, ThumbnailBackdrop.Range.opacity.upperBound, accuracy: 0.0001)
+
+        let tooFaint = ThumbnailBackdrop(tintColor: .black, opacity: -2.0).clamped()
+        XCTAssertEqual(tooFaint.opacity, ThumbnailBackdrop.Range.opacity.lowerBound, accuracy: 0.0001)
+    }
+
+    /// The wash the thumbnail used to get on an opaque panel was 0.06 against
+    /// 0.16 on glass. The adjustable backdrop must keep that relationship, so
+    /// the default renders exactly what the hard-coded wash rendered.
+    func testThumbnailBackdropDefaultMatchesTheHardCodedWash() {
+        let onGlass = ThumbnailBackdrop.legacyDefault.resolvedColor(isBlurred: true)
+        let onSolid = ThumbnailBackdrop.legacyDefault.resolvedColor(isBlurred: false)
+
+        let glass = NSColor(onGlass).usingColorSpace(.sRGB)
+        let solid = NSColor(onSolid).usingColorSpace(.sRGB)
+        XCTAssertEqual(Double(glass?.alphaComponent ?? 0), 0.16, accuracy: 0.001)
+        XCTAssertEqual(Double(solid?.alphaComponent ?? 0), 0.06, accuracy: 0.001)
+    }
+    // MARK: - Thumbnail backdrop in the drawing code
+
+    /// The backdrop is a drawing decision, not just a stored number: the wash
+    /// behind a thumbnail must actually be the colour the user picked. This
+    /// renders the real drawing expression offscreen and reads the pixels
+    /// back, so a change in how the wash is resolved cannot pass unnoticed.
+    func testThumbnailBackdropColourReachesTheRenderedPixels() throws {
+        let backdrop = ThumbnailBackdrop(tintColor: Color(red: 1.0, green: 0.0, blue: 0.0),
+                                         opacity: 0.6)
+
+        // The exact expression the three preview surfaces draw.
+        let wash = backdrop.resolvedColor(isBlurred: true)
+
+        // Render it over an opaque white sheet: the resulting pixel is the
+        // wash composited on white, so a red wash must read as pink, not as
+        // the pure colour and not as white.
+        let host = NSHostingView(rootView: Color.white.overlay(wash))
+        host.frame = NSRect(x: 0, y: 0, width: 20, height: 20)
+        host.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
+            XCTFail("cannot create a bitmap rep")
+            return
+        }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        guard let pixel = rep.colorAt(x: 10, y: 10)?.usingColorSpace(.sRGB) else {
+            XCTFail("cannot read the rendered pixel")
+            return
+        }
+
+        // A red wash at 0.6 over white: the red channel stays saturated, and
+        // green and blue keep only the part of the white that shows through.
+        // The exact figure depends on the colour space SwiftUI composites in
+        // (it is a linear-light blend, not the naive sRGB 0.4), so the
+        // assertion checks the shape of the result rather than a magic number:
+        // the tint is unmistakably red, and it is clearly not the white it
+        // was painted over.
+        XCTAssertGreaterThan(Double(pixel.redComponent), 0.95)
+        XCTAssertLessThan(Double(pixel.greenComponent), 0.75)
+        XCTAssertLessThan(Double(pixel.blueComponent), 0.75)
+        XCTAssertEqual(Double(pixel.greenComponent), Double(pixel.blueComponent), accuracy: 0.05)
+    }
 }

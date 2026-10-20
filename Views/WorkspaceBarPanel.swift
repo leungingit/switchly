@@ -1059,7 +1059,7 @@ private struct WorkspaceBarCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.opacity(settings.enableBackgroundBlur ? 0.16 : 0.06))
+                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: settings.enableBackgroundBlur))
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     // Hairline inner edge: the thumbnail is the brightest
                     // surface in the panel and needs a defined rim against the
