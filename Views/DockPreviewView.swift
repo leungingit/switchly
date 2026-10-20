@@ -311,7 +311,7 @@ struct DockWindowCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
-                    .background(Color.black.opacity(settings.enableBackgroundBlur ? 0.16 : 0.06))
+                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: settings.enableBackgroundBlur))
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     .transition(MotionTokens.thumbnailTransition)
             case .failed(let fallbackIcon):

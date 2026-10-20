@@ -177,6 +177,28 @@ struct PreferencesView: View {
                         .pickerStyle(.segmented)
                         .frame(width: 260)
                     }
+
+                    settingRow(t("Thumbnail backdrop"),
+                               systemImage: "paintpalette",
+                               help: t("Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted.")) {
+                        HStack(spacing: 10) {
+                            ColorPicker("", selection: thumbnailBackdropTintBinding, supportsOpacity: false)
+                                .labelsHidden()
+                                .frame(width: 52)
+                            Text(thumbnailBackdropHex)
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .frame(width: 72, alignment: .leading)
+                        }
+                    }
+
+                    thumbnailBackdropSliderRow(t("Thumbnail backdrop strength"),
+                                              value: thumbnailBackdropOpacityBinding,
+                                              range: ThumbnailBackdrop.Range.opacity,
+                                              displayed: String(format: "%.0f%%", viewModel.settings.thumbnailBackdrop.opacity * 100),
+                                              help: t("How strongly the backdrop colour is laid down behind a window thumbnail."))
                 }
 
                 settingsGroup(t("Pointer triggers")) {
@@ -660,6 +682,52 @@ struct PreferencesView: View {
                 viewModel.updateSettings { $0.preferencesGlassOpacity = newValue }
             }
         )
+    }
+
+    private var thumbnailBackdropTintBinding: Binding<Color> {
+        Binding(
+            get: { viewModel.settings.thumbnailBackdrop.tintColor },
+            set: { newValue in
+                viewModel.updateSettings { $0.thumbnailBackdrop.tintColor = newValue }
+            }
+        )
+    }
+
+    private var thumbnailBackdropOpacityBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.settings.thumbnailBackdrop.opacity },
+            set: { newValue in
+                viewModel.updateSettings { $0.thumbnailBackdrop.opacity = newValue }
+            }
+        )
+    }
+
+    /// The backdrop tint as a hex triplet. Compared side by side with the
+    /// swatch so the value is readable rather than only visible.
+    private var thumbnailBackdropHex: String {
+        let resolved = NSColor(viewModel.settings.thumbnailBackdrop.tintColor).usingColorSpace(.sRGB) ?? .black
+        return String(format: "#%02X%02X%02X",
+                      Int((resolved.redComponent * 255).rounded()),
+                      Int((resolved.greenComponent * 255).rounded()),
+                      Int((resolved.blueComponent * 255).rounded()))
+    }
+
+    /// One backdrop knob: label, slider, and the value it is currently at.
+    private func thumbnailBackdropSliderRow(_ title: String,
+                                           value: Binding<Double>,
+                                           range: ClosedRange<Double>,
+                                           displayed: String,
+                                           help: String) -> some View {
+        settingRow(title, systemImage: "circle.lefthalf.filled", help: help) {
+            HStack(spacing: 10) {
+                Slider(value: value, in: range)
+                    .frame(width: 220)
+                Text(displayed)
+                    .font(.caption.monospacedDigit())
+                    .foregroundColor(.secondary)
+                    .frame(width: 42, alignment: .trailing)
+            }
+        }
     }
 
     private var crystalTintBinding: Binding<Color> {

@@ -18,6 +18,12 @@ struct AppSettings: Codable, Equatable {
     var showWindowTitles: Bool
     var refreshInterval: TimeInterval
     var enableBackgroundBlur: Bool
+    /// Colour of the matte the window thumbnails sit on.
+    ///
+    /// A thumbnail never fills its card (rounded corners, aspect-fit), so the
+    /// area behind the image is visible. It used to be a fixed black wash;
+    /// this makes that backdrop tint adjustable.
+    var thumbnailBackdrop: ThumbnailBackdrop
     /// Glass wash strength for the floating panels (preview, Dock preview,
     /// workspace bar) — surfaces that appear over the user's work and vanish.
     var backgroundBlurOpacity: Double
@@ -88,6 +94,7 @@ struct AppSettings: Codable, Equatable {
         showWindowTitles: Bool,
         refreshInterval: TimeInterval,
         enableBackgroundBlur: Bool,
+        thumbnailBackdrop: ThumbnailBackdrop = .legacyDefault,
         backgroundBlurOpacity: Double = 0.30,
         preferencesGlassOpacity: Double = 0.70,
         previewDisplayMode: PreviewDisplayMode,
@@ -128,6 +135,7 @@ struct AppSettings: Codable, Equatable {
         self.showWindowTitles = showWindowTitles
         self.refreshInterval = refreshInterval
         self.enableBackgroundBlur = enableBackgroundBlur
+        self.thumbnailBackdrop = thumbnailBackdrop
         self.backgroundBlurOpacity = backgroundBlurOpacity
         self.preferencesGlassOpacity = preferencesGlassOpacity
         self.previewDisplayMode = previewDisplayMode
@@ -170,6 +178,7 @@ struct AppSettings: Codable, Equatable {
         case showWindowTitles
         case refreshInterval
         case enableBackgroundBlur
+        case thumbnailBackdrop
         case backgroundBlurOpacity
         case preferencesGlassOpacity
         case previewDisplayMode
@@ -227,6 +236,14 @@ struct AppSettings: Codable, Equatable {
         self.showWindowTitles = try container.decode(Bool.self, forKey: .showWindowTitles)
         self.refreshInterval = try container.decode(TimeInterval.self, forKey: .refreshInterval)
         self.enableBackgroundBlur = try container.decode(Bool.self, forKey: .enableBackgroundBlur)
+        // Absent in settings written before the backdrop became adjustable: the
+        // fixed black wash is what those files rendered, so the default keeps
+        // the upgrade invisible.
+        if let backdrop = try container.decodeIfPresent(ThumbnailBackdrop.self, forKey: .thumbnailBackdrop) {
+            self.thumbnailBackdrop = backdrop.clamped()
+        } else {
+            self.thumbnailBackdrop = .legacyDefault
+        }
         self.backgroundBlurOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundBlurOpacity) ?? 0.30
         // Absent before the settings window got its own control: keep the
         // window opaque enough that text over a bright desktop stays readable,
@@ -302,6 +319,7 @@ struct AppSettings: Codable, Equatable {
             showWindowTitles: true,
             refreshInterval: 2.0,
             enableBackgroundBlur: true,
+            thumbnailBackdrop: .legacyDefault,
             backgroundBlurOpacity: 0.30,
             previewDisplayMode: .currentScreen,
             notificationStrategy: .intelligent,
@@ -609,6 +627,90 @@ extension CrystalMaterial: Codable {
         try container.encode(panelTintCap, forKey: .panelTintCap)
         try container.encode(rimTopOpacity, forKey: .rimTopOpacity)
         try container.encode(panelMaterial, forKey: .panelMaterial)
+    }
+}
+
+/// The matte the window thumbnail sits on.
+///
+/// A thumbnail never covers its whole card — the image is aspect-fitted and
+/// the corners are rounded — so the area behind it is visible. It used to be
+/// a hard-coded black wash (0.16 on glass panels, 0.06 on opaque ones); this
+/// makes that backdrop tint adjustable instead of leaving it as a fixed
+/// blue-black.
+///
+/// Two dimensions, matching the style of CrystalMaterial: the colour and
+/// how strongly it is laid down.
+struct ThumbnailBackdrop: Hashable {
+    /// Colour of the matte behind the thumbnail.
+    var tintColor: Color
+    /// How strongly the matte is laid down (0-0.60).
+    var opacity: Double
+
+    /// The values the hard-coded wash used, so an upgrade looks unchanged:
+    /// black at 0.16 on glass panels.
+    static let legacyDefault = ThumbnailBackdrop(
+        tintColor: .black,
+        opacity: 0.16
+    )
+
+    /// Ranges the Preferences slider offers. Kept here so the control and the
+    /// decode clamp cannot drift apart.
+    enum Range {
+        static let opacity: ClosedRange<Double> = 0...0.60
+    }
+
+    /// The wash the thumbnail used to get on an opaque panel: 0.06 against
+    /// 0.16 on glass, i.e. 0.375 of the value above.
+    private static let solidScale = 0.375
+
+    func clamped() -> ThumbnailBackdrop {
+        var copy = self
+        copy.opacity = min(max(copy.opacity, Range.opacity.lowerBound), Range.opacity.upperBound)
+        return copy
+    }
+
+    /// The colour actually drawn behind a thumbnail.
+    ///
+    /// An opaque panel has no glass to sit in, so the wash is much lighter
+    /// there — the same relationship the hard-coded values had.
+    func resolvedColor(isBlurred: Bool) -> Color {
+        tintColor.opacity(opacity * (isBlurred ? 1 : ThumbnailBackdrop.solidScale))
+    }
+}
+
+// MARK: - ThumbnailBackdrop Codable
+
+extension ThumbnailBackdrop: Codable {
+    enum CodingKeys: String, CodingKey {
+        case tintColor
+        case opacity
+    }
+
+    /// The tint is stored as three sRGB components rather than an archived
+    /// colour: the settings file is JSON and Color has no canonical encoded
+    /// form, so a component triple is what survives a round trip on every OS.
+    private struct RGB: Codable {
+        var red: Double
+        var green: Double
+        var blue: Double
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = ThumbnailBackdrop.legacyDefault
+        let rgb = try container.decodeIfPresent(RGB.self, forKey: .tintColor)
+        self.tintColor = rgb.map { Color(red: $0.red, green: $0.green, blue: $0.blue) } ?? fallback.tintColor
+        self.opacity = try container.decodeIfPresent(Double.self, forKey: .opacity) ?? fallback.opacity
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let resolved = NSColor(tintColor).usingColorSpace(.sRGB) ?? .black
+        try container.encode(RGB(red: Double(resolved.redComponent),
+                                  green: Double(resolved.greenComponent),
+                                  blue: Double(resolved.blueComponent)),
+                             forKey: .tintColor)
+        try container.encode(opacity, forKey: .opacity)
     }
 }
 
