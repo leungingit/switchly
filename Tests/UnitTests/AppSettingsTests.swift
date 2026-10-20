@@ -349,4 +349,47 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(Double(glass?.alphaComponent ?? 0), 0.16, accuracy: 0.001)
         XCTAssertEqual(Double(solid?.alphaComponent ?? 0), 0.06, accuracy: 0.001)
     }
+    // MARK: - Thumbnail backdrop in the drawing code
+
+    /// The backdrop is a drawing decision, not just a stored number: the wash
+    /// behind a thumbnail must actually be the colour the user picked. This
+    /// renders the real drawing expression offscreen and reads the pixels
+    /// back, so a change in how the wash is resolved cannot pass unnoticed.
+    func testThumbnailBackdropColourReachesTheRenderedPixels() throws {
+        let backdrop = ThumbnailBackdrop(tintColor: Color(red: 1.0, green: 0.0, blue: 0.0),
+                                         opacity: 0.6)
+
+        // The exact expression the three preview surfaces draw.
+        let wash = backdrop.resolvedColor(isBlurred: true)
+
+        // Render it over an opaque white sheet: the resulting pixel is the
+        // wash composited on white, so a red wash must read as pink, not as
+        // the pure colour and not as white.
+        let host = NSHostingView(rootView: Color.white.overlay(wash))
+        host.frame = NSRect(x: 0, y: 0, width: 20, height: 20)
+        host.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
+            XCTFail("cannot create a bitmap rep")
+            return
+        }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        guard let pixel = rep.colorAt(x: 10, y: 10)?.usingColorSpace(.sRGB) else {
+            XCTFail("cannot read the rendered pixel")
+            return
+        }
+
+        // A red wash at 0.6 over white: the red channel stays saturated, and
+        // green and blue keep only the part of the white that shows through.
+        // The exact figure depends on the colour space SwiftUI composites in
+        // (it is a linear-light blend, not the naive sRGB 0.4), so the
+        // assertion checks the shape of the result rather than a magic number:
+        // the tint is unmistakably red, and it is clearly not the white it
+        // was painted over.
+        XCTAssertGreaterThan(Double(pixel.redComponent), 0.95)
+        XCTAssertLessThan(Double(pixel.greenComponent), 0.75)
+        XCTAssertLessThan(Double(pixel.blueComponent), 0.75)
+        XCTAssertEqual(Double(pixel.greenComponent), Double(pixel.blueComponent), accuracy: 0.05)
+    }
 }
