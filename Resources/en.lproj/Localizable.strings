@@ -22,6 +22,10 @@
 "Fast" = "Fast";
 "Balanced" = "Balanced";
 "Quiet" = "Quiet";
+"Thumbnail backdrop" = "Thumbnail backdrop";
+"Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted." = "Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted.";
+"Thumbnail backdrop strength" = "Thumbnail backdrop strength";
+"How strongly the backdrop colour is laid down behind a window thumbnail." = "How strongly the backdrop colour is laid down behind a window thumbnail.";
 /* PreferencesView - Pointer triggers (preview panel summoning) */
 "Pointer triggers" = "Pointer triggers";
 "Edge hotspot" = "Edge hotspot";

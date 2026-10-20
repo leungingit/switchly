@@ -22,6 +22,10 @@
 "Fast" = "快速";
 "Balanced" = "均衡";
 "Quiet" = "安静";
+"Thumbnail backdrop" = "缩略图衬底";
+"Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted." = "窗口缩略图下方衬底的颜色。只有图片未覆盖的区域会被着色。";
+"Thumbnail backdrop strength" = "衬底强度";
+"How strongly the backdrop colour is laid down behind a window thumbnail." = "衬底颜色在窗口缩略图下方的铺设强度。";
 /* PreferencesView - Pointer triggers (preview panel summoning) */
 "Pointer triggers" = "指针触发";
 "Edge hotspot" = "边缘热区";

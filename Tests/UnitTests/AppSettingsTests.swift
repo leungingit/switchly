@@ -294,4 +294,59 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertNotEqual(PreviewPanelStyle.stage.thumbnailHeightScale,
                           PreviewPanelStyle.classicGrid.thumbnailHeightScale)
     }
+    // MARK: - Thumbnail backdrop
+
+    /// The backdrop of a window thumbnail was a fixed black wash before it
+    /// became adjustable. A settings file written back then carries no
+    /// backdrop key, and it must decode to the wash that file rendered —
+    /// otherwise the upgrade repaints every thumbnail.
+    func testMissingThumbnailBackdropFallsBackToLegacyWash() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "thumbnailBackdrop")
+        XCTAssertNil(object["thumbnailBackdrop"])
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertEqual(decoded.thumbnailBackdrop, .legacyDefault)
+    }
+
+    func testThumbnailBackdropRoundTrip() throws {
+        var settings = AppSettings.default
+        settings.thumbnailBackdrop = ThumbnailBackdrop(
+            tintColor: Color(red: 0.1, green: 0.4, blue: 0.8),
+            opacity: 0.33
+        )
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertEqual(decoded.thumbnailBackdrop.opacity, 0.33, accuracy: 0.0001)
+        let rgb = NSColor(decoded.thumbnailBackdrop.tintColor).usingColorSpace(.sRGB) ?? .black
+        XCTAssertEqual(Double(rgb.redComponent), 0.1, accuracy: 0.01)
+        XCTAssertEqual(Double(rgb.greenComponent), 0.4, accuracy: 0.01)
+        XCTAssertEqual(Double(rgb.blueComponent), 0.8, accuracy: 0.01)
+    }
+
+    /// A hand-edited settings file can carry an opacity outside the slider's
+    /// range; decoding must clamp it, not carry it into the drawing code.
+    func testThumbnailBackdropClampsToSliderRange() {
+        let tooStrong = ThumbnailBackdrop(tintColor: .black, opacity: 4.0).clamped()
+        XCTAssertEqual(tooStrong.opacity, ThumbnailBackdrop.Range.opacity.upperBound, accuracy: 0.0001)
+
+        let tooFaint = ThumbnailBackdrop(tintColor: .black, opacity: -2.0).clamped()
+        XCTAssertEqual(tooFaint.opacity, ThumbnailBackdrop.Range.opacity.lowerBound, accuracy: 0.0001)
+    }
+
+    /// The wash the thumbnail used to get on an opaque panel was 0.06 against
+    /// 0.16 on glass. The adjustable backdrop must keep that relationship, so
+    /// the default renders exactly what the hard-coded wash rendered.
+    func testThumbnailBackdropDefaultMatchesTheHardCodedWash() {
+        let onGlass = ThumbnailBackdrop.legacyDefault.resolvedColor(isBlurred: true)
+        let onSolid = ThumbnailBackdrop.legacyDefault.resolvedColor(isBlurred: false)
+
+        let glass = NSColor(onGlass).usingColorSpace(.sRGB)
+        let solid = NSColor(onSolid).usingColorSpace(.sRGB)
+        XCTAssertEqual(Double(glass?.alphaComponent ?? 0), 0.16, accuracy: 0.001)
+        XCTAssertEqual(Double(solid?.alphaComponent ?? 0), 0.06, accuracy: 0.001)
+    }
 }
