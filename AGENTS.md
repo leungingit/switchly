@@ -49,7 +49,7 @@ Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具，�
 
 ## 4. 界面与视觉约束
 
-- 间距、圆角、细边框复用 `Utilities/DesignTokens.swift`；动画复用 `MotionTokens.swift`；玻璃、卡片与面板材质复用 `GlassEffect.swift`；主题应用复用 `ThemeApplier.swift`。
+- 间距、圆角、细边框复用 `Utilities/DesignTokens.swift`；动画复用 `MotionTokens.swift`；玻璃、卡片与面板材质复用 `GlassEffect.swift`，macOS 26+ 原生透明容器复用 `NativeCrystalContainer.swift`；主题应用复用 `ThemeApplier.swift`。
 - 新增共用视觉值集中到对应令牌或材质实现。优先系统语义色，避免在各个 View 中新增散落的 Hex / RGB、阴影、透明度或动画时长；已有局部值仅在任务涉及时收敛。
 - 保留 Switchly 已有视觉语言。参考其他仓库的是工程约束，不移植其白卡、四角括号、禁用全部阴影或特定字体等产品风格。
 - 透明度必须同时检查 NSWindow / NSPanel 背景与 SwiftUI 内容背景，不能仅让窗口透明却保留不透明内容层。

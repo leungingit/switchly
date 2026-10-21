@@ -56,7 +56,7 @@
 | 目标应用只有一个窗口 | 开启自动切换，直接进入目标窗口。 |
 | 在键盘和鼠标之间切换 | 使用快捷键、Dock 悬停，或按需开启指针触发。 |
 | 希望桌面少一点打扰 | 只保留菜单栏图标，不占 Dock；可选登录时启动。 |
-| 想让面板更合自己的习惯 | 选择浅色、深色或跟随系统；独立选择明亮或深色玻璃底层、任意水晶染色，也可以关闭玻璃。 |
+| 想让面板更合自己的习惯 | 选择浅色、深色或跟随系统；在「外观」页选择透明或磨砂玻璃，统一调整密度与染色，也可以关闭玻璃。 |
 | 想了解自己的使用习惯 | 查看本地键盘与鼠标使用次数、估算节省时间，并随时清除。估算不代表实测效率收益。 |
 
 内置**英文与简体中文**。动画遵循系统的「减少动态效果」设置。
@@ -127,7 +127,7 @@ shasum -a 256 -c Switchly-<version>.zip.sha256
 
 ## 从源码构建
 
-使用 **Xcode 26+**、Swift 5.9 和 [XcodeGen](https://github.com/yonaskolb/XcodeGen)。工程配置以 `project.yml` 为准，最低运行系统为 macOS 12。目前玻璃外观使用统一的 AppKit / SwiftUI 材质实现，不宣称使用 macOS 原生 `View.glassEffect`。
+使用 **Xcode 26+**、Swift 5.9 和 [XcodeGen](https://github.com/yonaskolb/XcodeGen)。工程配置以 `project.yml` 为准，最低运行系统为 macOS 12。透明玻璃在 macOS 26+ 使用 AppKit 原生 `NSGlassEffectView`，旧系统降级为普通系统材质；也可选择磨砂或实色外观。
 
 ```sh
 git clone https://github.com/leungingit/switchly.git

@@ -10,13 +10,14 @@ import AppKit
 
 enum PreferencesTab: Hashable {
     case general
+    case appearance
     case apps
     case permissions
     case shortcuts
 }
 
 struct PreferencesView: View {
-    @StateObject var viewModel = PreferencesViewModel()
+    @StateObject var viewModel: PreferencesViewModel
     /// Shares the statistics panel's picker component (and its persistence
     /// path) so the two surfaces can never disagree.
     @StateObject private var statisticsModel: StatisticsViewModel
@@ -24,64 +25,46 @@ struct PreferencesView: View {
     @State private var selectedTab: PreferencesTab
 
     @MainActor
-    init(initialTab: PreferencesTab = .general) {
+    init(initialTab: PreferencesTab = .general, viewModel: PreferencesViewModel = PreferencesViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
         _selectedTab = State(initialValue: initialTab)
         _statisticsModel = StateObject(wrappedValue: StatisticsViewModel())
     }
 
     var body: some View {
         ZStack {
-            panelBackground
-                .ignoresSafeArea()
-
             VStack(spacing: 0) {
                 titleBar
-                TabView(selection: $selectedTab) {
-                    generalSettingsTab
-                        .tabItem {
-                            Label(t("General"), systemImage: "gearshape")
-                        }
-                        .tag(PreferencesTab.general)
-
-                    appsSettingsTab
-                        .tabItem {
-                            Label(t("Apps"), systemImage: "rectangle.stack")
-                        }
-                        .tag(PreferencesTab.apps)
-
-                    permissionsSettingsTab
-                        .tabItem {
-                            Label(t("Permissions"), systemImage: "lock.shield")
-                        }
-                        .tag(PreferencesTab.permissions)
-
-                    shortcutsSettingsTab
-                        .tabItem {
-                            Label(t("Shortcuts"), systemImage: "keyboard")
-                        }
-                        .tag(PreferencesTab.shortcuts)
+                Picker(t("Settings section"), selection: $selectedTab) {
+                    Text(t("General")).tag(PreferencesTab.general)
+                    Text(t("Appearance")).tag(PreferencesTab.appearance)
+                    Text(t("Apps")).tag(PreferencesTab.apps)
+                    Text(t("Permissions")).tag(PreferencesTab.permissions)
+                    Text(t("Shortcuts")).tag(PreferencesTab.shortcuts)
                 }
-                .background(Color.clear)
-                .apply {
-                    if #available(macOS 13.0, *) {
-                        $0.backgroundStyle(.clear)
-                            .toolbarBackground(.clear, for: .automatic)
-                    } else {
-                        $0
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .padding(.horizontal, DesignTokens.Spacing.lg)
+                .padding(.bottom, DesignTokens.Spacing.sm)
+
+                Group {
+                    switch selectedTab {
+                    case .general: generalSettingsTab
+                    case .appearance: appearanceSettingsTab
+                    case .apps: appsSettingsTab
+                    case .permissions: permissionsSettingsTab
+                    case .shortcuts: shortcutsSettingsTab
                     }
                 }
-                // Cross-fade the tab content on switch. The TabView is keyed
-                // by the selection so the old content fades out while the new
-                // one fades in.
                 .id(selectedTab)
                 .transition(.opacity)
             }
         }
+        .modifier(WindowCrystalModifier(density: viewModel.settings.windowGlassDensity,
+                                        material: viewModel.settings.crystalMaterial, style: .preferences))
+        .preferredColorScheme(viewModel.settings.theme.colorScheme)
         .frame(width: 760, height: 560)
-        .animation(.easeInOut(duration: 0.2), value: selectedTab)
-        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
-            viewModel.settings = SettingsService.shared.loadSettings()
-        }
+        .animation(MotionTokens.animated(.easeInOut(duration: MotionTokens.contentSwapDuration)), value: selectedTab)
         .alert(isPresented: .constant(viewModel.errorMessage != nil)) {
             Alert(
                 title: Text(t("Error")),
@@ -91,14 +74,6 @@ struct PreferencesView: View {
                 }
             )
         }
-    }
-
-    private var panelBackground: some View {
-        WindowGlassSurface(
-            opacity: viewModel.settings.preferencesGlassOpacity,
-            material: viewModel.settings.crystalMaterial,
-            style: .preferences
-        )
     }
 
     private var titleBar: some View {
@@ -178,27 +153,6 @@ struct PreferencesView: View {
                         .frame(width: 260)
                     }
 
-                    settingRow(t("Thumbnail backdrop"),
-                               systemImage: "paintpalette",
-                               help: t("Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted.")) {
-                        HStack(spacing: 10) {
-                            ColorPicker("", selection: thumbnailBackdropTintBinding, supportsOpacity: false)
-                                .labelsHidden()
-                                .frame(width: 52)
-                            Text(thumbnailBackdropHex)
-                                .font(.caption.monospacedDigit())
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .fixedSize()
-                                .frame(width: 72, alignment: .leading)
-                        }
-                    }
-
-                    thumbnailBackdropSliderRow(t("Thumbnail backdrop strength"),
-                                              value: thumbnailBackdropOpacityBinding,
-                                              range: ThumbnailBackdrop.Range.opacity,
-                                              displayed: String(format: "%.0f%%", viewModel.settings.thumbnailBackdrop.opacity * 100),
-                                              help: t("How strongly the backdrop colour is laid down behind a window thumbnail."))
                 }
 
                 settingsGroup(t("Pointer triggers")) {
@@ -235,139 +189,6 @@ struct PreferencesView: View {
                     toggleRow(t("Show window position"), systemImage: "point.3.connected.trianglepath.dotted", isOn: previewInfoShowsPositionBinding)
                 }
 
-                settingsGroup(t("Floating panels")) {
-                    toggleRow(t("Enable background blur"), systemImage: "sparkles", isOn: backgroundBlurBinding)
-                    if viewModel.settings.enableBackgroundBlur {
-                        settingRow(t("Panel glass wash"), systemImage: "slider.horizontal.3",
-                                   help: t("Floating panels (preview, Dock preview, workspace bar) only. Lower values let more of the wallpaper's own colours through the glass; higher values let the frosted wash dominate.")) {
-                            HStack(spacing: 16) {
-                                VStack(spacing: 6) {
-                                    Slider(value: backgroundBlurOpacityBinding, in: 0...1, step: 0.05)
-                                        .frame(width: 180)
-                                    // 材质示意使用当前窗口背景，不代表独立面板的 wash。
-                                    GlassPreviewCard(
-                                        opacity: viewModel.settings.backgroundBlurOpacity,
-                                        cornerRadius: 14,
-                                        material: viewModel.settings.crystalMaterial,
-                                        panelStyle: viewModel.settings.previewPanelStyle,
-                                        sampleOfPanelGlass: true,
-                                        localize: { viewModel.settings.language.localizedString($0) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    settingRow(t("Panel material"), systemImage: "rectangle.on.rectangle.slash",
-                               help: t("No panel removes the glass surface entirely so the cards float directly on the desktop.")) {
-                        Picker("", selection: crystalPanelMaterialBinding) {
-                            ForEach(CrystalPanelMaterial.allCases, id: \.self) { material in
-                                Text(material.displayName(language: viewModel.settings.language)).tag(material)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 260)
-                    }
-
-                    settingRow(t("Spatial panel layout"), systemImage: "rectangle.3.group") {
-                        Picker("", selection: previewPanelStyleBinding) {
-                            ForEach(PreviewPanelStyle.allCases, id: \.self) { style in
-                                Text(style.displayName(language: viewModel.settings.language)).tag(style)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 380)
-                    }
-                }
-
-                settingsGroup(t("Crystal material")) {
-                    settingRow(t("Glass base tone"), systemImage: "circle.lefthalf.filled",
-                               help: t("Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones.")) {
-                        Picker(t("Glass base tone"), selection: crystalBaseToneBinding) {
-                            ForEach(GlassBaseTone.allCases, id: \.self) { tone in
-                                Text(tone.displayName(language: viewModel.settings.language)).tag(tone)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 320)
-                    }
-
-                    settingRow(t("Crystal tint"), systemImage: "paintpalette") {
-                        HStack(spacing: 10) {
-                            ColorPicker(t("Crystal tint"), selection: crystalTintBinding, supportsOpacity: false)
-                                .labelsHidden()
-                                .frame(width: 52)
-                            Text(crystalTintHex)
-                                .font(.caption.monospacedDigit())
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .fixedSize()
-                                .frame(width: 72, alignment: .leading)
-                        }
-                    }
-
-                    crystalSliderRow(t("Top sheen"), systemImage: "sun.max",
-                                     value: crystalSheenBinding,
-                                     range: CrystalMaterial.Range.sheen,
-                                     displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.topSheenOpacity),
-                                     help: t("Strength of the highlight across the top edge of cards and panels."))
-
-                    crystalSliderRow(t("Shared crystal tint strength"), systemImage: "circle.lefthalf.filled",
-                                     value: crystalPanelTintBinding,
-                                     range: CrystalMaterial.Range.panelTint,
-                                     displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.panelTintCap * 100),
-                                     help: t("Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows."))
-
-                    crystalSliderRow(t("Rim highlight"), systemImage: "hexagon",
-                                     value: crystalRimBinding,
-                                     range: CrystalMaterial.Range.rim,
-                                     displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.rimTopOpacity),
-                                     help: t("Strength of the specular bevel along the panel and card edges."))
-                }
-
-                settingsGroup(t("Standard windows")) {
-                    settingRow(t("Window glass wash"), systemImage: "macwindow",
-                               help: t("Settings, Workspaces and Statistics windows share this control. It does not change floating panels.")) {
-                        HStack(spacing: 10) {
-                            Slider(value: preferencesGlassOpacityBinding, in: 0...1, step: 0.05)
-                                .frame(width: 200)
-                            Text(String(format: "%.0f%%", viewModel.settings.preferencesGlassOpacity * 100))
-                                .font(.caption.monospacedDigit())
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .fixedSize()
-                                .frame(width: 44, alignment: .trailing)
-                        }
-                    }
-                }
-
-                settingsGroup(t("Appearance")) {
-                    settingRow(t("Language"), systemImage: "globe") {
-                        Picker("", selection: languageBinding) {
-                            ForEach(AppLanguage.allCases, id: \.self) { language in
-                                Text(language.displayName).tag(language)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 260)
-                    }
-
-                    settingRow(t("Theme"), systemImage: "circle.lefthalf.filled") {
-                        Picker("", selection: themeBinding) {
-                            ForEach(AppTheme.allCases, id: \.self) { theme in
-                                Text(theme.displayName(language: viewModel.settings.language)).tag(theme)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 300)
-                    }
-                }
-
                 settingsGroup(t("Dock Preview")) {
                     toggleRow(t("Enable dock preview"), systemImage: "rectangle.on.rectangle", isOn: dockPreviewEnabledBinding)
 
@@ -399,6 +220,17 @@ struct PreferencesView: View {
                 }
 
                 settingsGroup(t("System")) {
+                    settingRow(t("Language"), systemImage: "globe") {
+                        Picker("", selection: languageBinding) {
+                            ForEach(AppLanguage.allCases, id: \.self) { language in
+                                Text(language.displayName).tag(language)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 260)
+                    }
+
                     toggleRow(t("Launch at login"), systemImage: "power", isOn: launchAtLoginBinding)
                     toggleRow(t("Hide main window on launch"), systemImage: "eye.slash", isOn: hideMainWindowBinding)
                 }
@@ -410,6 +242,139 @@ struct PreferencesView: View {
                 .onAppear { statisticsModel.observeSettingsChanges() }
             }
             .padding(24)
+        }
+    }
+
+    private var appearanceSettingsTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+                settingsGroup(t("Appearance")) {
+                    settingRow(t("Interface theme"), systemImage: "circle.lefthalf.filled") {
+                        Picker("", selection: themeBinding) {
+                            ForEach(AppTheme.allCases, id: \.self) { theme in
+                                Text(theme.displayName(language: viewModel.settings.language)).tag(theme)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 300)
+                    }
+                }
+
+                settingsGroup(t("Glass appearance")) {
+                    settingRow(t("Glass material"), systemImage: "sparkles") {
+                        Picker(t("Glass material"), selection: glassStyleBinding) {
+                            ForEach(GlassStyle.allCases, id: \.self) { style in
+                                Text(style.displayName(language: viewModel.settings.language)).tag(style)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 340)
+                    }
+                    if viewModel.settings.crystalMaterial.glassStyle != .opaque {
+                        crystalSliderRow(t("Glass density"), systemImage: "slider.horizontal.3",
+                                         value: sharedDensityBinding, range: 0...1,
+                                         displayed: String(format: "%.0f%%", viewModel.settings.panelGlassDensity * 100),
+                                         help: t("Clear glass: adds a neutral reading surface; 0 keeps the native optical glass. Frosted glass: controls the system backdrop opacity. Does not fade text or control tint strength."))
+                        if viewModel.settings.crystalMaterial.sharedDensity == nil {
+                            Text(t("Previous panel and window densities are preserved. Move this slider to apply one density everywhere."))
+                                .font(.caption).foregroundColor(.secondary)
+                                .padding(DesignTokens.Spacing.md)
+                        }
+                        settingRow(t("Crystal tint"), systemImage: "paintpalette") {
+                            HStack(spacing: 10) {
+                                ColorPicker(t("Crystal tint"), selection: crystalTintBinding, supportsOpacity: false)
+                                    .labelsHidden()
+                                    .frame(width: 52)
+                                Text(crystalTintHex)
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                    .frame(width: 72, alignment: .leading)
+                            }
+                        }
+
+                        crystalSliderRow(t("Crystal tint strength"), systemImage: "paintpalette",
+                                         value: crystalPanelTintBinding, range: CrystalMaterial.Range.panelTint,
+                                         displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.panelTintCap * 100),
+                                         help: t("Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights."))
+                        if #unavailable(macOS 26.0) {
+                            Text(t("Clear glass uses a system-material fallback on macOS versions earlier than 26."))
+                                .font(.caption).foregroundColor(.secondary)
+                                .padding(DesignTokens.Spacing.md)
+                        }
+                    }
+                }
+
+                DisclosureGroup(t("Advanced glass details")) {
+                    settingsGroup(t("Surface details")) {
+                        crystalSliderRow(t("Card separation"), systemImage: "rectangle.on.rectangle",
+                                         value: cardOpacityBinding, range: CrystalMaterial.Range.card,
+                                         displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.cardOpacity * 100),
+                                         help: t("Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill."))
+                        if viewModel.settings.crystalMaterial.glassStyle == .frosted {
+                            crystalSliderRow(t("Top sheen"), systemImage: "sun.max", value: crystalSheenBinding,
+                                             range: CrystalMaterial.Range.sheen,
+                                             displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.topSheenOpacity),
+                                             help: t("Strength of the highlight across the top edge of cards and panels."))
+                            crystalSliderRow(t("Rim highlight"), systemImage: "hexagon", value: crystalRimBinding,
+                                             range: CrystalMaterial.Range.rim,
+                                             displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.rimTopOpacity),
+                                             help: t("Strength of the specular bevel along the panel and card edges."))
+                        }
+                        settingRow(t("Thumbnail backdrop"),
+                                   systemImage: "paintpalette",
+                                   help: t("Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted.")) {
+                            HStack(spacing: 10) {
+                                ColorPicker(t("Thumbnail backdrop"), selection: thumbnailBackdropTintBinding, supportsOpacity: false)
+                                    .labelsHidden()
+                                    .frame(width: 52)
+                                Text(thumbnailBackdropHex)
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                    .fixedSize()
+                                    .frame(width: 72, alignment: .leading)
+                            }
+                        }
+
+                        thumbnailBackdropSliderRow(t("Thumbnail backdrop strength"),
+                                                  value: thumbnailBackdropOpacityBinding,
+                                                  range: ThumbnailBackdrop.Range.opacity,
+                                                  displayed: String(format: "%.0f%%", viewModel.settings.thumbnailBackdrop.opacity * 100),
+                                                  help: t("How strongly the backdrop colour is laid down behind a window thumbnail."))
+                    }
+                }
+
+                settingsGroup(t("Panel layout")) {
+                    settingRow(t("Panel material"), systemImage: "rectangle.on.rectangle.slash",
+                               help: t("No panel removes the glass surface entirely so the cards float directly on the desktop.")) {
+                        Picker("", selection: crystalPanelMaterialBinding) {
+                            ForEach(CrystalPanelMaterial.allCases, id: \.self) { material in
+                                Text(material.displayName(language: viewModel.settings.language)).tag(material)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 260)
+                    }
+
+                    settingRow(t("Spatial panel layout"), systemImage: "rectangle.3.group") {
+                        Picker("", selection: previewPanelStyleBinding) {
+                            ForEach(PreviewPanelStyle.allCases, id: \.self) { style in
+                                Text(style.displayName(language: viewModel.settings.language)).tag(style)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 380)
+                    }
+                }
+
+            }
+            .padding(DesignTokens.Spacing.lg)
         }
     }
 
@@ -676,25 +641,6 @@ struct PreferencesView: View {
         )
     }
 
-    private var backgroundBlurBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.settings.enableBackgroundBlur },
-            set: { newValue in
-                viewModel.updateSettings { $0.enableBackgroundBlur = newValue }
-            }
-        )
-    }
-
-    // MARK: - Crystal material bindings
-
-    private var preferencesGlassOpacityBinding: Binding<Double> {
-        Binding(
-            get: { viewModel.settings.preferencesGlassOpacity },
-            set: { newValue in
-                viewModel.updateSettings { $0.preferencesGlassOpacity = newValue }
-            }
-        )
-    }
 
     private var thumbnailBackdropTintBinding: Binding<Color> {
         Binding(
@@ -742,11 +688,30 @@ struct PreferencesView: View {
         }
     }
 
-    private var crystalBaseToneBinding: Binding<GlassBaseTone> {
-        Binding(
-            get: { viewModel.settings.crystalMaterial.baseTone },
-            set: { value in viewModel.updateSettings { $0.crystalMaterial.baseTone = value } }
-        )
+    private var glassStyleBinding: Binding<GlassStyle> {
+        Binding(get: { viewModel.settings.crystalMaterial.glassStyle }, set: { value in
+            viewModel.updateSettings {
+                $0.crystalMaterial.glassStyle = value
+                $0.crystalMaterial.baseTone = .automatic
+                $0.enableBackgroundBlur = value != .opaque
+            }
+        })
+    }
+
+    private var sharedDensityBinding: Binding<Double> {
+        Binding(get: { viewModel.settings.panelGlassDensity }, set: { value in
+            viewModel.updateSettings {
+                $0.crystalMaterial.sharedDensity = value
+                $0.backgroundBlurOpacity = value
+                $0.preferencesGlassOpacity = value
+            }
+        })
+    }
+
+    private var cardOpacityBinding: Binding<Double> {
+        Binding(get: { viewModel.settings.crystalMaterial.cardOpacity }, set: { value in
+            viewModel.updateSettings { $0.crystalMaterial.cardOpacity = value }
+        })
     }
 
     private var crystalTintBinding: Binding<Color> {
@@ -834,15 +799,6 @@ struct PreferencesView: View {
             get: { viewModel.settings.previewPanelStyle },
             set: { newValue in
                 viewModel.updateSettings { $0.previewPanelStyle = newValue }
-            }
-        )
-    }
-
-    private var backgroundBlurOpacityBinding: Binding<Double> {
-        Binding(
-            get: { viewModel.settings.backgroundBlurOpacity },
-            set: { newValue in
-                viewModel.updateSettings { $0.backgroundBlurOpacity = newValue }
             }
         )
     }
@@ -1026,9 +982,9 @@ struct PreferencesView: View {
             // General tab scrolled under seven backdrop samplers and hitched
             // -- the exact per-card material cost cardSurface's doc comment
             // warns about. The window-level panelBackground provides the
-            // glass; groups hold solid content on top of it.
+            // glass; groups hold neutral card fills on top of it.
             .cardSurface(
-                fill: Color.crystalSurfaceBase.opacity(0.10),
+                fill: Color.crystalSurfaceBase.opacity(viewModel.settings.crystalMaterial.cardOpacity),
                 cornerRadius: DesignTokens.Radius.card,
                 material: viewModel.settings.crystalMaterial
             )

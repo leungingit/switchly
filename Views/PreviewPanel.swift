@@ -603,7 +603,8 @@ struct PreviewView: View {
     @State private var settings = SettingsService.shared.loadSettings()
     @FocusState private var searchFocused: Bool
 
-    init(viewModel: PreviewViewModel = PreviewViewModel()) {
+    init(viewModel: PreviewViewModel = PreviewViewModel(), settings: AppSettings = SettingsService.shared.loadSettings()) {
+        _settings = State(initialValue: settings)
         _viewModel = StateObject(wrappedValue: viewModel)
     }
     
@@ -635,7 +636,7 @@ struct PreviewView: View {
             viewModel.cardFrames = frames
         }
         .panelGlass(
-            isActive: settings.enableBackgroundBlur,
+            isActive: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque),
             opacity: backgroundOpacity,
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial
@@ -643,7 +644,7 @@ struct PreviewView: View {
         .crystalSpecularRim(
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial,
-            lineWidth: settings.enableBackgroundBlur ? 0.75 : 0
+            lineWidth: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.75 : 0
         )
         .shadow(color: .black.opacity(0.24), radius: 22, x: 0, y: 12)
         .onAppear {
@@ -662,6 +663,7 @@ struct PreviewView: View {
             // view model flips visibility, and focus needs a key window.
             DispatchQueue.main.async { searchFocused = true }
         }
+        .preferredColorScheme(settings.theme.colorScheme)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             settings = SettingsService.shared.loadSettings()
             // The window appearance is the ground truth for the crystal tokens
@@ -708,7 +710,7 @@ struct PreviewView: View {
                     LinearGradient(
                         colors: [
                             Color.clear,
-                            Color.crystalPanelHairline.opacity(settings.enableBackgroundBlur ? 0.22 : 0.08),
+                            Color.crystalPanelHairline.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.22 : 0.08),
                             Color.clear
                         ],
                         startPoint: .leading,
@@ -756,7 +758,7 @@ struct PreviewView: View {
         .padding(.vertical, 7)
         .frame(width: 260)
         .liquidGlass(
-            isActive: settings.enableBackgroundBlur,
+            isActive: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque),
             opacity: controlOpacity,
             cornerRadius: DesignTokens.Radius.pill,
             tintColor: settings.crystalMaterial.tintColor,
@@ -853,7 +855,7 @@ struct PreviewView: View {
         .padding(.vertical, 14)
         .padding(.horizontal, 8)
         .liquidGlass(
-            isActive: settings.enableBackgroundBlur,
+            isActive: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque),
             opacity: 0.18,
             cornerRadius: DesignTokens.Radius.pill,
             material: settings.crystalMaterial
@@ -913,10 +915,8 @@ struct PreviewView: View {
 
     @ViewBuilder
     private var sectionBackground: some View {
-        if settings.enableBackgroundBlur {
-            // A 2% white wash only separates zones on a dark panel; on the
-            // light one it is invisible at best and a white band at worst.
-            Color.crystalSheenTop.opacity(0.02)
+        if settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque {
+            Color.clear
         } else {
             Color(nsColor: .controlBackgroundColor)
         }
@@ -930,7 +930,7 @@ struct PreviewView: View {
     }
 
     private var backgroundOpacity: Double {
-        min(max(settings.backgroundBlurOpacity, 0), 1)
+        min(max(settings.panelGlassDensity, 0), 1)
     }
 
     private var gridColumns: [GridItem] {
@@ -1230,23 +1230,20 @@ struct WindowThumbnailView: View {
     /// even when the user turns the glass opacity all the way down.
     private var cardFill: Color {
         if isHovered {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.18 : 0.10)
+            return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.18 : 0.10)
         }
         if isSelected {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.06)
+            return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.12 : 0.06)
         }
         return Color.crystalSurfaceBase.opacity(cardFillOpacity)
     }
 
-    /// The resting card keeps the window's semantic background at 6–28% so the
-    /// glass panel shows through while dark/light label text keeps its
-    /// contrast. A tinted resting fill used to sit under light-mode text at
-    /// ~1.2:1; the crystal identity is now the preset sheen above it.
+    /// Shared card separation; independent of backdrop density.
     private var cardFillOpacity: Double {
-        guard settings.enableBackgroundBlur else {
+        guard (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) else {
             return 1
         }
-        return min(max(settings.backgroundBlurOpacity * 0.35 + 0.04, 0.06), 0.28)
+        return settings.crystalMaterial.cardOpacity
     }
 
     private var cardBorder: Color {
@@ -1259,14 +1256,14 @@ struct WindowThumbnailView: View {
     /// Fill for small chips (window-number badge, app-icon chip) and the
     /// loading skeleton — solid, like the card, never a material.
     private var chipFill: Color {
-        if settings.enableBackgroundBlur {
+        if (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) {
             return Color.crystalChipBase.opacity(0.14)
         }
         return Color(nsColor: .textBackgroundColor)
     }
 
     private var skeletonFill: Color {
-        let opacity: Double = settings.enableBackgroundBlur ? 0.3 : 0.1
+        let opacity: Double = (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.3 : 0.1
         return Color(nsColor: .textBackgroundColor).opacity(opacity)
     }
     
@@ -1278,7 +1275,7 @@ struct WindowThumbnailView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
-                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: settings.enableBackgroundBlur))
+                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque)))
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     .transition(MotionTokens.thumbnailTransition)
             case .failed(let fallbackIcon):

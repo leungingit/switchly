@@ -309,6 +309,9 @@ struct AppSettings: Codable, Equatable {
         self.previewPanelStyle = try container.decodeIfPresent(PreviewPanelStyle.self, forKey: .previewPanelStyle) ?? .classicGrid
     }
     
+    var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }
+    var windowGlassDensity: Double { crystalMaterial.sharedDensity ?? preferencesGlassOpacity }
+
     static var `default`: AppSettings {
         AppSettings(
             previewStrategy: .configuredOnly,
@@ -504,6 +507,15 @@ enum CrystalPanelMaterial: String, Codable, CaseIterable, Hashable {
     }
 }
 
+/// Material selection is shared by floating panels and standard windows.
+enum GlassStyle: String, Codable, CaseIterable {
+    case transparent, frosted, opaque
+
+    func displayName(language: AppLanguage) -> String {
+        language.localizedString(self == .transparent ? "Clear glass" : self == .frosted ? "Frosted glass" : "Glass off")
+    }
+}
+
 /// Controls only the system blur backing, independently of the window's text theme.
 enum GlassBaseTone: String, Codable, CaseIterable {
     case automatic, light, dark
@@ -529,6 +541,10 @@ struct CrystalMaterial: Hashable {
     var tintColor: Color
     /// System material tone; automatic preserves existing settings.
     var baseTone: GlassBaseTone = .automatic
+    var glassStyle: GlassStyle = .frosted
+    /// nil preserves the two old strengths until the user moves the shared control.
+    var sharedDensity: Double? = nil
+    var cardOpacity: Double = 0.10
     /// Top specular sheen alpha for cards and panels (0–0.40).
     var topSheenOpacity: Double
     /// 面板和普通窗口共用的水晶染色强度（0–1）。保留旧存储键。
@@ -554,6 +570,7 @@ struct CrystalMaterial: Hashable {
     /// Ranges the Preferences sliders offer. Kept here so the controls, the
     /// decode clamp and the QA checks cannot drift apart.
     enum Range {
+        static let card: ClosedRange<Double> = 0...0.3
         static let sheen: ClosedRange<Double> = 0...0.40
         static let panelTint: ClosedRange<Double> = 0...1
         static let rim: ClosedRange<Double> = 0...1
@@ -561,6 +578,8 @@ struct CrystalMaterial: Hashable {
 
     func clamped() -> CrystalMaterial {
         var copy = self
+        copy.cardOpacity = min(max(copy.cardOpacity, Range.card.lowerBound), Range.card.upperBound)
+        copy.sharedDensity = copy.sharedDensity.map { min(max($0, 0), 1) }
         copy.topSheenOpacity = min(max(copy.topSheenOpacity, Range.sheen.lowerBound), Range.sheen.upperBound)
         copy.panelTintCap = min(max(copy.panelTintCap, Range.panelTint.lowerBound), Range.panelTint.upperBound)
         copy.rimTopOpacity = min(max(copy.rimTopOpacity, Range.rim.lowerBound), Range.rim.upperBound)
@@ -606,6 +625,9 @@ extension CrystalMaterial: Codable {
     enum CodingKeys: String, CodingKey {
         case tintColor
         case baseTone
+        case glassStyle
+        case sharedDensity
+        case cardOpacity
         case topSheenOpacity
         case panelTintCap
         case rimTopOpacity
@@ -627,6 +649,9 @@ extension CrystalMaterial: Codable {
         let rgb = try container.decodeIfPresent(RGB.self, forKey: .tintColor)
         self.tintColor = rgb.map { Color(red: $0.red, green: $0.green, blue: $0.blue) } ?? fallback.tintColor
         self.baseTone = try container.decodeIfPresent(GlassBaseTone.self, forKey: .baseTone) ?? .automatic
+        self.glassStyle = try container.decodeIfPresent(GlassStyle.self, forKey: .glassStyle) ?? .frosted
+        self.cardOpacity = min(max(try container.decodeIfPresent(Double.self, forKey: .cardOpacity) ?? 0.10, 0), 0.3)
+        self.sharedDensity = try container.decodeIfPresent(Double.self, forKey: .sharedDensity).map { min(max($0, 0), 1) }
         self.topSheenOpacity = try container.decodeIfPresent(Double.self, forKey: .topSheenOpacity) ?? fallback.topSheenOpacity
         self.panelTintCap = try container.decodeIfPresent(Double.self, forKey: .panelTintCap) ?? fallback.panelTintCap
         self.rimTopOpacity = try container.decodeIfPresent(Double.self, forKey: .rimTopOpacity) ?? fallback.rimTopOpacity
@@ -641,6 +666,9 @@ extension CrystalMaterial: Codable {
                                   blue: Double(resolved.blueComponent)),
                              forKey: .tintColor)
         try container.encode(baseTone, forKey: .baseTone)
+        try container.encode(glassStyle, forKey: .glassStyle)
+        try container.encodeIfPresent(sharedDensity, forKey: .sharedDensity)
+        try container.encode(cardOpacity, forKey: .cardOpacity)
         try container.encode(topSheenOpacity, forKey: .topSheenOpacity)
         try container.encode(panelTintCap, forKey: .panelTintCap)
         try container.encode(rimTopOpacity, forKey: .rimTopOpacity)

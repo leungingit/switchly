@@ -48,18 +48,25 @@
 
 | 字段 | 默认值 | 设置范围 / 含义 |
 | --- | --- | --- |
-| `baseTone` | `.automatic` | 系统模糊底层跟随外观、明亮或深色；独立于文字主题，旧数据默认跟随外观。 |
-| `tintColor` | sRGB (60, 150, 240) / 255 | 色调；以 RGB 分量编码。壁纸透色与主动染色需区分。 |
-| `topSheenOpacity` | 0.18 | 0…0.40，顶部柔光。 |
-| `panelTintCap` | 1.0 | 0…1，共享染色强度，保留历史存储键。 |
-| `rimTopOpacity` | 0.57 | 0…1，镜面边顶部强度。 |
-| `panelMaterial` | `.glass` | `.glass` / `.clear`；后者为无面板结构。 |
+| `glassStyle` | `.frosted` | 透明 / 磨砂 / 关闭；旧数据默认为磨砂，不自动选择新的默认视觉。 |
+| `sharedDensity` | `nil` | 0…1；nil 保留旧面板与普通窗口各自的数值，用户拖动后统一。 |
+| `tintColor` | sRGB (60, 150, 240) / 255 | 所有表面共用的 sRGB 染色。 |
+| `panelTintCap` | 1.0 | 0…1，染色强度；零不染色，与密度、柔光独立。 |
+| `cardOpacity` | 0.10 | 0…0.30，共享卡片分隔底色；零移除静止卡片填充。 |
+| `topSheenOpacity` | 0.18 | 0…0.40，磨砂模式的顶部柔光。 |
+| `rimTopOpacity` | 0.57 | 0…1，磨砂模式的边缘高光。 |
+| `panelMaterial` | `.glass` | 浮动面板结构：玻璃面板 / 无面板，归入布局。 |
+| `baseTone` | `.automatic` | 只保留存储兼容，不再覆盖渲染或出现在界面中。 |
 
-`backgroundBlurOpacity` 控制浮动面板的 wash，`preferencesGlassOpacity` 用于普通窗口背景；它们消费同一材质来源，但不强制使用相同表面系数。普通窗口使用 `WindowGlassSurface`，浮动面板使用 `PanelGlassSurface`，底层共用 `GlassSurface` / `GlassAppearance`。具体公式留在源码，不在各个 View 中复制。
+外观选项集中于独立的「外观」标签页，基础项为主题、材质、密度、染色；卡片分隔、磨砂柔光与边缘、缩略图衬底位于高级折叠区。语言保留在「通用 → 系统」。
 
-“无面板”只作用于浮动面板。偏好设置、工作区管理和统计窗口仍各自拥有背景模糊视图。关闭背景模糊与无面板是不同状态，必须分别检查。
+透明模式在 macOS 26+ 使用公开 `NSGlassEffectView(style: .clear)`，实际 SwiftUI 内容装入 `contentView`；复用现有 hosting view 更新，避免密度拖动时重建控件。旧系统降级为系统材质。磨砂模式使用 `NSVisualEffectView(.popover)`；关闭玻璃使用主题相关的实色背景。
 
-材质示意可复用设置窗口已有背景，不能声称预览了独立浮动面板的 wash。使用模拟壁纸时必须标注背景来源。当前 `GlassPreviewCard` 图形区为 220×110pt，说明文字在图形区外。
+密度不是模糊半径：透明模式控制额外中性阅读层（0 保留原生透光与折射），磨砂模式直接控制背景材质 alpha（0 移除该背景层，无 30% 下限）。染色与高级高光各自独立，密度为零不会暗中清除它们。文字不随玻璃密度淡化。
+
+所有表面共用 `GlassAppearance` 的染色、密度与柔光系数。`backgroundBlurOpacity` 与 `preferencesGlassOpacity` 保留旧键；`sharedDensity == nil` 时分别读取，设置页提示旧差异。用户调节共享滑块时同时写入共享值和两个旧字段。保留旧数值不等于保留旧版错误的系数映射。旧 `enableBackgroundBlur == false` 仍保留浮动面板的实色降级，重新选择材质后同步开关。
+
+无面板只作用于浮动布局；玻璃关闭、密度零、无面板各有不同语义。透明模式使用系统光泽，卡片不再重复画整面光泽；磨砂光泽为零时不得留下固定灰色渐变或描边。
 
 旧 `crystalThemePreset` 只用于解码迁移：`ice` 和未知值回退旧默认，`quartz` 展开暖色参数，`frameless` 展开中性色及 `.clear`。新增字段保留旧数据解码，参数限制复用 `CrystalMaterial.Range` 和现有 `clamped()` 消费路径。
 
@@ -67,9 +74,9 @@
 
 - 面板负责系统模糊与桌面透射。卡片复用面板底层，只叠半透明语义底、上亮下透柔光及镜面边；不为每张卡片创建 `NSVisualEffectView`。
 - 复用 `.panelGlass()`、`.cardSurface()`、`.crystalSpecularRim()` 和普通窗口材质封装。连续圆角与内描边保持边界完整，装饰不能侵占内容安全区。
-- 强调色用 `Color.accentColor`；主文字和底色优先系统语义色。次要文字根据所在表面使用现有 `crystalSecondary(on:)` 等适配，不能只降低白字透明度。
+- 强调色用 `Color.accentColor`；主文字和底色优先系统语义色。次要文字使用跟随同一主题的语义墨色；`crystalSecondary(on:)` 不再强制深色，也不声称采样了实际壁纸亮度。
 - 共享颜色按正在绘制的视图的 `effectiveAppearance` 解析。不要在构造时用应用级外观快照替代动态颜色；离屏或窗口独立主题可能与应用外观不同。
-- 当前使用 AppKit / SwiftUI 材质实现。源码中的 `liquidGlass` 命名不代表已实现原生 `View.glassEffect` 分支；新增系统 API 时检查可用性并保留 macOS 12 降级。
+- 普通控件复用现有背景而不创建嵌套模糊；透明面板通过 AppKit 原生玻璃容器实现，不依赖 SwiftUI `View.glassEffect`。所有新 API 保留 macOS 12 降级。
 
 ## 布局与预览交互
 
@@ -104,5 +111,3 @@ SwiftUI 动效经 `MotionTokens.animated()`，AppKit 面板使用 `Motion` 帮�
 | 旧稿描述 macOS 26 原生 Liquid Glass，并列出固定对比度测量结果。 | 当前不宣称该 API 分支；旧测量依赖当时参数与离屏背景，不作为当前所有配置的对比度保证。 |
 
 本轮整理没有重新执行视觉验收。当前回归步骤、证据边界与未验证场景见 [界面工程约束](ui-guidelines.md)。
-
-玻璃底色作用于共享 `NSVisualEffectView` 的外观，不改变窗口文字主题；选择明亮玻璃可减轻深色系统材质的灰黑感，再通过现有水晶染色选择任意颜色与强度。切回跟随外观会清除底层的显式外观。系统材质仍受壁纸影响，并非精确 RGB 实心底色；跨深浅组合需检查文字可读性。关闭模糊、零 wash 和无面板保留原有语义。

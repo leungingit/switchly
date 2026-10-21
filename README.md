@@ -56,7 +56,7 @@ Workspaces organize app groups and access to their windows; they do not create m
 | Target an app with just one window | Enable auto-switch to go directly to it. |
 | Alternate keyboard and mouse | Use shortcuts, Dock hover, or optional pointer triggers. |
 | Prefer a quieter desktop | Keep Switchly in the menu bar, with no Dock icon; optionally launch at login. |
-| Want the panel to feel like yours | Choose light, dark, or system appearance; independently choose a light or dark glass backing, pick any crystal tint colour, or turn glass off. |
+| Want the panel to feel like yours | Choose light, dark, or system appearance; choose clear or frosted glass, adjust shared density and tint, or turn glass off in the Appearance tab. |
 | Want to understand your usage | View local keyboard/mouse counts and estimated time savings; clear them at any time. Estimates are not measured productivity gains. |
 
 English and Simplified Chinese are built in. Animations respect the system **Reduce Motion** setting.
@@ -127,7 +127,7 @@ Design and interface work follows the [design system](docs/design-system.md) and
 
 ## Build from source
 
-Use **Xcode 26+**, Swift 5.9, and [XcodeGen](https://github.com/yonaskolb/XcodeGen). `project.yml` defines the project configuration and macOS 12 deployment target. Glass styling currently uses shared AppKit/SwiftUI materials; it does not claim a native macOS `View.glassEffect` implementation.
+Use **Xcode 26+**, Swift 5.9, and [XcodeGen](https://github.com/yonaskolb/XcodeGen). `project.yml` defines the project configuration and macOS 12 deployment target. Clear glass uses AppKit’s native `NSGlassEffectView` on macOS 26+, with a system-material fallback on older versions. Frosted and opaque surfaces remain available.
 
 ```sh
 git clone https://github.com/leungingit/switchly.git

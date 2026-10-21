@@ -9,7 +9,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- 新增共享玻璃底色设置（跟随外观 / 明亮 / 深色），可独立减轻深色系统材质的灰黑感，并搭配现有任意水晶染色；旧设置保持跟随外观。 / Added an independent glass backing tone alongside the existing custom crystal tint, preserving the previous appearance by default.
+- 外观独立标签页：透明 / 磨砂 / 关闭玻璃，共享密度、染色与高级卡片细节；macOS 26+ 使用 AppKit 原生透明玻璃内容容器，旧系统保留系统材质降级。
+
+### Fixed
+
+- 统一预览、Dock、Workspace 和普通窗口的材质系数，去除密度隐藏下限及固定灰色叠层；次要文字跟随主题，撤回独立明暗底色开关。保留旧分表面强度，用户调整共享滑块后才统一。
 
 ## [1.2.0] - 2026-10-20
 

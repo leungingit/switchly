@@ -277,3 +277,23 @@
 "Light glass" = "明亮玻璃";
 "Dark glass" = "深色玻璃";
 "Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones." = "明亮玻璃可减轻系统材质的灰黑感。使用下方的水晶染色自由选择颜色。文字仍跟随应用外观，混合深浅色时请检查可读性。";
+
+/* Unified glass appearance */
+"Interface theme" = "界面主题";
+"Glass appearance" = "玻璃外观";
+"Glass material" = "玻璃材质";
+"Clear glass" = "透明玻璃";
+"Frosted glass" = "磨砂玻璃";
+"Glass off" = "关闭玻璃";
+"Glass density" = "玻璃密度";
+"Clear glass: adds a neutral reading surface; 0 keeps the native optical glass. Frosted glass: controls the system backdrop opacity. Does not fade text or control tint strength." = "透明玻璃：调节附加的中性底层，0 保留原生透光效果。磨砂玻璃：调节系统背景材质的不透明度。不会淡化文字或改变染色强度。";
+"Previous panel and window densities are preserved. Move this slider to apply one density everywhere." = "已保留旧版面板与普通窗口各自的密度。拖动此滑块后，所有窗口将使用同一密度。";
+"Crystal tint strength" = "染色强度";
+"Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights." = "将所选颜色应用到所有玻璃表面。0 关闭染色，不改变密度或高光。";
+"Clear glass uses a system-material fallback on macOS versions earlier than 26." = "macOS 26 之前的系统使用普通系统材质替代透明玻璃。";
+"Advanced glass details" = "高级玻璃细节";
+"Surface details" = "表面细节";
+"Card separation" = "卡片分隔强度";
+"Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill." = "卡片的中性底色，独立于玻璃密度。0 移除未选中卡片的底色。";
+"Panel layout" = "面板布局";
+"Settings section" = "设置分类";

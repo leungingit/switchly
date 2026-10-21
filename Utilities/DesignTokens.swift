@@ -43,6 +43,11 @@ enum DesignTokens {
         static let chip: CGFloat = 6
     }
 
+    enum Glass {
+        static let maximumTintOpacity: Double = 0.35
+        static let maximumNativeReadingOpacity: Double = 0.18
+    }
+
     /// Hairline border weight. 0.5pt reads as a crisp specular line on Retina.
     static let hairline: CGFloat = 0.5
 }

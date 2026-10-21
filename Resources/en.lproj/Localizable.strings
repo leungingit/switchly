@@ -277,3 +277,23 @@
 "Light glass" = "Light glass";
 "Dark glass" = "Dark glass";
 "Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones." = "Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones.";
+
+/* Unified glass appearance */
+"Interface theme" = "Interface theme";
+"Glass appearance" = "Glass appearance";
+"Glass material" = "Glass material";
+"Clear glass" = "Clear glass";
+"Frosted glass" = "Frosted glass";
+"Glass off" = "Glass off";
+"Glass density" = "Glass density";
+"Clear glass: adds a neutral reading surface; 0 keeps the native optical glass. Frosted glass: controls the system backdrop opacity. Does not fade text or control tint strength." = "Clear glass: adds a neutral reading surface; 0 keeps the native optical glass. Frosted glass: controls the system backdrop opacity. Does not fade text or control tint strength.";
+"Previous panel and window densities are preserved. Move this slider to apply one density everywhere." = "Previous panel and window densities are preserved. Move this slider to apply one density everywhere.";
+"Crystal tint strength" = "Crystal tint strength";
+"Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights." = "Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights.";
+"Clear glass uses a system-material fallback on macOS versions earlier than 26." = "Clear glass uses a system-material fallback on macOS versions earlier than 26.";
+"Advanced glass details" = "Advanced glass details";
+"Surface details" = "Surface details";
+"Card separation" = "Card separation";
+"Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill." = "Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill.";
+"Panel layout" = "Panel layout";
+"Settings section" = "Settings section";
