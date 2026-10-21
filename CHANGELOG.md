@@ -7,6 +7,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-21
+
 ### Added
 
 - 外观独立标签页：透明 / 磨砂 / 关闭玻璃，共享密度、染色与高级卡片细节；macOS 26+ 使用 AppKit 原生透明玻璃内容容器，旧系统保留系统材质降级。
@@ -387,7 +389,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - English and Simplified Chinese localizations.
 - MIT license and privacy policy.
 
-[Unreleased]: https://github.com/leungingit/switchly/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/leungingit/switchly/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/leungingit/switchly/releases/tag/v1.2.1
 [1.2.0]: https://github.com/leungingit/switchly/releases/tag/v1.2.0
 [1.1.2]: https://github.com/leungingit/switchly/releases/tag/v1.1.2
 [1.1.1]: https://github.com/leungingit/switchly/releases/tag/v1.1.1
