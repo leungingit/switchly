@@ -270,3 +270,44 @@
 "Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows." = "Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows.";
 
 "Material sample uses this window's background; it does not preview an independent panel wash." = "Material sample uses this window's background; it does not preview an independent panel wash.";
+
+/* Glass backing appearance */
+"Glass base tone" = "Glass base tone";
+"Match appearance" = "Match appearance";
+"Light glass" = "Light glass";
+"Dark glass" = "Dark glass";
+"Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones." = "Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones.";
+
+/* Unified glass appearance */
+"Interface theme" = "Interface theme";
+"Glass appearance" = "Glass appearance";
+"Glass material" = "Glass material";
+"Clear glass" = "Clear glass";
+"Frosted glass" = "Frosted glass";
+"Glass off" = "Glass off";
+"Glass density" = "Glass density";
+"Adds a neutral reading surface over native glass on macOS 26 and later; 0 keeps the system glass. On older systems, controls backdrop opacity. Does not fade text or control tint strength." = "Adds a neutral reading surface over native glass on macOS 26 and later; 0 keeps the system glass. On older systems, controls backdrop opacity. Does not fade text or control tint strength.";
+"Previous panel and window densities are preserved. Move this slider to apply one density everywhere." = "Previous panel and window densities are preserved. Move this slider to apply one density everywhere.";
+"Crystal tint strength" = "Crystal tint strength";
+"Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights." = "Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights.";
+"Clear glass uses a system-material fallback on macOS versions earlier than 26." = "Clear glass uses a system-material fallback on macOS versions earlier than 26.";
+"Advanced glass details" = "Advanced glass details";
+"Surface details" = "Surface details";
+"Card separation" = "Card separation";
+"Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill." = "Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill.";
+"Panel layout" = "Panel layout";
+"Settings section" = "Settings section";
+
+// Glass control limits and live matte sample
+"On macOS 26 and later, 0 keeps the system glass and 100% adds an almost solid reading surface. On older systems, controls backdrop opacity. Does not change blur radius or fade text." = "On macOS 26 and later, 0 keeps the system glass and 100% adds an almost solid reading surface. On older systems, controls backdrop opacity. Does not change blur radius or fade text.";
+"White reflection over the top of cards and panels, independent of the tint colour. Zero removes the added reflection." = "White reflection over the top of cards and panels, independent of the tint colour. Zero removes the added reflection.";
+"White reflection around all four edges. Zero removes the added highlight; the system glass rim and selection outline remain." = "White reflection around all four edges. Zero removes the added highlight; the system glass rim and selection outline remain.";
+"Backdrop sample: only the margins around a fitted image change. A thumbnail that fills its frame hides the backdrop." = "Backdrop sample: only the margins around a fitted image change. A thumbnail that fills its frame hides the backdrop.";
+"Thumbnail backdrop sample" = "Thumbnail backdrop sample";
+"System glass" = "System glass";
+"Mostly solid" = "Mostly solid";
+"Strong" = "Strong";
+
+/* Native glass */
+"Remove glass overlays" = "Remove glass overlays";
+"Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "Keeps the selected material, theme and card fill. Removes added density, tint and reflections.";

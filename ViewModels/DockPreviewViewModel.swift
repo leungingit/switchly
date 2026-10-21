@@ -17,6 +17,7 @@ class DockPreviewViewModel: ObservableObject {
     @Published var appName: String = ""
     @Published var panelWidth: CGFloat = 200
     @Published var panelHeight: CGFloat = 180
+    @Published private(set) var settings: AppSettings
 
     private let windowMonitorService: WindowMonitorServiceProtocol
     private let windowSwitchService: WindowSwitchServiceProtocol
@@ -33,10 +34,14 @@ class DockPreviewViewModel: ObservableObject {
         self.windowMonitorService = windowMonitorService
         self.windowSwitchService = windowSwitchService
         self.settingsService = settingsService
+        self.settings = settingsService.loadSettings()
         setupObservers()
     }
 
     func showPanel(forApp appName: String, bundleURL: URL? = nil) {
+        // A Dock panel can stay ordered out while Preferences changes. Read
+        // before presenting, even if SwiftUI has not mounted its view yet.
+        settings = settingsService.loadSettings()
         self.appName = appName
         self.currentBundleURL = bundleURL
         isPanelVisible = true
@@ -185,7 +190,6 @@ class DockPreviewViewModel: ObservableObject {
     /// setting and window count. The panel exactly fits the content without
     /// clipping or extra padding.
     private func updatePanelWidth() {
-        let settings = settingsService.loadSettings()
         let cardThumbnailWidth = settings.dockPreviewCardWidth
         let cardTotalWidth = cardThumbnailWidth + 12  // 6+6 padding
         let spacing: CGFloat = 10
@@ -254,6 +258,15 @@ class DockPreviewViewModel: ObservableObject {
     }
 
     private func setupObservers() {
+        NotificationCenter.default.publisher(for: .settingsDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.settings = self.settingsService.loadSettings()
+                self.updatePanelWidth()
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .windowListDidRefresh)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

@@ -11,7 +11,7 @@ import AppKit
 import Combine
 
 class DockPreviewPanel: NSPanel {
-    static let shared = DockPreviewPanel()
+    static let shared = DockPreviewPanel(viewModel: DockPreviewViewModel())
 
     private var keyDownMonitor: Any?
     private var isDismissing = false
@@ -21,12 +21,13 @@ class DockPreviewPanel: NSPanel {
     /// when its generation is still current (see `hide()`).
     private var generation = 0
 
-    private let viewModel = DockPreviewViewModel()
+    private let viewModel: DockPreviewViewModel
     private var panelWidthCancellable: AnyCancellable?
     private var interestCancellable: AnyCancellable?
     private var currentIconFrame: CGRect = .zero
 
-    private init() {
+    init(viewModel: DockPreviewViewModel) {
+        self.viewModel = viewModel
         let contentRect = NSRect(x: 0, y: 0, width: 300, height: 180)
         let styleMask: NSWindow.StyleMask = [.borderless, .nonactivatingPanel]
 
@@ -61,6 +62,10 @@ class DockPreviewPanel: NSPanel {
         setupKeyHandling()
         observePanelWidth()
         observeRefreshInterest()
+    }
+
+    deinit {
+        if let keyDownMonitor { NSEvent.removeMonitor(keyDownMonitor) }
     }
 
     /// Points the thumbnail auto-refresh tick at the windows this panel shows

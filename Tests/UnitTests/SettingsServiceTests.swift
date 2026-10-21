@@ -69,4 +69,18 @@ final class SettingsServiceTests: XCTestCase {
         let freshService = SettingsService(defaults: freshDefaults)
         XCTAssertTrue(freshService.loadSettings().launchAtLogin)
     }
+    func testSharedAppearanceSurvivesFreshService() throws {
+        var settings = AppSettings.default
+        settings.theme = .dark
+        settings.crystalMaterial.glassStyle = .transparent
+        settings.crystalMaterial.sharedDensity = 0.12
+        settings.crystalMaterial.cardOpacity = 0
+        settings.crystalMaterial.panelTintCap = 0
+        try settingsService.saveSettings(settings)
+        let fresh = SettingsService(defaults: UserDefaults(suiteName: suiteName)!)
+        XCTAssertEqual(fresh.loadSettings(), settings)
+        XCTAssertEqual(fresh.loadSettings().panelGlassDensity, 0.12)
+        XCTAssertEqual(fresh.loadSettings().windowGlassDensity, 0.12)
+    }
+
 }

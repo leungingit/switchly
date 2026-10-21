@@ -13,7 +13,8 @@ import ApplicationServices
 
 struct DockPreviewView: View {
     @StateObject private var viewModel: DockPreviewViewModel
-    @State private var settings = SettingsService.shared.loadSettings()
+    // The model observes settings even while this transient view is unmounted.
+    private var settings: AppSettings { viewModel.settings }
     /// Content width of the window strip, measured so the edge fade only
     /// appears when the strip actually overflows.
     @State private var stripContentWidth: CGFloat = 0
@@ -36,20 +37,13 @@ struct DockPreviewView: View {
         .opacity(viewModel.isPanelVisible ? 1 : 0)
         .animation(MotionTokens.animated(MotionTokens.panelSpring), value: viewModel.isPanelVisible)
         .panelGlass(
-            isActive: settings.enableBackgroundBlur,
+            isActive: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque),
             opacity: backgroundOpacity,
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial
         )
-        .crystalSpecularRim(
-            cornerRadius: GlassPanelCorner.radius,
-            material: settings.crystalMaterial,
-            lineWidth: settings.enableBackgroundBlur ? 0.75 : 0
-        )
         .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 8)
-        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
-            settings = SettingsService.shared.loadSettings()
-        }
+        .preferredColorScheme(settings.theme.colorScheme)
         .onExitCommand {
             viewModel.hidePanel()
             DockPreviewPanel.shared.hide()
@@ -166,19 +160,15 @@ struct DockPreviewView: View {
 
     @ViewBuilder
     private var sectionBackground: some View {
-        if settings.enableBackgroundBlur {
-            if #available(macOS 26, *) {
-                Color(nsColor: .controlBackgroundColor).opacity(0.03)
-            } else {
-                Color(nsColor: .controlBackgroundColor).opacity(max(backgroundOpacity * 0.5, 0.04))
-            }
+        if settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque {
+            Color.clear
         } else {
             Color(nsColor: .controlBackgroundColor)
         }
     }
 
     private var backgroundOpacity: Double {
-        min(max(settings.backgroundBlurOpacity, 0), 1)
+        min(max(settings.panelGlassDensity, 0), 1)
     }
 
     // MARK: - Helpers
@@ -311,7 +301,7 @@ struct DockWindowCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
-                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: settings.enableBackgroundBlur))
+                    .background(settings.thumbnailBackdrop.resolvedColor())
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     .transition(MotionTokens.thumbnailTransition)
             case .failed(let fallbackIcon):
@@ -414,17 +404,17 @@ struct DockWindowCard: View {
     /// Solid card fill — see WindowThumbnailView.cardFill.
     private var cardFill: Color {
         if isHovered {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.18 : 0.10)
+            return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.18 : 0.10)
         }
         if isSelected {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.06)
+            return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.12 : 0.06)
         }
         return Color.crystalSurfaceBase.opacity(cardFillOpacity)
     }
 
     private var cardFillOpacity: Double {
-        guard settings.enableBackgroundBlur else { return 1 }
-        return min(max(settings.backgroundBlurOpacity * 0.35 + 0.04, 0.06), 0.28)
+        guard (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) else { return 1 }
+        return settings.crystalMaterial.cardOpacity
     }
 
     private var cardBorder: Color {
@@ -435,7 +425,7 @@ struct DockWindowCard: View {
     }
 
     private var skeletonFill: Color {
-        let opacity: Double = settings.enableBackgroundBlur ? 0.3 : 0.1
+        let opacity: Double = (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.3 : 0.1
         return Color(nsColor: .textBackgroundColor).opacity(opacity)
     }
 }

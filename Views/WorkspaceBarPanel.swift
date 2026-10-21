@@ -655,17 +655,13 @@ struct WorkspaceBarView: View {
         .opacity(viewModel.isVisible ? 1 : 0)
         .animation(MotionTokens.animated(MotionTokens.panelSpring), value: viewModel.isVisible)
         .panelGlass(
-            isActive: settings.enableBackgroundBlur,
+            isActive: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque),
             opacity: backgroundOpacity,
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial
         )
-        .crystalSpecularRim(
-            cornerRadius: GlassPanelCorner.radius,
-            material: settings.crystalMaterial,
-            lineWidth: settings.enableBackgroundBlur ? 0.75 : 0
-        )
         .shadow(color: .black.opacity(0.24), radius: 22, x: 0, y: 12)
+        .preferredColorScheme(settings.theme.colorScheme)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             settings = SettingsService.shared.loadSettings()
         }
@@ -697,7 +693,7 @@ struct WorkspaceBarView: View {
             .foregroundColor(.accentColor)
             .frame(width: 26, height: 26)
             .cardSurface(
-                fill: Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.16 : 0.10),
+                fill: Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.16 : 0.10),
                 cornerRadius: DesignTokens.Radius.control
             )
             .overlay(
@@ -843,7 +839,7 @@ struct WorkspaceBarView: View {
 
     private var chipFill: Color {
         Color(nsColor: .controlBackgroundColor)
-            .opacity(settings.enableBackgroundBlur ? 0.28 : 1)
+            .opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.28 : 1)
     }
 
     // MARK: - Empty state
@@ -892,7 +888,7 @@ struct WorkspaceBarView: View {
     }
 
     private var backgroundOpacity: Double {
-        min(max(settings.backgroundBlurOpacity, 0), 1)
+        min(max(settings.panelGlassDensity, 0), 1)
     }
 
     private func t(_ key: String) -> String {
@@ -1059,7 +1055,7 @@ private struct WorkspaceBarCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: settings.enableBackgroundBlur))
+                    .background(settings.thumbnailBackdrop.resolvedColor())
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     // Hairline inner edge: the thumbnail is the brightest
                     // surface in the panel and needs a defined rim against the
@@ -1176,17 +1172,17 @@ private struct WorkspaceBarCard: View {
     /// Solid card fill — see WindowThumbnailView.cardFill.
     private var cardFill: Color {
         if isHovered {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.18 : 0.10)
+            return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.18 : 0.10)
         }
         if isSelected {
-            return Color.accentColor.opacity(settings.enableBackgroundBlur ? 0.12 : 0.06)
+            return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.12 : 0.06)
         }
         return Color.crystalSurfaceBase.opacity(cardFillOpacity)
     }
 
     private var cardFillOpacity: Double {
-        guard settings.enableBackgroundBlur else { return 1 }
-        return min(max(settings.backgroundBlurOpacity * 0.35 + 0.04, 0.06), 0.28)
+        guard (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) else { return 1 }
+        return settings.crystalMaterial.cardOpacity
     }
 
     private var cardBorder: Color {
@@ -1197,7 +1193,7 @@ private struct WorkspaceBarCard: View {
     }
 
     private var skeletonFill: Color {
-        let opacity: Double = settings.enableBackgroundBlur ? 0.3 : 0.1
+        let opacity: Double = (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.3 : 0.1
         return Color(nsColor: .textBackgroundColor).opacity(opacity)
     }
 
@@ -1231,7 +1227,7 @@ private struct WorkspaceBarCard: View {
 
     private var chipFill: Color {
         Color(nsColor: .controlBackgroundColor)
-            .opacity(settings.enableBackgroundBlur ? 0.5 : 1)
+            .opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.5 : 1)
     }
 
     private var primaryTitle: String {

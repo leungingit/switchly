@@ -309,6 +309,20 @@ struct AppSettings: Codable, Equatable {
         self.previewPanelStyle = try container.decodeIfPresent(PreviewPanelStyle.self, forKey: .previewPanelStyle) ?? .classicGrid
     }
     
+    var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }
+    var windowGlassDensity: Double { crystalMaterial.sharedDensity ?? preferencesGlassOpacity }
+
+    /// Keep the selected native material, theme and card fill; remove only
+    /// our panel-wide overlays. Write legacy density keys for older readers too.
+    mutating func removeGlassOverlays() {
+        crystalMaterial.sharedDensity = 0
+        backgroundBlurOpacity = 0
+        preferencesGlassOpacity = 0
+        crystalMaterial.panelTintCap = 0
+        crystalMaterial.topSheenOpacity = 0
+        crystalMaterial.rimTopOpacity = 0
+    }
+
     static var `default`: AppSettings {
         AppSettings(
             previewStrategy: .configuredOnly,
@@ -504,7 +518,29 @@ enum CrystalPanelMaterial: String, Codable, CaseIterable, Hashable {
     }
 }
 
-/// The crystal material, as four independent, user-editable parameters.
+/// Material selection is shared by floating panels and standard windows.
+enum GlassStyle: String, Codable, CaseIterable {
+    case transparent, frosted, opaque
+
+    func displayName(language: AppLanguage) -> String {
+        language.localizedString(self == .transparent ? "Clear glass" : self == .frosted ? "Frosted glass" : "Glass off")
+    }
+}
+
+/// Controls only the system blur backing, independently of the window's text theme.
+enum GlassBaseTone: String, Codable, CaseIterable {
+    case automatic, light, dark
+
+    func displayName(language: AppLanguage) -> String {
+        switch self {
+        case .automatic: return language.localizedString("Match appearance")
+        case .light: return language.localizedString("Light glass")
+        case .dark: return language.localizedString("Dark glass")
+        }
+    }
+}
+
+/// The crystal material, as independent, user-editable parameters.
 ///
 /// This replaced the former Ice / Quartz / Frameless presets. The presets were
 /// only ever a colour plus three near-identical alphas (0.18/0.20/0.24 sheen,
@@ -512,12 +548,17 @@ enum CrystalPanelMaterial: String, Codable, CaseIterable, Hashable {
 /// choice without adding a change. Each knob here maps to one line of the
 /// render and is visible on its own.
 struct CrystalMaterial: Hashable {
-    /// Hue of the panel wash, card sheen and specular rim.
+    /// Hue of the shared glass tint. Optical highlights remain neutral white.
     var tintColor: Color
-    /// Top specular sheen alpha for cards and panels (0–0.40).
+    /// System material tone; automatic preserves existing settings.
+    var baseTone: GlassBaseTone = .automatic
+    var glassStyle: GlassStyle = .frosted
+    /// nil preserves the two old strengths until the user moves the shared control.
+    var sharedDensity: Double? = nil
+    var cardOpacity: Double = 0.10
+    /// Top specular sheen alpha for cards and panels (0–0.60).
     var topSheenOpacity: Double
     /// 面板和普通窗口共用的水晶染色强度（0–1）。保留旧存储键。
-    /// 普通窗口仍沿用既有光泽衰减公式，避免本次整理改变光泽表现。
     var panelTintCap: Double
     /// Specular rim highlight top alpha (0–1).
     var rimTopOpacity: Double
@@ -539,13 +580,16 @@ struct CrystalMaterial: Hashable {
     /// Ranges the Preferences sliders offer. Kept here so the controls, the
     /// decode clamp and the QA checks cannot drift apart.
     enum Range {
-        static let sheen: ClosedRange<Double> = 0...0.40
+        static let card: ClosedRange<Double> = 0...0.8
+        static let sheen: ClosedRange<Double> = 0...0.60
         static let panelTint: ClosedRange<Double> = 0...1
         static let rim: ClosedRange<Double> = 0...1
     }
 
     func clamped() -> CrystalMaterial {
         var copy = self
+        copy.cardOpacity = min(max(copy.cardOpacity, Range.card.lowerBound), Range.card.upperBound)
+        copy.sharedDensity = copy.sharedDensity.map { min(max($0, 0), 1) }
         copy.topSheenOpacity = min(max(copy.topSheenOpacity, Range.sheen.lowerBound), Range.sheen.upperBound)
         copy.panelTintCap = min(max(copy.panelTintCap, Range.panelTint.lowerBound), Range.panelTint.upperBound)
         copy.rimTopOpacity = min(max(copy.rimTopOpacity, Range.rim.lowerBound), Range.rim.upperBound)
@@ -590,6 +634,10 @@ struct CrystalMaterial: Hashable {
 extension CrystalMaterial: Codable {
     enum CodingKeys: String, CodingKey {
         case tintColor
+        case baseTone
+        case glassStyle
+        case sharedDensity
+        case cardOpacity
         case topSheenOpacity
         case panelTintCap
         case rimTopOpacity
@@ -610,6 +658,10 @@ extension CrystalMaterial: Codable {
         let fallback = CrystalMaterial.legacyDefault
         let rgb = try container.decodeIfPresent(RGB.self, forKey: .tintColor)
         self.tintColor = rgb.map { Color(red: $0.red, green: $0.green, blue: $0.blue) } ?? fallback.tintColor
+        self.baseTone = try container.decodeIfPresent(GlassBaseTone.self, forKey: .baseTone) ?? .automatic
+        self.glassStyle = try container.decodeIfPresent(GlassStyle.self, forKey: .glassStyle) ?? .frosted
+        self.cardOpacity = min(max(try container.decodeIfPresent(Double.self, forKey: .cardOpacity) ?? 0.10, 0), 0.3)
+        self.sharedDensity = try container.decodeIfPresent(Double.self, forKey: .sharedDensity).map { min(max($0, 0), 1) }
         self.topSheenOpacity = try container.decodeIfPresent(Double.self, forKey: .topSheenOpacity) ?? fallback.topSheenOpacity
         self.panelTintCap = try container.decodeIfPresent(Double.self, forKey: .panelTintCap) ?? fallback.panelTintCap
         self.rimTopOpacity = try container.decodeIfPresent(Double.self, forKey: .rimTopOpacity) ?? fallback.rimTopOpacity
@@ -623,6 +675,10 @@ extension CrystalMaterial: Codable {
                                   green: Double(resolved.greenComponent),
                                   blue: Double(resolved.blueComponent)),
                              forKey: .tintColor)
+        try container.encode(baseTone, forKey: .baseTone)
+        try container.encode(glassStyle, forKey: .glassStyle)
+        try container.encodeIfPresent(sharedDensity, forKey: .sharedDensity)
+        try container.encode(cardOpacity, forKey: .cardOpacity)
         try container.encode(topSheenOpacity, forKey: .topSheenOpacity)
         try container.encode(panelTintCap, forKey: .panelTintCap)
         try container.encode(rimTopOpacity, forKey: .rimTopOpacity)
@@ -659,22 +715,16 @@ struct ThumbnailBackdrop: Hashable {
         static let opacity: ClosedRange<Double> = 0...0.60
     }
 
-    /// The wash the thumbnail used to get on an opaque panel: 0.06 against
-    /// 0.16 on glass, i.e. 0.375 of the value above.
-    private static let solidScale = 0.375
-
     func clamped() -> ThumbnailBackdrop {
         var copy = self
         copy.opacity = min(max(copy.opacity, Range.opacity.lowerBound), Range.opacity.upperBound)
         return copy
     }
 
-    /// The colour actually drawn behind a thumbnail.
-    ///
-    /// An opaque panel has no glass to sit in, so the wash is much lighter
-    /// there — the same relationship the hard-coded values had.
-    func resolvedColor(isBlurred: Bool) -> Color {
-        tintColor.opacity(opacity * (isBlurred ? 1 : ThumbnailBackdrop.solidScale))
+    /// The requested strength is the actual matte alpha, independent of the
+    /// panel style. A hidden solid-panel multiplier made this slider misleading.
+    func resolvedColor() -> Color {
+        tintColor.opacity(opacity)
     }
 }
 

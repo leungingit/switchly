@@ -218,15 +218,15 @@ struct WorkspacesView: View {
 
     var body: some View {
         ZStack {
-            panelBackground
-                .ignoresSafeArea() // Extend the glass under the hidden title bar
-
             HStack(spacing: 0) {
                 sidebar
                 Divider()
                 detail
             }
         }
+        .modifier(WindowCrystalModifier(density: viewModel.settings.windowGlassDensity,
+                                        material: viewModel.settings.crystalMaterial, style: .workspace))
+        .preferredColorScheme(viewModel.settings.theme.colorScheme)
         .frame(width: 860, height: 560)
         .alert(isPresented: .constant(viewModel.errorMessage != nil)) {
             Alert(
@@ -239,13 +239,6 @@ struct WorkspacesView: View {
         }
     }
 
-    private var panelBackground: some View {
-        WindowGlassSurface(
-            opacity: viewModel.settings.preferencesGlassOpacity,
-            material: viewModel.settings.crystalMaterial,
-            style: .workspace
-        )
-    }
 
     private var sidebar: some View {
         VStack(spacing: 12) {

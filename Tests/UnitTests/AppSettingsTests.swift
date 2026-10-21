@@ -337,17 +337,14 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(tooFaint.opacity, ThumbnailBackdrop.Range.opacity.lowerBound, accuracy: 0.0001)
     }
 
-    /// The wash the thumbnail used to get on an opaque panel was 0.06 against
-    /// 0.16 on glass. The adjustable backdrop must keep that relationship, so
-    /// the default renders exactly what the hard-coded wash rendered.
-    func testThumbnailBackdropDefaultMatchesTheHardCodedWash() {
-        let onGlass = ThumbnailBackdrop.legacyDefault.resolvedColor(isBlurred: true)
-        let onSolid = ThumbnailBackdrop.legacyDefault.resolvedColor(isBlurred: false)
-
-        let glass = NSColor(onGlass).usingColorSpace(.sRGB)
-        let solid = NSColor(onSolid).usingColorSpace(.sRGB)
-        XCTAssertEqual(Double(glass?.alphaComponent ?? 0), 0.16, accuracy: 0.001)
-        XCTAssertEqual(Double(solid?.alphaComponent ?? 0), 0.06, accuracy: 0.001)
+    /// The same stored strength reaches the matte regardless of panel style.
+    /// In particular the upper endpoint must not be silently scaled to 22.5%.
+    func testThumbnailBackdropUsesRequestedStrength() {
+        for opacity in [0.0, 0.16, ThumbnailBackdrop.Range.opacity.upperBound] {
+            let backdrop = ThumbnailBackdrop(tintColor: .black, opacity: opacity)
+            let colour = NSColor(backdrop.resolvedColor()).usingColorSpace(.sRGB)
+            XCTAssertEqual(Double(colour?.alphaComponent ?? -1), opacity, accuracy: 0.001)
+        }
     }
     // MARK: - Thumbnail backdrop in the drawing code
 
@@ -360,7 +357,7 @@ final class AppSettingsTests: XCTestCase {
                                          opacity: 0.6)
 
         // The exact expression the three preview surfaces draw.
-        let wash = backdrop.resolvedColor(isBlurred: true)
+        let wash = backdrop.resolvedColor()
 
         // Render it over an opaque white sheet: the resulting pixel is the
         // wash composited on white, so a red wash must read as pink, not as

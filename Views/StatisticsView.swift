@@ -30,9 +30,6 @@ struct StatisticsView: View {
 
     var body: some View {
         ZStack {
-            panelBackground
-                .ignoresSafeArea()
-
             // No scrolling: the report is meant to be read at a glance, so the
             // sections are sized to fit the window on a 13" MacBook (878 pt
             // screen). The small spacing token between sections is deliberate:
@@ -61,6 +58,9 @@ struct StatisticsView: View {
             // grow the background below the report, not float it mid-air.
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .modifier(WindowCrystalModifier(density: settings.windowGlassDensity,
+                                        material: settings.crystalMaterial, style: .statistics))
+        .preferredColorScheme(settings.theme.colorScheme)
         .frame(minWidth: 840, minHeight: 810)
         .onAppear { model.activate() }
         .onDisappear { model.deactivate() }
@@ -251,13 +251,6 @@ struct StatisticsView: View {
         }
     }
 
-    private var panelBackground: some View {
-        WindowGlassSurface(
-            opacity: settings.preferencesGlassOpacity,
-            material: settings.crystalMaterial,
-            style: .statistics
-        )
-    }
 
     private var rangeTitle: String {
         let count = model.granularity.defaultRange
