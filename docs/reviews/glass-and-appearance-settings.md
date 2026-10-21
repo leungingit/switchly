@@ -14,6 +14,12 @@
 
 ### Dock 隐藏期间的外观同步
 
+后续核查（仍未确认用户报告的视觉差异已解决）：在用户当前运行的 `build/Switchly.app` 中直接检查实际视图，切换透明后，Preview、Dock 和 Preferences 的 `NSGlassEffectView.style` 都为 `.clear`；切回磨砂后三者均为 `.regular`。不能继续将视觉差异直接归因为设置没有同步。
+
+新增 `DockGlassRenderingTests`，允许注入独立 ViewModel 创建真正的生产 `DockPreviewPanel`。固定同一彩条 / 编号背景，比较 Dock、设置与新建原生玻璃，按磨砂→透明→磨砂→透明连续截图；涵盖亮暗主题、等尺寸和紧凑 Dock。紧凑场景使用示例窗口与降级占位图，不读取用户窗口。截图前断言真实窗口 frame，避免 Dock 自动定位移出捕获区域而误判材质变化。两次同材质的固定位置等尺寸截图在本机 Debug / Release 中一致；运行态 style 与图像是不同层次的证据，不将该结果表述为真实悬停场景已经修复。
+
+初始诊断曾被测试期间的窗口列表刷新 / 自动定位干扰，已从 fixture 中隔离，未将该现象当成系统光学缓存缺陷。焦点状态的实验未可靠建立，未改变产品焦点行为。生产材质算法保持不变。仍需要用户报告场景中的同背景 Dock / 设置对比画面，确认差异属于面板背景、卡片填充还是背后的内容。
+
 Dock 的材质容器已使用共享实现，但设置原先由临时 SwiftUI 视图的 `@State` 与 `onReceive` 管理，AppKit 每次展示前没有刷新快照。本轮将订阅移至 `DockPreviewViewModel`，在主队列更新共享设置，并在 `showPanel` 前读取最新值；视图不再另存设置，也不再绕过注入服务读取单例。卡片尺寸同样使用该快照。
 
 `make build` 与 `make test-unit` 通过：263 项，3 项桌面截图测试按默认配置跳过，0 失败。新增回归使用真实 `.nonactivatingPanel` 宿主，验证未挂载、隐藏、显示和再次隐藏期间修改共享材质、密度与主题，检查实际 `NSGlassEffectView.style` 的 `.clear` / `.regular` 更新，以及展示前同步读取。

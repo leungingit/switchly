@@ -334,7 +334,7 @@ final class GlassRenderingTests: XCTestCase {
     }
 }
 
-private final class RenderingMonitor: WindowMonitorServiceProtocol {
+final class RenderingMonitor: WindowMonitorServiceProtocol {
     var windows: [WindowInfo] = [
         WindowInfo(id: 4_000_001, ownerPID: -1, ownerName: "Sample app", windowTitle: "Window A", bounds: CGRect(x: 0, y: 0, width: 400, height: 240), isOnCurrentSpace: true, windowNumber: 1),
         WindowInfo(id: 4_000_002, ownerPID: -1, ownerName: "Sample app", windowTitle: "Window B", bounds: CGRect(x: 0, y: 0, width: 400, height: 240), isOnCurrentSpace: true, windowNumber: 2)
@@ -390,7 +390,7 @@ private final class RenderingMonitor: WindowMonitorServiceProtocol {
     }
 }
 
-private final class RenderingSwitcher: WindowSwitchServiceProtocol {
+final class RenderingSwitcher: WindowSwitchServiceProtocol {
     func switchToWindow(_ window: WindowInfo) async throws {}
     func switchToApplication(pid: pid_t) async throws {}
 }
