@@ -307,3 +307,7 @@
 "System glass" = "系统玻璃";
 "Mostly solid" = "接近实色";
 "Strong" = "强";
+
+/* Native glass */
+"Remove glass overlays" = "清除玻璃叠层";
+"Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "保留所选材质、主题与卡片填充，清除附加的密度、染色与反光，恢复系统原生效果。";

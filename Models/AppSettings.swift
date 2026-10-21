@@ -312,6 +312,17 @@ struct AppSettings: Codable, Equatable {
     var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }
     var windowGlassDensity: Double { crystalMaterial.sharedDensity ?? preferencesGlassOpacity }
 
+    /// Keep the selected native material, theme and card fill; remove only
+    /// our panel-wide overlays. Write legacy density keys for older readers too.
+    mutating func removeGlassOverlays() {
+        crystalMaterial.sharedDensity = 0
+        backgroundBlurOpacity = 0
+        preferencesGlassOpacity = 0
+        crystalMaterial.panelTintCap = 0
+        crystalMaterial.topSheenOpacity = 0
+        crystalMaterial.rimTopOpacity = 0
+    }
+
     static var `default`: AppSettings {
         AppSettings(
             previewStrategy: .configuredOnly,

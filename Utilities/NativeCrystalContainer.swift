@@ -55,8 +55,13 @@ struct NativeCrystalContainer<Content: View>: NSViewRepresentable {
                     LinearGradient(colors: [Color.white.opacity(appearance.topSheenOpacity), .clear],
                                    startPoint: .top, endPoint: .bottom)
                 }
+                // The nested hosting controller receives the window's titlebar
+                // safe area too. Extend *all* material layers into it, while
+                // keeping controls below the traffic lights. Otherwise only
+                // the bare system glass shows through the titlebar.
+                .crystalSpecularRim(cornerRadius: cornerRadius, material: material)
+                .ignoresSafeArea()
             )
-            .crystalSpecularRim(cornerRadius: cornerRadius, material: material)
             .environment(\.colorScheme, context.environment.colorScheme)
             .environment(\.locale, context.environment.locale)
             .environment(\.isEnabled, context.environment.isEnabled))

@@ -321,6 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = SettingsService.shared.loadSettings().language.localizedString("Switchly Preferences")
         window.setFrameAutosaveName("PreferencesWindow")
         window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
         window.backgroundColor = .clear

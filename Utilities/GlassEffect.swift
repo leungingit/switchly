@@ -126,7 +126,8 @@ extension View {
         fill: Color,
         cornerRadius: CGFloat = DesignTokens.Radius.card,
         material: CrystalMaterial = .legacyDefault,
-        isSelected: Bool = false
+        isSelected: Bool = false,
+        showsBorder: Bool = false
     ) -> some View {
         background(
             ZStack {
@@ -147,6 +148,12 @@ extension View {
                         )
                     )
             }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(Color.primary.opacity(DesignTokens.Glass.groupBorderOpacity),
+                              lineWidth: showsBorder ? DesignTokens.hairline : 0)
+                .allowsHitTesting(false)
         )
     }
 

@@ -273,6 +273,14 @@ struct PreferencesView: View {
                         .frame(width: 340)
                     }
                     if viewModel.settings.crystalMaterial.glassStyle != .opaque {
+                        if #available(macOS 26.0, *) {
+                            settingRow(t("System glass"), systemImage: "sparkles",
+                                       help: t("Keeps the selected material, theme and card fill. Removes added density, tint and reflections.")) {
+                                Button(t("Remove glass overlays")) {
+                                    viewModel.updateSettings { $0.removeGlassOverlays() }
+                                }
+                            }
+                        }
                         crystalSliderRow(t("Glass density"), systemImage: "slider.horizontal.3",
                                          value: sharedDensityBinding, range: 0...1,
                                          displayed: String(format: "%.0f%%", viewModel.settings.panelGlassDensity * 100),
@@ -1023,7 +1031,8 @@ struct PreferencesView: View {
             .cardSurface(
                 fill: Color.crystalSurfaceBase.opacity(viewModel.settings.crystalMaterial.cardOpacity),
                 cornerRadius: DesignTokens.Radius.card,
-                material: viewModel.settings.crystalMaterial
+                material: viewModel.settings.crystalMaterial,
+                showsBorder: true
             )
             .crystalSpecularRim(
                 cornerRadius: DesignTokens.Radius.card,

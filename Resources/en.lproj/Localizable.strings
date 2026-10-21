@@ -307,3 +307,7 @@
 "System glass" = "System glass";
 "Mostly solid" = "Mostly solid";
 "Strong" = "Strong";
+
+/* Native glass */
+"Remove glass overlays" = "Remove glass overlays";
+"Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "Keeps the selected material, theme and card fill. Removes added density, tint and reflections.";

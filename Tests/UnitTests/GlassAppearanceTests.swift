@@ -4,6 +4,28 @@ import XCTest
 @testable import Switchly
 
 final class GlassAppearanceTests: XCTestCase {
+    func testRemoveGlassOverlaysPreservesMaterialAndRoundTrips() throws {
+        for style in [GlassStyle.transparent, .frosted] {
+            var settings = AppSettings.default
+            settings.theme = .dark
+            settings.crystalMaterial.glassStyle = style
+            settings.crystalMaterial.cardOpacity = 0.25
+            settings.removeGlassOverlays()
+            let restored = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(settings))
+            XCTAssertEqual(restored.panelGlassDensity, 0)
+            XCTAssertEqual(restored.windowGlassDensity, 0)
+            XCTAssertEqual(restored.backgroundBlurOpacity, 0)
+            XCTAssertEqual(restored.preferencesGlassOpacity, 0)
+            let appearance = GlassAppearance.panel(opacity: restored.panelGlassDensity, material: restored.crystalMaterial)
+            XCTAssertEqual(appearance.tintOpacity, 0)
+            XCTAssertEqual(appearance.topSheenOpacity, 0)
+            XCTAssertEqual(appearance.rimTopOpacity, 0)
+            XCTAssertEqual(restored.crystalMaterial.glassStyle, style)
+            XCTAssertEqual(restored.crystalMaterial.cardOpacity, 0.25)
+            XCTAssertEqual(restored.theme, .dark)
+        }
+    }
+
     func testEverySurfaceUsesTheSameIndependentControls() {
         var material = CrystalMaterial.legacyDefault
         material.topSheenOpacity = 0.31

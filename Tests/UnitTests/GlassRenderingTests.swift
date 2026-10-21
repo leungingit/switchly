@@ -65,6 +65,78 @@ final class GlassRenderingTests: XCTestCase {
         }
     }
 
+    /// Include the actual AppKit titlebar (not just the requested content rect).
+    /// Check both unmodified system glass and strongly customized glass.
+    @MainActor
+    func testPreferencesTitlebarOnDesktop() throws {
+        guard ProcessInfo.processInfo.environment["SWITCHLY_CAPTURE_GLASS"] == "1" else {
+            throw XCTSkip("Opt-in desktop visual review")
+        }
+        let suite = "com.switchly.tests.titlebar-rendering"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = SettingsService(defaults: defaults)
+        let backdrop = NSWindow(contentRect: NSRect(x: 100, y: 80, width: 1000, height: 800),
+                                styleMask: [.borderless], backing: .buffered, defer: false)
+        backdrop.level = .floating
+        backdrop.contentView = NSHostingView(rootView: HStack(spacing: 0) {
+            ForEach(0..<12) { index in
+                [Color.blue, .cyan, .orange, .pink][index % 4].opacity(0.4)
+            }
+        })
+        backdrop.orderFront(nil)
+        defer { backdrop.orderOut(nil); backdrop.contentView = nil }
+        for theme in [AppTheme.light, .dark] {
+            for style in [GlassStyle.transparent, .frosted] {
+                for customized in [false, true] {
+                    var settings = AppSettings.default
+                    settings.theme = theme
+                    settings.language = .simplifiedChinese
+                    settings.crystalMaterial.glassStyle = style
+                    if customized {
+                        settings.crystalMaterial.sharedDensity = 0.8
+                        settings.crystalMaterial.panelTintCap = 0.8
+                        settings.crystalMaterial.topSheenOpacity = 0.4
+                        settings.crystalMaterial.rimTopOpacity = 0.8
+                    } else {
+                        settings.removeGlassOverlays()
+                    }
+                    try service.saveSettings(settings)
+                    let model = PreferencesViewModel(settingsService: service)
+                    let window = NSWindow(contentRect: NSRect(x: 180, y: 170, width: 760, height: 560),
+                                          styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                                          backing: .buffered, defer: false)
+                    window.titlebarAppearsTransparent = true
+                    window.titlebarSeparatorStyle = .none
+                    window.titleVisibility = .hidden
+                    window.level = .floating
+                    window.isOpaque = false
+                    window.backgroundColor = .clear
+                    window.appearance = NSAppearance(named: theme == .light ? .aqua : .darkAqua)
+                    window.contentView = NSHostingView(rootView: PreferencesView(initialTab: .appearance, viewModel: model))
+                    window.makeKeyAndOrderFront(nil)
+                    RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+                    let frame = window.frame
+                    let screen = try XCTUnwrap(window.screen)
+                    let mode = customized ? "custom" : "system"
+                    let path = "/tmp/switchly-titlebar/\(theme.rawValue)-\(style.rawValue)-\(mode).png"
+                    try FileManager.default.createDirectory(atPath: "/tmp/switchly-titlebar", withIntermediateDirectories: true)
+                    let process = Process()
+                    process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                    process.arguments = ["-x", "-R", "\(Int(frame.minX)),\(Int(screen.frame.maxY - frame.maxY)),\(Int(frame.width)),\(Int(frame.height))", path]
+                    try process.run()
+                    process.waitUntilExit()
+                    XCTAssertEqual(process.terminationStatus, 0)
+                    let attachment = XCTAttachment(contentsOfFile: URL(fileURLWithPath: path))
+                    attachment.lifetime = .keepAlways
+                    add(attachment)
+                    window.orderOut(nil)
+                    window.contentView = nil
+                }
+            }
+        }
+    }
+
     private enum EndpointControl: String, CaseIterable {
         case density = "Density 0–100%"
         case tint = "Tint 0–100%"
