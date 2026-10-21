@@ -292,7 +292,7 @@ struct PanelGlassModifier: ViewModifier {
             content
         } else if material.glassStyle == .opaque || !isActive {
             content.background(Color(nsColor: .windowBackgroundColor))
-        } else if #available(macOS 26.0, *), material.glassStyle == .transparent {
+        } else if #available(macOS 26.0, *), material.glassStyle != .opaque {
             NativeCrystalContainer(content: content, density: opacity,
                                    material: material, cornerRadius: cornerRadius)
         } else {

@@ -286,7 +286,7 @@
 "Frosted glass" = "磨砂玻璃";
 "Glass off" = "关闭玻璃";
 "Glass density" = "玻璃密度";
-"Clear glass: adds a neutral reading surface; 0 keeps the native optical glass. Frosted glass: controls the system backdrop opacity. Does not fade text or control tint strength." = "透明玻璃：调节附加的中性底层，0 保留原生透光效果。磨砂玻璃：调节系统背景材质的不透明度。不会淡化文字或改变染色强度。";
+"Adds a neutral reading surface over native glass on macOS 26 and later; 0 keeps the system glass. On older systems, controls backdrop opacity. Does not fade text or control tint strength." = "macOS 26 及以上调节原生玻璃上附加的中性底层，0 保留系统玻璃。旧系统调节背景材质的不透明度。不会淡化文字或改变染色强度。";
 "Previous panel and window densities are preserved. Move this slider to apply one density everywhere." = "已保留旧版面板与普通窗口各自的密度。拖动此滑块后，所有窗口将使用同一密度。";
 "Crystal tint strength" = "染色强度";
 "Adds the chosen colour to every glass surface. Zero removes the colour without changing density or highlights." = "将所选颜色应用到所有玻璃表面。0 关闭染色，不改变密度或高光。";

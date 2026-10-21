@@ -276,7 +276,7 @@ struct PreferencesView: View {
                         crystalSliderRow(t("Glass density"), systemImage: "slider.horizontal.3",
                                          value: sharedDensityBinding, range: 0...1,
                                          displayed: String(format: "%.0f%%", viewModel.settings.panelGlassDensity * 100),
-                                         help: t("Clear glass: adds a neutral reading surface; 0 keeps the native optical glass. Frosted glass: controls the system backdrop opacity. Does not fade text or control tint strength."))
+                                         help: t("Adds a neutral reading surface over native glass on macOS 26 and later; 0 keeps the system glass. On older systems, controls backdrop opacity. Does not fade text or control tint strength."))
                         if viewModel.settings.crystalMaterial.sharedDensity == nil {
                             Text(t("Previous panel and window densities are preserved. Move this slider to apply one density everywhere."))
                                 .font(.caption).foregroundColor(.secondary)

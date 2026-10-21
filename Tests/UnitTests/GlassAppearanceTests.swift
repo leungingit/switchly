@@ -161,9 +161,11 @@ final class GlassAppearanceTests: XCTestCase {
         XCTAssertEqual(effect.style, .clear)
         XCTAssertEqual(effect.alphaValue, 1, "The text must not fade with density")
         XCTAssertEqual(effect.cornerRadius, 28)
+        material.glassStyle = .frosted
         host.rootView = NativeCrystalContainer(content: Text("Updated content"), density: 0.8,
                                               material: material, cornerRadius: 20)
         host.layoutSubtreeIfNeeded()
+        XCTAssertEqual(effect.style, .regular)
         XCTAssertTrue(effect.contentView === content)
         XCTAssertEqual(effect.cornerRadius, 20)
         XCTAssertEqual(effect.alphaValue, 1)

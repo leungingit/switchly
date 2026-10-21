@@ -25,7 +25,7 @@ struct NativeCrystalContainer<Content: View>: NSViewRepresentable {
     }
 
     func updateNSView(_ glass: NSGlassEffectView, context: Context) {
-        glass.style = .clear
+        glass.style = material.glassStyle == .frosted ? .regular : .clear
         glass.cornerRadius = cornerRadius
         // The theme is inherited. Never override just the backing's appearance.
         glass.appearance = nil
@@ -52,8 +52,11 @@ struct NativeCrystalContainer<Content: View>: NSViewRepresentable {
                     // Density adds a theme-relative reading surface, without fading the controls.
                     Color(nsColor: .windowBackgroundColor).opacity(appearance.washOpacity * DesignTokens.Glass.maximumNativeReadingOpacity)
                     appearance.tintColor.opacity(appearance.tintOpacity)
+                    LinearGradient(colors: [Color.white.opacity(appearance.topSheenOpacity), .clear],
+                                   startPoint: .top, endPoint: .bottom)
                 }
             )
+            .crystalSpecularRim(cornerRadius: cornerRadius, material: material)
             .environment(\.colorScheme, context.environment.colorScheme)
             .environment(\.locale, context.environment.locale)
             .environment(\.isEnabled, context.environment.isEnabled))
@@ -66,7 +69,7 @@ struct WindowCrystalModifier: ViewModifier {
     let style: WindowGlassStyle
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *), material.glassStyle == .transparent {
+        if #available(macOS 26.0, *), material.glassStyle != .opaque {
             NativeCrystalContainer(content: content, density: density, material: material,
                                    cornerRadius: DesignTokens.Radius.panel)
                 .ignoresSafeArea()

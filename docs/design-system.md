@@ -60,9 +60,9 @@
 
 外观选项集中于独立的「外观」标签页，基础项为主题、材质、密度、染色；卡片分隔、磨砂柔光与边缘、缩略图衬底位于高级折叠区。语言保留在「通用 → 系统」。
 
-透明模式在 macOS 26+ 使用公开 `NSGlassEffectView(style: .clear)`，实际 SwiftUI 内容装入 `contentView`；复用现有 hosting view 更新，避免密度拖动时重建控件。旧系统降级为系统材质。磨砂模式使用 `NSVisualEffectView(.popover)`；关闭玻璃使用主题相关的实色背景。
+透明模式在 macOS 26+ 使用公开 `NSGlassEffectView(style: .clear)`，实际 SwiftUI 内容装入 `contentView`；复用现有 hosting view 更新，避免密度拖动时重建控件。旧系统降级为系统材质。磨砂模式在 macOS 26+ 同样使用原生容器的 `.regular` 样式，避免旧 `.popover` 的固定灰黑底；macOS 12–25 保留 `NSVisualEffectView(.popover)` 降级；关闭玻璃使用主题相关的实色背景。
 
-密度不是模糊半径：透明模式控制额外中性阅读层（0 保留原生透光与折射），磨砂模式直接控制背景材质 alpha（0 移除该背景层，无 30% 下限）。染色与高级高光各自独立，密度为零不会暗中清除它们。文字不随玻璃密度淡化。
+密度不是模糊半径：macOS 26+ 的透明与磨砂模式控制额外中性阅读层（0 保留原生透光与折射），旧系统磨砂模式直接控制背景材质 alpha（0 移除该背景层，无 30% 下限）。染色与高级高光各自独立，密度为零不会暗中清除它们。文字不随玻璃密度淡化。
 
 所有表面共用 `GlassAppearance` 的染色、密度与柔光系数。`backgroundBlurOpacity` 与 `preferencesGlassOpacity` 保留旧键；`sharedDensity == nil` 时分别读取，设置页提示旧差异。用户调节共享滑块时同时写入共享值和两个旧字段。保留旧数值不等于保留旧版错误的系数映射。旧 `enableBackgroundBlur == false` 仍保留浮动面板的实色降级，重新选择材质后同步开关。
 
