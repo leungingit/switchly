@@ -190,4 +190,3 @@ private final class RenderingThumbnails: ThumbnailServiceProtocol {
 
     func stopAutoRefresh() {}
 }
-
