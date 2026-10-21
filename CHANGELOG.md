@@ -13,6 +13,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Dock 预览由 ViewModel 持续同步共享外观设置，并在每次显示前刷新；透明 / 磨砂、密度与主题不再依赖临时 SwiftUI 视图的通知订阅。
+
 - 恢复设置选项组的常驻细边框，独立于透明 / 磨砂及高光开关；玻璃附加叠层延伸至完整标题栏，修复标题栏与内容面板底色断层。macOS 26+ 新增「清除玻璃叠层」，保留所选材质并恢复其原生效果。
 
 

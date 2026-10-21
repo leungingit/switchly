@@ -6,6 +6,65 @@ import XCTest
 /// Opt-in desktop compositing evidence; unit tests do not normally show windows.
 /// Run xcodebuild with TEST_RUNNER_SWITCHLY_CAPTURE_GLASS=1 to save synthetic-background captures in /tmp.
 final class GlassRenderingTests: XCTestCase {
+    /// A transient Dock view must not be the owner of the settings subscription.
+    /// Exercise changes before mounting, while ordered out, and while visible.
+    @MainActor
+    func testDockMaterialChangesSurviveHiddenPanelLifecycle() throws {
+        guard #available(macOS 26.0, *) else { throw XCTSkip("Requires native glass") }
+        let suite = "com.switchly.tests.dock-material-lifecycle"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = SettingsService(defaults: defaults)
+        var settings = AppSettings.default
+        settings.removeGlassOverlays()
+        settings.crystalMaterial.glassStyle = .frosted
+        try service.saveSettings(settings)
+        let model = DockPreviewViewModel(windowMonitorService: RenderingMonitor(),
+                                         windowSwitchService: RenderingSwitcher(), settingsService: service)
+        // No SwiftUI view exists when this notification arrives.
+        settings.crystalMaterial.glassStyle = .transparent
+        settings.theme = .light
+        try service.saveSettings(settings)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        XCTAssertEqual(model.settings.crystalMaterial.glassStyle, .transparent)
+        XCTAssertEqual(model.settings.panelGlassDensity, 0)
+
+        let host = NSHostingView(rootView: DockPreviewView(viewModel: model))
+        let panel = NSPanel(contentRect: NSRect(x: 180, y: 170, width: 300, height: 180),
+                            styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.contentView = host
+        defer { panel.orderOut(nil); panel.contentView = nil }
+        func glass(in view: NSView) -> NSGlassEffectView? {
+            if let effect = view as? NSGlassEffectView { return effect }
+            return view.subviews.compactMap { glass(in: $0) }.first
+        }
+        host.layoutSubtreeIfNeeded()
+        XCTAssertEqual(try XCTUnwrap(glass(in: host)).style, .clear)
+        for visible in [false, true, false] {
+            if visible { panel.orderFront(nil) } else { panel.orderOut(nil) }
+            for style in [GlassStyle.frosted, .transparent] {
+                settings.crystalMaterial.glassStyle = style
+                settings.theme = style == .frosted ? .dark : .light
+                settings.crystalMaterial.sharedDensity = style == .frosted ? 0.6 : 0
+                try service.saveSettings(settings)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+                host.layoutSubtreeIfNeeded()
+                XCTAssertEqual(model.settings.theme, settings.theme)
+                XCTAssertEqual(model.settings.panelGlassDensity, settings.panelGlassDensity)
+                XCTAssertEqual(try XCTUnwrap(glass(in: host)).style, style == .frosted ? .regular : .clear)
+            }
+        }
+        // Reading before presentation also handles a notification queued on
+        // the main run loop; there is no one-frame flash of the previous style.
+        settings.crystalMaterial.glassStyle = .frosted
+        try service.saveSettings(settings)
+        model.showPanel(forApp: "Nonexistent Switchly test app")
+        XCTAssertEqual(model.settings.crystalMaterial.glassStyle, .frosted)
+    }
+
     /// Capture actual native compositing at both control limits, with every
     /// other layer held constant. The matte intentionally leaves image margins.
     @MainActor
@@ -245,7 +304,7 @@ final class GlassRenderingTests: XCTestCase {
                 dock.isPanelVisible = true
                 let samples: [(String, AnyView, CGSize)] = [
                     ("preview", AnyView(PreviewView(viewModel: preview, settings: settings)), CGSize(width: 640, height: 400)),
-                    ("dock", AnyView(DockPreviewView(viewModel: dock, settings: settings)), CGSize(width: dock.panelWidth, height: dock.panelHeight))
+                    ("dock", AnyView(DockPreviewView(viewModel: dock)), CGSize(width: dock.panelWidth, height: dock.panelHeight))
                 ]
                 for (name, sample, size) in samples {
                     let height = size.height

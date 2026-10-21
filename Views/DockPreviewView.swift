@@ -13,13 +13,13 @@ import ApplicationServices
 
 struct DockPreviewView: View {
     @StateObject private var viewModel: DockPreviewViewModel
-    @State private var settings = SettingsService.shared.loadSettings()
+    // The model observes settings even while this transient view is unmounted.
+    private var settings: AppSettings { viewModel.settings }
     /// Content width of the window strip, measured so the edge fade only
     /// appears when the strip actually overflows.
     @State private var stripContentWidth: CGFloat = 0
 
-    init(viewModel: DockPreviewViewModel = DockPreviewViewModel(), settings: AppSettings = SettingsService.shared.loadSettings()) {
-        _settings = State(initialValue: settings)
+    init(viewModel: DockPreviewViewModel = DockPreviewViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -44,9 +44,6 @@ struct DockPreviewView: View {
         )
         .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 8)
         .preferredColorScheme(settings.theme.colorScheme)
-        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
-            settings = SettingsService.shared.loadSettings()
-        }
         .onExitCommand {
             viewModel.hidePanel()
             DockPreviewPanel.shared.hide()
