@@ -45,7 +45,7 @@ enum DesignTokens {
 
     enum Glass {
         static let maximumTintOpacity: Double = 0.35
-        static let maximumNativeReadingOpacity: Double = 0.18
+        static let maximumNativeReadingOpacity: Double = 0.85
     }
 
     /// Hairline border weight. 0.5pt reads as a crisp specular line on Retina.

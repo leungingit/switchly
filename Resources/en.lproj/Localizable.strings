@@ -297,3 +297,13 @@
 "Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill." = "Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill.";
 "Panel layout" = "Panel layout";
 "Settings section" = "Settings section";
+
+// Glass control limits and live matte sample
+"On macOS 26 and later, 0 keeps the system glass and 100% adds an almost solid reading surface. On older systems, controls backdrop opacity. Does not change blur radius or fade text." = "On macOS 26 and later, 0 keeps the system glass and 100% adds an almost solid reading surface. On older systems, controls backdrop opacity. Does not change blur radius or fade text.";
+"White reflection over the top of cards and panels, independent of the tint colour. Zero removes the added reflection." = "White reflection over the top of cards and panels, independent of the tint colour. Zero removes the added reflection.";
+"White reflection around all four edges. Zero removes the added highlight; the system glass rim and selection outline remain." = "White reflection around all four edges. Zero removes the added highlight; the system glass rim and selection outline remain.";
+"Backdrop sample: only the margins around a fitted image change. A thumbnail that fills its frame hides the backdrop." = "Backdrop sample: only the margins around a fitted image change. A thumbnail that fills its frame hides the backdrop.";
+"Thumbnail backdrop sample" = "Thumbnail backdrop sample";
+"System glass" = "System glass";
+"Mostly solid" = "Mostly solid";
+"Strong" = "Strong";

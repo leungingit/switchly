@@ -42,11 +42,6 @@ struct DockPreviewView: View {
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial
         )
-        .crystalSpecularRim(
-            cornerRadius: GlassPanelCorner.radius,
-            material: settings.crystalMaterial,
-            lineWidth: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.75 : 0
-        )
         .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 8)
         .preferredColorScheme(settings.theme.colorScheme)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
@@ -309,7 +304,7 @@ struct DockWindowCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
-                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque)))
+                    .background(settings.thumbnailBackdrop.resolvedColor())
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     .transition(MotionTokens.thumbnailTransition)
             case .failed(let fallbackIcon):

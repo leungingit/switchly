@@ -537,7 +537,7 @@ enum GlassBaseTone: String, Codable, CaseIterable {
 /// choice without adding a change. Each knob here maps to one line of the
 /// render and is visible on its own.
 struct CrystalMaterial: Hashable {
-    /// Hue of the panel wash, card sheen and specular rim.
+    /// Hue of the shared glass tint. Optical highlights remain neutral white.
     var tintColor: Color
     /// System material tone; automatic preserves existing settings.
     var baseTone: GlassBaseTone = .automatic
@@ -545,10 +545,9 @@ struct CrystalMaterial: Hashable {
     /// nil preserves the two old strengths until the user moves the shared control.
     var sharedDensity: Double? = nil
     var cardOpacity: Double = 0.10
-    /// Top specular sheen alpha for cards and panels (0–0.40).
+    /// Top specular sheen alpha for cards and panels (0–0.60).
     var topSheenOpacity: Double
     /// 面板和普通窗口共用的水晶染色强度（0–1）。保留旧存储键。
-    /// 普通窗口仍沿用既有光泽衰减公式，避免本次整理改变光泽表现。
     var panelTintCap: Double
     /// Specular rim highlight top alpha (0–1).
     var rimTopOpacity: Double
@@ -570,8 +569,8 @@ struct CrystalMaterial: Hashable {
     /// Ranges the Preferences sliders offer. Kept here so the controls, the
     /// decode clamp and the QA checks cannot drift apart.
     enum Range {
-        static let card: ClosedRange<Double> = 0...0.3
-        static let sheen: ClosedRange<Double> = 0...0.40
+        static let card: ClosedRange<Double> = 0...0.8
+        static let sheen: ClosedRange<Double> = 0...0.60
         static let panelTint: ClosedRange<Double> = 0...1
         static let rim: ClosedRange<Double> = 0...1
     }
@@ -705,22 +704,16 @@ struct ThumbnailBackdrop: Hashable {
         static let opacity: ClosedRange<Double> = 0...0.60
     }
 
-    /// The wash the thumbnail used to get on an opaque panel: 0.06 against
-    /// 0.16 on glass, i.e. 0.375 of the value above.
-    private static let solidScale = 0.375
-
     func clamped() -> ThumbnailBackdrop {
         var copy = self
         copy.opacity = min(max(copy.opacity, Range.opacity.lowerBound), Range.opacity.upperBound)
         return copy
     }
 
-    /// The colour actually drawn behind a thumbnail.
-    ///
-    /// An opaque panel has no glass to sit in, so the wash is much lighter
-    /// there — the same relationship the hard-coded values had.
-    func resolvedColor(isBlurred: Bool) -> Color {
-        tintColor.opacity(opacity * (isBlurred ? 1 : ThumbnailBackdrop.solidScale))
+    /// The requested strength is the actual matte alpha, independent of the
+    /// panel style. A hidden solid-panel multiplier made this slider misleading.
+    func resolvedColor() -> Color {
+        tintColor.opacity(opacity)
     }
 }
 

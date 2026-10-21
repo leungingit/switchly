@@ -660,11 +660,6 @@ struct WorkspaceBarView: View {
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial
         )
-        .crystalSpecularRim(
-            cornerRadius: GlassPanelCorner.radius,
-            material: settings.crystalMaterial,
-            lineWidth: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.75 : 0
-        )
         .shadow(color: .black.opacity(0.24), radius: 22, x: 0, y: 12)
         .preferredColorScheme(settings.theme.colorScheme)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
@@ -1060,7 +1055,7 @@ private struct WorkspaceBarCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque)))
+                    .background(settings.thumbnailBackdrop.resolvedColor())
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     // Hairline inner edge: the thumbnail is the brightest
                     // surface in the panel and needs a defined rim against the

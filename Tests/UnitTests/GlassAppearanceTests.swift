@@ -202,6 +202,15 @@ final class GlassAppearanceTests: XCTestCase {
     }
 
     @MainActor
+    func testAddedRimCoversEveryEdgeWithoutAnInvisibleHalf() {
+        XCTAssertTrue(GlassRim.opacities(strength: 0).allSatisfy { $0 == 0 })
+        for value in [0.01, 0.57, 1] {
+            let stops = GlassRim.opacities(strength: value)
+            XCTAssertTrue(stops.allSatisfy { $0 > 0 && $0 <= 1 })
+            XCTAssertGreaterThanOrEqual(stops.min() ?? 0, value * 0.4)
+        }
+    }
+
     private func visualEffects(in view: NSView) -> [NSVisualEffectView] {
         (view as? NSVisualEffectView).map { [$0] } ?? view.subviews.flatMap { visualEffects(in: $0) }
     }

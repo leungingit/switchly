@@ -297,3 +297,13 @@
 "Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill." = "卡片的中性底色，独立于玻璃密度。0 移除未选中卡片的底色。";
 "Panel layout" = "面板布局";
 "Settings section" = "设置分类";
+
+// Glass control limits and live matte sample
+"On macOS 26 and later, 0 keeps the system glass and 100% adds an almost solid reading surface. On older systems, controls backdrop opacity. Does not change blur radius or fade text." = "macOS 26 及以上，0 保留系统玻璃，100% 添加接近实色的阅读底层。旧系统调节背景材质的不透明度。不会改变模糊半径或淡化文字。";
+"White reflection over the top of cards and panels, independent of the tint colour. Zero removes the added reflection." = "卡片与面板顶部的白色反光，与染色颜色独立。为 0 时移除附加反光。";
+"White reflection around all four edges. Zero removes the added highlight; the system glass rim and selection outline remain." = "环绕四周的白色反光。为 0 时移除附加高光；系统玻璃自带的边缘和选中描边仍会保留。";
+"Backdrop sample: only the margins around a fitted image change. A thumbnail that fills its frame hides the backdrop." = "衬底示意：只改变图片周围的留边。缩略图铺满时会遮住衬底。";
+"Thumbnail backdrop sample" = "缩略图衬底示意";
+"System glass" = "系统玻璃";
+"Mostly solid" = "接近实色";
+"Strong" = "强";

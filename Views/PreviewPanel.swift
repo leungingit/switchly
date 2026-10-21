@@ -641,11 +641,6 @@ struct PreviewView: View {
             cornerRadius: GlassPanelCorner.radius,
             material: settings.crystalMaterial
         )
-        .crystalSpecularRim(
-            cornerRadius: GlassPanelCorner.radius,
-            material: settings.crystalMaterial,
-            lineWidth: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.75 : 0
-        )
         .shadow(color: .black.opacity(0.24), radius: 22, x: 0, y: 12)
         .onAppear {
             viewModel.updateGridColumnCount(width: viewModel.panelSize.width, settings: settings)
@@ -1275,7 +1270,7 @@ struct WindowThumbnailView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
-                    .background(settings.thumbnailBackdrop.resolvedColor(isBlurred: (settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque)))
+                    .background(settings.thumbnailBackdrop.resolvedColor())
                     .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
                     .transition(MotionTokens.thumbnailTransition)
             case .failed(let fallbackIcon):

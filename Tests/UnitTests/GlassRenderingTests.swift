@@ -6,6 +6,99 @@ import XCTest
 /// Opt-in desktop compositing evidence; unit tests do not normally show windows.
 /// Run xcodebuild with TEST_RUNNER_SWITCHLY_CAPTURE_GLASS=1 to save synthetic-background captures in /tmp.
 final class GlassRenderingTests: XCTestCase {
+    /// Capture actual native compositing at both control limits, with every
+    /// other layer held constant. The matte intentionally leaves image margins.
+    @MainActor
+    func testControlEndpointsOnDesktop() throws {
+        guard ProcessInfo.processInfo.environment["SWITCHLY_CAPTURE_GLASS"] == "1" else {
+            throw XCTSkip("Opt-in desktop visual review")
+        }
+        try FileManager.default.createDirectory(atPath: "/tmp/switchly-control-limits", withIntermediateDirectories: true)
+        let frame = NSRect(x: 100, y: 100, width: 940, height: 640)
+        let backdrop = NSWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        backdrop.level = .floating
+        backdrop.contentView = NSHostingView(rootView: Color.blue.opacity(0.35).background(Color.white))
+        backdrop.orderFront(nil)
+        defer { backdrop.orderOut(nil); backdrop.contentView = nil }
+        for theme in [AppTheme.light, .dark] {
+            for style in [GlassStyle.frosted, .transparent] {
+                let board = VStack(spacing: 8) {
+                    Text("\(theme.rawValue) / \(style.rawValue) — lower limit / upper limit")
+                        .font(.headline)
+                    ForEach(EndpointControl.allCases, id: \.self) { control in
+                        HStack(spacing: 16) {
+                            Text(control.rawValue).frame(width: 140, alignment: .leading)
+                            if style == .transparent && (control == .sheen || control == .rim) {
+                                Text("Frosted glass only — controls hidden in Preferences")
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                self.endpointSample(control, maximum: false, style: style)
+                                self.endpointSample(control, maximum: true, style: style)
+                            }
+                        }.frame(height: 82)
+                    }
+                }
+                .padding(16)
+                .preferredColorScheme(theme.colorScheme)
+                let window = NSWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
+                window.level = .floating
+                window.isOpaque = false
+                window.backgroundColor = .clear
+                window.appearance = NSAppearance(named: theme == .light ? .aqua : .darkAqua)
+                window.contentView = NSHostingView(rootView: board)
+                window.makeKeyAndOrderFront(nil)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+                let screen = try XCTUnwrap(NSScreen.screens.first)
+                let path = "/tmp/switchly-control-limits/endpoints-\(theme.rawValue)-\(style.rawValue).png"
+                let capture = Process()
+                capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                capture.arguments = ["-x", "-R", "100,\(Int(screen.frame.maxY - frame.maxY)),940,640", path]
+                try capture.run()
+                capture.waitUntilExit()
+                XCTAssertEqual(capture.terminationStatus, 0)
+                let attachment = XCTAttachment(contentsOfFile: URL(fileURLWithPath: path))
+                attachment.lifetime = .keepAlways
+                add(attachment)
+                window.orderOut(nil)
+                window.contentView = nil
+            }
+        }
+    }
+
+    private enum EndpointControl: String, CaseIterable {
+        case density = "Density 0–100%"
+        case tint = "Tint 0–100%"
+        case card = "Card fill 0–80%"
+        case sheen = "Sheen 0–60%"
+        case rim = "Rim 0–100%"
+        case matte = "Matte 0–60%"
+    }
+
+    private func endpointSample(_ control: EndpointControl, maximum: Bool, style: GlassStyle) -> some View {
+        var material = CrystalMaterial.legacyDefault
+        material.glassStyle = style
+        material.cardOpacity = control == .card && maximum ? CrystalMaterial.Range.card.upperBound : 0
+        material.topSheenOpacity = control == .sheen && maximum ? CrystalMaterial.Range.sheen.upperBound : 0
+        material.rimTopOpacity = control == .rim && maximum ? CrystalMaterial.Range.rim.upperBound : 0
+        material.panelTintCap = control == .tint && maximum ? CrystalMaterial.Range.panelTint.upperBound : 0
+        let density = control == .density ? (maximum ? 1.0 : 0) : 0.0
+        let matte = ThumbnailBackdrop(tintColor: .black, opacity: control == .matte && maximum ? ThumbnailBackdrop.Range.opacity.upperBound : 0)
+        return HStack {
+            Image(systemName: "photo")
+                .frame(width: 48, height: 28)
+                .background(Color(nsColor: .windowBackgroundColor))
+                .padding(8)
+                .background(matte.resolvedColor())
+            Text(maximum ? "Upper limit" : "Lower limit")
+            Spacer()
+        }
+        .padding(10)
+        .cardSurface(fill: Color.crystalSurfaceBase.opacity(material.cardOpacity), material: material)
+        .crystalSpecularRim(material: material)
+        .padding(8)
+        .panelGlass(isActive: true, opacity: density, cornerRadius: DesignTokens.Radius.card, material: material)
+    }
+
     @MainActor
     func testDesktopCompositing() throws {
         guard ProcessInfo.processInfo.environment["SWITCHLY_CAPTURE_GLASS"] == "1" else {

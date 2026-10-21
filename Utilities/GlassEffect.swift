@@ -133,12 +133,7 @@ extension View {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(fill)
 
-                // Top-to-bottom optical crystal luminance gradient (visionOS reference I01).
-                // The sheen is the preset's own hue: a single global white
-                // luminance at 18–24 % is ~9:1 heavier than the preset tint, so
-                // it used to flatten every preset into the same grey card. Here
-                // the tint sits on top of a much lighter luminance base, which
-                // is what makes "ice is blue, quartz is amber" actually read.
+                // A neutral reflection, independent of the tint colour and strength.
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
                         LinearGradient(
@@ -155,13 +150,8 @@ extension View {
         )
     }
 
-    /// 135° diagonal specular bevel rim highlight (0.5pt–0.75pt) that gives
-    /// panels, pills, and cards a crisp cut-crystal edge.
-    ///
-    /// The rim reads as light catching a bevel, so it is drawn in the ambient
-    /// label polarity (`crystalRimBase`): white on a dark window, a deep
-    /// graphite trace on a light one, where a 0.57-alpha white stroke would be
-    /// invisible against the light panel behind it.
+    /// White optical reflection around the entire perimeter. Selection keeps
+    /// its separate accent outline; a resting highlight never turns into dark ink.
     func crystalSpecularRim(
         cornerRadius: CGFloat = DesignTokens.Radius.card,
         material: CrystalMaterial = .legacyDefault,
@@ -173,15 +163,9 @@ extension View {
                 .strokeBorder(
                     LinearGradient(
                         colors: isHighlighted
-                            ? [
-                                Color.crystalRimBase.opacity(0.88),
-                                Color.accentColor.opacity(0.75),
-                                Color.crystalRimBase.opacity(0.32)
-                            ]
-                            : [
-                                Color.crystalRimBase.opacity(material.glassStyle == .frosted ? material.rimTopOpacity : 0),
-                                Color.clear, Color.clear, Color.clear
-                            ],
+                            ? [.white.opacity(0.88), Color.accentColor.opacity(0.75), .white.opacity(0.32)]
+                            : GlassRim.opacities(strength: material.glassStyle == .frosted ? material.rimTopOpacity : 0)
+                                .map { Color.white.opacity($0) },
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -216,11 +200,6 @@ extension Color {
     /// Neutral optical highlight; never a graphite wash in light appearance.
     static var crystalSheenTop: Color { .white }
 
-    /// Ambient (un-tinted) base for specular rims: white on dark, graphite on light.
-    static var crystalRimBase: Color {
-        appearanceAware(dark: .white, light: crystalGraphite)
-    }
-
     /// Solid resting fill for crystal cards. Semantic on purpose — it tracks
     /// the window appearance so the desktop shows through the panel and the
     /// label text on top of the card keeps working.
@@ -235,8 +214,8 @@ extension Color {
         Color(nsColor: .secondaryLabelColor)
     }
 
-    /// A colour highlight independent of the text theme.
-    static func crystalSheenLuminance(_ material: CrystalMaterial) -> Color { material.tintColor }
+    /// Neutral reflection independent of the text theme and tint colour.
+    static func crystalSheenLuminance(_ material: CrystalMaterial) -> Color { .white }
 
     /// Semantic resting base for the light labels and hairlines that sit
     /// directly on the crystal panel (not inside a card).
@@ -474,17 +453,9 @@ private struct GlassSurface<Backdrop: View>: View {
             if let rim = appearance.rimTopOpacity {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                Color.crystalRimBase.opacity(rim),
-                                Color.crystalRimBase.opacity(rim * 0.35),
-                                Color.crystalRimBase.opacity(rim * 0.1),
-                                Color.crystalRimBase.opacity(rim * 0.4)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.75
+                        LinearGradient(colors: GlassRim.opacities(strength: rim).map { Color.white.opacity($0) },
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: DesignTokens.hairline
                     )
             }
         }
@@ -548,5 +519,14 @@ enum GlassWash {
     static func opacity(for slider: Double) -> Double {
         let clamped = min(max(slider, 0), 1)
         return clamped
+    }
+}
+
+/// Nonzero around all four edges, with a brighter upper lip. Zero removes
+/// only our added reflection, never the operating system's own glass rim.
+enum GlassRim {
+    static func opacities(strength: Double) -> [Double] {
+        let strength = min(max(strength, 0), 1)
+        return [strength, strength * 0.55, strength * 0.45, strength * 0.7]
     }
 }

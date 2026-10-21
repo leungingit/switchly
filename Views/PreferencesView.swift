@@ -276,7 +276,8 @@ struct PreferencesView: View {
                         crystalSliderRow(t("Glass density"), systemImage: "slider.horizontal.3",
                                          value: sharedDensityBinding, range: 0...1,
                                          displayed: String(format: "%.0f%%", viewModel.settings.panelGlassDensity * 100),
-                                         help: t("Adds a neutral reading surface over native glass on macOS 26 and later; 0 keeps the system glass. On older systems, controls backdrop opacity. Does not fade text or control tint strength."))
+                                         help: t("On macOS 26 and later, 0 keeps the system glass and 100% adds an almost solid reading surface. On older systems, controls backdrop opacity. Does not change blur radius or fade text."),
+                                         endpoints: ("System glass", "Mostly solid"))
                         if viewModel.settings.crystalMaterial.sharedDensity == nil {
                             Text(t("Previous panel and window densities are preserved. Move this slider to apply one density everywhere."))
                                 .font(.caption).foregroundColor(.secondary)
@@ -310,19 +311,21 @@ struct PreferencesView: View {
 
                 DisclosureGroup(t("Advanced glass details")) {
                     settingsGroup(t("Surface details")) {
-                        crystalSliderRow(t("Card separation"), systemImage: "rectangle.on.rectangle",
-                                         value: cardOpacityBinding, range: CrystalMaterial.Range.card,
-                                         displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.cardOpacity * 100),
-                                         help: t("Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill."))
-                        if viewModel.settings.crystalMaterial.glassStyle == .frosted {
-                            crystalSliderRow(t("Top sheen"), systemImage: "sun.max", value: crystalSheenBinding,
-                                             range: CrystalMaterial.Range.sheen,
-                                             displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.topSheenOpacity),
-                                             help: t("Strength of the highlight across the top edge of cards and panels."))
-                            crystalSliderRow(t("Rim highlight"), systemImage: "hexagon", value: crystalRimBinding,
-                                             range: CrystalMaterial.Range.rim,
-                                             displayed: String(format: "%.2f", viewModel.settings.crystalMaterial.rimTopOpacity),
-                                             help: t("Strength of the specular bevel along the panel and card edges."))
+                        if viewModel.settings.crystalMaterial.glassStyle != .opaque {
+                            crystalSliderRow(t("Card separation"), systemImage: "rectangle.on.rectangle",
+                                             value: cardOpacityBinding, range: CrystalMaterial.Range.card,
+                                             displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.cardOpacity * 100),
+                                             help: t("Neutral backing behind cards, independent of the glass density. Zero removes the resting card fill."))
+                            if viewModel.settings.crystalMaterial.glassStyle == .frosted {
+                                crystalSliderRow(t("Top sheen"), systemImage: "sun.max", value: crystalSheenBinding,
+                                                 range: CrystalMaterial.Range.sheen,
+                                                 displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.topSheenOpacity * 100),
+                                                 help: t("White reflection over the top of cards and panels, independent of the tint colour. Zero removes the added reflection."))
+                                crystalSliderRow(t("Rim highlight"), systemImage: "hexagon", value: crystalRimBinding,
+                                                 range: CrystalMaterial.Range.rim,
+                                                 displayed: String(format: "%.0f%%", viewModel.settings.crystalMaterial.rimTopOpacity * 100),
+                                                 help: t("White reflection around all four edges. Zero removes the added highlight; the system glass rim and selection outline remain."))
+                            }
                         }
                         settingRow(t("Thumbnail backdrop"),
                                    systemImage: "paintpalette",
@@ -339,6 +342,14 @@ struct PreferencesView: View {
                                     .frame(width: 72, alignment: .leading)
                             }
                         }
+
+                        HStack(spacing: DesignTokens.Spacing.md) {
+                            thumbnailMatteSample
+                            Text(t("Backdrop sample: only the margins around a fitted image change. A thumbnail that fills its frame hides the backdrop."))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(DesignTokens.Spacing.md)
 
                         thumbnailBackdropSliderRow(t("Thumbnail backdrop strength"),
                                                   value: thumbnailBackdropOpacityBinding,
@@ -670,6 +681,17 @@ struct PreferencesView: View {
                       Int((resolved.blueComponent * 255).rounded()))
     }
 
+    private var thumbnailMatteSample: some View {
+        Image(systemName: "photo")
+            .frame(width: 48, height: 30)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .padding(.horizontal, DesignTokens.Spacing.lg)
+            .padding(.vertical, DesignTokens.Spacing.sm)
+            .background(viewModel.settings.thumbnailBackdrop.resolvedColor())
+            .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.thumbnail))
+            .accessibilityLabel(t("Thumbnail backdrop sample"))
+    }
+
     /// One backdrop knob: label, slider, and the value it is currently at.
     private func thumbnailBackdropSliderRow(_ title: String,
                                            value: Binding<Double>,
@@ -679,6 +701,8 @@ struct PreferencesView: View {
         settingRow(title, systemImage: "circle.lefthalf.filled", help: help) {
             HStack(spacing: 10) {
                 Slider(value: value, in: range)
+                    .accessibilityLabel(title)
+                    .accessibilityValue(displayed)
                     .frame(width: 220)
                 Text(displayed)
                     .font(.caption.monospacedDigit())
@@ -775,11 +799,24 @@ struct PreferencesView: View {
                                   value: Binding<Double>,
                                   range: ClosedRange<Double>,
                                   displayed: String,
-                                  help: String) -> some View {
+                                  help: String,
+                                  endpoints: (String, String) = ("None", "Strong")) -> some View {
         settingRow(title, systemImage: systemImage, help: help) {
             HStack(spacing: 10) {
-                Slider(value: value, in: range)
-                    .frame(width: 220)
+                VStack(spacing: DesignTokens.Spacing.xs) {
+                    Slider(value: value, in: range)
+                        .accessibilityLabel(title)
+                        .accessibilityValue(displayed)
+                    HStack {
+                        Text(t(endpoints.0))
+                        Spacer()
+                        Text(t(endpoints.1))
+                    }
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+                }
+                .frame(width: 220)
                 Text(displayed)
                     .font(.caption.monospacedDigit())
                     .foregroundColor(.secondary)
