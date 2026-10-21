@@ -270,3 +270,10 @@
 "Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows." = "浮动面板与普通窗口共用的染色强度，也会影响普通窗口的光泽。";
 
 "Material sample uses this window's background; it does not preview an independent panel wash." = "材质示意使用当前窗口的背景，不预览独立的面板玻璃洗。";
+
+/* Glass backing appearance */
+"Glass base tone" = "玻璃底色";
+"Match appearance" = "跟随外观";
+"Light glass" = "明亮玻璃";
+"Dark glass" = "深色玻璃";
+"Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones." = "明亮玻璃可减轻系统材质的灰黑感。使用下方的水晶染色自由选择颜色。文字仍跟随应用外观，混合深浅色时请检查可读性。";

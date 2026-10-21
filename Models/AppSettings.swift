@@ -504,7 +504,20 @@ enum CrystalPanelMaterial: String, Codable, CaseIterable, Hashable {
     }
 }
 
-/// The crystal material, as four independent, user-editable parameters.
+/// Controls only the system blur backing, independently of the window's text theme.
+enum GlassBaseTone: String, Codable, CaseIterable {
+    case automatic, light, dark
+
+    func displayName(language: AppLanguage) -> String {
+        switch self {
+        case .automatic: return language.localizedString("Match appearance")
+        case .light: return language.localizedString("Light glass")
+        case .dark: return language.localizedString("Dark glass")
+        }
+    }
+}
+
+/// The crystal material, as independent, user-editable parameters.
 ///
 /// This replaced the former Ice / Quartz / Frameless presets. The presets were
 /// only ever a colour plus three near-identical alphas (0.18/0.20/0.24 sheen,
@@ -514,6 +527,8 @@ enum CrystalPanelMaterial: String, Codable, CaseIterable, Hashable {
 struct CrystalMaterial: Hashable {
     /// Hue of the panel wash, card sheen and specular rim.
     var tintColor: Color
+    /// System material tone; automatic preserves existing settings.
+    var baseTone: GlassBaseTone = .automatic
     /// Top specular sheen alpha for cards and panels (0–0.40).
     var topSheenOpacity: Double
     /// 面板和普通窗口共用的水晶染色强度（0–1）。保留旧存储键。
@@ -590,6 +605,7 @@ struct CrystalMaterial: Hashable {
 extension CrystalMaterial: Codable {
     enum CodingKeys: String, CodingKey {
         case tintColor
+        case baseTone
         case topSheenOpacity
         case panelTintCap
         case rimTopOpacity
@@ -610,6 +626,7 @@ extension CrystalMaterial: Codable {
         let fallback = CrystalMaterial.legacyDefault
         let rgb = try container.decodeIfPresent(RGB.self, forKey: .tintColor)
         self.tintColor = rgb.map { Color(red: $0.red, green: $0.green, blue: $0.blue) } ?? fallback.tintColor
+        self.baseTone = try container.decodeIfPresent(GlassBaseTone.self, forKey: .baseTone) ?? .automatic
         self.topSheenOpacity = try container.decodeIfPresent(Double.self, forKey: .topSheenOpacity) ?? fallback.topSheenOpacity
         self.panelTintCap = try container.decodeIfPresent(Double.self, forKey: .panelTintCap) ?? fallback.panelTintCap
         self.rimTopOpacity = try container.decodeIfPresent(Double.self, forKey: .rimTopOpacity) ?? fallback.rimTopOpacity
@@ -623,6 +640,7 @@ extension CrystalMaterial: Codable {
                                   green: Double(resolved.greenComponent),
                                   blue: Double(resolved.blueComponent)),
                              forKey: .tintColor)
+        try container.encode(baseTone, forKey: .baseTone)
         try container.encode(topSheenOpacity, forKey: .topSheenOpacity)
         try container.encode(panelTintCap, forKey: .panelTintCap)
         try container.encode(rimTopOpacity, forKey: .rimTopOpacity)

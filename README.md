@@ -56,7 +56,7 @@ Workspaces organize app groups and access to their windows; they do not create m
 | Target an app with just one window | Enable auto-switch to go directly to it. |
 | Alternate keyboard and mouse | Use shortcuts, Dock hover, or optional pointer triggers. |
 | Prefer a quieter desktop | Keep Switchly in the menu bar, with no Dock icon; optionally launch at login. |
-| Want the panel to feel like yours | Choose light, dark, or system appearance, adjust glass styling, or turn it off. |
+| Want the panel to feel like yours | Choose light, dark, or system appearance; independently choose a light or dark glass backing, pick any crystal tint colour, or turn glass off. |
 | Want to understand your usage | View local keyboard/mouse counts and estimated time savings; clear them at any time. Estimates are not measured productivity gains. |
 
 English and Simplified Chinese are built in. Animations respect the system **Reduce Motion** setting.

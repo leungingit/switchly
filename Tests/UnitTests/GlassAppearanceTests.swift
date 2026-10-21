@@ -109,6 +109,45 @@ final class GlassAppearanceTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(visualEffects(in: host).first).alphaValue, 1, accuracy: 0.0001)
     }
 
+    func testBaseToneCompatibilityAndRoundTrip() throws {
+        let old = try JSONDecoder().decode(CrystalMaterial.self, from: Data("{}".utf8))
+        XCTAssertEqual(old.baseTone, .automatic)
+        for tone in GlassBaseTone.allCases {
+            var settings = AppSettings.default
+            settings.crystalMaterial.baseTone = tone
+            let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(settings))
+            XCTAssertEqual(decoded.crystalMaterial.baseTone, tone)
+            XCTAssertEqual(GlassAppearance.panel(opacity: 0.5, material: decoded.crystalMaterial).baseTone, tone)
+            for style in [WindowGlassStyle.preferences, .workspace, .statistics] {
+                XCTAssertEqual(GlassAppearance.window(opacity: 0.5, material: decoded.crystalMaterial, style: style).baseTone, tone)
+            }
+        }
+    }
+
+    /// Check the real AppKit view, including clearing the explicit appearance.
+    @MainActor
+    func testBaseToneUpdatesAndRestoresInheritedAppearance() throws {
+        var material = CrystalMaterial.legacyDefault
+        let host = NSHostingView(rootView: WindowGlassSurface(opacity: 0.5, material: material, style: .preferences))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 240, height: 140),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.contentView = host
+        defer { window.contentView = nil }
+        for tone in [GlassBaseTone.light, .dark, .automatic] {
+            material.baseTone = tone
+            host.rootView = WindowGlassSurface(opacity: 0.5, material: material, style: .preferences)
+            host.layoutSubtreeIfNeeded()
+            let effect = try XCTUnwrap(visualEffects(in: host).first)
+            if tone == .automatic {
+                XCTAssertNil(effect.appearance)
+            } else {
+                XCTAssertEqual(effect.appearance?.name, tone == .light ? .aqua : .darkAqua)
+            }
+            XCTAssertEqual(window.appearance?.name, .darkAqua)
+        }
+    }
+
     @MainActor
     private func visualEffects(in view: NSView) -> [NSVisualEffectView] {
         (view as? NSVisualEffectView).map { [$0] } ?? view.subviews.flatMap { visualEffects(in: $0) }

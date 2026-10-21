@@ -493,6 +493,7 @@ enum WindowGlassStyle {
 
 /// 解析后的绘制参数，不持久化，也不引入新的用户设置。
 struct GlassAppearance {
+    var baseTone: GlassBaseTone = .automatic
     let washOpacity: Double
     let tintColor: Color
     let tintOpacity: Double
@@ -503,6 +504,7 @@ struct GlassAppearance {
     static func panel(opacity: Double, material: CrystalMaterial, tintColor: Color? = nil) -> GlassAppearance {
         if opacity <= 0 { return transparent(tintColor: tintColor ?? material.tintColor) }
         return GlassAppearance(
+            baseTone: material.baseTone,
             washOpacity: GlassWash.opacity(for: opacity),
             tintColor: tintColor ?? material.tintColor,
             tintOpacity: min(max(opacity * 0.28, 0.04), 0.36) * material.panelTintCap,
@@ -516,6 +518,7 @@ struct GlassAppearance {
         if opacity <= 0 { return transparent(tintColor: material.tintColor) }
         let isPreferences = style == .preferences
         return GlassAppearance(
+            baseTone: material.baseTone,
             washOpacity: GlassWash.opacity(for: opacity),
             tintColor: material.tintColor,
             tintOpacity: (isPreferences ? min(max(opacity * 0.22, 0.04), 0.28) : 0.08) * material.panelTintCap,
@@ -562,7 +565,8 @@ private struct GlassSurface<Backdrop: View>: View {
                 GlassBackground(
                     material: .popover,
                     cornerRadius: cornerRadius,
-                    washOpacity: appearance.washOpacity
+                    washOpacity: appearance.washOpacity,
+                    baseTone: appearance.baseTone
                 )
             } else {
                 backdrop()
@@ -611,16 +615,24 @@ struct GlassBackground: NSViewRepresentable {
     /// 整个 NSVisualEffectView 的 alpha，包括其背景模糊和材质效果。
     /// 滑块为零时关闭背景；非零值沿用原来的映射。
     var washOpacity: Double = 1
+    var baseTone: GlassBaseTone = .automatic
 
-    init(material: NSVisualEffectView.Material = .popover, cornerRadius: CGFloat = 0, washOpacity: Double = 1) {
+    init(material: NSVisualEffectView.Material = .popover, cornerRadius: CGFloat = 0, washOpacity: Double = 1, baseTone: GlassBaseTone = .automatic) {
         self.material = material
         self.cornerRadius = cornerRadius
         self.washOpacity = washOpacity
+        self.baseTone = baseTone
     }
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.material = material
+        // nil restores inherited appearance after switching back to automatic.
+        switch baseTone {
+        case .automatic: view.appearance = nil
+        case .light: view.appearance = NSAppearance(named: .aqua)
+        case .dark: view.appearance = NSAppearance(named: .darkAqua)
+        }
         view.blendingMode = .behindWindow
         view.state = .active
         view.wantsLayer = true
@@ -633,6 +645,12 @@ struct GlassBackground: NSViewRepresentable {
 
     func updateNSView(_ view: NSVisualEffectView, context: Context) {
         view.material = material
+        // nil restores inherited appearance after switching back to automatic.
+        switch baseTone {
+        case .automatic: view.appearance = nil
+        case .light: view.appearance = NSAppearance(named: .aqua)
+        case .dark: view.appearance = NSAppearance(named: .darkAqua)
+        }
         view.blendingMode = .behindWindow
         view.state = .active
         view.wantsLayer = true

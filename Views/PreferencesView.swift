@@ -283,9 +283,21 @@ struct PreferencesView: View {
                 }
 
                 settingsGroup(t("Crystal material")) {
+                    settingRow(t("Glass base tone"), systemImage: "circle.lefthalf.filled",
+                               help: t("Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones.")) {
+                        Picker(t("Glass base tone"), selection: crystalBaseToneBinding) {
+                            ForEach(GlassBaseTone.allCases, id: \.self) { tone in
+                                Text(tone.displayName(language: viewModel.settings.language)).tag(tone)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 320)
+                    }
+
                     settingRow(t("Crystal tint"), systemImage: "paintpalette") {
                         HStack(spacing: 10) {
-                            ColorPicker("", selection: crystalTintBinding, supportsOpacity: false)
+                            ColorPicker(t("Crystal tint"), selection: crystalTintBinding, supportsOpacity: false)
                                 .labelsHidden()
                                 .frame(width: 52)
                             Text(crystalTintHex)
@@ -728,6 +740,13 @@ struct PreferencesView: View {
                     .frame(width: 42, alignment: .trailing)
             }
         }
+    }
+
+    private var crystalBaseToneBinding: Binding<GlassBaseTone> {
+        Binding(
+            get: { viewModel.settings.crystalMaterial.baseTone },
+            set: { value in viewModel.updateSettings { $0.crystalMaterial.baseTone = value } }
+        )
     }
 
     private var crystalTintBinding: Binding<Color> {

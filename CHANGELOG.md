@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- 新增共享玻璃底色设置（跟随外观 / 明亮 / 深色），可独立减轻深色系统材质的灰黑感，并搭配现有任意水晶染色；旧设置保持跟随外观。 / Added an independent glass backing tone alongside the existing custom crystal tint, preserving the previous appearance by default.
+
 ## [1.2.0] - 2026-10-20
 
 ### Added

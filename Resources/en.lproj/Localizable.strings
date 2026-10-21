@@ -270,3 +270,10 @@
 "Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows." = "Colour strength shared by floating panels and standard windows. Also affects highlights in standard windows.";
 
 "Material sample uses this window's background; it does not preview an independent panel wash." = "Material sample uses this window's background; it does not preview an independent panel wash.";
+
+/* Glass backing appearance */
+"Glass base tone" = "Glass base tone";
+"Match appearance" = "Match appearance";
+"Light glass" = "Light glass";
+"Dark glass" = "Dark glass";
+"Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones." = "Light glass reduces the dark system-material cast. Choose any colour below with Crystal tint. Text follows the app appearance; check readability when mixing tones.";
