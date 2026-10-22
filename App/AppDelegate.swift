@@ -64,10 +64,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // plain property; the file loads on the io queue while the app starts.
         UsageStatisticsService.shared.isEnabled = settings.usageStatisticsEnabled
         Task { await UsageStatisticsService.shared.awaitReady() }
-        // Keep thumbnails fresh: the auto-refresh timer re-captures cached
-        // windows on an 8s cadence so previews always reflect current window
-        // content. Cheap when no panel is open (the tick no-ops on an empty
-        // cache), and stopped on terminate.
+        // 仅刷新可见面板声明的窗口；没有 refresh interest 时不截图。
+        // 打开面板的首次截图由按需路径负责，退出时停止计时器。
         ThumbnailService.shared.startAutoRefresh()
         gridEnabledAtLaunch = settings.gridEnabled
         DesktopGridCoordinator.shared.onOverviewRequested = {

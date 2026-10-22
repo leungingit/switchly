@@ -16,6 +16,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - 消除 Release / `make dist` 构建中桌面空间枚举桥接的 Sendable 警告。桌面枚举仍只在同一条串行队列上运行，行为不变。
+- 移除窗口监控在启动、切换应用和定时轮询时的常驻缩略图预热，避免未打开预览时仍反复抓取前台及受监控窗口。保留打开面板时的按需截图、磁盘旧图恢复与可见面板的定时刷新。
 
 ## [1.2.1] - 2026-10-21
 
