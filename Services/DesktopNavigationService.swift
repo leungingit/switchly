@@ -113,19 +113,37 @@ final class SystemDesktopHotKeyReader: DesktopHotKeyReading {
     static let firstHotKeyID = 118
     static let lastHotKeyID = 126
 
+    /// ANSI key codes for 1…9 and the control modifier, i.e. the system's
+    /// default "Switch to Desktop N" binding (⌃N).
+    static let defaultKeyCodes: [UInt16] = [18, 19, 20, 21, 23, 22, 26, 28, 25]
+    static let controlModifier: UInt32 = 262144
+
     func readBindings() -> DesktopHotKeyBindings {
-        guard let stored = CFPreferencesCopyAppValue(
+        let stored = CFPreferencesCopyAppValue(
             "AppleSymbolicHotKeys" as CFString,
             Self.domain
-        ) as? [String: Any] else {
-            return .empty
-        }
+        ) as? [String: Any]
+        return Self.bindings(from: stored ?? [:])
+    }
 
+    /// macOS only writes an entry after the user edits it; an absent entry
+    /// means the system default ⌃N, which System Settings shows as enabled
+    /// (measured on macOS 27: 118–121 absent while "Switch to Desktop 1–4"
+    /// were on). An entry that exists but is disabled stays disabled. The
+    /// switch confirmer still verifies every jump, so a wrong default can
+    /// only fail a switch, not report a false success.
+    static func bindings(from stored: [String: Any]) -> DesktopHotKeyBindings {
         var bindings: [Int: DesktopHotKeyBinding] = [:]
         for number in 1...9 {
-            let key = String(Self.firstHotKeyID + number - 1)
-            guard let entry = stored[key] as? [String: Any],
-                  (entry["enabled"] as? Bool) == true,
+            let key = String(firstHotKeyID + number - 1)
+            guard let entry = stored[key] as? [String: Any] else {
+                bindings[number] = DesktopHotKeyBinding(
+                    keyCode: defaultKeyCodes[number - 1],
+                    modifiers: controlModifier
+                )
+                continue
+            }
+            guard (entry["enabled"] as? Bool) == true,
                   let value = entry["value"] as? [String: Any],
                   let parameters = value["parameters"] as? [Any],
                   parameters.count >= 3,

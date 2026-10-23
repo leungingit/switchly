@@ -22,6 +22,7 @@ final class DesktopGridCoordinator {
     private let navigation: DesktopNavigationServiceProtocol
     private let spaceService: DesktopSpaceServiceProtocol
     private let prerequisites: GridPrerequisiteServiceProtocol
+    private let interceptor: SystemGestureIntercepting
     private var settingsCancellable: AnyCancellable?
     private var isNavigating = false
 
@@ -34,12 +35,23 @@ final class DesktopGridCoordinator {
     /// nil, which is why the coordinator never touches AppKit windows itself.
     var onListenerStateChanged: ((Bool) -> Void)?
 
+    /// Five-finger swipe down. AppDelegate opens the overview panel.
+    var onOverviewRequested: (() -> Void)?
+    private var overviewGestureEnabled = true
+    private var naturalSwipeDirection = true
+    private var interceptSystemGestures = true
+
+    /// Five-finger swipe up while the system gestures are taken over.
+    var onMissionControlRequested: (() -> Void)?
+
     init(
         gestureService: TrackpadGestureServiceProtocol = TrackpadGestureService.shared,
         navigation: DesktopNavigationServiceProtocol = DesktopNavigationService.shared,
         spaceService: DesktopSpaceServiceProtocol = DesktopSpaceService.shared,
-        prerequisites: GridPrerequisiteServiceProtocol = GridPrerequisiteService()
+        prerequisites: GridPrerequisiteServiceProtocol = GridPrerequisiteService(),
+        interceptor: SystemGestureIntercepting = SystemGestureInterceptor.shared
     ) {
+        self.interceptor = interceptor
         self.gestureService = gestureService
         self.navigation = navigation
         self.spaceService = spaceService
@@ -51,11 +63,19 @@ final class DesktopGridCoordinator {
     /// Applies the master switch. Safe to call repeatedly and on every
     /// settings change; starting an already-running listener is a no-op.
     func apply(settings: AppSettings) {
+        overviewGestureEnabled = settings.gridOverviewGestureEnabled
+        naturalSwipeDirection = settings.gridNaturalSwipeDirection
+        interceptSystemGestures = settings.gridInterceptSystemGestures
         guard settings.gridEnabled else {
             stop()
             return
         }
         start()
+        if isEnabled && interceptSystemGestures {
+            interceptor.start()
+        } else {
+            interceptor.stop()
+        }
     }
 
     func start() {
@@ -80,7 +100,7 @@ final class DesktopGridCoordinator {
         onListenerStateChanged?(true)
 
         let system = gestureService.systemGestureState()
-        if system.conflictsWithGrid {
+        if system.conflictsWithGrid && !interceptSystemGestures {
             // Not fatal: the system gesture and ours fire together. The user
             // has to turn the system one off by hand; nothing is written here.
             AppLogger.warning(
@@ -91,9 +111,11 @@ final class DesktopGridCoordinator {
 
     func stop() {
         guard isEnabled else {
+            interceptor.stop()
             gestureService.onSwipe = nil
             return
         }
+        interceptor.stop()
         gestureService.stop()
         gestureService.onSwipe = nil
         isEnabled = false
@@ -122,24 +144,55 @@ final class DesktopGridCoordinator {
     // MARK: - Swipe handling
 
     private func handle(swipe: TrackpadSwipeEvent) {
+        if swipe.gesture.fingers >= SwipeDefaults.overviewFingers {
+            // Only the overview recogniser fires with five fingers.
+            guard isEnabled, !swipe.suppressed else { return }
+            switch swipe.gesture.direction {
+            case .down where overviewGestureEnabled:
+                AppLogger.info("Desktop grid overview requested. source=five_finger_swipe")
+                onOverviewRequested?()
+            case .up where interceptor.isIntercepting:
+                // The system's four-finger up is swallowed; this replaces it
+                // so a desktop can still be added in Mission Control.
+                AppLogger.info("Mission Control requested. source=five_finger_swipe")
+                onMissionControlRequested?()
+            default:
+                break
+            }
+            return
+        }
         guard isEnabled, !isNavigating else {
             AppLogger.debug("Trackpad swipe ignored. reason=not_ready")
             return
         }
+        // Natural: fingers left moves to the desktop on the right.
+        let swipe = naturalSwipeDirection ? swipe.reversed : swipe
 
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let snapshot = await self.spaceService.loadSnapshot()
+            // Layout only: with no window list the target has no windows, so
+            // navigation takes the ⌃N path, which moves at once.
+            let snapshot = await self.spaceService.loadLayout()
             guard self.isEnabled else { return }
             // Two frames can land in the same runloop turn; only the first
             // one may open a navigation.
             guard !self.isNavigating else { return }
+            // The display in use has no second desktop: stay silent rather
+            // than prompting to create one.
+            guard snapshot.desktops.count >= 2 else {
+                AppLogger.debug("Trackpad swipe ignored. reason=single_desktop_display")
+                return
+            }
 
             let action = GridHUDPanel.shared.present(swipe: swipe, snapshot: snapshot)
             guard case .navigate(let number) = action else { return }
 
             self.isNavigating = true
-            let result = await self.navigation.navigate(to: number, snapshot: snapshot)
+            var result = await self.navigation.navigate(to: number, snapshot: snapshot)
+            if case .failed(reason: "hotkey_not_configured") = result {
+                // No ⌃N binding: the slower app-activation path needs windows.
+                result = await self.navigation.navigate(to: number, snapshot: await self.spaceService.loadSnapshot())
+            }
             self.isNavigating = false
             GridHUDPanel.shared.finish(navigation: result)
         }

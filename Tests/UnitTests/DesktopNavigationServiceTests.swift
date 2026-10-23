@@ -350,19 +350,17 @@ final class DesktopNavigationServiceTests: XCTestCase {
             .screenRecording: .unmet,
             .twoDesktops: .met,
             .desktopHotKeys: .met,
-            .systemFourFingerHorizontalSwipe: .met,
-            .systemFourFingerVerticalSwipe: .met,
             .gestureAvailability: .met,
         ]
         let snapshot = GridPrerequisiteSnapshot(states: states)
 
-        XCTAssertEqual(snapshot.metCount, 6)
+        XCTAssertEqual(snapshot.metCount, 4)
         // Screen recording does not block gestures; it only simplifies previews.
         XCTAssertFalse(snapshot.gesturesBlocked)
         XCTAssertEqual(snapshot.unmetItems, [.screenRecording])
 
         let blocked = GridPrerequisiteSnapshot(states: states.merging([
-            .systemFourFingerVerticalSwipe: .unmet,
+            .accessibility: .unmet,
         ]) { _, new in new })
         XCTAssertTrue(blocked.gesturesBlocked)
     }
@@ -385,5 +383,30 @@ final class DesktopNavigationServiceTests: XCTestCase {
             isOnCurrentSpace: false,
             windowNumber: Int(pid)
         )
+    }
+}
+
+final class SystemDesktopHotKeyReaderTests: XCTestCase {
+    func testAbsentEntriesFallBackToSystemDefaultControlDigit() {
+        let bindings = SystemDesktopHotKeyReader.bindings(from: [:])
+
+        XCTAssertTrue(bindings.isAvailable)
+        XCTAssertEqual(bindings[1], DesktopHotKeyBinding(keyCode: 18, modifiers: 262144))
+        XCTAssertEqual(bindings[9], DesktopHotKeyBinding(keyCode: 25, modifiers: 262144))
+    }
+
+    func testExplicitlyDisabledEntryStaysDisabled() {
+        let stored: [String: Any] = (118...126).reduce(into: [:]) { $0[String($1)] = ["enabled": false] }
+
+        XCTAssertFalse(SystemDesktopHotKeyReader.bindings(from: stored).isAvailable)
+    }
+
+    func testCustomBindingIsKept() {
+        let stored: [String: Any] = [
+            "118": ["enabled": true, "value": ["parameters": [65535, 122, 524288], "type": "standard"]],
+        ]
+
+        XCTAssertEqual(SystemDesktopHotKeyReader.bindings(from: stored)[1],
+                       DesktopHotKeyBinding(keyCode: 122, modifiers: 524288))
     }
 }

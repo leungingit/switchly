@@ -85,8 +85,8 @@ final class GridPrerequisiteViewModel: ObservableObject {
             isRefreshing = false
             return
         }
-        spaceCount = result.desktops.count
-        snapshot = service.snapshot(spaceCount: result.desktops.count)
+        spaceCount = max(result.desktops.count, result.maxDisplayDesktopCount)
+        snapshot = service.snapshot(spaceCount: spaceCount)
         isRefreshing = false
         AppLogger.debug(
             "Grid prerequisites refreshed. met=\(snapshot.metCount)/\(snapshot.totalCount), desktops=\(spaceCount)"
@@ -94,8 +94,13 @@ final class GridPrerequisiteViewModel: ObservableObject {
     }
 
     /// Fire-and-forget refresh used by the Re-check button.
+    ///
+    /// Opening the window fires several refreshes at once (show, onAppear,
+    /// app activation). Cancelling the in-flight one would leave the snapshot
+    /// empty, because `refresh()` skips while busy and a cancelled run drops
+    /// its result; so an in-flight refresh is left to finish.
     func refreshSoon() {
-        refreshTask?.cancel()
+        guard !isRefreshing else { return }
         refreshTask = Task { @MainActor [weak self] in
             await self?.refresh()
         }

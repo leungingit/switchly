@@ -61,6 +61,9 @@ struct DesktopSpaceSnapshot: Equatable {
     let desktops: [Desktop]
     let availability: DesktopSpaceAvailability
     let capturedAt: Date
+    /// Most ordinary desktops on any one display. The grid targets the
+    /// display in use, but "at least two desktops" is met by any display.
+    var maxDisplayDesktopCount: Int = 0
 
     /// The overview always has nine slots. Missing desktops are "not created".
     func slot(_ number: Int) -> Desktop? {

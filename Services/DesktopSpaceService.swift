@@ -18,6 +18,13 @@ protocol DesktopSpaceServiceProtocol {
     /// Reads the overview's desktop list. Never throws: a private-framework or
     /// snapshot failure resolves to `.unavailable` so the UI can degrade.
     func loadSnapshot() async -> DesktopSpaceSnapshot
+    /// Desktops and the current one, without window membership. The swipe
+    /// path uses it: enumerating every window delayed the HUD and the switch.
+    func loadLayout() async -> DesktopSpaceSnapshot
+}
+
+extension DesktopSpaceServiceProtocol {
+    func loadLayout() async -> DesktopSpaceSnapshot { await loadSnapshot() }
 }
 
 /// Cheap "which desktop am I on" read, without enumerating windows.
@@ -34,6 +41,7 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
 
     private let bridge: SpaceReading
     private let windowProvider: () -> [WindowInfo]
+    private let activeDisplayProvider: () -> String?
     private let queue = DispatchQueue(
         label: "com.switchly.desktopSpace",
         qos: .userInitiated
@@ -41,15 +49,18 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
 
     init(
         bridge: SpaceReading = SkyLightSpaceBridge(),
-        windowProvider: @escaping () -> [WindowInfo] = DesktopSpaceService.readOnscreenWindows
+        windowProvider: @escaping () -> [WindowInfo] = DesktopSpaceService.readOnscreenWindows,
+        activeDisplayProvider: @escaping () -> String? = DesktopSpaceService.pointerDisplayUUID
     ) {
         self.bridge = bridge
         self.windowProvider = windowProvider
+        self.activeDisplayProvider = activeDisplayProvider
     }
 
     func loadSnapshot() async -> DesktopSpaceSnapshot {
         let bridge = self.bridge
         let windowProvider = self.windowProvider
+        let activeDisplayProvider = self.activeDisplayProvider
         let queue = self.queue
 
         return await withCheckedContinuation { continuation in
@@ -67,6 +78,30 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
                         displays: displays,
                         windows: windows,
                         memberships: memberships,
+                        activeDisplay: activeDisplayProvider(),
+                        capturedAt: Date()
+                    )
+                )
+            }
+        }
+    }
+
+    func loadLayout() async -> DesktopSpaceSnapshot {
+        let bridge = self.bridge
+        let activeDisplayProvider = self.activeDisplayProvider
+        let queue = self.queue
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                guard bridge.isAvailable, let displays = bridge.readSpaces() else {
+                    continuation.resume(returning: .unavailable(reason: "space_snapshot_unavailable"))
+                    return
+                }
+                continuation.resume(
+                    returning: DesktopSpaceService.buildSnapshot(
+                        displays: displays,
+                        windows: [],
+                        memberships: [:],
+                        activeDisplay: activeDisplayProvider(),
                         capturedAt: Date()
                     )
                 )
@@ -76,12 +111,16 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
 
     func currentDesktopNumber() async -> Int? {
         let bridge = self.bridge
+        let activeDisplayProvider = self.activeDisplayProvider
         let queue = self.queue
         return await withCheckedContinuation { continuation in
             queue.async {
                 guard bridge.isAvailable,
                       let displays = bridge.readSpaces(),
-                      let selection = DesktopSpaceService.ordinarySpaces(in: displays),
+                      let selection = DesktopSpaceService.ordinarySpaces(
+                          in: displays,
+                          activeDisplay: activeDisplayProvider()
+                      ),
                       let index = selection.spaces.firstIndex(where: { $0.id == selection.currentSpaceID }) else {
                     continuation.resume(returning: nil)
                     return
@@ -95,14 +134,22 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
 
     /// The display the overview targets and its ordinary spaces.
     ///
-    /// One display only: the main one when present, otherwise the first with
-    /// ordinary spaces. Space IDs are display-scoped, so mixing displays would
-    /// produce two "current" cells and duplicate numbering.
-    static func ordinarySpaces(in displays: [RawDisplaySpaces]) -> (spaces: [RawSpace], currentSpaceID: UInt64)? {
+    /// One display only: the one in use (under the pointer), then the main
+    /// one, otherwise the first with ordinary spaces. Space IDs are
+    /// display-scoped, so mixing displays would produce two "current" cells
+    /// and duplicate numbering. The display in use wins even with a single
+    /// desktop, so gestures there stay inert instead of driving another
+    /// display's desktops.
+    static func ordinarySpaces(
+        in displays: [RawDisplaySpaces],
+        activeDisplay: String? = nil
+    ) -> (spaces: [RawSpace], currentSpaceID: UInt64)? {
         let candidates = displays.filter { display in
             display.spaces.contains { $0.type == 0 }
         }
-        guard let display = candidates.first(where: \.isMain) ?? candidates.first else {
+        guard let display = candidates.first(where: { activeDisplay != nil && $0.identifier == activeDisplay })
+            ?? candidates.first(where: \.isMain)
+            ?? candidates.first else {
             return nil
         }
         return (display.spaces.filter { $0.type == 0 }, display.currentSpaceID)
@@ -110,8 +157,8 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
 
     /// Maps one raw display snapshot to the overview's domain model.
     ///
-    /// - The overview targets one display: the main display when present,
-    ///   otherwise the first display with ordinary spaces. Space IDs are
+    /// - The overview targets one display: the display in use, then the main
+    ///   display, otherwise the first display with ordinary spaces. Space IDs are
     ///   display-scoped, so mixing displays would produce two "current" cells
     ///   and duplicate numbering.
     /// - Only ordinary spaces (`type == 0`) participate; full-screen spaces
@@ -122,15 +169,19 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
         displays: [RawDisplaySpaces],
         windows: [WindowInfo],
         memberships: [CGWindowID: [UInt64]],
+        activeDisplay: String? = nil,
         capturedAt: Date
     ) -> DesktopSpaceSnapshot {
-        guard let selection = ordinarySpaces(in: displays) else {
+        guard let selection = ordinarySpaces(in: displays, activeDisplay: activeDisplay) else {
             return DesktopSpaceSnapshot(
                 desktops: [],
                 availability: .unavailable(reason: "no_display_with_spaces"),
                 capturedAt: capturedAt
             )
         }
+        let maxDisplayDesktopCount = displays
+            .map { $0.spaces.filter { $0.type == 0 }.count }
+            .max() ?? 0
 
         let spaces = selection.spaces
         let currentID = selection.currentSpaceID
@@ -154,8 +205,24 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
         return DesktopSpaceSnapshot(
             desktops: desktops,
             availability: .available,
-            capturedAt: capturedAt
+            capturedAt: capturedAt,
+            maxDisplayDesktopCount: maxDisplayDesktopCount
         )
+    }
+
+    /// UUID of the display under the pointer, matching SkyLight's
+    /// "Display Identifier". CoreGraphics only, so it is safe off the main
+    /// thread. With "Displays have separate Spaces" off the snapshot has a
+    /// single "Main" entry, which no UUID matches, so selection falls back.
+    static func pointerDisplayUUID() -> String? {
+        guard let point = CGEvent(source: nil)?.location else { return nil }
+        var displayID: CGDirectDisplayID = 0
+        var count: UInt32 = 0
+        guard CGGetDisplaysWithPoint(point, 1, &displayID, &count) == .success, count > 0,
+              let created = CGDisplayCreateUUIDFromDisplayID(displayID) else {
+            return nil
+        }
+        return CFUUIDCreateString(nil, created.takeRetainedValue()) as String
     }
 
     // MARK: - Global order (read-only)

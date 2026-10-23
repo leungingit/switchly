@@ -29,6 +29,9 @@ enum SwipeDefaults {
     /// 0 keeps all eight sectors at 45°; T4 on a real trackpad decides whether
     /// the axis gestures need more room.
     static let diagonalBiasDegrees: Double = 0
+    /// The overview gesture: exactly five fingers, so three fingers stay
+    /// free for window dragging.
+    static let overviewFingers = 5
 }
 
 /// One of the eight swipe directions, with the grid step it maps to.
@@ -56,6 +59,11 @@ enum SwipeDirection: String, CaseIterable, Equatable {
         case .down: return 270
         case .downRight: return 315
         }
+    }
+
+    var opposite: SwipeDirection {
+        let all = SwipeDirection.allCases
+        return all[(all.firstIndex(of: self)! + 4) % all.count]
     }
 
     var isDiagonal: Bool {
@@ -109,22 +117,32 @@ struct SwipeConfiguration: Equatable {
     var dropoutMS: Double
     var cooldownMS: Double
     var diagonalBiasDegrees: Double
+    /// A session that ever sees more fingers than this never fires.
+    var maximumFingers: Int?
 
     init(
         minimumFingers: Int = SwipeDefaults.minimumFingers,
         thresholdMM: Double = SwipeDefaults.thresholdMM,
         dropoutMS: Double = SwipeDefaults.dropoutMS,
         cooldownMS: Double = SwipeDefaults.cooldownMS,
-        diagonalBiasDegrees: Double = SwipeDefaults.diagonalBiasDegrees
+        diagonalBiasDegrees: Double = SwipeDefaults.diagonalBiasDegrees,
+        maximumFingers: Int? = nil
     ) {
         self.minimumFingers = minimumFingers
         self.thresholdMM = thresholdMM
         self.dropoutMS = dropoutMS
         self.cooldownMS = cooldownMS
         self.diagonalBiasDegrees = diagonalBiasDegrees
+        self.maximumFingers = maximumFingers
     }
 
-    static let standard = SwipeConfiguration()
+    /// Exactly four: a five-finger swipe belongs to the overview.
+    static let standard = SwipeConfiguration(maximumFingers: SwipeDefaults.minimumFingers)
+
+    static let overview = SwipeConfiguration(
+        minimumFingers: SwipeDefaults.overviewFingers,
+        maximumFingers: SwipeDefaults.overviewFingers
+    )
 }
 
 /// What a frame produced.
@@ -196,7 +214,8 @@ struct SwipeDirectionClassifier {
         timestamp: TimeInterval
     ) -> SwipeEvent? {
         guard var current = session else {
-            guard fingers >= configuration.minimumFingers else {
+            guard fingers >= configuration.minimumFingers,
+                  fingers <= configuration.maximumFingers ?? .max else {
                 return nil
             }
             session = Session(
@@ -213,6 +232,10 @@ struct SwipeDirectionClassifier {
             current.belowSince = nil
             current.last = centroidMM
             current.maxFingers = max(current.maxFingers, fingers)
+            if fingers > configuration.maximumFingers ?? .max {
+                // Too many fingers: spend the session without firing.
+                current.fired = true
+            }
             session = current
 
             guard !current.fired else { return nil }

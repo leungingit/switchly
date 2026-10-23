@@ -258,6 +258,7 @@ HANDOFF §4 的 6 个人工核对步骤分布：① 实施与原型对照 → T0
   - `defaults read com.apple.AppleMultitouchTrackpad TrackpadFourFingerHorizSwipeGesture` 前后对比，确认 app 未写入；
   - 冲突时提示文案说明“请到系统设置手动关闭”，不提供“帮我关闭”按钮。
 - 状态：已完成（2026-10-23，静态与单测）。新增 `Models/GridPrerequisite.swift`（6 项前置条件、`met/unmet/undetectable`、两项系统手势为反向项）与 `Services/GridPrerequisiteService.swift`；`SystemGesturePreferenceReader` 只调用 `CFPreferencesCopyAppValue` 读取 `com.apple.AppleMultitouchTrackpad` / 蓝牙域，没有任何写入路径；键缺失时按系统默认视为开启。冲突时 `DesktopGridCoordinator` 只记录 `action=user_must_disable` 日志。**偏差**：`Views/DesktopGridOnboardingView.swift` 属 T18，本轮未创建；手工开关系统手势与 `defaults read` 前后对比待人工验证。
+- **部分被 T25 取代（2026-10-23）**：系统四指手势改为由 App 拦截，前置条件中的两项系统四指开关已移除；只读检测保留，仅在关闭「接管系统四指手势」时记录冲突日志。
 
 ### T15 桌面导航与 ⌃1–9 直达
 
@@ -359,6 +360,17 @@ HANDOFF §4 的 6 个人工核对步骤分布：① 实施与原型对照 → T0
 - 状态：已完成（2026-10-23）。`GridPrerequisiteSnapshot` 扩到 7 项（新增 `.desktopHotKeys`，因为空桌面切换依赖系统 ⌃1–9 快捷键），状态语义收敛为 `met / unmet / undetectable`，并新增 `summary(language:)`、`statusText(language:)`、`settingsURL`、`undetectableDetail(language:)`；设置页与引导窗口只读同一份快照，各自的 `GridPrerequisiteViewModel` 都注入 `GridPrerequisiteServiceProtocol`。新增 `GridPrerequisiteTests`（10 例：计数、顺序、不可检测不阻塞、反向项、降级项、深链、双语）、`GridPrerequisiteServiceTests`（7 例：全部满足、权限分轴、桌面数边界、反向项、框架缺失、快捷键缺失、两界面同源）、`GridPrerequisiteViewModelTests`（6 例，含重复 start/stop 不叠订阅）。`AXIsProcessTrusted` 与 `CGPreflightScreenCaptureAccess` 仍只出现在 `GridPrerequisiteService` 的默认闭包与既有服务中。
 
 ---
+
+### T25 接管系统四指手势与五指总览（2026-10-23）
+
+- 结论：
+  1. 系统四指手势（切桌面、调度中心、App Exposé）均以未公开事件类型 30（field 110 == 23）下发，`.cgSessionEventTap` 头部插入并吞掉该类型后，四个方向的系统响应全部停止；撤销监听后立即恢复。
+  2. 新增 `Services/SystemGestureInterceptor.swift`，九宫格开启且「接管系统四指手势」（`gridInterceptSystemGestures`，默认开）时启用；被系统因超时停用会自动重新启用。
+  3. 前置条件移除「关闭系统四指横扫 / 竖扫」两项（7 项 → 5 项）。
+  4. 总览手势由三指改为五指：五指下滑打开总览，五指上滑在接管生效时打开 `Mission Control.app`（替代被吞掉的系统四指上滑，便于新建桌面）。三指留给系统拖动窗口；四指识别器限定恰好四指。
+  5. 新增「自然滑动方向」（`gridNaturalSwipeDirection`，默认开），与系统原生四指方向一致。
+- 依据：探针两轮实测（拦截类型 30 后系统无响应）；`open -a "Mission Control"` 返回 0；`make test-unit` 412 项 0 失败；用户真机确认三/四/五指行为正常。
+- 影响面：R3 的产品代价由「需手动关闭系统手势」变为「默认接管、可关闭」；事件类型 30 为私有行为，新系统版本可能失效，失效时两套手势同时响应，关闭接管开关即可回退。
 
 ## 阶段 6 · 收尾与验收
 
@@ -473,7 +485,7 @@ HANDOFF §4 的 6 个人工核对步骤分布：① 实施与原型对照 → T0
 | --- | --- | --- | --- |
 | R1 | `MultitouchSupport` 为私有框架，结构布局可能随系统变化 | 手势入口可能失效 | 运行时 `dlsym` 判空并降级到菜单栏 / 快捷键；macOS 12、13、14、15、26、27 各跑一次探针 |
 | R2 | 输入监控是否必需尚未确定（评估 §11.3 T0） | 可能多一项权限 | T12 先做 T0 实测，再决定是否在引导中加该项 |
-| R3 | 关闭系统四指手势会失去原有全屏切换 / 调度中心手势 | 产品代价 | 引导中明确说明；不静默改偏好；冲突时降级为显式提示 |
+| R3 | 关闭系统四指手势会失去原有全屏切换 / 调度中心手势 | 产品代价 | 引导中明确说明；不静默改偏好；冲突时降级为显式提示 ；**被 T25 取代**：默认由 App 拦截系统四指手势，五指上滑代替调度中心 |
 | R4 | 桌面枚举依赖系统私有信息，UUID 可能为空 | 桌面绑定不稳定 | 按编号 + 会话内标识绑定，不假设 UUID 永久稳定；系统重启与自动重排需回归 |
 | R5 | 现有 `PreferencesView` 为标签页结构，D21 要求单页 | 设置入口整合方式未定 | 已定（2026-10-23）：在现有 `PreferencesView` 新增“九宫格”标签页，标签页内单页纵向分区，不改造整个设置窗口 |
 | R6 | 现有 `OnboardingView` 已承担首启权限引导 | 可能与九宫格引导重复 | 已定（2026-10-23）：九宫格前置条件引导为独立窗口（`DesktopGridOnboardingView`），不并入首启流程 |

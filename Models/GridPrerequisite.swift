@@ -6,7 +6,7 @@
 //
 //  The settings section and the onboarding window render the same snapshot
 //  (docs/desktop-grid-tasks.md T17, T18, T20). Nothing here writes a system
-//  preference: the four-finger swipe switches and the ⌃1–9 shortcuts are
+//  preference: the ⌃1–9 shortcuts are
 //  *read* so the UI can tell the user what to change by hand (T14, R3).
 //
 
@@ -42,8 +42,6 @@ enum GridPrerequisite: String, CaseIterable, Equatable {
     case screenRecording
     case twoDesktops
     case desktopHotKeys
-    case systemFourFingerHorizontalSwipe
-    case systemFourFingerVerticalSwipe
     case gestureAvailability
 
     func title(language: AppLanguage) -> String {
@@ -60,8 +58,6 @@ enum GridPrerequisite: String, CaseIterable, Equatable {
         case .screenRecording: return "Screen Recording"
         case .twoDesktops: return "At least two desktops"
         case .desktopHotKeys: return "⌃1–9 desktop shortcuts"
-        case .systemFourFingerHorizontalSwipe: return "System four-finger horizontal swipe"
-        case .systemFourFingerVerticalSwipe: return "System four-finger vertical swipe"
         case .gestureAvailability: return "Trackpad gesture capture"
         }
     }
@@ -76,20 +72,8 @@ enum GridPrerequisite: String, CaseIterable, Equatable {
             return "macOS creates desktops; add them in Mission Control."
         case .desktopHotKeys:
             return "Switchly uses the system “Switch to Desktop” shortcuts for empty desktops. Enable them in System Settings › Keyboard."
-        case .systemFourFingerHorizontalSwipe:
-            return "Turn off “Swipe between full-screen apps” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the horizontal swipes."
-        case .systemFourFingerVerticalSwipe:
-            return "Turn off “Mission Control” and “App Exposé” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the vertical swipes."
         case .gestureAvailability:
             return "Switchly could not read raw trackpad contacts on this Mac. ⌃1–9 and the menu still work."
-        }
-    }
-
-    /// The system switches must be *off*; every other item must be *on*.
-    var isInverted: Bool {
-        switch self {
-        case .systemFourFingerHorizontalSwipe, .systemFourFingerVerticalSwipe: return true
-        default: return false
         }
     }
 
@@ -115,10 +99,6 @@ enum GridPrerequisite: String, CaseIterable, Equatable {
             return URL(string: Self.usesModernSettingsPanes
                 ? "x-apple.systempreferences:com.apple.Keyboard-Settings.extension"
                 : "x-apple.systempreferences:com.apple.preference.keyboard")
-        case .systemFourFingerHorizontalSwipe, .systemFourFingerVerticalSwipe:
-            return URL(string: Self.usesModernSettingsPanes
-                ? "x-apple.systempreferences:com.apple.Trackpad-Settings.extension"
-                : "x-apple.systempreferences:com.apple.preference.trackpad")
         case .gestureAvailability:
             return nil
         }
@@ -182,7 +162,7 @@ struct GridPrerequisiteSnapshot: Equatable {
         GridPrerequisite.allCases.filter { state(of: $0) != .met }
     }
 
-    /// "5 of 7 met" — the settings summary and the onboarding header share it.
+    /// "4 of 5 met" — the settings summary and the onboarding header share it.
     func summary(language: AppLanguage) -> String {
         String(format: language.localizedString("%d of %d met"), metCount, totalCount)
     }

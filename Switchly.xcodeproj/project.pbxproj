@@ -109,6 +109,7 @@
 		D1EBD23D19E96CAA0506A43C /* UsageStatisticsEfficiency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */; };
 		D44F5C97B2215F013DEA975A /* ThumbnailDiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */; };
 		D8EDE8ADB48BFEFC352C6A60 /* PreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960008BE3922EDC5D06FB1FC /* PreviewPanel.swift */; };
+		D94541C5038657087D57CAFC /* SystemGestureInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F20C0A8D857BAD965EEE6CD /* SystemGestureInterceptor.swift */; };
 		DA8CD524C8C7D059C6F4DAA7 /* TrackpadGestureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */; };
 		DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34689921552D03B9A0939D3 /* ThumbnailService.swift */; };
 		E1EFA0E2F5A80AEEAC6E7AD0 /* WorkspacesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */; };
@@ -159,6 +160,7 @@
 		250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteServiceTests.swift; sourceTree = "<group>"; };
 		279A55BC2D30608EC032F116 /* AppSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsTests.swift; sourceTree = "<group>"; };
 		2EC2911083058E80E93458EC /* SwitchlyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwitchlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F20C0A8D857BAD965EEE6CD /* SystemGestureInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemGestureInterceptor.swift; sourceTree = "<group>"; };
 		3337C977CD2AF7514192B081 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanelLayoutTests.swift; sourceTree = "<group>"; };
 		3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPreferencesSection.swift; sourceTree = "<group>"; };
@@ -450,6 +452,7 @@
 				C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */,
 				0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */,
 				E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */,
+				2F20C0A8D857BAD965EEE6CD /* SystemGestureInterceptor.swift */,
 				9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */,
 				D34689921552D03B9A0939D3 /* ThumbnailService.swift */,
 				B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */,
@@ -725,6 +728,7 @@
 				D0B57E255B5AD9C3E6F9911A /* StatusBarViewModel.swift in Sources */,
 				91E69686F8833EB4F628E203 /* SwipeDirectionClassifier.swift in Sources */,
 				65996F0D789B2455B3F83A18 /* SwitchlyApp.swift in Sources */,
+				D94541C5038657087D57CAFC /* SystemGestureInterceptor.swift in Sources */,
 				139D992482CCDB0FB46C454E /* ThemeApplier.swift in Sources */,
 				D44F5C97B2215F013DEA975A /* ThumbnailDiskCache.swift in Sources */,
 				DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */,

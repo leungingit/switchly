@@ -58,7 +58,7 @@ final class GridPrerequisiteServiceTests: XCTestCase {
     func testEverythingMetWhenSignalsAreClean() {
         let snapshot = makeService(hotKeys: hotKeys(withBindings: true)).snapshot(spaceCount: 3)
 
-        XCTAssertEqual(snapshot.metCount, 7)
+        XCTAssertEqual(snapshot.metCount, 5)
         XCTAssertFalse(snapshot.gesturesBlocked)
         XCTAssertTrue(snapshot.unmetItems.isEmpty)
     }
@@ -84,22 +84,6 @@ final class GridPrerequisiteServiceTests: XCTestCase {
         XCTAssertEqual(service.snapshot(spaceCount: 9).state(of: .twoDesktops), .met)
     }
 
-    /// The two system switches are inverted: "met" means the system gesture is
-    /// off, because Switchly cannot intercept it (evaluation §11.2).
-    func testEnabledSystemGesturesAreReportedAsUnmet() {
-        let gestures = StubGestureService()
-        gestures.systemState = SystemFourFingerGestureState(
-            horizontalSwipeEnabled: true,
-            verticalSwipeEnabled: false
-        )
-        let snapshot = makeService(gestures: gestures, hotKeys: hotKeys(withBindings: true))
-            .snapshot(spaceCount: 3)
-
-        XCTAssertEqual(snapshot.state(of: .systemFourFingerHorizontalSwipe), .unmet)
-        XCTAssertEqual(snapshot.state(of: .systemFourFingerVerticalSwipe), .met)
-        XCTAssertTrue(snapshot.gesturesBlocked)
-    }
-
     func testMissingGestureFrameworkIsReportedAsUnmet() {
         let gestures = StubGestureService()
         gestures.isAvailable = false
@@ -117,7 +101,7 @@ final class GridPrerequisiteServiceTests: XCTestCase {
 
         XCTAssertEqual(snapshot.state(of: .desktopHotKeys), .unmet)
         XCTAssertFalse(snapshot.gesturesBlocked)
-        XCTAssertEqual(snapshot.metCount, 6)
+        XCTAssertEqual(snapshot.metCount, 4)
     }
 
     func testTheSameServiceProducesTheSameSnapshotForBothSurfaces() {
@@ -126,6 +110,6 @@ final class GridPrerequisiteServiceTests: XCTestCase {
         let second = service.snapshot(spaceCount: 4)
 
         XCTAssertEqual(first, second, "settings and onboarding must not disagree")
-        XCTAssertEqual(first.summary(language: .english), "5 of 7 met")
+        XCTAssertEqual(first.summary(language: .english), "3 of 5 met")
     }
 }

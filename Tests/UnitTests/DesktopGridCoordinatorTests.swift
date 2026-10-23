@@ -37,6 +37,12 @@ private final class RecordingGestureService: TrackpadGestureServiceProtocol {
     func systemGestureState() -> SystemFourFingerGestureState { systemState }
 }
 
+private final class RecordingInterceptor: SystemGestureIntercepting {
+    var isIntercepting = false
+    func start() -> Bool { isIntercepting = true; return true }
+    func stop() { isIntercepting = false }
+}
+
 private final class CountingSpaceService: DesktopSpaceServiceProtocol {
     var snapshot: DesktopSpaceSnapshot
     private(set) var loadCount = 0
@@ -87,12 +93,14 @@ final class DesktopGridCoordinatorTests: XCTestCase {
     private func makeCoordinator(
         gestures: RecordingGestureService,
         navigation: RecordingNavigation,
-        spaces: CountingSpaceService
+        spaces: CountingSpaceService,
+        interceptor: RecordingInterceptor = RecordingInterceptor()
     ) -> DesktopGridCoordinator {
         DesktopGridCoordinator(
             gestureService: gestures,
             navigation: navigation,
-            spaceService: spaces
+            spaceService: spaces,
+            interceptor: interceptor
         )
     }
 
@@ -235,5 +243,68 @@ final class DesktopGridCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(states, [false])
         XCTAssertFalse(coordinator.isEnabled)
+    }
+
+    func testThreeFingerSwipeDownRequestsTheOverviewOnly() {
+        let gestures = RecordingGestureService()
+        let navigation = RecordingNavigation()
+        let spaces = CountingSpaceService(snapshot: snapshot(count: 9, current: 1))
+        let coordinator = makeCoordinator(gestures: gestures, navigation: navigation, spaces: spaces)
+        var requests = 0
+        coordinator.onOverviewRequested = { requests += 1 }
+        coordinator.apply(settings: settings(enabled: true))
+
+        func send(_ direction: SwipeDirection) {
+            gestures.onSwipe?(TrackpadSwipeEvent(
+                gesture: SwipeGesture(direction: direction, angleDegrees: 270, displacementMM: 18, fingers: 5, duration: 0.1),
+                suppressed: false
+            ))
+        }
+        send(.down)
+        send(.up)
+        XCTAssertEqual(requests, 1, "only a downward five-finger swipe opens the overview")
+        XCTAssertEqual(spaces.loadCount, 0)
+        XCTAssertTrue(navigation.targets.isEmpty)
+
+        var off = settings(enabled: true)
+        off.gridOverviewGestureEnabled = false
+        coordinator.apply(settings: off)
+        send(.down)
+        XCTAssertEqual(requests, 1, "the switch turns the gesture off")
+    }
+
+    func testInterceptionFollowsTheGridAndItsSwitch() {
+        let gestures = RecordingGestureService()
+        let interceptor = RecordingInterceptor()
+        let coordinator = makeCoordinator(
+            gestures: gestures,
+            navigation: RecordingNavigation(),
+            spaces: CountingSpaceService(snapshot: snapshot(count: 9, current: 1)),
+            interceptor: interceptor
+        )
+        var missionControl = 0
+        coordinator.onMissionControlRequested = { missionControl += 1 }
+
+        coordinator.apply(settings: settings(enabled: true))
+        XCTAssertTrue(interceptor.isIntercepting)
+        gestures.onSwipe?(TrackpadSwipeEvent(
+            gesture: SwipeGesture(direction: .up, angleDegrees: 90, displacementMM: 18, fingers: 5, duration: 0.1),
+            suppressed: false
+        ))
+        XCTAssertEqual(missionControl, 1, "five-finger up stands in for the swallowed system gesture")
+
+        var off = settings(enabled: true)
+        off.gridInterceptSystemGestures = false
+        coordinator.apply(settings: off)
+        XCTAssertFalse(interceptor.isIntercepting)
+        gestures.onSwipe?(TrackpadSwipeEvent(
+            gesture: SwipeGesture(direction: .up, angleDegrees: 90, displacementMM: 18, fingers: 5, duration: 0.1),
+            suppressed: false
+        ))
+        XCTAssertEqual(missionControl, 1, "without interception the system keeps its own gesture")
+
+        coordinator.apply(settings: settings(enabled: true))
+        coordinator.apply(settings: settings(enabled: false))
+        XCTAssertFalse(interceptor.isIntercepting, "disabling the grid restores the system gestures")
     }
 }

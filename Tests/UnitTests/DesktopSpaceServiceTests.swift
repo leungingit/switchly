@@ -255,6 +255,67 @@ final class DesktopSpaceServiceTests: XCTestCase {
         )
     }
 
+    /// Measured layout: the menu-bar display has one desktop, the other four.
+    private let mainSingleSecondaryFour = [
+        RawDisplaySpaces(identifier: "main", isMain: true, currentSpaceID: 1, spaces: [RawSpace(id: 1, type: 0)]),
+        RawDisplaySpaces(
+            identifier: "secondary",
+            isMain: false,
+            currentSpaceID: 853,
+            spaces: [850, 6, 853, 869].map { RawSpace(id: $0, type: 0) }
+        ),
+    ]
+
+    func testSelectionFollowsTheDisplayInUse() {
+        let onSecondary = DesktopSpaceService.ordinarySpaces(in: mainSingleSecondaryFour, activeDisplay: "secondary")
+        XCTAssertEqual(onSecondary?.spaces.map(\.id), [850, 6, 853, 869])
+        XCTAssertEqual(onSecondary?.currentSpaceID, 853)
+
+        let onMain = DesktopSpaceService.ordinarySpaces(in: mainSingleSecondaryFour, activeDisplay: "main")
+        XCTAssertEqual(onMain?.spaces.map(\.id), [1], "a single-desktop display in use must not borrow another's desktops")
+
+        let unknown = DesktopSpaceService.ordinarySpaces(in: mainSingleSecondaryFour, activeDisplay: "Main")
+        XCTAssertEqual(unknown?.spaces.map(\.id), [1], "an unmatched display falls back to the main one")
+    }
+
+    func testSnapshotReportsTheLargestDisplayDesktopCount() {
+        let snapshot = DesktopSpaceService.buildSnapshot(
+            displays: mainSingleSecondaryFour,
+            windows: [],
+            memberships: [:],
+            activeDisplay: "main",
+            capturedAt: Date()
+        )
+        XCTAssertEqual(snapshot.desktops.count, 1)
+        XCTAssertEqual(snapshot.maxDisplayDesktopCount, 4)
+    }
+
+    func testCurrentDesktopNumberUsesTheDisplayInUse() async {
+        let bridge = FakeSpaceBridge()
+        bridge.displays = mainSingleSecondaryFour
+        let service = DesktopSpaceService(bridge: bridge, windowProvider: { [] }, activeDisplayProvider: { "secondary" })
+
+        let number = await service.currentDesktopNumber()
+        XCTAssertEqual(number, 3)
+    }
+
+    func testLayoutSkipsWindowEnumeration() async {
+        let bridge = FakeSpaceBridge()
+        bridge.displays = mainSingleSecondaryFour
+        var windowReads = 0
+        let service = DesktopSpaceService(
+            bridge: bridge,
+            windowProvider: { windowReads += 1; return [] },
+            activeDisplayProvider: { "secondary" }
+        )
+
+        let layout = await service.loadLayout()
+
+        XCTAssertEqual(windowReads, 0, "the swipe path must not enumerate windows")
+        XCTAssertEqual(layout.desktops.map(\.id), [850, 6, 853, 869])
+        XCTAssertEqual(layout.currentDesktop?.number, 3)
+    }
+
     func testCurrentDesktopNumberIsOneBasedInTheOrdinaryOrder() async {
         let bridge = FakeSpaceBridge()
         bridge.displays = [

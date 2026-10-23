@@ -81,15 +81,11 @@ struct DesktopGridOnboardingView: View {
 
     private var language: AppLanguage { model.language }
 
+    /// Same glass source as Preferences / Statistics, refreshed on change.
+    @State private var settings = SettingsService.shared.loadSettings()
+
     var body: some View {
         ZStack {
-            WindowGlassSurface(
-                opacity: SettingsService.shared.loadSettings().preferencesGlassOpacity,
-                material: SettingsService.shared.loadSettings().crystalMaterial,
-                style: .preferences
-            )
-            .ignoresSafeArea()
-
             VStack(alignment: .leading, spacing: 0) {
                 header
                 Divider().opacity(0.4)
@@ -106,7 +102,16 @@ struct DesktopGridOnboardingView: View {
                 footer
             }
         }
-        .frame(width: 640, height: 600)
+        // Fill the window below the title-bar safe area; a fixed 600 pt
+        // height plus that inset pushed the footer out of the window.
+        .frame(width: 640)
+        .frame(maxHeight: .infinity)
+        .modifier(WindowCrystalModifier(density: settings.windowGlassDensity,
+                                        material: settings.crystalMaterial, style: .preferences))
+        .preferredColorScheme(settings.theme.colorScheme)
+        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
+            settings = SettingsService.shared.loadSettings()
+        }
         .onAppear { model.refreshSoon() }
         .onDisappear { model.stopObserving() }
     }

@@ -88,6 +88,16 @@ struct AppSettings: Codable, Equatable {
     /// Desktop grid (3×3 Spaces overview) master switch. Off by default so an
     /// upgrade never starts opening the overview on its own.
     var gridEnabled: Bool
+    /// Five-finger swipe down opens the overview. On by default; only
+    /// listened to while `gridEnabled` is on.
+    var gridOverviewGestureEnabled: Bool
+    /// Natural: the desktop moves with the fingers, as the system's own
+    /// four-finger swipe does (fingers left → desktop on the right).
+    var gridNaturalSwipeDirection: Bool
+    /// Swallow the system's four-finger swipes while the grid is on, so the
+    /// system settings can stay as they are. Five-finger up then opens
+    /// Mission Control in place of the system's four-finger up.
+    var gridInterceptSystemGestures: Bool
     /// Overview layout: perspective grid (C) or centred panel (B).
     var gridStyle: GridStyle
     /// Overview wallpaper in the light appearance; dark always uses graphite.
@@ -135,6 +145,9 @@ struct AppSettings: Codable, Equatable {
         crystalMaterial: CrystalMaterial = .legacyDefault,
         previewPanelStyle: PreviewPanelStyle = .classicGrid,
         gridEnabled: Bool = false,
+        gridOverviewGestureEnabled: Bool = true,
+        gridNaturalSwipeDirection: Bool = true,
+        gridInterceptSystemGestures: Bool = true,
         gridStyle: GridStyle = .default,
         gridBackground: GridBackground = .default
     ) {
@@ -179,6 +192,9 @@ struct AppSettings: Codable, Equatable {
         self.crystalMaterial = crystalMaterial
         self.previewPanelStyle = previewPanelStyle
         self.gridEnabled = gridEnabled
+        self.gridOverviewGestureEnabled = gridOverviewGestureEnabled
+        self.gridNaturalSwipeDirection = gridNaturalSwipeDirection
+        self.gridInterceptSystemGestures = gridInterceptSystemGestures
         self.gridStyle = gridStyle
         self.gridBackground = gridBackground
     }
@@ -225,6 +241,9 @@ struct AppSettings: Codable, Equatable {
         case crystalMaterial
         case previewPanelStyle
         case gridEnabled
+        case gridOverviewGestureEnabled
+        case gridNaturalSwipeDirection
+        case gridInterceptSystemGestures
         case gridStyle
         case gridBackground
     }
@@ -327,6 +346,9 @@ struct AppSettings: Codable, Equatable {
         // Absent in settings written before the desktop grid existed: it stays
         // off, on style C and the cream wall, so an upgrade changes nothing.
         self.gridEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridEnabled) ?? false
+        self.gridOverviewGestureEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridOverviewGestureEnabled) ?? true
+        self.gridNaturalSwipeDirection = try container.decodeIfPresent(Bool.self, forKey: .gridNaturalSwipeDirection) ?? true
+        self.gridInterceptSystemGestures = try container.decodeIfPresent(Bool.self, forKey: .gridInterceptSystemGestures) ?? true
         self.gridStyle = try container.decodeIfPresent(GridStyle.self, forKey: .gridStyle) ?? .default
         self.gridBackground = try container.decodeIfPresent(GridBackground.self, forKey: .gridBackground) ?? .default
     }

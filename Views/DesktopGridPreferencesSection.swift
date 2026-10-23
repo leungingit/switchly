@@ -40,6 +40,27 @@ struct DesktopGridPreferencesSection: View {
                         isOn: gridEnabledBinding,
                         help: t("Switch among nine desktops with a four-finger swipe or ⌃1–9.")
                     )
+                    toggleRow(
+                        t("Five-finger swipe down opens the overview"),
+                        systemImage: "hand.draw",
+                        isOn: overviewGestureBinding,
+                        help: t("Three fingers stay free for dragging windows.")
+                    )
+                    .disabled(!settings.gridEnabled)
+                    toggleRow(
+                        t("Take over the system's four-finger swipes"),
+                        systemImage: "hand.raised",
+                        isOn: interceptBinding,
+                        help: t("The system's four-finger swipes stop while the grid is on. Swipe up with five fingers to open Mission Control.")
+                    )
+                    .disabled(!settings.gridEnabled)
+                    toggleRow(
+                        t("Natural swipe direction"),
+                        systemImage: "arrow.left.arrow.right",
+                        isOn: naturalSwipeBinding,
+                        help: t("On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want.")
+                    )
+                    .disabled(!settings.gridEnabled)
                 }
 
                 prerequisitesGroup
@@ -281,6 +302,33 @@ struct DesktopGridPreferencesSection: View {
             get: { settings.gridEnabled },
             set: { newValue in
                 save { $0.gridEnabled = newValue }
+            }
+        )
+    }
+
+    private var interceptBinding: Binding<Bool> {
+        Binding(
+            get: { settings.gridInterceptSystemGestures },
+            set: { newValue in
+                save { $0.gridInterceptSystemGestures = newValue }
+            }
+        )
+    }
+
+    private var naturalSwipeBinding: Binding<Bool> {
+        Binding(
+            get: { settings.gridNaturalSwipeDirection },
+            set: { newValue in
+                save { $0.gridNaturalSwipeDirection = newValue }
+            }
+        )
+    }
+
+    private var overviewGestureBinding: Binding<Bool> {
+        Binding(
+            get: { settings.gridOverviewGestureEnabled },
+            set: { newValue in
+                save { $0.gridOverviewGestureEnabled = newValue }
             }
         )
     }

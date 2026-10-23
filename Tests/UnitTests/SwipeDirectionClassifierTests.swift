@@ -82,6 +82,31 @@ final class SwipeDirectionClassifierTests: XCTestCase {
         XCTAssertFalse(classifier.isInSession, "the lift after a short move ends the session")
     }
 
+    func testOverviewRecogniserFiresOnExactlyFiveFingers() {
+        var classifier = SwipeDirectionClassifier(configuration: .overview)
+        _ = classifier.process(fingers: 5, centroidMM: start, timestamp: 1)
+        let event = classifier.process(fingers: 5, centroidMM: move(0, -20), timestamp: 1.05)
+        guard case .fired(let gesture)? = event else { return XCTFail("expected a fired swipe") }
+        XCTAssertEqual(gesture.direction, .down)
+        XCTAssertEqual(gesture.fingers, 5)
+    }
+
+    func testOverviewRecogniserLeavesThreeAndFourFingersAlone() {
+        var classifier = SwipeDirectionClassifier(configuration: .overview)
+        XCTAssertNil(classifier.process(fingers: 3, centroidMM: start, timestamp: 1),
+                     "three fingers stay free for window dragging")
+        XCTAssertNil(classifier.process(fingers: 4, centroidMM: start, timestamp: 1.01))
+        XCTAssertFalse(classifier.isInSession)
+    }
+
+    func testFourFingerRecogniserIgnoresAFiveFingerSwipe() {
+        var classifier = SwipeDirectionClassifier()
+        _ = classifier.process(fingers: 4, centroidMM: start, timestamp: 1)
+        XCTAssertNil(classifier.process(fingers: 5, centroidMM: move(0, -5), timestamp: 1.02))
+        XCTAssertNil(classifier.process(fingers: 5, centroidMM: move(0, -30), timestamp: 1.08),
+                     "a session that saw five fingers must not switch desktops")
+    }
+
     func testThreeFingersNeverStartASession() {
         var classifier = SwipeDirectionClassifier()
         XCTAssertNil(classifier.process(fingers: 3, centroidMM: start, timestamp: 1))
@@ -192,5 +217,17 @@ final class SwipeDirectionClassifierTests: XCTestCase {
         XCTAssertEqual(SwipeDefaults.thresholdMM, 12)
         XCTAssertEqual(SwipeDefaults.dropoutMS, 80)
         XCTAssertEqual(SwipeDefaults.cooldownMS, 350)
+    }
+
+    func testReversedSwipePointsTheOtherWay() {
+        XCTAssertEqual(SwipeDirection.left.opposite, .right)
+        XCTAssertEqual(SwipeDirection.upLeft.opposite, .downRight)
+        let swipe = TrackpadSwipeEvent(
+            gesture: SwipeGesture(direction: .left, angleDegrees: 180, displacementMM: 15, fingers: 4, duration: 0.1),
+            suppressed: false
+        )
+        XCTAssertEqual(swipe.reversed.gesture.direction, .right)
+        XCTAssertEqual(swipe.reversed.gesture.angleDegrees, 0)
+        XCTAssertEqual(swipe.reversed.reversed, swipe)
     }
 }

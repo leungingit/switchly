@@ -28,15 +28,15 @@ final class GridPrerequisiteTests: XCTestCase {
     func testEveryPrerequisiteIsAccountedForInTheSummary() {
         let met = allMet()
         XCTAssertEqual(met.metCount, GridPrerequisite.allCases.count)
-        XCTAssertEqual(met.totalCount, 7)
+        XCTAssertEqual(met.totalCount, 5)
         XCTAssertFalse(met.gesturesBlocked)
         XCTAssertEqual(
             met.summary(language: .english),
-            "7 of 7 met"
+            "5 of 5 met"
         )
         XCTAssertEqual(
             met.summary(language: .simplifiedChinese),
-            "已满足 7 / 7 项"
+            "已满足 5 / 5 项"
         )
     }
 
@@ -44,13 +44,13 @@ final class GridPrerequisiteTests: XCTestCase {
         var states: [GridPrerequisite: GridPrerequisiteState] = [:]
         for item in GridPrerequisite.allCases { states[item] = .met }
         states[.accessibility] = .unmet
-        states[.systemFourFingerVerticalSwipe] = .unmet
+        states[.twoDesktops] = .unmet
         let result = snapshot(states)
 
-        XCTAssertEqual(result.metCount, 5)
-        XCTAssertEqual(result.unmetItems, [.accessibility, .systemFourFingerVerticalSwipe])
+        XCTAssertEqual(result.metCount, 3)
+        XCTAssertEqual(result.unmetItems, [.accessibility, .twoDesktops])
         XCTAssertTrue(result.gesturesBlocked)
-        XCTAssertEqual(result.summary(language: .english), "5 of 7 met")
+        XCTAssertEqual(result.summary(language: .english), "3 of 5 met")
     }
 
     /// An item the app cannot read is not evidence of a missing condition:
@@ -62,7 +62,7 @@ final class GridPrerequisiteTests: XCTestCase {
         let result = snapshot(states)
 
         XCTAssertFalse(result.gesturesBlocked)
-        XCTAssertEqual(result.metCount, 6)
+        XCTAssertEqual(result.metCount, 4)
         XCTAssertTrue(result.unmetItems.contains(.gestureAvailability))
     }
 
@@ -74,11 +74,6 @@ final class GridPrerequisiteTests: XCTestCase {
     }
 
     // MARK: - Semantics
-
-    func testOnlyTheSystemGestureSwitchesAreInverted() {
-        let inverted = GridPrerequisite.allCases.filter(\.isInverted)
-        XCTAssertEqual(inverted, [.systemFourFingerHorizontalSwipe, .systemFourFingerVerticalSwipe])
-    }
 
     func testScreenRecordingAndShortcutsOnlyDegradeTheExperience() {
         XCTAssertFalse(GridPrerequisite.screenRecording.blocksGestures)

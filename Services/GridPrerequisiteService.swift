@@ -36,8 +36,6 @@ final class GridPrerequisiteService: GridPrerequisiteServiceProtocol {
     }
 
     func snapshot(spaceCount: Int) -> GridPrerequisiteSnapshot {
-        let systemGestures = gestureService.systemGestureState()
-
         let states: [GridPrerequisite: GridPrerequisiteState] = [
             .accessibility: accessibilityStatus() ? .met : .unmet,
             .screenRecording: screenRecordingStatus() ? .met : .unmet,
@@ -46,10 +44,6 @@ final class GridPrerequisiteService: GridPrerequisiteServiceProtocol {
             // N" hotkey, so at least one enabled binding is required for the
             // keyboard path to exist at all.
             .desktopHotKeys: hotKeyReader.readBindings().isAvailable ? .met : .unmet,
-            // These two are inverted: "met" means the system gesture is off,
-            // because the app cannot intercept it (evaluation §11.2).
-            .systemFourFingerHorizontalSwipe: systemGestures.horizontalSwipeEnabled ? .unmet : .met,
-            .systemFourFingerVerticalSwipe: systemGestures.verticalSwipeEnabled ? .unmet : .met,
             .gestureAvailability: gestureService.isAvailable ? .met : .unmet,
         ]
 

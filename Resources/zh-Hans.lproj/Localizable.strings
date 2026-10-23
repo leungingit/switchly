@@ -364,14 +364,10 @@
 
 /* Desktop grid prerequisites (stage 4) */
 "At least two desktops" = "至少两个桌面";
-"System four-finger horizontal swipe" = "系统四指横扫";
-"System four-finger vertical swipe" = "系统四指竖扫";
 "Trackpad gesture capture" = "触控板手势读取";
 "Needed to read window names and to switch desktops reliably." = "用于读取窗口名称并可靠地切换桌面。";
 "Only affects desktop previews. Gestures work without it." = "只影响桌面预览，手势无需该权限。";
 "macOS creates desktops; add them in Mission Control." = "桌面由 macOS 创建，请在调度中心添加。";
-"Turn off “Swipe between full-screen apps” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the horizontal swipes." = "请在系统设置 › 触控板 › 更多手势中关闭“在全屏 App 之间轻扫”，否则横滑会被系统占用。";
-"Turn off “Mission Control” and “App Exposé” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the vertical swipes." = "请在系统设置 › 触控板 › 更多手势中关闭“调度中心”和“App Exposé”，否则竖滑会被系统占用。";
 "Switchly could not read raw trackpad contacts on this Mac. ⌃1–9 and the menu still work." = "Switchly 无法在此 Mac 上读取触控板原始触点，⌃1–9 与菜单仍可使用。";
 
 /* Desktop grid settings, onboarding and accessibility (stage 5–6) */
@@ -408,3 +404,9 @@
 "Closing this window does not mark anything as done." = "关闭此窗口不会把任何一项标记为完成。";
 "Press Return to switch to this desktop." = "按 Return 切换到该桌面。";
 "Tab moves between cells" = "Tab 在格子之间移动";
+"Five-finger swipe down opens the overview" = "五指下滑打开总览";
+"Three fingers stay free for dragging windows." = "三指保留给拖动窗口。";
+"Take over the system's four-finger swipes" = "接管系统四指手势";
+"The system's four-finger swipes stop while the grid is on. Swipe up with five fingers to open Mission Control." = "九宫格开启时，系统的四指滑动不再响应；五指上滑可打开调度中心。";
+"Natural swipe direction" = "自然滑动方向";
+"On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want." = "开启：桌面跟随手指移动，与系统四指滑动一致；关闭：朝目标桌面的方向滑动。";

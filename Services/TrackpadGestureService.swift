@@ -21,6 +21,21 @@ struct TrackpadSwipeEvent: Equatable {
     let gesture: SwipeGesture
     /// True when the gesture fired inside the cooldown window.
     let suppressed: Bool
+
+    /// The same swipe pointing the other way, for natural direction.
+    var reversed: TrackpadSwipeEvent {
+        let g = gesture
+        return TrackpadSwipeEvent(
+            gesture: SwipeGesture(
+                direction: g.direction.opposite,
+                angleDegrees: (g.angleDegrees + 180).truncatingRemainder(dividingBy: 360),
+                displacementMM: g.displacementMM,
+                fingers: g.fingers,
+                duration: g.duration
+            ),
+            suppressed: suppressed
+        )
+    }
 }
 
 protocol TrackpadGestureServiceProtocol: AnyObject {
@@ -101,6 +116,8 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
     /// surface size live behind this lock. Only a snapshot leaves the lock.
     private let lock = NSLock()
     private var classifier: SwipeDirectionClassifier
+    /// Five-finger recogniser for the overview gesture, fed the same frames.
+    private var overviewClassifier = SwipeDirectionClassifier(configuration: .overview)
     private var surfaceSizes: [UInt: CGSize] = [:]
 
     private(set) var isRunning = false
@@ -143,6 +160,7 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
             uniqueKeysWithValues: devices.map { ($0.key, $0.surfaceSizeMM) }
         )
         classifier.reset()
+        overviewClassifier.reset()
         lock.unlock()
 
         isRunning = true
@@ -160,6 +178,7 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
 
         lock.lock()
         classifier.reset()
+        overviewClassifier.reset()
         surfaceSizes = [:]
         lock.unlock()
 
@@ -187,6 +206,10 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
             surfaceSizeMM: size
         )
         let event = classifier.process(
+            fingers: frame.fingers,
+            centroidMM: centroid,
+            timestamp: frame.timestamp
+        ) ?? overviewClassifier.process(
             fingers: frame.fingers,
             centroidMM: centroid,
             timestamp: frame.timestamp

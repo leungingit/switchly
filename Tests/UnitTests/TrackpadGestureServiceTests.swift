@@ -112,30 +112,6 @@ final class TrackpadGestureServiceTests: XCTestCase {
 
     // MARK: - Prerequisites
 
-    func testPrerequisiteSnapshotMarksSystemSwipesAsUnmetWhenTheyAreOn() {
-        let gestures = FakeGestureService()
-        gestures.isAvailable = true
-        gestures.systemState = SystemFourFingerGestureState(
-            horizontalSwipeEnabled: true,
-            verticalSwipeEnabled: true
-        )
-        let service = GridPrerequisiteService(
-            accessibilityStatus: { true },
-            screenRecordingStatus: { true },
-            gestureService: gestures,
-            hotKeyReader: FakeDesktopHotKeyReader()
-        )
-
-        let snapshot = service.snapshot(spaceCount: 9)
-
-        XCTAssertEqual(snapshot.state(of: .accessibility), .met)
-        XCTAssertEqual(snapshot.state(of: .twoDesktops), .met)
-        XCTAssertEqual(snapshot.state(of: .systemFourFingerHorizontalSwipe), .unmet)
-        XCTAssertEqual(snapshot.state(of: .systemFourFingerVerticalSwipe), .unmet)
-        XCTAssertTrue(snapshot.gesturesBlocked)
-        XCTAssertEqual(snapshot.metCount, 5)
-    }
-
     func testPrerequisiteSnapshotMarksEverythingMetInTheIdealConfiguration() {
         let gestures = FakeGestureService()
         gestures.systemState = SystemFourFingerGestureState(
@@ -179,12 +155,9 @@ final class TrackpadGestureServiceTests: XCTestCase {
         XCTAssertTrue(snapshot.gesturesBlocked)
     }
 
-    // MARK: - Inverted items
+    // MARK: - Blocking items
 
-    func testSystemSwipeItemsAreInvertedAndTheRestAreNot() {
-        XCTAssertTrue(GridPrerequisite.systemFourFingerHorizontalSwipe.isInverted)
-        XCTAssertTrue(GridPrerequisite.systemFourFingerVerticalSwipe.isInverted)
-        XCTAssertFalse(GridPrerequisite.accessibility.isInverted)
+    func testOnlyPermissionsAndCaptureBlockGestures() {
         XCTAssertFalse(GridPrerequisite.screenRecording.blocksGestures)
         XCTAssertTrue(GridPrerequisite.accessibility.blocksGestures)
     }

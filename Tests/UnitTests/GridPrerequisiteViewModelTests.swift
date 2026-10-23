@@ -45,6 +45,16 @@ private final class StubSpaceService: DesktopSpaceServiceProtocol {
     }
 }
 
+/// Suspends like the real read, so a second refresh can arrive mid-flight.
+private final class SlowSpaceService: DesktopSpaceServiceProtocol {
+    let base = StubSpaceService(count: 4)
+
+    func loadSnapshot() async -> DesktopSpaceSnapshot {
+        try? await Task.sleep(nanoseconds: 20_000_000)
+        return base.snapshot
+    }
+}
+
 @MainActor
 final class GridPrerequisiteViewModelTests: XCTestCase {
 
@@ -71,7 +81,7 @@ final class GridPrerequisiteViewModelTests: XCTestCase {
 
         XCTAssertEqual(service.calls, [3])
         XCTAssertEqual(model.spaceCount, 3)
-        XCTAssertEqual(model.snapshot.metCount, 7)
+        XCTAssertEqual(model.snapshot.metCount, 5)
         XCTAssertFalse(model.isRefreshing)
     }
 
@@ -88,7 +98,7 @@ final class GridPrerequisiteViewModelTests: XCTestCase {
 
         await model.refresh()
 
-        XCTAssertEqual(model.snapshot.summary(language: .english), "6 of 7 met")
+        XCTAssertEqual(model.snapshot.summary(language: .english), "4 of 5 met")
     }
 
     func testRepeatedStartAndStopNeverStacksObservers() {
@@ -139,7 +149,7 @@ final class GridPrerequisiteViewModelTests: XCTestCase {
         model.applySettings(settings)
 
         await model.refresh()
-        XCTAssertEqual(model.snapshot.summary(language: model.language), "已满足 7 / 7 项")
+        XCTAssertEqual(model.snapshot.summary(language: model.language), "已满足 5 / 5 项")
     }
 
     func testRefreshSoonRunsTheServiceAsynchronously() async {
@@ -152,5 +162,23 @@ final class GridPrerequisiteViewModelTests: XCTestCase {
             await Task.yield()
         }
         XCTAssertEqual(service.calls, [4])
+    }
+
+    /// Opening the window fires show, onAppear and app activation together.
+    /// The overlapping refresh must not cancel the first and leave nothing.
+    func testOverlappingRefreshSoonStillPublishesASnapshot() async {
+        let service = FixedPrerequisiteService(snapshot: allMetSnapshot())
+        let model = makeModel(service: service, spaces: SlowSpaceService())
+
+        model.refreshSoon()
+        for _ in 0..<50 where !model.isRefreshing {
+            await Task.yield()
+        }
+        model.refreshSoon()
+        for _ in 0..<100 where service.calls.isEmpty {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(service.calls, [4])
+        XCTAssertFalse(model.isRefreshing)
     }
 }

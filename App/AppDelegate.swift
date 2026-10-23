@@ -70,6 +70,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // cache), and stopped on terminate.
         ThumbnailService.shared.startAutoRefresh()
         gridEnabledAtLaunch = settings.gridEnabled
+        DesktopGridCoordinator.shared.onOverviewRequested = {
+            if !GridOverviewPanel.shared.isVisible { GridOverviewPanel.shared.show() }
+        }
+        DesktopGridCoordinator.shared.onMissionControlRequested = {
+            NSWorkspace.shared.openApplication(
+                at: URL(fileURLWithPath: "/System/Applications/Mission Control.app"),
+                configuration: NSWorkspace.OpenConfiguration()
+            ) { _, error in
+                if let error { AppLogger.warning("Mission Control open failed. error=\(error.localizedDescription)") }
+            }
+        }
         DesktopGridCoordinator.shared.onListenerStateChanged = { [weak self] running in
             self?.desktopGridListenerChanged(running)
         }
