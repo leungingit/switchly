@@ -311,3 +311,102 @@
 /* Native glass */
 "Remove glass overlays" = "清除玻璃叠层";
 "Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "保留所选材质、主题与卡片填充，清除附加的密度、染色与反光，恢复系统原生效果。";
+"Perspective Grid" = "透视网格";
+
+"Centered Panel" = "居中面板";
+
+/* Desktop grid overview (stage 3) */
+"Desktop Grid" = "桌面网格";
+"Desktop %d" = "桌面 %d";
+"Desktop %d → %d" = "桌面 %d → %d";
+"Current" = "当前";
+"Target" = "目标";
+"Desktop not created" = "桌面未创建";
+"Open Mission Control and click + to add a desktop." = "打开调度中心，点右上角 + 添加桌面。";
+"This desktop is quiet" = "这里很清静";
+"⌃1–9 to jump directly" = "⌃1–9 直接跳转";
+"←→↑↓ to move · Return to switch · Esc to close" = "←→↑↓ 移动 · Return 切换 · Esc 取消";
+"Screen recording is off, so previews are simplified. Icons and titles are unaffected." = "未授予屏幕录制权限，缩略图以简化块显示；图标与标题不受影响。";
+"Accessibility is off. Window names and switching may be incomplete." = "未授予辅助功能权限，窗口名称与切换可能不完整。";
+"Desktop information is unavailable. Try again after the system finishes switching." = "桌面信息暂时不可用，请在系统切换完成后重试。";
+"Desktop information is unavailable" = "桌面信息不可用";
+"Switchly could not read the system desktops. Nothing was changed." = "Switchly 无法读取系统桌面，未做任何更改。";
+"Open System Settings" = "打开系统设置";
+"Open Mission Control" = "打开调度中心";
+"Only %d desktops exist. macOS creates desktops; use Mission Control to add one." = "仅创建了 %d 个桌面。macOS 负责创建桌面，请在调度中心添加。";
+"Loading desktops…" = "正在加载桌面…";
+"Desktop preview (illustration)" = "桌面预览（示意）";
+"Unknown application" = "未知应用";
+
+/* Desktop grid gestures and HUD (stage 4) */
+"Switching to Desktop %d…" = "正在切换到桌面 %d…";
+"At the edge" = "已在边缘";
+"Cooling down" = "冷却中";
+"Desktop %d not created" = "桌面 %d 未创建";
+"Accessibility permission required" = "缺少辅助功能权限";
+"Could not switch desktop" = "未能切换桌面";
+"Dismisses when the system switch finishes" = "系统切换完成后自动消失";
+"No more desktops (does not wrap)" = "无更多桌面（不循环）";
+"Rapid swipes are ignored for a moment" = "快速连续滑动会被忽略片刻";
+"Create it in Mission Control first" = "请先在调度中心创建该桌面";
+"Grant Accessibility in System Settings to switch desktops" = "请在系统设置中授予辅助功能权限后再切换桌面";
+"Use ⌃1–9 or the menu to switch" = "可用 ⌃1–9 或菜单栏切换";
+"Four-finger swipe %@" = "四指向%@滑动";
+"or press ⌃%d" = "或按 ⌃%d";
+"Right" = "右";
+"Up-right" = "右上";
+"Up" = "上";
+"Up-left" = "左上";
+"Left" = "左";
+"Down-left" = "左下";
+"Down" = "下";
+"Down-right" = "右下";
+
+/* Desktop grid prerequisites (stage 4) */
+"At least two desktops" = "至少两个桌面";
+"Trackpad gesture capture" = "触控板手势读取";
+"Needed to read window names and to switch desktops reliably." = "用于读取窗口名称并可靠地切换桌面。";
+"Only affects desktop previews. Gestures work without it." = "只影响桌面预览，手势无需该权限。";
+"macOS creates desktops; add them in Mission Control." = "桌面由 macOS 创建，请在调度中心添加。";
+"Switchly could not read raw trackpad contacts on this Mac. ⌃1–9 and the menu still work." = "Switchly 无法在此 Mac 上读取触控板原始触点，⌃1–9 与菜单仍可使用。";
+
+/* Desktop grid settings, onboarding and accessibility (stage 5–6) */
+"Status & switch" = "状态与开关";
+"Enable grid desktops" = "启用九宫格桌面";
+"Switch among nine desktops with a four-finger swipe or ⌃1–9." = "通过四指滑动或 ⌃1–9 在九个桌面之间切换。";
+"A 3×3 overview of your macOS desktops, with gesture and keyboard switching." = "以 3×3 总览查看 macOS 桌面，并用手势或键盘切换。";
+"Prerequisites" = "前置条件";
+"Re-check" = "重新检测";
+"Open guide" = "打开引导";
+"Overview style" = "总览样式";
+"Default · fills the screen, centre cell enlarged" = "默认 · 铺满屏幕，中心格放大";
+"Optional · one centred panel" = "可选 · 单个居中面板";
+"Background" = "背景";
+"Overview backdrop" = "总览底色";
+"Backdrop tint of the overview in light appearance. Dark appearance always uses graphite." = "浅色外观下总览的背景底色；深色外观固定使用石墨色。";
+"Warm white" = "米白";
+"Pure white" = "纯白";
+"Setup guide" = "设置引导";
+"Prerequisite setup guide" = "前置条件引导";
+"Opens a separate window with each step and a link to the right System Settings pane." = "在独立窗口中逐步说明，并提供对应系统设置面板的入口。";
+"Done" = "已满足";
+"Not done" = "未满足";
+"Can’t check" = "无法自动检测";
+"⌃1–9 desktop shortcuts" = "⌃1–9 桌面快捷键";
+"Switchly uses the system “Switch to Desktop” shortcuts for empty desktops. Enable them in System Settings › Keyboard." = "空桌面通过系统“切换到桌面”快捷键切换，请在系统设置 › 键盘中启用。";
+"macOS doesn’t let Switchly read this setting. Please confirm it in System Settings." = "系统不允许 Switchly 读取这一项，请在系统设置中自行确认。";
+"%d of %d met" = "已满足 %d / %d 项";
+"Grid setup" = "九宫格设置";
+"Set up the desktop grid" = "开始使用前，先完成这些设置";
+"The grid relies on macOS permissions and settings. Switchly re-checks when you come back to it." = "九宫格依赖系统权限与设置；回到 Switchly 时会自动重新检测。";
+"Prerequisites met" = "前置条件完成度";
+"All set. You can start using the desktop grid." = "全部完成，可以开始使用九宫格。";
+"Closing this window does not mark anything as done." = "关闭此窗口不会把任何一项标记为完成。";
+"Press Return to switch to this desktop." = "按 Return 切换到该桌面。";
+"Tab moves between cells" = "Tab 在格子之间移动";
+"Five-finger swipe down opens the overview" = "五指下滑打开总览";
+"Three fingers stay free for dragging windows." = "三指保留给拖动窗口。";
+"Take over the system's four-finger swipes" = "接管系统四指手势";
+"The system's four-finger swipes stop while the grid is on. Swipe up with five fingers to open Mission Control." = "九宫格开启时，系统的四指滑动不再响应；五指上滑可打开调度中心。";
+"Natural swipe direction" = "自然滑动方向";
+"On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want." = "开启：桌面跟随手指移动，与系统四指滑动一致；关闭：朝目标桌面的方向滑动。";

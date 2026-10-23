@@ -46,6 +46,10 @@ enum MotionTokens {
     /// granted, selection moved). Slightly longer than a content swap.
     static let stateDuration: TimeInterval = 0.25
 
+    /// One loop of the desktop grid trace that flows from the current cell
+    /// toward the target. Ambient, so it is long; static under Reduce Motion.
+    static let gridTraceDuration: TimeInterval = 2.4
+
     /// Per-card entrance delay. Capped by maxStagger so large grids never
     /// take long to settle.
     static let staggerStep: TimeInterval = 0.02

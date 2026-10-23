@@ -27,6 +27,7 @@
 | 外观模式应用 | [ThemeApplier.swift](../Utilities/ThemeApplier.swift) |
 | 材质参数、布局、旧设置迁移 | [AppSettings.swift](../Models/AppSettings.swift) |
 | 持久化和运行态通知 | [SettingsService.swift](../Services/SettingsService.swift) |
+| 九宫格面板定位（多显示器 / visibleFrame） | [GridPanelLayout.swift](../Utilities/GridPanelLayout.swift) |
 
 ## 尺度与排印
 
@@ -39,6 +40,10 @@
 | `Radius.card / thumbnail / control` | 16 / 10 / 12 |
 | `Radius.pill / chip` | 999 / 6 |
 | `hairline` | 0.5；选中镜面边由共享材质实现处理 |
+| `Grid.*` | 九宫格几何：倾角 9°、列 1:2.1:1、行 0.85:1.6:0.85、总览缩放 0.88、目标抬升 24 / 缩放 1.02、hover 3、样式 B 格高 176 / 最大宽 900 / 最大高 720 |
+| `Typography.grid*` | 九宫格字号 22 / 14 / 12 / 44（编号等宽数字） |
+| `Grid.HUD.*` | 手势 HUD 几何：方向环 64、环点半径 25（静止 6 / 高亮 9）、迷你 3×3 格 18 与间距 3、药丸最大宽 520 |
+| `Grid.Wall / appPalette / Status / Window` | 九宫格内容色，见 `Utilities/DesktopGridPalette.swift`：米白/纯白/石墨壁纸、8 色字母块、ok/warn/bad 状态色、缩略图内窗口色（随视图外观解析） |
 
 使用系统字体，不引入第三方字体。设计层级以面板标题约 22pt、卡片标题约 14pt、元数据约 12pt 为参考，具体控件优先采用适合其用途的系统文本样式。数字对齐用 `.monospacedDigit()`，需要时为快捷键选用等宽字体。缩略图和图表保持锐利，不叠加装饰性模糊。
 

@@ -85,6 +85,24 @@ struct AppSettings: Codable, Equatable {
     /// Spatial layout style for the preview panel (Stage / Pill Matrix / Classic Grid / Frameless Tiles).
     var previewPanelStyle: PreviewPanelStyle
 
+    /// Desktop grid (3×3 Spaces overview) master switch. Off by default so an
+    /// upgrade never starts opening the overview on its own.
+    var gridEnabled: Bool
+    /// Five-finger swipe down opens the overview. On by default; only
+    /// listened to while `gridEnabled` is on.
+    var gridOverviewGestureEnabled: Bool
+    /// Natural: the desktop moves with the fingers, as the system's own
+    /// four-finger swipe does (fingers left → desktop on the right).
+    var gridNaturalSwipeDirection: Bool
+    /// Swallow the system's four-finger swipes while the grid is on, so the
+    /// system settings can stay as they are. Five-finger up then opens
+    /// Mission Control in place of the system's four-finger up.
+    var gridInterceptSystemGestures: Bool
+    /// Overview layout: perspective grid (C) or centred panel (B).
+    var gridStyle: GridStyle
+    /// Overview wallpaper in the light appearance; dark always uses graphite.
+    var gridBackground: GridBackground
+
     init(
         previewStrategy: PreviewStrategy,
         shortcutPrefix: ShortcutPrefix,
@@ -125,7 +143,13 @@ struct AppSettings: Codable, Equatable {
         efficiencyBaselinePreset: EfficiencyBaselinePreset = .standard,
         efficiencyBaselineCustom: EfficiencyBaselineValues? = nil,
         crystalMaterial: CrystalMaterial = .legacyDefault,
-        previewPanelStyle: PreviewPanelStyle = .classicGrid
+        previewPanelStyle: PreviewPanelStyle = .classicGrid,
+        gridEnabled: Bool = false,
+        gridOverviewGestureEnabled: Bool = true,
+        gridNaturalSwipeDirection: Bool = true,
+        gridInterceptSystemGestures: Bool = true,
+        gridStyle: GridStyle = .default,
+        gridBackground: GridBackground = .default
     ) {
         self.previewStrategy = previewStrategy
         self.shortcutPrefix = shortcutPrefix
@@ -167,6 +191,12 @@ struct AppSettings: Codable, Equatable {
         self.efficiencyBaselineCustom = efficiencyBaselineCustom
         self.crystalMaterial = crystalMaterial
         self.previewPanelStyle = previewPanelStyle
+        self.gridEnabled = gridEnabled
+        self.gridOverviewGestureEnabled = gridOverviewGestureEnabled
+        self.gridNaturalSwipeDirection = gridNaturalSwipeDirection
+        self.gridInterceptSystemGestures = gridInterceptSystemGestures
+        self.gridStyle = gridStyle
+        self.gridBackground = gridBackground
     }
 
     enum CodingKeys: String, CodingKey {
@@ -210,6 +240,12 @@ struct AppSettings: Codable, Equatable {
         case efficiencyBaselineCustom
         case crystalMaterial
         case previewPanelStyle
+        case gridEnabled
+        case gridOverviewGestureEnabled
+        case gridNaturalSwipeDirection
+        case gridInterceptSystemGestures
+        case gridStyle
+        case gridBackground
     }
 
     /// Keys that are read but never written.
@@ -307,6 +343,14 @@ struct AppSettings: Codable, Equatable {
             self.crystalMaterial = CrystalMaterial.legacy(expandedFrom: legacyPreset)
         }
         self.previewPanelStyle = try container.decodeIfPresent(PreviewPanelStyle.self, forKey: .previewPanelStyle) ?? .classicGrid
+        // Absent in settings written before the desktop grid existed: it stays
+        // off, on style C and the cream wall, so an upgrade changes nothing.
+        self.gridEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridEnabled) ?? false
+        self.gridOverviewGestureEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridOverviewGestureEnabled) ?? true
+        self.gridNaturalSwipeDirection = try container.decodeIfPresent(Bool.self, forKey: .gridNaturalSwipeDirection) ?? true
+        self.gridInterceptSystemGestures = try container.decodeIfPresent(Bool.self, forKey: .gridInterceptSystemGestures) ?? true
+        self.gridStyle = try container.decodeIfPresent(GridStyle.self, forKey: .gridStyle) ?? .default
+        self.gridBackground = try container.decodeIfPresent(GridBackground.self, forKey: .gridBackground) ?? .default
     }
     
     var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }

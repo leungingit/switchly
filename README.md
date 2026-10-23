@@ -48,6 +48,21 @@ Group apps into named workspaces—for example, **Build**, **Write**, and **Plan
 
 Workspaces organize app groups and access to their windows; they do not create macOS Spaces or save and restore desktop layouts.
 
+## Desktop Grid: all your desktops, one glance away
+
+![Desktop Grid: a 3×3 overview of macOS desktops and the gestures that drive it](docs/images/desktop-grid-en.svg)
+
+*Illustration with sample content, not a live screenshot.*
+
+Spaces are great until you have six of them and can't remember which one holds the spreadsheet. Desktop Grid lays your macOS desktops out as a 3×3 map — each cell shows its number, its windows and the apps behind them — and lets you move around it with your fingers.
+
+- **Swipe to move, in any of eight directions.** Four fingers take you to the neighbouring desktop — left, right, up, down, even diagonally. A small HUD shows where you're headed, and the direction follows your fingers just like macOS (or flip it, if you prefer).
+- **Five fingers down for the whole picture.** Open the overview, see every desktop at once, then click, use the arrow keys, or press `Return` to go. `⌃1`–`⌃9` jump straight to any desktop from anywhere.
+- **Your trackpad keeps working the way you expect.** While the grid is on, Switchly answers four-finger swipes instead of macOS, so you never get two moves at once — and you don't have to dig through System Settings to switch anything off. Five fingers up opens Mission Control for adding desktops, and three-finger dragging is left untouched.
+- **Set up in a minute.** The **Desktop Grid** tab in Preferences checks what macOS needs — Accessibility, Screen Recording, at least two desktops, and the system “Switch to Desktop” shortcuts — and every missing item opens the right System Settings pane. A setup guide walks through the same list.
+
+Turn it on in **Preferences → Desktop Grid** (it is off by default). The grid works with the desktops macOS already has; it does not create, delete or reorder them. Taking over the four-finger swipes relies on undocumented macOS behaviour — if a future macOS release changes it, switch off **Take over the system's four-finger swipes** and the system gestures come straight back.
+
 ## Small details that fit your day
 
 | When you… | Switchly helps you… |

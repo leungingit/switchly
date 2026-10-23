@@ -12,6 +12,7 @@ enum PreferencesTab: Hashable {
     case general
     case appearance
     case apps
+    case grid
     case permissions
     case shortcuts
 }
@@ -21,6 +22,9 @@ struct PreferencesView: View {
     /// Shares the statistics panel's picker component (and its persistence
     /// path) so the two surfaces can never disagree.
     @StateObject private var statisticsModel: StatisticsViewModel
+    /// One prerequisite snapshot for the grid tab (T20). The onboarding
+    /// window builds its own over the same service.
+    @StateObject private var gridPrerequisites = GridPrerequisiteViewModel()
     @State private var appSearchText = ""
     @State private var selectedTab: PreferencesTab
 
@@ -39,6 +43,7 @@ struct PreferencesView: View {
                     Text(t("General")).tag(PreferencesTab.general)
                     Text(t("Appearance")).tag(PreferencesTab.appearance)
                     Text(t("Apps")).tag(PreferencesTab.apps)
+                    Text(t("Desktop Grid")).tag(PreferencesTab.grid)
                     Text(t("Permissions")).tag(PreferencesTab.permissions)
                     Text(t("Shortcuts")).tag(PreferencesTab.shortcuts)
                 }
@@ -52,6 +57,7 @@ struct PreferencesView: View {
                     case .general: generalSettingsTab
                     case .appearance: appearanceSettingsTab
                     case .apps: appsSettingsTab
+                    case .grid: gridSettingsTab
                     case .permissions: permissionsSettingsTab
                     case .shortcuts: shortcutsSettingsTab
                     }
@@ -65,6 +71,16 @@ struct PreferencesView: View {
         .preferredColorScheme(viewModel.settings.theme.colorScheme)
         .frame(width: 760, height: 560)
         .animation(MotionTokens.animated(.easeInOut(duration: MotionTokens.contentSwapDuration)), value: selectedTab)
+        .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
+            viewModel.settings = SettingsService.shared.loadSettings()
+            gridPrerequisites.applySettings(viewModel.settings)
+        }
+        .onAppear {
+            gridPrerequisites.startObserving()
+        }
+        .onDisappear {
+            gridPrerequisites.stopObserving()
+        }
         .alert(isPresented: .constant(viewModel.errorMessage != nil)) {
             Alert(
                 title: Text(t("Error")),
@@ -395,6 +411,16 @@ struct PreferencesView: View {
             }
             .padding(DesignTokens.Spacing.lg)
         }
+    }
+
+    private var gridSettingsTab: some View {
+        DesktopGridPreferencesSection(
+            settings: viewModel.settings,
+            onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } },
+            prerequisites: gridPrerequisites,
+            openOnboarding: { DesktopGridOnboardingWindow.show() }
+        )
+        .onAppear { gridPrerequisites.refreshSoon() }
     }
 
     private var permissionsSettingsTab: some View {

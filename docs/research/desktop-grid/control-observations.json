@@ -1,0 +1,873 @@
+{
+  "schemaVersion": 1,
+  "experimentDate": "2026-10-20",
+  "reviewDate": "2026-10-21",
+  "scope": "Single arm64 macOS 27.0.1 build 26A434, SIP enabled, disposable fixtures.",
+  "important": "Historical confirmed means current-Space getter matched only, NOT visually verified switching.",
+  "observations": [
+    {
+      "axTrusted": 1,
+      "event": "startup",
+      "os": "Version 27.0.1 (Build 26A434)",
+      "postEventPreflight": true,
+      "screenPreflight": false,
+      "structure": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 7,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ],
+      "targetOriginal": 7,
+      "targetSpaceCount": 4
+    },
+    {
+      "event": "inspect",
+      "ownedWindows": [
+        {
+          "fullScreen": 0,
+          "id": 10884,
+          "members": [
+            7
+          ],
+          "minimized": false
+        },
+        {
+          "fullScreen": 0,
+          "id": 10885,
+          "members": [
+            7
+          ],
+          "minimized": false
+        }
+      ],
+      "structure": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 7,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "after": [
+        7
+      ],
+      "before": [
+        7
+      ],
+      "event": "minimized",
+      "flag": true
+    },
+    {
+      "event": "deminimized",
+      "flag": false,
+      "members": [
+        7
+      ]
+    },
+    {
+      "after": [
+        46
+      ],
+      "before": [
+        7
+      ],
+      "event": "legacyMove",
+      "origin": 7,
+      "reached": true,
+      "target": 46
+    },
+    {
+      "after": [
+        7
+      ],
+      "event": "legacyMoveRestore",
+      "matchesBefore": true
+    },
+    {
+      "actual": 7,
+      "confirmed": false,
+      "event": "gestureOutbound",
+      "observedMS": 3131.487000003457,
+      "target": 46
+    },
+    {
+      "confirmed": true,
+      "event": "gestureReturn",
+      "observedMS": 0,
+      "target": 7
+    },
+    {
+      "after": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 58,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 58,
+              "type": 4,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ],
+      "before": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 7,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ],
+      "event": "fullscreenEntered",
+      "fullScreen": 1,
+      "members": [
+        58
+      ]
+    },
+    {
+      "event": "fullscreenExited",
+      "fullScreen": 0,
+      "members": [
+        7
+      ],
+      "structure": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 7,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "before": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "event": "foreignSingleMove",
+      "firstAfter": [
+        1
+      ],
+      "firstReached": false,
+      "otherUnchanged": true,
+      "secondAfter": [
+        1
+      ],
+      "target": 46
+    },
+    {
+      "event": "foreignSingleRestore",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ]
+    },
+    {
+      "event": "foreignBatchMove",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ],
+      "target": 46
+    },
+    {
+      "event": "foreignBatchRestore",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ]
+    },
+    {
+      "after": 7,
+      "before": 7,
+      "changed": 0,
+      "event": "publicShortcut"
+    },
+    {
+      "actual": 7,
+      "event": "publicShortcutRestore",
+      "expected": 7
+    },
+    {
+      "before": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "event": "foreignSingleMove",
+      "firstAfter": [
+        1
+      ],
+      "firstReached": false,
+      "otherUnchanged": true,
+      "secondAfter": [
+        1
+      ],
+      "target": 5
+    },
+    {
+      "event": "foreignSingleRestore",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ]
+    },
+    {
+      "event": "foreignBatchMove",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ],
+      "target": 5
+    },
+    {
+      "event": "foreignBatchRestore",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ]
+    },
+    {
+      "backend": "bridged",
+      "before": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "event": "foreignSingleMove",
+      "firstAfter": [
+        5
+      ],
+      "firstReached": true,
+      "otherUnchanged": true,
+      "secondAfter": [
+        1
+      ],
+      "target": 5
+    },
+    {
+      "backend": "bridged",
+      "event": "foreignSingleRestore",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ]
+    },
+    {
+      "backend": "bridged",
+      "event": "foreignBatchMove",
+      "first": [
+        5
+      ],
+      "second": [
+        5
+      ],
+      "target": 5
+    },
+    {
+      "backend": "bridged",
+      "event": "foreignBatchRestore",
+      "first": [
+        1
+      ],
+      "second": [
+        1
+      ]
+    },
+    {
+      "actual": 46,
+      "backend": "bridged",
+      "confirmed": true,
+      "event": "gestureOutbound",
+      "observedMS": 464.3269999921322,
+      "target": 46
+    },
+    {
+      "backend": "bridged",
+      "confirmed": true,
+      "event": "gestureReturn",
+      "observedMS": 231.94099999964237,
+      "target": 7
+    },
+    {
+      "actual": 46,
+      "backend": "bridged",
+      "confirmed": true,
+      "event": "gestureOutbound",
+      "observedMS": 626.6560000032187,
+      "target": 46,
+      "visibility": [
+        {
+          "id": 11061,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        },
+        {
+          "id": 11062,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        }
+      ]
+    },
+    {
+      "backend": "bridged",
+      "confirmed": true,
+      "event": "gestureReturn",
+      "observedMS": 319.7589999884367,
+      "target": 7,
+      "visibility": [
+        {
+          "id": 11061,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        },
+        {
+          "id": 11062,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        }
+      ]
+    },
+    {
+      "confirmed": true,
+      "event": "holdSpace",
+      "observedMS": 157.09099999070168,
+      "structure": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 54,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ],
+      "target": 54,
+      "visibility": [
+        {
+          "id": 11061,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        },
+        {
+          "id": 11062,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        }
+      ]
+    },
+    {
+      "confirmed": true,
+      "event": "restoreSpace",
+      "observedMS": 154.76200000941753,
+      "target": 7,
+      "visibility": [
+        {
+          "id": 11061,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        },
+        {
+          "id": 11062,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        }
+      ]
+    },
+    {
+      "confirmed": true,
+      "event": "restoreSpace",
+      "observedMS": 0,
+      "target": 7,
+      "visibility": [
+        {
+          "id": 11106,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        },
+        {
+          "id": 11107,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        }
+      ]
+    },
+    {
+      "event": "inspect",
+      "ownedWindows": [
+        {
+          "fullScreen": 0,
+          "id": 11106,
+          "members": [
+            7
+          ],
+          "minimized": false
+        },
+        {
+          "fullScreen": 0,
+          "id": 11107,
+          "members": [
+            7
+          ],
+          "minimized": false
+        }
+      ],
+      "structure": [
+        {
+          "current": 1,
+          "spaces": [
+            {
+              "id": 1,
+              "type": 0,
+              "uuidNonEmpty": false
+            },
+            {
+              "id": 5,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        },
+        {
+          "current": 7,
+          "spaces": [
+            {
+              "id": 46,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 7,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 6,
+              "type": 0,
+              "uuidNonEmpty": true
+            },
+            {
+              "id": 54,
+              "type": 0,
+              "uuidNonEmpty": true
+            }
+          ]
+        }
+      ],
+      "visibility": [
+        {
+          "id": 11106,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        },
+        {
+          "id": 11107,
+          "members": [
+            7
+          ],
+          "occlusionVisible": 1,
+          "onScreen": true
+        }
+      ]
+    }
+  ],
+  "dockRestart": {
+    "newProcessObserved": true,
+    "before": [
+      {
+        "currentID": 1,
+        "currentInList": true,
+        "spaces": [
+          {
+            "id": 1,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 5,
+            "type": 0,
+            "uuidPresent": true
+          }
+        ]
+      },
+      {
+        "currentID": 7,
+        "currentInList": true,
+        "spaces": [
+          {
+            "id": 46,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 7,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 6,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 54,
+            "type": 0,
+            "uuidPresent": true
+          }
+        ]
+      }
+    ],
+    "after": [
+      {
+        "currentID": 1,
+        "currentInList": true,
+        "spaces": [
+          {
+            "id": 1,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 5,
+            "type": 0,
+            "uuidPresent": true
+          }
+        ]
+      },
+      {
+        "currentID": 7,
+        "currentInList": true,
+        "spaces": [
+          {
+            "id": 46,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 7,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 6,
+            "type": 0,
+            "uuidPresent": true
+          },
+          {
+            "id": 54,
+            "type": 0,
+            "uuidPresent": true
+          }
+        ]
+      }
+    ]
+  },
+  "resumedState": [
+    {
+      "currentID": 1,
+      "currentInList": true,
+      "spaces": [
+        {
+          "id": 1,
+          "type": 0,
+          "uuidPresent": true
+        },
+        {
+          "id": 5,
+          "type": 0,
+          "uuidPresent": true
+        }
+      ]
+    },
+    {
+      "currentID": 7,
+      "currentInList": true,
+      "spaces": [
+        {
+          "id": 46,
+          "type": 0,
+          "uuidPresent": true
+        },
+        {
+          "id": 7,
+          "type": 0,
+          "uuidPresent": true
+        },
+        {
+          "id": 6,
+          "type": 0,
+          "uuidPresent": true
+        },
+        {
+          "id": 54,
+          "type": 0,
+          "uuidPresent": true
+        }
+      ]
+    }
+  ],
+  "noTestProcessesAtResume": true
+}

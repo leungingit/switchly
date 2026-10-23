@@ -18,6 +18,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statisticsWindow: NSWindow?
     private var statisticsKeyMonitor: Any?
     private var cancellables = Set<AnyCancellable>()
+    /// Last observed value of `AppSettings.gridEnabled`, so the ⌃1–9 hotkeys
+    /// are only re-registered when the master switch actually flips.
+    private var gridEnabledAtLaunch = false
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppLogger.configure()
@@ -31,6 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         AppLogger.info("Application will terminate")
+        DesktopGridCoordinator.shared.stop()
         DockHoverMonitor.shared.stop()
         PreviewTriggerMonitor.shared.stop()
         WindowMonitorService.shared.stopMonitoring()
@@ -65,6 +69,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // content. Cheap when no panel is open (the tick no-ops on an empty
         // cache), and stopped on terminate.
         ThumbnailService.shared.startAutoRefresh()
+        gridEnabledAtLaunch = settings.gridEnabled
+        DesktopGridCoordinator.shared.onOverviewRequested = {
+            if !GridOverviewPanel.shared.isVisible { GridOverviewPanel.shared.show() }
+        }
+        DesktopGridCoordinator.shared.onMissionControlRequested = {
+            NSWorkspace.shared.openApplication(
+                at: URL(fileURLWithPath: "/System/Applications/Mission Control.app"),
+                configuration: NSWorkspace.OpenConfiguration()
+            ) { _, error in
+                if let error { AppLogger.warning("Mission Control open failed. error=\(error.localizedDescription)") }
+            }
+        }
+        DesktopGridCoordinator.shared.onListenerStateChanged = { [weak self] running in
+            self?.desktopGridListenerChanged(running)
+        }
+        DesktopGridCoordinator.shared.apply(settings: settings)
         
         if #available(macOS 13.0, *) {
             do {
@@ -204,12 +224,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        NotificationCenter.default.publisher(for: .desktopGridShortcutTriggered)
+            .sink { notification in
+                guard let number = notification.object as? Int else {
+                    AppLogger.warning("Received desktopGridShortcutTriggered notification without a number")
+                    return
+                }
+                self.switchToDesktop(number)
+            }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .settingsDidChange)
             .sink { _ in
                 WindowMonitorService.shared.restartMonitoringIfFrequencyChanged()
                 DockHoverMonitor.shared.updateSettings()
                 PreviewTriggerMonitor.shared.updateSettings()
                 let latest = SettingsService.shared.loadSettings()
+                DesktopGridCoordinator.shared.apply(settings: latest)
+                if latest.gridEnabled != self.gridEnabledAtLaunch {
+                    self.gridEnabledAtLaunch = latest.gridEnabled
+                    // ⌃1–9 only exist while the grid is on; re-registering is
+                    // also how they disappear when it is turned off.
+                    ShortcutService.shared.setupGlobalShortcuts()
+                }
                 UsageStatisticsService.shared.isEnabled = latest.usageStatisticsEnabled
                 if !latest.usageStatisticsEnabled {
                     // Switching off stops recording; whatever was already
@@ -220,6 +257,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
 
         setupStatisticsKeyHandling()
+    }
+
+    /// ⌃1–9 desktop jump: the shortcut only names a number, so the snapshot is
+    /// read here and the coordinator performs the switch.
+    private func switchToDesktop(_ number: Int) {
+        Task { @MainActor in
+            let result = await DesktopGridCoordinator.shared.switchToDesktop(number: number)
+            AppLogger.info("Desktop grid shortcut handled. number=\(number), result=\(result)")
+        }
+    }
+
+    /// Follows the listener: when the master switch turns the grid off, an
+    /// open overview and a visible HUD go away with it (T17, R10). The panels
+    /// also observe `.settingsDidChange` themselves; this closes the gap where
+    /// the listener start fails and only the coordinator knows.
+    private func desktopGridListenerChanged(_ running: Bool) {
+        guard !running else { return }
+        if GridOverviewPanel.shared.isVisible {
+            GridOverviewPanel.shared.hide()
+        }
+        if GridHUDPanel.shared.isShowing {
+            GridHUDPanel.shared.dismissNow()
+        }
     }
 
     /// ESC closes the statistics window. A local monitor (not SwiftUI

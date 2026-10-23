@@ -58,6 +58,14 @@ class StatusBarController {
         openPreviewItem.target = self
         menu.addItem(openPreviewItem)
 
+        let desktopGridItem = NSMenuItem(title: settings.language.localizedString("Desktop Grid"), action: #selector(openDesktopGrid), keyEquivalent: "")
+        desktopGridItem.target = self
+        // R10: the master switch is the only gate. The entry stays visible so
+        // the feature is discoverable, but it cannot open the overview while
+        // the grid is off (Preferences → Desktop Grid turns it on).
+        desktopGridItem.isEnabled = settings.gridEnabled
+        menu.addItem(desktopGridItem)
+
         menu.addItem(NSMenuItem.separator())
         let preferencesItem = NSMenuItem(title: settings.language.localizedString("Preferences..."), action: #selector(openPreferences), keyEquivalent: "")
         preferencesItem.target = self
@@ -165,6 +173,15 @@ class StatusBarController {
     @objc private func openPreview() {
         AppLogger.info("Status menu selected: Open Preview")
         PreviewPanel.shared.show()
+    }
+
+    @objc private func openDesktopGrid() {
+        AppLogger.info("Status menu selected: Desktop Grid")
+        Task { @MainActor in
+            // The menu item is disabled while the grid is off; the panel's own
+            // `show()` re-checks the switch so a stale menu cannot bypass it.
+            GridOverviewPanel.shared.toggle()
+        }
     }
     
     @objc private func openPreferences() {
