@@ -200,6 +200,32 @@ final class PreviewViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func testDockIncludesOtherSpaceWindowsRegardlessOfGlobalScope() throws {
+        let app = try XCTUnwrap(NSWorkspace.shared.runningApplications.first { $0.activationPolicy == .regular })
+        let bundleURL = try XCTUnwrap(app.bundleURL)
+        let monitor = MockWindowMonitorService()
+        monitor.windows = [
+            WindowInfo(id: 81, ownerPID: app.processIdentifier, ownerName: "App",
+                       windowTitle: "当前桌面窗口", bounds: CGRect(x: 0, y: 0, width: 800, height: 600),
+                       isOnCurrentSpace: true, windowNumber: 81),
+            WindowInfo(id: 82, ownerPID: app.processIdentifier, ownerName: "App",
+                       windowTitle: "其他桌面窗口", bounds: CGRect(x: 0, y: 0, width: 800, height: 600),
+                       isOnCurrentSpace: false, windowNumber: 82, isOnOtherSpace: true)
+        ]
+        for scope in PreviewSpaceScope.allCases {
+            var settings = AppSettings.default
+            settings.previewSpaceScope = scope
+            let model = DockPreviewViewModel(windowMonitorService: monitor,
+                                             windowSwitchService: MockWindowSwitchService(),
+                                             settingsService: MockSettingsService(settings: settings))
+            model.showPanel(forApp: app.localizedName ?? "Switchly", bundleURL: bundleURL)
+            XCTAssertEqual(Set(model.windows.map(\.id)), [81, 82], "Dock 不得套用全局桌面范围")
+            XCTAssertEqual(model.windows.filter(\.isOnOtherSpace).count, 1)
+            model.hidePanel()
+        }
+    }
+
+    @MainActor
     func testDockSwitchFailureIsNotReportedAsSuccess() async {
         let switcher = MockWindowSwitchService()
         switcher.shouldFail = true

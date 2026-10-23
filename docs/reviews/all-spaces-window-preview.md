@@ -65,3 +65,14 @@
 - 执行 `TEST_RUNNER_SWITCHLY_TEST_ALL_SPACES=1 xcodebuild -project Switchly.xcodeproj -scheme Switchly -derivedDataPath DerivedData -only-testing:SwitchlyTests/AllSpacesIntegrationTests test`：实际执行 1 项、0 跳过、0 失败，耗时 0.067 秒。断言包含两个窗口数量、真实 ID 去重、当前桌面与其他 Space 状态。
 - GitHub PR #7 的 Build & Test (macOS) 已通过。
 - 剩余门槛：真实预览卡点击后的桌面／焦点、实时缩略图及普通桌面之间、多显示器场景。桌面自动化对无普通窗口的菜单栏应用取状态反复超时；快捷键触发尚未形成可靠证据。不得将此问题继续归因于签名产物缺少权限。PR 保持草稿。
+
+## D07：Dock 全量窗口与真实面板验收
+
+日期：2026-10-23。本条补充 D06；不将测试宿主与已签名分发产物混为同一运行环境。
+
+- Dock 预览明确展示目标应用在全部桌面的已发现窗口，不消费全局 `previewSpaceScope` 筛选。新增 `testDockIncludesOtherSpaceWindowsRegardlessOfGlobalScope`，分别在全局全部／当前桌面设置下断言两个窗口均保留。
+- 受控应用保留两个窗口，其中窗口 2 进入独立全屏 Space。通过显式实机测试打开正式 `DockPreviewPanel.shared`，实际读取 AX 树并查看原生窗口截图：页头为「2 个窗口」，两个标题与两张真实缩略图可见，窗口 1 卡片正确显示「窗口位于其他桌面」。这不是固定样本渲染；但打开入口是测试调用，尚不等于 Dock 鼠标悬停触发已验收。
+- 新增显式开启的 `testDockPanelShowsAllSpacesAndAcceptsRealClick`：等待人工／桌面自动化点击真实卡片后，以目标可见性和精确焦点检查结果。运行方式为 `TEST_RUNNER_SWITCHLY_TEST_DOCK_CLICK=1 xcodebuild -project Switchly.xcodeproj -scheme Switchly -derivedDataPath DerivedData -only-testing:SwitchlyTests/AllSpacesIntegrationTests/testDockPanelShowsAllSpacesAndAcceptsRealClick test`。需先启动夹具并将窗口分置两个桌面，点击带「其他桌面」标记的卡片；普通测试中明确跳过该交互用例。
+- 点击实验未通过：单实例 Debug 测试宿主在操作时读取目标 AX 窗口返回 `-25211`，界面正确出现无法聚焦提示；Debug／Release 测试宿主的主线程及后台读取对照均没有取得 AX 窗口，即使进程权限检查返回 true。此证据不能证明已签名分发产物缺少权限，也不能证明真实跨桌面定位已成功。未保留无效的调度队列改动或放宽精确身份检查。
+- 本轮 `make build` 通过；最终 `make test-unit` 执行 278 项、7 条件跳过、0 失败；`./verify.sh` 与 `git diff --check` 通过。显式实机点击实验的失败单独记录，不计入普通单测通过结论。
+- 待验收：已签名分发产物的真实 Dock 悬停入口、其他桌面卡片点击与输入焦点，以及两个普通桌面、多显示器。PR 继续保持草稿，未达到完整系统交互交付门槛。
