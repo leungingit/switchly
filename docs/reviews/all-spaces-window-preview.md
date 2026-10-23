@@ -54,3 +54,14 @@
 ## 交付清单签署
 
 依据仓库 `AGENTS.md` 第 8 节及本机 `~/.agents/docs/delivery-checklist.md`：范围隔离、共享实现、设置旧数据兼容、双语文案、构建、单元测试、源码样本读图与差异检查已核对；真实 UI／系统交互验收未通过，原因与后续动作见 D05。临时探针、日志与样张只放系统临时目录，不纳入提交；收尾时清理本次临时目录。PR 在 D05 完成前保持草稿。
+
+## D06：签名配置恢复与跨桌面索引实测
+
+日期：2026-10-23。本条取代 D05 中“当前签名产物权限未授权”的阻断判断；D05 的早期 Debug 记录保留为历史。
+
+- 经用户明确指示，将主工作区忽略的 `Config/Local.xcconfig` 复制至独立工作树，执行 `make dist`。未将本地配置或签名身份写入提交。
+- `codesign --verify --deep --strict build/Switchly.app` 通过；当前分发产物日志确认辅助功能及所需权限已具备。
+- 建立两个受控窗口，一个位于当前桌面，另一个位于独立全屏 Space。
+- 执行 `TEST_RUNNER_SWITCHLY_TEST_ALL_SPACES=1 xcodebuild -project Switchly.xcodeproj -scheme Switchly -derivedDataPath DerivedData -only-testing:SwitchlyTests/AllSpacesIntegrationTests test`：实际执行 1 项、0 跳过、0 失败，耗时 0.067 秒。断言包含两个窗口数量、真实 ID 去重、当前桌面与其他 Space 状态。
+- GitHub PR #7 的 Build & Test (macOS) 已通过。
+- 剩余门槛：真实预览卡点击后的桌面／焦点、实时缩略图及普通桌面之间、多显示器场景。桌面自动化对无普通窗口的菜单栏应用取状态反复超时；快捷键触发尚未形成可靠证据。不得将此问题继续归因于签名产物缺少权限。PR 保持草稿。
