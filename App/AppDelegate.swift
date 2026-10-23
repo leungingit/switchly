@@ -65,7 +65,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         UsageStatisticsService.shared.isEnabled = settings.usageStatisticsEnabled
         Task { await UsageStatisticsService.shared.awaitReady() }
         // 仅刷新可见面板声明的窗口；没有 refresh interest 时不截图。
-        // 打开面板的首次截图由按需路径负责，退出时停止计时器。
+        // 无缓存窗口由监控预热补齐，已有缓存的不再预热；退出时停止计时器。
         ThumbnailService.shared.startAutoRefresh()
         gridEnabledAtLaunch = settings.gridEnabled
         DesktopGridCoordinator.shared.onOverviewRequested = {

@@ -46,6 +46,9 @@ extension WindowMonitorServiceProtocol {
 
 class WindowMonitorService: WindowMonitorServiceProtocol {
     private let settingsService: SettingsServiceProtocol
+    private let thumbnailService: ThumbnailServiceProtocol
+    private var activeBundleIdentifier: String?
+    private let maxPreheatWindowsPerTick = 8
     private var monitorTimer: Timer?
     private var workspaceObservers: [NSObjectProtocol] = []
     /// Interval the running timer was built with, so a settings change can be
@@ -59,8 +62,12 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     
     static let shared = WindowMonitorService()
     
-    init(settingsService: SettingsServiceProtocol = SettingsService.shared) {
+    init(
+        settingsService: SettingsServiceProtocol = SettingsService.shared,
+        thumbnailService: ThumbnailServiceProtocol = ThumbnailService.shared
+    ) {
         self.settingsService = settingsService
+        self.thumbnailService = thumbnailService
         AppLogger.debug("WindowMonitorService initialized")
     }
     
@@ -70,6 +77,7 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         monitorInterval = settings.monitorFrequency.interval
         AppLogger.info("Starting window monitoring. interval=\(settings.monitorFrequency.interval), frequency=\(settings.monitorFrequency.rawValue)")
         setupWorkspaceObservers()
+        activeBundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         processWindowChanges(reason: "startup")
         monitorTimer = Timer.scheduledTimer(withTimeInterval: settings.monitorFrequency.interval, repeats: true) { [weak self] _ in
             self?.processWindowChanges(reason: "timer")
@@ -642,6 +650,7 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
                 return
             }
+            self?.activeBundleIdentifier = app.bundleIdentifier
             self?.processWindowChanges(reason: "activated:\(app.bundleIdentifier ?? "unknown")")
         }
 
@@ -671,11 +680,47 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         AppLogger.debug("Workspace observers registered")
     }
 
-    /// 监控只通知可见面板刷新；隐藏时不枚举窗口，也不预热截图。
-    /// 打开面板时由既有按需路径读取缓存、抓图，可见时由 refresh interest 刷新。
+    /// 通知可见面板刷新，并为尚无缓存截图的窗口预热。
+    /// 已有缓存（内存或磁盘）的窗口不再预热；它们由打开面板时的按需路径
+    /// 和可见面板的 refresh interest 维护。
     func processWindowChanges(reason: String) {
-        AppLogger.verbose("Posting window changes. reason=\(reason)")
+        // Use the on-screen-only fast path here so focus switches stay snappy:
+        // the full (AX-heavy) enumeration is reserved for the preview panel.
+        let windows = getOnScreenWindows()
+        AppLogger.verbose("Processed window changes. reason=\(reason), windows=\(windows.count)")
         refreshWindowList()
+        preheatUncachedThumbnails(windows: windows, reason: reason)
+    }
+
+    private func preheatUncachedThumbnails(windows: [WindowInfo], reason: String) {
+        guard !windows.isEmpty else { return }
+
+        let settings = settingsService.loadSettings()
+        let monitoredBundleIDs = Set(settings.monitoredApps.filter(\.isEnabled).map(\.bundleIdentifier))
+        let activeBundleID = activeBundleIdentifier
+
+        // 先挑出没有缓存的窗口，再做 LaunchServices 查询，避免缓存命中的窗口白付 IPC 成本。
+        let uncached = windows.filter { thumbnailService.getCachedThumbnail(for: $0, tier: .grid) == nil }
+        guard !uncached.isEmpty else { return }
+
+        let bundleIDs: [CGWindowID: String?] = Dictionary(
+            uniqueKeysWithValues: uncached.map { ($0.id, NSRunningApplication(processIdentifier: $0.ownerPID)?.bundleIdentifier) }
+        )
+        func score(_ window: WindowInfo) -> Int {
+            let bundleID = bundleIDs[window.id] ?? nil
+            var score = 0
+            if bundleID == activeBundleID { score += 30 }
+            if bundleID.map({ monitoredBundleIDs.contains($0) }) == true { score += 20 }
+            if !window.windowTitle.isEmpty { score += 5 }
+            return score
+        }
+
+        let prioritized = uncached.sorted { score($0) > score($1) }.prefix(maxPreheatWindowsPerTick)
+        thumbnailService.preheatUncachedThumbnails(
+            for: Array(prioritized),
+            size: settings.thumbnailSize.dimensions,
+            reason: reason
+        )
     }
 }
 

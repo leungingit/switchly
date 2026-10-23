@@ -1,6 +1,6 @@
 # 空闲截图开销排查记录
 
-## D01 — 移除监控驱动的常驻截图预热（2026-10-22）
+## D01 — 移除监控驱动的常驻截图预热（2026-10-22，被 D02 部分取代）
 
 **现象与边界**：用户报告未使用预览（包括 Dock 预览）时 GPU 占用偏高。本次修复消除已定位的空闲截图路径；尚无 GPU 硬件计数器的前后对照，不能据此认定已解释全部 GPU 占用。
 
@@ -20,3 +20,15 @@
 **真实运行补充**：退出旧 `build/Switchly.app` 后，启动 `DerivedData/Build/Products/Debug/Switchly.app`（PID 8296）。执行 `sample 8296 55 10 -file <系统临时目录>/idle.sample`，在每 10 毫秒一次、持续约 55 秒的采样中，`captureAndCache`、`CGWindowListCreateImage`、`SCScreenshotManager` 符号匹配均为 0；采到监控通知路径。采样可能漏掉短调用，只作为空闲路径的辅助证据，不等同于截图计数器或 GPU 硬件计量。原始采样含机器环境信息，仅在系统临时目录分析，交付前清理，不上传。
 
 **影响面与未验项**：没有缓存的首次预览需等按需截图，不再通过常驻截图提前填充。没有新增设置、依赖、权限或网络能力。GPU 百分比下降幅度、首次打开面板的实际延迟和真实 Dock 悬停交互尚未完成对照验收；本记录不以单元测试替代这些系统行为。
+
+## D02 — 监控预热改为“只补无缓存窗口”（2026-10-23，部分取代 D01）
+
+**裁决**：D01 整体移除预热过头了——没有缓存的窗口首次打开预览会等现拍。预热要保留，但窗口已有缓存截图时不再预热。
+
+**实现**：`WindowMonitorService.processWindowChanges` 重新枚举屏幕窗口，先用 `getCachedThumbnail` 过滤掉有内存缓存的窗口，剩余按“前台应用 > 受监控应用 > 有标题”排序，每轮最多 8 个交给 `ThumbnailService.preheatUncachedThumbnails`。后者再过滤近期失败的窗口，对其余窗口先尝试 `restoreCachedThumbnail` 恢复磁盘旧图，恢复失败才调用 `preheatThumbnails` 截图。已缓存窗口的刷新仍只由可见面板的 refresh interest 驱动。
+
+**取舍**：不再按窗口标题/几何变化触发重拍（D01 前的 `WindowSnapshot` 已删除），变化窗口的新鲜度交给可见面板的定时刷新；缓存超过 45 秒不会被监控重拍。`getOnScreenWindows` 每轮监控仍会执行，但不触发截图。
+
+**证据**：`make build` 成功；`make test-unit` 268 项、4 跳过、0 失败。`WindowMonitorIdleTests` 覆盖：仅无缓存窗口被预热、全部有缓存时 51 次监控入口调用零预热、单轮上限 8、仍发出刷新通知。
+
+**未验项**：未做空闲 GPU 占用前后对照，也未实机验证“稳态下确实不再截图”（需看日志中 `Preheating thumbnails. reason=timer` 在缓存齐全后不再出现）。
