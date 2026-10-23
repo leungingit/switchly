@@ -1,0 +1,2709 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-21",
+  "experiment": "R2 closed-loop real Space switch",
+  "scope": "Single arm64 macOS 27.0.1 (26A434), SIP enabled, probe launched from a harness process that has NO Accessibility and NO post-event (synthetic input) permission. Disposable fixtures only; no screenshots (screen recording not granted); no user preference, hotkey or Dock change.",
+  "environment": {
+    "arch": "arm64",
+    "axTrusted": 0,
+    "build": "26A434",
+    "dockWorkspacesAutoSwoosh": "unset (system default applies)",
+    "listenEventPreflight": false,
+    "os": "Version 27.0.1 (Build 26A434)",
+    "postEventPreflight": false,
+    "privateSymbols": {
+      "bridgePerform": 1,
+      "MoveWindowsOperationClass": 1,
+      "SetCurrentSpaceOperationClass": 1,
+      "SLSCopyManagedDisplaySpaces": 1,
+      "SLSCopySpacesForWindows": 1,
+      "SLSManagedDisplayGetCurrentSpace": 1
+    },
+    "screenCapturePreflight": false,
+    "screenshotsTaken": false,
+    "sip": "System Integrity Protection status: enabled.",
+    "spacesSpansDisplays": "unset (system default applies)",
+    "symbolicHotkeys": {
+      "79": {
+        "parameters": null,
+        "state": "enabled"
+      },
+      "80": {
+        "parameters": null,
+        "state": "enabled"
+      },
+      "81": {
+        "parameters": null,
+        "state": "enabled"
+      },
+      "82": {
+        "parameters": null,
+        "state": "enabled"
+      },
+      "118": {
+        "state": "unspecified"
+      },
+      "119": {
+        "state": "unspecified"
+      },
+      "120": {
+        "state": "unspecified"
+      },
+      "121": {
+        "state": "unspecified"
+      },
+      "122": {
+        "state": "unspecified"
+      },
+      "123": {
+        "state": "unspecified"
+      },
+      "124": {
+        "state": "unspecified"
+      },
+      "125": {
+        "state": "unspecified"
+      },
+      "126": {
+        "state": "unspecified"
+      }
+    }
+  },
+  "verdictRules": {
+    "attemptInconclusive": "The action could not be performed (permission/precondition missing) or the baseline could not be established.",
+    "attemptPass": "Signals 1 (workspace notification), 2 (fixture self-report: target isOnActiveSpace and occlusionVisible YES, origin NO for both), 3 (CG on-screen list: origin gone, target present) must all hold at the same time after a 300 ms stability recheck; signal 4 (F19 routed to the target fixture only) must pass whenever it is applicable. A fixture-posted F19 is skipped when the frontmost app is not a fixture, and then inputEvidence=false.",
+    "overallVerdict": "pass = at least one path pass; fail = every tested path failed; inconclusive otherwise.",
+    "pathVerdict": "pass = every executed attempt passed; fail = no attempt passed and none was inconclusive; inconclusive = mixed results, blocked precondition or skipped; not-tested = path not applicable (e.g. hotkey disabled).",
+    "signal5": "SLSManagedDisplayGetCurrentSpace is auxiliary only and never counts toward success.",
+    "timing": {
+      "attemptTimeoutSeconds": 3.5,
+      "maxAttempts": 3,
+      "totalBudgetSeconds": 150
+    }
+  },
+  "pathSummary": [
+    {
+      "path": "A_syntheticControlArrow (HID tap, session tap)",
+      "verdict": "inconclusive",
+      "reason": "CGPreflightPostEventAccess=false for the launching process; the probe refuses to post and no event was sent. Symbolic hotkeys 79-82 are enabled (default, no custom parameters). Not a failure of the method; untestable from this host.",
+      "attempts": 0
+    },
+    {
+      "path": "B1_activateTargetApp_NSRunningApplication",
+      "verdict": "pass",
+      "scope": "Non-empty ghost-free target Space only. 6/6 attempts on clean Spaces (54: 3, 46: 3) pass signals 1-3. Signal 4 not applicable (no post-event access), so inputEvidence=false; proxy only: target fixture reported appIsActive and isKeyWindow=true, origin NO.",
+      "timingMS": {
+        "cgOriginGoneTargetPresentFirst": "300.5-340.3",
+        "skyLightGetterFirst": "300.5-340.3",
+        "fixtureSelfReportFirst": "329.3-462",
+        "workspaceNotificationFirst": "302.9-439.1",
+        "attemptElapsedIncludingStabilityRecheck": "654.8-785"
+      },
+      "caveat": "After bridged current-Space operations touched a Space (runs 5-6), the same activation did not switch (0/6 attempts pass). See ghostStateFinding.",
+      "attempts": 12,
+      "passes": 6
+    },
+    {
+      "path": "B2_activateTargetApp_AXRaise",
+      "verdict": "inconclusive",
+      "reason": "AXIsProcessTrusted=false for the launching process; not run.",
+      "attempts": 0
+    },
+    {
+      "path": "C_bridgedSetCurrentSpace",
+      "verdict": "fail",
+      "reason": "0/5 attempts pass signals 2 and 3. SkyLight getter matched in 0.1-1 ms and fixture processes received workspace notifications (9.7-125 ms), but the origin fixture stayed on the CG on-screen list and origin occlusionVisible stayed true. In the first attempts the target fixture self-reported isOnActiveSpace=YES while the origin still showed as visible/on screen: managed-state flag changed, compositor did not.",
+      "attempts": 5,
+      "passes": 0
+    },
+    {
+      "path": "CB_bridgedSetThenActivateTarget",
+      "verdict": "inconclusive",
+      "reason": "0/3 attempts pass, but all ran after bridged operations had put Spaces into the ghost state where plain activation (B1) also fails, so the result is confounded. A clean-state CB run was not obtained: in runs 3 and 4 the C attempt left the Space contaminated before CB could run.",
+      "attempts": 3,
+      "passes": 0,
+      "rawRunVerdict": "fail"
+    },
+    {
+      "path": "D_systemSwitchToDesktopN",
+      "verdict": "not-tested",
+      "reason": "Hotkeys 118-126 are all unspecified (not enabled) in the existing user configuration; preferences were not modified."
+    }
+  ],
+  "overallVerdict": "pass-conditional",
+  "overallVerdictNote": "Only B1 produced a closed-loop real switch (signals 1-3 plus proxy for 4), for a non-empty, ghost-free target Space. The bridged setter fails the loop and contaminates later native switching. Keyboard paths could not be tested from this host.",
+  "ghostStateFinding": "After a bridged SLSBridgedManagedDisplaySetCurrentSpaceOperation (including the restore fallback that sets the target and then the original), the touched Space stayed in a state where a fixture reporting isOnActiveSpace=NO (membership: that Space) was still listed by CGWindowList on-screen with occlusionVisible=true, for at least the remaining session and across new processes. In that state NSRunningApplication activation of an app whose only window is on that Space no longer switched Space (B1 0/6). Spaces 6, 54 and 46 were affected during this task.",
+  "spaceReorderFinding": "Run 3 (target 54, non-adjacent) ended with Space order [46,7,54,6] instead of [46,7,6,54] (same IDs, same current). Consistent with the macOS default 'rearrange Spaces by most recent use' (mru-spaces key unset = default on) moving a non-adjacent target next to the current Space; not proven. Adjacent switches (targets 6 and 46) did not reorder. The original order has not been restored.",
+  "setupObservations": [
+    "Control-Right/Left, AX raise and F19 input routing need a host with Accessibility/Post-Event permission (for example a signed, authorised Switchly build) and were not executed here.",
+    "The probe controller process never received NSWorkspaceActiveSpaceDidChangeNotification (controllerReceived=false in every attempt, even after finishLaunching); the fixture processes (full NSApplication run loop) did. Signal 1 is therefore satisfied by the fixture processes.",
+    "The first, superseded runs (target 6) are not stored: B1 attempt 1 already showed signals 2,3,5 passing at 460.9/318.7/298.4 ms but its bridged-only restore failed, which motivated the native-activation restore."
+  ],
+  "runs": [
+    {
+      "label": "run3-target54-nonadjacent-clean-start",
+      "description": "Full run, target Space 54 (two to the right, ghost-free at start). Binary predates the order-insensitive restore field.",
+      "result": {
+        "aborted": false,
+        "baseline": {
+          "onScreenOriginFixture": true,
+          "onScreenTargetFixture": false,
+          "origin": {
+            "appIsActive": true,
+            "isKeyWindow": true,
+            "isOnActiveSpace": true,
+            "occlusionVisible": 1
+          },
+          "target": {
+            "appIsActive": false,
+            "isKeyWindow": false,
+            "isOnActiveSpace": false,
+            "occlusionVisible": 0
+          }
+        },
+        "date": "2026-10-21",
+        "environment": {
+          "arch": "arm64",
+          "axTrusted": 0,
+          "build": "26A434",
+          "dockWorkspacesAutoSwoosh": "unset (system default applies)",
+          "listenEventPreflight": false,
+          "os": "Version 27.0.1 (Build 26A434)",
+          "postEventPreflight": false,
+          "privateSymbols": {
+            "bridgePerform": 1,
+            "MoveWindowsOperationClass": 1,
+            "SetCurrentSpaceOperationClass": 1,
+            "SLSCopyManagedDisplaySpaces": 1,
+            "SLSCopySpacesForWindows": 1,
+            "SLSManagedDisplayGetCurrentSpace": 1
+          },
+          "screenCapturePreflight": false,
+          "screenshotsTaken": false,
+          "sip": "System Integrity Protection status: enabled.",
+          "spacesSpansDisplays": "unset (system default applies)",
+          "symbolicHotkeys": {
+            "79": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "80": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "81": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "82": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "118": {
+              "state": "unspecified"
+            },
+            "119": {
+              "state": "unspecified"
+            },
+            "120": {
+              "state": "unspecified"
+            },
+            "121": {
+              "state": "unspecified"
+            },
+            "122": {
+              "state": "unspecified"
+            },
+            "123": {
+              "state": "unspecified"
+            },
+            "124": {
+              "state": "unspecified"
+            },
+            "125": {
+              "state": "unspecified"
+            },
+            "126": {
+              "state": "unspecified"
+            }
+          }
+        },
+        "fatal": "restore after attempt failed",
+        "finalRestoreCheck": {
+          "baselineRestore": {
+            "method": "bridgedSetOriginal+bridgedViaTargetThenOriginal",
+            "ms": 8033.2,
+            "ok": false
+          },
+          "fixtureProcessesTerminated": 1,
+          "spaceCountIdsAndCurrentUnchanged": false,
+          "structureAtEnd": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ],
+          "structureAtStart": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                }
+              ]
+            }
+          ]
+        },
+        "overallVerdict": "pass",
+        "paths": [
+          {
+            "attempts": [],
+            "path": "A_syntheticControlArrow",
+            "reason": "target Space is not adjacent to the original",
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 716.6,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "activateOriginFixture",
+                  "ms": 387,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 375.2,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": 392.7,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 0
+                    },
+                    "pass": true,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "firstMS": 304.1,
+                    "originOnScreen": false,
+                    "pass": true,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 54,
+                    "firstMS": 304.1,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "pass"
+              },
+              {
+                "attempt": 2,
+                "elapsedMS": 709.8,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "activateOriginFixture",
+                  "ms": 463.3,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 302.9,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": 391.3,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 0
+                    },
+                    "pass": true,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "firstMS": 303.7,
+                    "originOnScreen": false,
+                    "pass": true,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 54,
+                    "firstMS": 303.7,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "pass"
+              },
+              {
+                "attempt": 3,
+                "elapsedMS": 654.8,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "activateOriginFixture",
+                  "ms": 366.5,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 312.7,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": 329.3,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 0
+                    },
+                    "pass": true,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "firstMS": 300.5,
+                    "originOnScreen": false,
+                    "pass": true,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 54,
+                    "firstMS": 300.5,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "pass"
+              }
+            ],
+            "description": "NSRunningApplication activateWithOptions on the fixture that owns the only window on the target Space. Depends on the system 'switch to a Space with open windows for the application' behaviour; applicable to non-empty Spaces only.",
+            "failCount": 0,
+            "otherCount": 0,
+            "passCount": 3,
+            "path": "B1_activateTargetApp_NSRunningApplication",
+            "verdict": "pass"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 22.3,
+                  "ok": true
+                },
+                "notes": {
+                  "axBlocked": "AXIsProcessTrusted=false",
+                  "blocked": "Accessibility not trusted for this process"
+                },
+                "reason": "Accessibility not trusted for this process",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "AXUIElement frontmost + AXRaise + AXMain on the target fixture (needs Accessibility trust). Non-empty target Space only.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "B2_activateTargetApp_AXRaise",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [],
+            "path": "D_systemSwitchToDesktopN",
+            "reason": "The 'Switch to Desktop N' hotkey for the target Space is not enabled in the existing user configuration; preferences are never modified.",
+            "targetDesktopNumber": 4,
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 3522.7,
+                "inputEvidence": false,
+                "notes": {
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal+bridgedViaTargetThenOriginal",
+                  "ms": 8015.8,
+                  "ok": false
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 25.3,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 54,
+                    "firstMS": 0.3,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 2,
+                "reason": "fatal: restore after attempt failed",
+                "verdict": "skipped"
+              }
+            ],
+            "description": "SLSBridgedManagedDisplaySetCurrentSpaceOperation for the target Space, now judged by signals 1-4 instead of the getter.",
+            "failCount": 1,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "C_bridgedSetCurrentSpace",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "reason": "fatal: restore after attempt failed",
+                "verdict": "skipped"
+              }
+            ],
+            "description": "Bridged set-current-Space followed immediately by activating the target fixture (NSRunningApplication, plus AX raise when trusted).",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "CB_bridgedSetThenActivateTarget",
+            "verdict": "inconclusive"
+          }
+        ],
+        "schemaVersion": 1,
+        "setup": {
+          "baselineSettleMS": 20.7,
+          "fixturesLaunched": true,
+          "fixturesPlaced": true,
+          "originalSpace": 7,
+          "originFixtureMembers": [
+            7
+          ],
+          "targetFixtureMembers": [
+            54
+          ],
+          "targetIsAdjacent": false,
+          "targetIsRightNeighbour": 1,
+          "targetSpace": 54,
+          "targetSpaceIsNonEmpty": true
+        },
+        "structureAtStart": [
+          {
+            "current": 1,
+            "spaces": [
+              {
+                "id": 1,
+                "type": 0
+              },
+              {
+                "id": 5,
+                "type": 0
+              }
+            ]
+          },
+          {
+            "current": 7,
+            "spaces": [
+              {
+                "id": 46,
+                "type": 0
+              },
+              {
+                "id": 7,
+                "type": 0
+              },
+              {
+                "id": 6,
+                "type": 0
+              },
+              {
+                "id": 54,
+                "type": 0
+              }
+            ]
+          }
+        ],
+        "totalRuntimeSeconds": 26.1,
+        "verdictRules": {
+          "attemptInconclusive": "The action could not be performed (permission/precondition missing) or the baseline could not be established.",
+          "attemptPass": "Signals 1 (workspace notification), 2 (fixture self-report: target isOnActiveSpace and occlusionVisible YES, origin NO for both), 3 (CG on-screen list: origin gone, target present) must all hold at the same time after a 300 ms stability recheck; signal 4 (F19 routed to the target fixture only) must pass whenever it is applicable. A fixture-posted F19 is skipped when the frontmost app is not a fixture, and then inputEvidence=false.",
+          "overallVerdict": "pass = at least one path pass; fail = every tested path failed; inconclusive otherwise.",
+          "pathVerdict": "pass = every executed attempt passed; fail = no attempt passed and none was inconclusive; inconclusive = mixed results, blocked precondition or skipped; not-tested = path not applicable (e.g. hotkey disabled).",
+          "signal5": "SLSManagedDisplayGetCurrentSpace is auxiliary only and never counts toward success.",
+          "timing": {
+            "attemptTimeoutSeconds": 3.5,
+            "maxAttempts": 3,
+            "totalBudgetSeconds": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "run4-target46-adjacent-clean-start",
+      "description": "Full run, target Space 46 (left neighbour, ghost-free at start). Used as the primary evidence for B1.",
+      "result": {
+        "aborted": false,
+        "baseline": {
+          "onScreenOriginFixture": true,
+          "onScreenTargetFixture": false,
+          "origin": {
+            "appIsActive": true,
+            "isKeyWindow": true,
+            "isOnActiveSpace": true,
+            "occlusionVisible": 1
+          },
+          "target": {
+            "appIsActive": false,
+            "isKeyWindow": false,
+            "isOnActiveSpace": false,
+            "occlusionVisible": 0
+          }
+        },
+        "date": "2026-10-21",
+        "environment": {
+          "arch": "arm64",
+          "axTrusted": 0,
+          "build": "26A434",
+          "dockWorkspacesAutoSwoosh": "unset (system default applies)",
+          "listenEventPreflight": false,
+          "os": "Version 27.0.1 (Build 26A434)",
+          "postEventPreflight": false,
+          "privateSymbols": {
+            "bridgePerform": 1,
+            "MoveWindowsOperationClass": 1,
+            "SetCurrentSpaceOperationClass": 1,
+            "SLSCopyManagedDisplaySpaces": 1,
+            "SLSCopySpacesForWindows": 1,
+            "SLSManagedDisplayGetCurrentSpace": 1
+          },
+          "screenCapturePreflight": false,
+          "screenshotsTaken": false,
+          "sip": "System Integrity Protection status: enabled.",
+          "spacesSpansDisplays": "unset (system default applies)",
+          "symbolicHotkeys": {
+            "79": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "80": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "81": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "82": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "118": {
+              "state": "unspecified"
+            },
+            "119": {
+              "state": "unspecified"
+            },
+            "120": {
+              "state": "unspecified"
+            },
+            "121": {
+              "state": "unspecified"
+            },
+            "122": {
+              "state": "unspecified"
+            },
+            "123": {
+              "state": "unspecified"
+            },
+            "124": {
+              "state": "unspecified"
+            },
+            "125": {
+              "state": "unspecified"
+            },
+            "126": {
+              "state": "unspecified"
+            }
+          }
+        },
+        "fatal": "restore after attempt failed",
+        "finalRestoreCheck": {
+          "baselineRestore": {
+            "method": "bridgedSetOriginal+bridgedViaTargetThenOriginal",
+            "ms": 7988.9,
+            "ok": false
+          },
+          "fixtureProcessesTerminated": 1,
+          "spaceCountIdsAndCurrentUnchanged": true,
+          "spaceIdsAndCurrentUnchangedIgnoringOrder": true,
+          "structureAtEnd": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ],
+          "structureAtStart": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ]
+        },
+        "overallVerdict": "pass",
+        "paths": [
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 24.7,
+                  "ok": true
+                },
+                "notes": {
+                  "blocked": "post-event access missing"
+                },
+                "reason": "post-event access missing",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "CGEvent Left arrow (keycode 123) with Control|SecondaryFn|NumericPad flags posted to kCGHIDEventTap. Symbolic hotkey 79 state recorded in environment.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "A_syntheticControlArrow_kCGHIDEventTap",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 25.5,
+                  "ok": true
+                },
+                "notes": {
+                  "blocked": "post-event access missing"
+                },
+                "reason": "post-event access missing",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "CGEvent Left arrow (keycode 123) with Control|SecondaryFn|NumericPad flags posted to kCGSessionEventTap. Symbolic hotkey 79 state recorded in environment.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "A_syntheticControlArrow_kCGSessionEventTap",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 785,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "activateOriginFixture",
+                  "ms": 386.8,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 439.1,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": 462,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 0
+                    },
+                    "pass": true,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": false,
+                    "firstMS": 327.3,
+                    "originOnScreen": false,
+                    "pass": true,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 327.3,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "pass"
+              },
+              {
+                "attempt": 2,
+                "elapsedMS": 745,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "activateOriginFixture",
+                  "ms": 378.6,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 332.3,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": 421.4,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 0
+                    },
+                    "pass": true,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": false,
+                    "firstMS": 340.3,
+                    "originOnScreen": false,
+                    "pass": true,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 340.3,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "pass"
+              },
+              {
+                "attempt": 3,
+                "elapsedMS": 715.4,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "activateOriginFixture",
+                  "ms": 487.4,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 308.9,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": 393.8,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 0
+                    },
+                    "pass": true,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": false,
+                    "firstMS": 307.1,
+                    "originOnScreen": false,
+                    "pass": true,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 307.1,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "pass"
+              }
+            ],
+            "description": "NSRunningApplication activateWithOptions on the fixture that owns the only window on the target Space. Depends on the system 'switch to a Space with open windows for the application' behaviour; applicable to non-empty Spaces only.",
+            "failCount": 0,
+            "otherCount": 0,
+            "passCount": 3,
+            "path": "B1_activateTargetApp_NSRunningApplication",
+            "verdict": "pass"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 31.1,
+                  "ok": true
+                },
+                "notes": {
+                  "axBlocked": "AXIsProcessTrusted=false",
+                  "blocked": "Accessibility not trusted for this process"
+                },
+                "reason": "Accessibility not trusted for this process",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "AXUIElement frontmost + AXRaise + AXMain on the target fixture (needs Accessibility trust). Non-empty target Space only.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "B2_activateTargetApp_AXRaise",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [],
+            "path": "D_systemSwitchToDesktopN",
+            "reason": "The 'Switch to Desktop N' hotkey for the target Space is not enabled in the existing user configuration; preferences are never modified.",
+            "targetDesktopNumber": 1,
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 3537.8,
+                "inputEvidence": false,
+                "notes": {
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal+bridgedViaTargetThenOriginal",
+                  "ms": 8071.9,
+                  "ok": false
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 22.1,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": false,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 0.3,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 2,
+                "reason": "fatal: restore after attempt failed",
+                "verdict": "skipped"
+              }
+            ],
+            "description": "SLSBridgedManagedDisplaySetCurrentSpaceOperation for the target Space, now judged by signals 1-4 instead of the getter.",
+            "failCount": 1,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "C_bridgedSetCurrentSpace",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "reason": "fatal: restore after attempt failed",
+                "verdict": "skipped"
+              }
+            ],
+            "description": "Bridged set-current-Space followed immediately by activating the target fixture (NSRunningApplication, plus AX raise when trusted).",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "CB_bridgedSetThenActivateTarget",
+            "verdict": "inconclusive"
+          }
+        ],
+        "schemaVersion": 1,
+        "setup": {
+          "baselineSettleMS": 30.6,
+          "fixturesLaunched": true,
+          "fixturesPlaced": true,
+          "ghostOnScreenTolerated": false,
+          "originalSpace": 7,
+          "originFixtureMembers": [
+            7
+          ],
+          "targetFixtureMembers": [
+            46
+          ],
+          "targetIsAdjacent": true,
+          "targetIsRightNeighbour": 0,
+          "targetSpace": 46,
+          "targetSpaceIsNonEmpty": true
+        },
+        "structureAtStart": [
+          {
+            "current": 1,
+            "spaces": [
+              {
+                "id": 1,
+                "type": 0
+              },
+              {
+                "id": 5,
+                "type": 0
+              }
+            ]
+          },
+          {
+            "current": 7,
+            "spaces": [
+              {
+                "id": 46,
+                "type": 0
+              },
+              {
+                "id": 7,
+                "type": 0
+              },
+              {
+                "id": 54,
+                "type": 0
+              },
+              {
+                "id": 6,
+                "type": 0
+              }
+            ]
+          }
+        ],
+        "totalRuntimeSeconds": 26.3,
+        "verdictRules": {
+          "attemptInconclusive": "The action could not be performed (permission/precondition missing) or the baseline could not be established.",
+          "attemptPass": "Signals 1 (workspace notification), 2 (fixture self-report: target isOnActiveSpace and occlusionVisible YES, origin NO for both), 3 (CG on-screen list: origin gone, target present) must all hold at the same time after a 300 ms stability recheck; signal 4 (F19 routed to the target fixture only) must pass whenever it is applicable. A fixture-posted F19 is skipped when the frontmost app is not a fixture, and then inputEvidence=false.",
+          "overallVerdict": "pass = at least one path pass; fail = every tested path failed; inconclusive otherwise.",
+          "pathVerdict": "pass = every executed attempt passed; fail = no attempt passed and none was inconclusive; inconclusive = mixed results, blocked precondition or skipped; not-tested = path not applicable (e.g. hotkey disabled).",
+          "signal5": "SLSManagedDisplayGetCurrentSpace is auxiliary only and never counts toward success.",
+          "timing": {
+            "attemptTimeoutSeconds": 3.5,
+            "maxAttempts": 3,
+            "totalBudgetSeconds": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "run5-target46-after-bridged-ops",
+      "description": "Full run after run 4's bridged operations left Space 46 in the ghost state; ghost tolerated, CG signal degraded.",
+      "result": {
+        "aborted": false,
+        "baseline": {
+          "onScreenOriginFixture": true,
+          "onScreenTargetFixture": true,
+          "origin": {
+            "appIsActive": true,
+            "isKeyWindow": true,
+            "isOnActiveSpace": true,
+            "occlusionVisible": 1
+          },
+          "target": {
+            "appIsActive": false,
+            "isKeyWindow": false,
+            "isOnActiveSpace": false,
+            "occlusionVisible": 1
+          }
+        },
+        "date": "2026-10-21",
+        "environment": {
+          "arch": "arm64",
+          "axTrusted": 0,
+          "build": "26A434",
+          "dockWorkspacesAutoSwoosh": "unset (system default applies)",
+          "listenEventPreflight": false,
+          "os": "Version 27.0.1 (Build 26A434)",
+          "postEventPreflight": false,
+          "privateSymbols": {
+            "bridgePerform": 1,
+            "MoveWindowsOperationClass": 1,
+            "SetCurrentSpaceOperationClass": 1,
+            "SLSCopyManagedDisplaySpaces": 1,
+            "SLSCopySpacesForWindows": 1,
+            "SLSManagedDisplayGetCurrentSpace": 1
+          },
+          "screenCapturePreflight": false,
+          "screenshotsTaken": false,
+          "sip": "System Integrity Protection status: enabled.",
+          "spacesSpansDisplays": "unset (system default applies)",
+          "symbolicHotkeys": {
+            "79": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "80": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "81": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "82": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "118": {
+              "state": "unspecified"
+            },
+            "119": {
+              "state": "unspecified"
+            },
+            "120": {
+              "state": "unspecified"
+            },
+            "121": {
+              "state": "unspecified"
+            },
+            "122": {
+              "state": "unspecified"
+            },
+            "123": {
+              "state": "unspecified"
+            },
+            "124": {
+              "state": "unspecified"
+            },
+            "125": {
+              "state": "unspecified"
+            },
+            "126": {
+              "state": "unspecified"
+            }
+          }
+        },
+        "fatal": null,
+        "finalRestoreCheck": {
+          "baselineRestore": {
+            "method": "alreadyBaseline",
+            "ms": 21.3,
+            "ok": true
+          },
+          "fixtureProcessesTerminated": 1,
+          "spaceCountIdsAndCurrentUnchanged": true,
+          "spaceIdsAndCurrentUnchangedIgnoringOrder": true,
+          "structureAtEnd": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ],
+          "structureAtStart": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ]
+        },
+        "ghostOnScreenTolerated": true,
+        "overallVerdict": "inconclusive",
+        "paths": [
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 28.2,
+                  "ok": true
+                },
+                "notes": {
+                  "blocked": "post-event access missing"
+                },
+                "reason": "post-event access missing",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "CGEvent Left arrow (keycode 123) with Control|SecondaryFn|NumericPad flags posted to kCGHIDEventTap. Symbolic hotkey 79 state recorded in environment.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "A_syntheticControlArrow_kCGHIDEventTap",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 22.1,
+                  "ok": true
+                },
+                "notes": {
+                  "blocked": "post-event access missing"
+                },
+                "reason": "post-event access missing",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "CGEvent Left arrow (keycode 123) with Control|SecondaryFn|NumericPad flags posted to kCGSessionEventTap. Symbolic hotkey 79 state recorded in environment.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "A_syntheticControlArrow_kCGSessionEventTap",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 3530.6,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "alreadyBaseline",
+                  "ms": 30.3,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": null,
+                    "fixtureNotificationCounts": {
+                      "origin": 0,
+                      "target": 0
+                    },
+                    "pass": false,
+                    "source": "none"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 7,
+                    "firstMS": null,
+                    "matchedTarget": false
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 2,
+                "elapsedMS": 3520.7,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "alreadyBaseline",
+                  "ms": 22.4,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": null,
+                    "fixtureNotificationCounts": {
+                      "origin": 0,
+                      "target": 0
+                    },
+                    "pass": false,
+                    "source": "none"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 7,
+                    "firstMS": null,
+                    "matchedTarget": false
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 3,
+                "elapsedMS": 3530.1,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "alreadyBaseline",
+                  "ms": 22,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": null,
+                    "fixtureNotificationCounts": {
+                      "origin": 0,
+                      "target": 0
+                    },
+                    "pass": false,
+                    "source": "none"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 7,
+                    "firstMS": null,
+                    "matchedTarget": false
+                  }
+                },
+                "verdict": "fail"
+              }
+            ],
+            "description": "NSRunningApplication activateWithOptions on the fixture that owns the only window on the target Space. Depends on the system 'switch to a Space with open windows for the application' behaviour; applicable to non-empty Spaces only.",
+            "failCount": 3,
+            "otherCount": 0,
+            "passCount": 0,
+            "path": "B1_activateTargetApp_NSRunningApplication",
+            "verdict": "fail"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "baselineRestore": {
+                  "method": "alreadyBaseline",
+                  "ms": 37,
+                  "ok": true
+                },
+                "notes": {
+                  "axBlocked": "AXIsProcessTrusted=false",
+                  "blocked": "Accessibility not trusted for this process"
+                },
+                "reason": "Accessibility not trusted for this process",
+                "verdict": "inconclusive"
+              }
+            ],
+            "description": "AXUIElement frontmost + AXRaise + AXMain on the target fixture (needs Accessibility trust). Non-empty target Space only.",
+            "failCount": 0,
+            "otherCount": 1,
+            "passCount": 0,
+            "path": "B2_activateTargetApp_AXRaise",
+            "verdict": "inconclusive"
+          },
+          {
+            "attempts": [],
+            "path": "D_systemSwitchToDesktopN",
+            "reason": "The 'Switch to Desktop N' hotkey for the target Space is not enabled in the existing user configuration; preferences are never modified.",
+            "targetDesktopNumber": 1,
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 3526.6,
+                "inputEvidence": false,
+                "notes": {
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal",
+                  "ms": 1993,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 125.3,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 1,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 2,
+                "elapsedMS": 3528.5,
+                "inputEvidence": false,
+                "notes": {
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal",
+                  "ms": 1980.8,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 9.7,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "other",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 0.1,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 3,
+                "elapsedMS": 3523.1,
+                "inputEvidence": false,
+                "notes": {
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal",
+                  "ms": 2026.2,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 17,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "other",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 0.1,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              }
+            ],
+            "description": "SLSBridgedManagedDisplaySetCurrentSpaceOperation for the target Space, now judged by signals 1-4 instead of the getter.",
+            "failCount": 3,
+            "otherCount": 0,
+            "passCount": 0,
+            "path": "C_bridgedSetCurrentSpace",
+            "verdict": "fail"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 3523.5,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true,
+                  "axSkipped": "not trusted",
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal",
+                  "ms": 2057.2,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 17,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 6.8,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 2,
+                "elapsedMS": 3539.4,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true,
+                  "axSkipped": "not trusted",
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal",
+                  "ms": 2030.3,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 22.3,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "other",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 6.1,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 3,
+                "elapsedMS": 3523.7,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true,
+                  "axSkipped": "not trusted",
+                  "operationCreated": true
+                },
+                "restore": {
+                  "method": "bridgedSetOriginal",
+                  "ms": 2028.6,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": 22.4,
+                    "fixtureNotificationCounts": {
+                      "origin": 1,
+                      "target": 1
+                    },
+                    "pass": true,
+                    "source": "fixture process(es) only"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 46,
+                    "firstMS": 9.8,
+                    "matchedTarget": true
+                  }
+                },
+                "verdict": "fail"
+              }
+            ],
+            "description": "Bridged set-current-Space followed immediately by activating the target fixture (NSRunningApplication, plus AX raise when trusted).",
+            "failCount": 3,
+            "otherCount": 0,
+            "passCount": 0,
+            "path": "CB_bridgedSetThenActivateTarget",
+            "verdict": "fail"
+          }
+        ],
+        "schemaVersion": 1,
+        "setup": {
+          "baselineSettleMS": 4096.2,
+          "fixturesLaunched": true,
+          "fixturesPlaced": true,
+          "ghostOnScreenTolerated": true,
+          "originalSpace": 7,
+          "originFixtureMembers": [
+            7
+          ],
+          "targetFixtureMembers": [
+            46
+          ],
+          "targetIsAdjacent": true,
+          "targetIsRightNeighbour": 0,
+          "targetSpace": 46,
+          "targetSpaceIsNonEmpty": true
+        },
+        "structureAtStart": [
+          {
+            "current": 1,
+            "spaces": [
+              {
+                "id": 1,
+                "type": 0
+              },
+              {
+                "id": 5,
+                "type": 0
+              }
+            ]
+          },
+          {
+            "current": 7,
+            "spaces": [
+              {
+                "id": 46,
+                "type": 0
+              },
+              {
+                "id": 7,
+                "type": 0
+              },
+              {
+                "id": 54,
+                "type": 0
+              },
+              {
+                "id": 6,
+                "type": 0
+              }
+            ]
+          }
+        ],
+        "totalRuntimeSeconds": 51.6,
+        "verdictRules": {
+          "attemptInconclusive": "The action could not be performed (permission/precondition missing) or the baseline could not be established.",
+          "attemptPass": "Signals 1 (workspace notification), 2 (fixture self-report: target isOnActiveSpace and occlusionVisible YES, origin NO for both), 3 (CG on-screen list: origin gone, target present) must all hold at the same time after a 300 ms stability recheck; signal 4 (F19 routed to the target fixture only) must pass whenever it is applicable. A fixture-posted F19 is skipped when the frontmost app is not a fixture, and then inputEvidence=false.",
+          "overallVerdict": "pass = at least one path pass; fail = every tested path failed; inconclusive otherwise.",
+          "pathVerdict": "pass = every executed attempt passed; fail = no attempt passed and none was inconclusive; inconclusive = mixed results, blocked precondition or skipped; not-tested = path not applicable (e.g. hotkey disabled).",
+          "signal5": "SLSManagedDisplayGetCurrentSpace is auxiliary only and never counts toward success.",
+          "timing": {
+            "attemptTimeoutSeconds": 3.5,
+            "maxAttempts": 3,
+            "totalBudgetSeconds": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "run6-target54-after-bridged-ops-B1-only",
+      "description": "B1 only on Space 54 after bridged operations; ghost state.",
+      "result": {
+        "aborted": false,
+        "baseline": {
+          "onScreenOriginFixture": true,
+          "onScreenTargetFixture": true,
+          "origin": {
+            "appIsActive": true,
+            "isKeyWindow": true,
+            "isOnActiveSpace": true,
+            "occlusionVisible": 1
+          },
+          "target": {
+            "appIsActive": false,
+            "isKeyWindow": false,
+            "isOnActiveSpace": false,
+            "occlusionVisible": 1
+          }
+        },
+        "date": "2026-10-21",
+        "environment": {
+          "arch": "arm64",
+          "axTrusted": 0,
+          "build": "26A434",
+          "dockWorkspacesAutoSwoosh": "unset (system default applies)",
+          "listenEventPreflight": false,
+          "os": "Version 27.0.1 (Build 26A434)",
+          "postEventPreflight": false,
+          "privateSymbols": {
+            "bridgePerform": 1,
+            "MoveWindowsOperationClass": 1,
+            "SetCurrentSpaceOperationClass": 1,
+            "SLSCopyManagedDisplaySpaces": 1,
+            "SLSCopySpacesForWindows": 1,
+            "SLSManagedDisplayGetCurrentSpace": 1
+          },
+          "screenCapturePreflight": false,
+          "screenshotsTaken": false,
+          "sip": "System Integrity Protection status: enabled.",
+          "spacesSpansDisplays": "unset (system default applies)",
+          "symbolicHotkeys": {
+            "79": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "80": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "81": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "82": {
+              "parameters": null,
+              "state": "enabled"
+            },
+            "118": {
+              "state": "unspecified"
+            },
+            "119": {
+              "state": "unspecified"
+            },
+            "120": {
+              "state": "unspecified"
+            },
+            "121": {
+              "state": "unspecified"
+            },
+            "122": {
+              "state": "unspecified"
+            },
+            "123": {
+              "state": "unspecified"
+            },
+            "124": {
+              "state": "unspecified"
+            },
+            "125": {
+              "state": "unspecified"
+            },
+            "126": {
+              "state": "unspecified"
+            }
+          }
+        },
+        "fatal": null,
+        "finalRestoreCheck": {
+          "baselineRestore": {
+            "method": "alreadyBaseline",
+            "ms": 60.7,
+            "ok": true
+          },
+          "fixtureProcessesTerminated": 1,
+          "spaceCountIdsAndCurrentUnchanged": true,
+          "spaceIdsAndCurrentUnchangedIgnoringOrder": true,
+          "structureAtEnd": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ],
+          "structureAtStart": [
+            {
+              "current": 1,
+              "spaces": [
+                {
+                  "id": 1,
+                  "type": 0
+                },
+                {
+                  "id": 5,
+                  "type": 0
+                }
+              ]
+            },
+            {
+              "current": 7,
+              "spaces": [
+                {
+                  "id": 46,
+                  "type": 0
+                },
+                {
+                  "id": 7,
+                  "type": 0
+                },
+                {
+                  "id": 54,
+                  "type": 0
+                },
+                {
+                  "id": 6,
+                  "type": 0
+                }
+              ]
+            }
+          ]
+        },
+        "ghostOnScreenTolerated": true,
+        "overallVerdict": "fail",
+        "paths": [
+          {
+            "attempts": [],
+            "path": "A_syntheticControlArrow_kCGHIDEventTap",
+            "reason": "excluded by R2_PATHS filter",
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [],
+            "path": "A_syntheticControlArrow_kCGSessionEventTap",
+            "reason": "excluded by R2_PATHS filter",
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [
+              {
+                "attempt": 1,
+                "elapsedMS": 3522.8,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "alreadyBaseline",
+                  "ms": 22.8,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": null,
+                    "fixtureNotificationCounts": {
+                      "origin": 0,
+                      "target": 0
+                    },
+                    "pass": false,
+                    "source": "none"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 7,
+                    "firstMS": null,
+                    "matchedTarget": false
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 2,
+                "elapsedMS": 3527,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "alreadyBaseline",
+                  "ms": 22.9,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": null,
+                    "fixtureNotificationCounts": {
+                      "origin": 0,
+                      "target": 0
+                    },
+                    "pass": false,
+                    "source": "none"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": true,
+                      "isKeyWindow": true,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "target",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 7,
+                    "firstMS": null,
+                    "matchedTarget": false
+                  }
+                },
+                "verdict": "fail"
+              },
+              {
+                "attempt": 3,
+                "elapsedMS": 3523.5,
+                "inputEvidence": false,
+                "notes": {
+                  "activateReturned": true
+                },
+                "restore": {
+                  "method": "alreadyBaseline",
+                  "ms": 30.7,
+                  "ok": true
+                },
+                "signals": {
+                  "1_workspaceNotification": {
+                    "controllerReceived": false,
+                    "count": 0,
+                    "firstMS": null,
+                    "fixtureNotificationCounts": {
+                      "origin": 0,
+                      "target": 0
+                    },
+                    "pass": false,
+                    "source": "none"
+                  },
+                  "2_fixtureSelfReport": {
+                    "firstMS": null,
+                    "origin": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": true,
+                      "occlusionVisible": 1
+                    },
+                    "pass": false,
+                    "target": {
+                      "appIsActive": false,
+                      "isKeyWindow": false,
+                      "isOnActiveSpace": false,
+                      "occlusionVisible": 1
+                    }
+                  },
+                  "3_cgOnScreenList": {
+                    "degradedByGhost": true,
+                    "firstMS": null,
+                    "originOnScreen": true,
+                    "pass": false,
+                    "targetOnScreen": true
+                  },
+                  "4_inputRouting": {
+                    "applicable": false,
+                    "frontmost": "other",
+                    "reason": "post-event access missing"
+                  },
+                  "5_skyLightGetterAuxiliary": {
+                    "countsAsSuccess": false,
+                    "finalCurrent": 7,
+                    "firstMS": null,
+                    "matchedTarget": false
+                  }
+                },
+                "verdict": "fail"
+              }
+            ],
+            "description": "NSRunningApplication activateWithOptions on the fixture that owns the only window on the target Space. Depends on the system 'switch to a Space with open windows for the application' behaviour; applicable to non-empty Spaces only.",
+            "failCount": 3,
+            "otherCount": 0,
+            "passCount": 0,
+            "path": "B1_activateTargetApp_NSRunningApplication",
+            "verdict": "fail"
+          },
+          {
+            "attempts": [],
+            "path": "B2_activateTargetApp_AXRaise",
+            "reason": "excluded by R2_PATHS filter",
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [],
+            "path": "D_systemSwitchToDesktopN",
+            "reason": "The 'Switch to Desktop N' hotkey for the target Space is not enabled in the existing user configuration; preferences are never modified.",
+            "targetDesktopNumber": 3,
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [],
+            "path": "C_bridgedSetCurrentSpace",
+            "reason": "excluded by R2_PATHS filter",
+            "verdict": "not-tested"
+          },
+          {
+            "attempts": [],
+            "path": "CB_bridgedSetThenActivateTarget",
+            "reason": "excluded by R2_PATHS filter",
+            "verdict": "not-tested"
+          }
+        ],
+        "schemaVersion": 1,
+        "setup": {
+          "baselineSettleMS": 4022.1,
+          "fixturesLaunched": true,
+          "fixturesPlaced": true,
+          "ghostOnScreenTolerated": true,
+          "originalSpace": 7,
+          "originFixtureMembers": [
+            7
+          ],
+          "targetFixtureMembers": [
+            54
+          ],
+          "targetIsAdjacent": true,
+          "targetIsRightNeighbour": 1,
+          "targetSpace": 54,
+          "targetSpaceIsNonEmpty": true
+        },
+        "structureAtStart": [
+          {
+            "current": 1,
+            "spaces": [
+              {
+                "id": 1,
+                "type": 0
+              },
+              {
+                "id": 5,
+                "type": 0
+              }
+            ]
+          },
+          {
+            "current": 7,
+            "spaces": [
+              {
+                "id": 46,
+                "type": 0
+              },
+              {
+                "id": 7,
+                "type": 0
+              },
+              {
+                "id": 54,
+                "type": 0
+              },
+              {
+                "id": 6,
+                "type": 0
+              }
+            ]
+          }
+        ],
+        "totalRuntimeSeconds": 17.8,
+        "verdictRules": {
+          "attemptInconclusive": "The action could not be performed (permission/precondition missing) or the baseline could not be established.",
+          "attemptPass": "Signals 1 (workspace notification), 2 (fixture self-report: target isOnActiveSpace and occlusionVisible YES, origin NO for both), 3 (CG on-screen list: origin gone, target present) must all hold at the same time after a 300 ms stability recheck; signal 4 (F19 routed to the target fixture only) must pass whenever it is applicable. A fixture-posted F19 is skipped when the frontmost app is not a fixture, and then inputEvidence=false.",
+          "overallVerdict": "pass = at least one path pass; fail = every tested path failed; inconclusive otherwise.",
+          "pathVerdict": "pass = every executed attempt passed; fail = no attempt passed and none was inconclusive; inconclusive = mixed results, blocked precondition or skipped; not-tested = path not applicable (e.g. hotkey disabled).",
+          "signal5": "SLSManagedDisplayGetCurrentSpace is auxiliary only and never counts toward success.",
+          "timing": {
+            "attemptTimeoutSeconds": 3.5,
+            "maxAttempts": 3,
+            "totalBudgetSeconds": 150
+          }
+        }
+      }
+    }
+  ],
+  "finalState": {
+    "allFixtureProcessesTerminated": true,
+    "currentSpaceRestored": true,
+    "idsCountAndCurrentUnchangedIgnoringOrder": true,
+    "orderUnchanged": false,
+    "originalOrder": [
+      46,
+      7,
+      6,
+      54
+    ],
+    "currentOrder": [
+      46,
+      7,
+      54,
+      6
+    ],
+    "ghostSpacesRemaining": [
+      46,
+      54,
+      6
+    ]
+  }
+}
