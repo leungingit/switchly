@@ -92,6 +92,8 @@ struct AppSettings: Codable, Equatable {
     var crystalMaterial: CrystalMaterial
     /// Spatial layout style for the preview panel (Stage / Pill Matrix / Classic Grid / Frameless Tiles).
     var previewPanelStyle: PreviewPanelStyle
+    /// 全局窗口预览包含的桌面范围；Dock 预览始终包含所有桌面。
+    var previewSpaceScope: PreviewSpaceScope
 
     /// Desktop grid (3×3 Spaces overview) master switch. Off by default so an
     /// upgrade never starts opening the overview on its own.
@@ -158,7 +160,8 @@ struct AppSettings: Codable, Equatable {
         gridNaturalSwipeDirection: Bool = true,
         gridInterceptSystemGestures: Bool = true,
         gridStyle: GridStyle = .default,
-        gridBackground: GridBackground = .default
+        gridBackground: GridBackground = .default,
+        previewSpaceScope: PreviewSpaceScope = .allSpaces
     ) {
         self.previewStrategy = previewStrategy
         self.shortcutPrefix = shortcutPrefix
@@ -207,6 +210,7 @@ struct AppSettings: Codable, Equatable {
         self.gridInterceptSystemGestures = gridInterceptSystemGestures
         self.gridStyle = gridStyle
         self.gridBackground = gridBackground
+        self.previewSpaceScope = previewSpaceScope
     }
 
     enum CodingKeys: String, CodingKey {
@@ -257,6 +261,7 @@ struct AppSettings: Codable, Equatable {
         case gridInterceptSystemGestures
         case gridStyle
         case gridBackground
+        case previewSpaceScope
     }
 
     /// Keys that are read but never written.
@@ -369,6 +374,11 @@ struct AppSettings: Codable, Equatable {
         self.gridInterceptSystemGestures = try container.decodeIfPresent(Bool.self, forKey: .gridInterceptSystemGestures) ?? true
         self.gridStyle = try container.decodeIfPresent(GridStyle.self, forKey: .gridStyle) ?? .default
         self.gridBackground = try container.decodeIfPresent(GridBackground.self, forKey: .gridBackground) ?? .default
+        // 旧设置没有桌面范围字段；升级后采用本次确认的全部桌面默认值。
+        self.previewSpaceScope = try container.decodeIfPresent(
+            PreviewSpaceScope.self,
+            forKey: .previewSpaceScope
+        ) ?? .allSpaces
     }
     
     var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }
@@ -410,6 +420,23 @@ struct AppSettings: Codable, Equatable {
             hideMainWindowOnLaunch: true,
             monitorFrequency: .balanced
         )
+    }
+}
+
+/// 全局窗口预览的桌面范围。
+enum PreviewSpaceScope: String, Codable, CaseIterable, Identifiable {
+    case allSpaces
+    case currentSpace
+
+    var id: Self { self }
+
+    func displayName(language: AppLanguage) -> String {
+        switch self {
+        case .allSpaces:
+            return language.localizedString("All desktops")
+        case .currentSpace:
+            return language.localizedString("Current desktop")
+        }
     }
 }
 

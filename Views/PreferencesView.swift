@@ -121,6 +121,19 @@ struct PreferencesView: View {
                         .frame(width: 360)
                     }
 
+                    settingRow(t("Desktop range"),
+                               systemImage: "rectangle.3.group",
+                               help: t("This setting only affects the global preview. Dock previews always include all desktops.")) {
+                        Picker("", selection: previewSpaceScopeBinding) {
+                            ForEach(PreviewSpaceScope.allCases) { scope in
+                                Text(scope.displayName(language: viewModel.settings.language)).tag(scope)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 260)
+                    }
+
                     settingRow(t("Thumbnail size"), systemImage: "rectangle.inset.filled") {
                         Picker("", selection: thumbnailSizeBinding) {
                             ForEach(ThumbnailSize.allCases, id: \.self) { size in
@@ -678,6 +691,15 @@ struct PreferencesView: View {
             get: { viewModel.settings.previewStrategy },
             set: { newValue in
                 viewModel.updateSettings { $0.previewStrategy = newValue }
+            }
+        )
+    }
+
+    private var previewSpaceScopeBinding: Binding<PreviewSpaceScope> {
+        Binding(
+            get: { viewModel.settings.previewSpaceScope },
+            set: { newValue in
+                viewModel.updateSettings { $0.previewSpaceScope = newValue }
             }
         )
     }

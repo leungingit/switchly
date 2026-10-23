@@ -16,7 +16,23 @@ struct WindowInfo: Identifiable, Codable, Hashable {
     let bounds: CGRect
     let isOnCurrentSpace: Bool
     let windowNumber: Int
+    let isMinimized: Bool
+    let isHidden: Bool
+    /// 无归属信息时不宣称窗口在其他桌面。
+    let isOnOtherSpace: Bool
     
+    var canPerformWindowActions: Bool {
+        isOnCurrentSpace || (isMinimized && !isOnOtherSpace)
+    }
+
+    var statusLocalizationKey: String? {
+        if isMinimized { return "Window is minimized" }
+        if isHidden { return "Window is hidden" }
+        if isOnOtherSpace { return "Window is on another desktop" }
+        if !isOnCurrentSpace { return "Window desktop is unknown" }
+        return nil
+    }
+
     var displayName: String {
         windowTitle.isEmpty ? ownerName : windowTitle
     }
@@ -30,7 +46,7 @@ struct WindowInfo: Identifiable, Codable, Hashable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, ownerPID, ownerName, windowTitle, bounds, isOnCurrentSpace, windowNumber
+        case id, ownerPID, ownerName, windowTitle, bounds, isOnCurrentSpace, windowNumber, isMinimized, isHidden, isOnOtherSpace
     }
     
     init(from decoder: Decoder) throws {
@@ -50,6 +66,9 @@ struct WindowInfo: Identifiable, Codable, Hashable {
         
         isOnCurrentSpace = try container.decode(Bool.self, forKey: .isOnCurrentSpace)
         windowNumber = try container.decode(Int.self, forKey: .windowNumber)
+        isMinimized = try container.decodeIfPresent(Bool.self, forKey: .isMinimized) ?? !isOnCurrentSpace
+        isHidden = try container.decodeIfPresent(Bool.self, forKey: .isHidden) ?? false
+        isOnOtherSpace = try container.decodeIfPresent(Bool.self, forKey: .isOnOtherSpace) ?? false
     }
     
     func encode(to encoder: Encoder) throws {
@@ -69,6 +88,9 @@ struct WindowInfo: Identifiable, Codable, Hashable {
         
         try container.encode(isOnCurrentSpace, forKey: .isOnCurrentSpace)
         try container.encode(windowNumber, forKey: .windowNumber)
+        try container.encode(isMinimized, forKey: .isMinimized)
+        try container.encode(isHidden, forKey: .isHidden)
+        try container.encode(isOnOtherSpace, forKey: .isOnOtherSpace)
     }
     
     init(
@@ -78,7 +100,10 @@ struct WindowInfo: Identifiable, Codable, Hashable {
         windowTitle: String,
         bounds: CGRect,
         isOnCurrentSpace: Bool,
-        windowNumber: Int
+        windowNumber: Int,
+        isMinimized: Bool = false,
+        isHidden: Bool = false,
+        isOnOtherSpace: Bool = false
     ) {
         self.id = id
         self.ownerPID = ownerPID
@@ -87,5 +112,8 @@ struct WindowInfo: Identifiable, Codable, Hashable {
         self.bounds = bounds
         self.isOnCurrentSpace = isOnCurrentSpace
         self.windowNumber = windowNumber
+        self.isMinimized = isMinimized
+        self.isHidden = isHidden
+        self.isOnOtherSpace = isOnOtherSpace
     }
 }

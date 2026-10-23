@@ -196,7 +196,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     if app.autoSwitchIfSingle {
                         let appWindows = WindowMonitorService.shared.getWindows(for: app)
                         let visibleWindowCount = WindowMonitorService.shared.getVisibleWindowCount(for: app.bundleIdentifier)
-                        if appWindows.count == 1 && visibleWindowCount == 1 {
+                        if !WindowMonitorService.shared.isEnumeratingWindows && !WindowMonitorService.shared.isWindowDiscoveryLimited && appWindows.count == 1 && visibleWindowCount == 1 {
                             AppLogger.info("Auto-switching single window. app=\(app.appName)")
                             Task {
                                 do {

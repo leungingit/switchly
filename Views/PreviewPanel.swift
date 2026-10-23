@@ -313,9 +313,12 @@ class PreviewPanel: NSPanel {
         viewModel.selectWindow(window)
         dismissPanel(zoomAnchor: zoomAnchor(for: window))
         Task {
-            await viewModel.switchToWindow(window)
+            let success = await viewModel.switchToWindow(window)
             await MainActor.run {
                 self.isSwitching = false
+                if !success {
+                    WindowSwitchFeedback.presentFailure(language: SettingsService.shared.loadSettings().language)
+                }
             }
         }
     }
@@ -684,9 +687,42 @@ struct PreviewView: View {
                     Text("Switchly")
                         .font(.title3.weight(.semibold))
                     windowCountText
+                    if viewModel.isWindowDiscoveryLimited {
+                        Text(t("Window list is limited without Accessibility permission"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .frame(maxWidth: 220, alignment: .leading)
+                    }
+                    if viewModel.isEnumeratingWindows {
+                        Text(t("Finding windows on other desktops…"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    if viewModel.usesDesktopScope, settings.previewSpaceScope == .currentSpace, viewModel.otherSpaceWindowCount > 0 {
+                        Button(String(format: t("%d windows on other desktops"), viewModel.otherSpaceWindowCount)) {
+                            viewModel.setPreviewSpaceScope(.allSpaces)
+                        }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                    }
                 }
 
                 Spacer()
+
+                if viewModel.usesDesktopScope {
+                    Menu {
+                        ForEach(PreviewSpaceScope.allCases) { scope in
+                            Button(scope.displayName(language: settings.language)) {
+                                viewModel.setPreviewSpaceScope(scope)
+                            }
+                        }
+                    } label: {
+                        Text(settings.previewSpaceScope.displayName(language: settings.language))
+                    }
+                    .fixedSize()
+                    .accessibilityLabel(t("Desktop range"))
+                }
 
                 searchBar
 
@@ -1070,15 +1106,16 @@ struct WindowThumbnailView: View {
                     detailText("x\(Int(window.bounds.origin.x)) y\(Int(window.bounds.origin.y))")
                 }
 
-                if !window.isOnCurrentSpace {
-                    // A minimized (or other-Space) window has no live content to
-                    // capture (docs/plan §7 #10), so the card says so instead of
-                    // letting a stale screenshot pass as current. It used to be
-                    // annotated on the hero info bar, which §15 removed.
-                    Text(t("Window is minimized"))
+                if let status = window.statusLocalizationKey {
+                    Text(t(status))
                         .font(.caption2)
-                        .foregroundColor(.orange)
+                        .foregroundColor(.secondary)
                         .lineLimit(1)
+                }
+                if !window.isOnCurrentSpace, case .loaded = thumbnailState {
+                    Text(t("Preview may be outdated"))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
             }
             .padding(.horizontal, 4)
