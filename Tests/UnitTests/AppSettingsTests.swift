@@ -33,6 +33,9 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertFalse(settings.previewShakeEnabled)
         XCTAssertEqual(settings.crystalMaterial, .legacyDefault)
         XCTAssertEqual(settings.previewPanelStyle, .classicGrid)
+        XCTAssertFalse(settings.gridEnabled)
+        XCTAssertEqual(settings.gridStyle, .c)
+        XCTAssertEqual(settings.gridBackground, .cream)
     }
     
     func testSettingsCodable() {
@@ -388,5 +391,63 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertLessThan(Double(pixel.greenComponent), 0.75)
         XCTAssertLessThan(Double(pixel.blueComponent), 0.75)
         XCTAssertEqual(Double(pixel.greenComponent), Double(pixel.blueComponent), accuracy: 0.05)
+    }
+
+    // MARK: - Desktop grid
+
+    /// A settings file written before the desktop grid existed has none of
+    /// its keys: the grid must decode as off, style C and the cream wall, and
+    /// the existing theme must still be read.
+    func testMissingDesktopGridKeysFallBackToDefaults() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "gridEnabled")
+        object.removeValue(forKey: "gridStyle")
+        object.removeValue(forKey: "gridBackground")
+        object["theme"] = "dark"
+        XCTAssertNil(object["gridEnabled"])
+        XCTAssertNil(object["gridStyle"])
+        XCTAssertNil(object["gridBackground"])
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertFalse(decoded.gridEnabled)
+        XCTAssertEqual(decoded.gridStyle, .c)
+        XCTAssertEqual(decoded.gridBackground, .cream)
+        XCTAssertEqual(decoded.theme, .dark)
+    }
+
+    func testDesktopGridSettingsRoundTrip() throws {
+        var settings = AppSettings.default
+        settings.gridEnabled = true
+        settings.gridStyle = .b
+        settings.gridBackground = .white
+        settings.theme = .light
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertTrue(decoded.gridEnabled)
+        XCTAssertEqual(decoded.gridStyle, .b)
+        XCTAssertEqual(decoded.gridBackground, .white)
+        XCTAssertEqual(decoded.theme, .light)
+    }
+
+    /// A hand-edited settings file can carry a style or background this build
+    /// does not know. Each falls back to its default without resetting the
+    /// rest of the settings.
+    func testUnknownDesktopGridValuesFallBackAndKeepOtherFields() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["gridEnabled"] = true
+        object["gridStyle"] = "perspective"
+        object["gridBackground"] = "graphite"
+        object["theme"] = "light"
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertTrue(decoded.gridEnabled)
+        XCTAssertEqual(decoded.gridStyle, .c)
+        XCTAssertEqual(decoded.gridBackground, .cream)
+        XCTAssertEqual(decoded.theme, .light)
     }
 }

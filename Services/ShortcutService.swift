@@ -24,6 +24,8 @@ class ShortcutService: ShortcutServiceProtocol {
     private var previousAppWindowHotKey: HotKey?
     private var nextAppWindowHotKey: HotKey?
     private var workspaceHotKeys: [UUID: HotKey] = [:]
+    /// ⌃1…⌃9 desktop-grid jump keys, keyed by desktop number.
+    private var desktopGridHotKeys: [Int: HotKey] = [:]
     
     static let shared = ShortcutService()
     
@@ -50,7 +52,8 @@ class ShortcutService: ShortcutServiceProtocol {
             registerShortcut(for: apps, key: key)
         }
         registerWorkspaceShortcuts(settings.workspaces)
-        AppLogger.info("Shortcuts setup complete. appHotKeys=\(hotKeys.count), hasGlobalHotKey=\(globalHotKey != nil)")
+        registerDesktopGridShortcuts(enabled: settings.gridEnabled)
+        AppLogger.info("Shortcuts setup complete. appHotKeys=\(hotKeys.count), hasGlobalHotKey=\(globalHotKey != nil), gridHotKeys=\(desktopGridHotKeys.count)")
     }
     
     func registerShortcut(for app: MonitoredApp, key: String) {
@@ -86,6 +89,7 @@ class ShortcutService: ShortcutServiceProtocol {
         previousAppWindowHotKey = nil
         nextAppWindowHotKey = nil
         workspaceHotKeys.removeAll()
+        desktopGridHotKeys.removeAll()
         AppLogger.info("Unregistered all shortcuts")
     }
     
@@ -165,6 +169,11 @@ class ShortcutService: ShortcutServiceProtocol {
         NotificationCenter.default.post(name: .currentAppWindowShortcutTriggered, object: offset)
     }
 
+    private func handleDesktopGridShortcut(_ number: Int) {
+        AppLogger.info("Handling desktop grid shortcut. number=\(number)")
+        NotificationCenter.default.post(name: .desktopGridShortcutTriggered, object: number)
+    }
+
     private func handleWorkspaceShortcut(_ workspace: Workspace) {
         AppLogger.info("Handling workspace shortcut. workspace=\(workspace.name), id=\(workspace.id)")
         NotificationCenter.default.post(name: .workspaceShortcutTriggered, object: workspace.id)
@@ -216,6 +225,27 @@ private extension ShortcutService {
         AppLogger.info("Registered current app window shortcuts. previous=<, next=>")
     }
 
+    /// ⌃1…⌃9 jump straight to a desktop (T15). Only registered while the grid
+    /// is enabled, so a user who never turns it on keeps those chords free.
+    ///
+    /// The HotKey package does not report whether Carbon accepted the chord,
+    /// so a chord already owned by the system fails silently; the menu entry
+    /// and the overview stay available in that case.
+    func registerDesktopGridShortcuts(enabled: Bool) {
+        desktopGridHotKeys.removeAll()
+        guard enabled else { return }
+
+        let digits: [Key] = [.one, .two, .three, .four, .five, .six, .seven, .eight, .nine]
+        for (index, key) in digits.enumerated() {
+            let number = index + 1
+            let hotKey = HotKey(key: key, modifiers: [.control], keyDownHandler: { [weak self] in
+                self?.handleDesktopGridShortcut(number)
+            })
+            desktopGridHotKeys[number] = hotKey
+        }
+        AppLogger.info("Registered desktop grid shortcuts. keys=\(desktopGridHotKeys.count)")
+    }
+
     func registerWorkspaceShortcuts(_ workspaces: [Workspace]) {
         let reservedKeys = reservedShortcutKeys()
         var usedKeys = Set(hotKeys.keys.map { $0.lowercased() })
@@ -261,4 +291,5 @@ extension Notification.Name {
     static let globalShortcutTriggered = Notification.Name("com.switchly.globalShortcutTriggered")
     static let currentAppWindowShortcutTriggered = Notification.Name("com.switchly.currentAppWindowShortcutTriggered")
     static let workspaceShortcutTriggered = Notification.Name("com.switchly.workspaceShortcutTriggered")
+    static let desktopGridShortcutTriggered = Notification.Name("com.switchly.desktopGridShortcutTriggered")
 }

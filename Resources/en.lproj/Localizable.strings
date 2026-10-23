@@ -311,3 +311,100 @@
 /* Native glass */
 "Remove glass overlays" = "Remove glass overlays";
 "Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "Keeps the selected material, theme and card fill. Removes added density, tint and reflections.";
+"Perspective Grid" = "Perspective Grid";
+
+"Centered Panel" = "Centered Panel";
+
+/* Desktop grid overview (stage 3) */
+"Desktop Grid" = "Desktop Grid";
+"Desktop %d" = "Desktop %d";
+"Desktop %d → %d" = "Desktop %d → %d";
+"Current" = "Current";
+"Target" = "Target";
+"Desktop not created" = "Desktop not created";
+"Open Mission Control and click + to add a desktop." = "Open Mission Control and click + to add a desktop.";
+"This desktop is quiet" = "This desktop is quiet";
+"⌃1–9 to jump directly" = "⌃1–9 to jump directly";
+"←→↑↓ to move · Return to switch · Esc to close" = "←→↑↓ to move · Return to switch · Esc to close";
+"Screen recording is off, so previews are simplified. Icons and titles are unaffected." = "Screen recording is off, so previews are simplified. Icons and titles are unaffected.";
+"Accessibility is off. Window names and switching may be incomplete." = "Accessibility is off. Window names and switching may be incomplete.";
+"Desktop information is unavailable. Try again after the system finishes switching." = "Desktop information is unavailable. Try again after the system finishes switching.";
+"Desktop information is unavailable" = "Desktop information is unavailable";
+"Switchly could not read the system desktops. Nothing was changed." = "Switchly could not read the system desktops. Nothing was changed.";
+"Open System Settings" = "Open System Settings";
+"Open Mission Control" = "Open Mission Control";
+"Only %d desktops exist. macOS creates desktops; use Mission Control to add one." = "Only %d desktops exist. macOS creates desktops; use Mission Control to add one.";
+"Loading desktops…" = "Loading desktops…";
+"Desktop preview (illustration)" = "Desktop preview (illustration)";
+"Unknown application" = "Unknown application";
+
+/* Desktop grid gestures and HUD (stage 4) */
+"Switching to Desktop %d…" = "Switching to Desktop %d…";
+"At the edge" = "At the edge";
+"Cooling down" = "Cooling down";
+"Desktop %d not created" = "Desktop %d not created";
+"Accessibility permission required" = "Accessibility permission required";
+"Could not switch desktop" = "Could not switch desktop";
+"Dismisses when the system switch finishes" = "Dismisses when the system switch finishes";
+"No more desktops (does not wrap)" = "No more desktops (does not wrap)";
+"Rapid swipes are ignored for a moment" = "Rapid swipes are ignored for a moment";
+"Create it in Mission Control first" = "Create it in Mission Control first";
+"Grant Accessibility in System Settings to switch desktops" = "Grant Accessibility in System Settings to switch desktops";
+"Use ⌃1–9 or the menu to switch" = "Use ⌃1–9 or the menu to switch";
+"Four-finger swipe %@" = "Four-finger swipe %@";
+"or press ⌃%d" = "or press ⌃%d";
+"Right" = "Right";
+"Up-right" = "Up-right";
+"Up" = "Up";
+"Up-left" = "Up-left";
+"Left" = "Left";
+"Down-left" = "Down-left";
+"Down" = "Down";
+"Down-right" = "Down-right";
+
+/* Desktop grid prerequisites (stage 4) */
+"At least two desktops" = "At least two desktops";
+"System four-finger horizontal swipe" = "System four-finger horizontal swipe";
+"System four-finger vertical swipe" = "System four-finger vertical swipe";
+"Trackpad gesture capture" = "Trackpad gesture capture";
+"Needed to read window names and to switch desktops reliably." = "Needed to read window names and to switch desktops reliably.";
+"Only affects desktop previews. Gestures work without it." = "Only affects desktop previews. Gestures work without it.";
+"macOS creates desktops; add them in Mission Control." = "macOS creates desktops; add them in Mission Control.";
+"Turn off “Swipe between full-screen apps” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the horizontal swipes." = "Turn off “Swipe between full-screen apps” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the horizontal swipes.";
+"Turn off “Mission Control” and “App Exposé” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the vertical swipes." = "Turn off “Mission Control” and “App Exposé” in System Settings › Trackpad › More Gestures, otherwise macOS consumes the vertical swipes.";
+"Switchly could not read raw trackpad contacts on this Mac. ⌃1–9 and the menu still work." = "Switchly could not read raw trackpad contacts on this Mac. ⌃1–9 and the menu still work.";
+
+/* Desktop grid settings, onboarding and accessibility (stage 5–6) */
+"Status & switch" = "Status & switch";
+"Enable grid desktops" = "Enable grid desktops";
+"Switch among nine desktops with a four-finger swipe or ⌃1–9." = "Switch among nine desktops with a four-finger swipe or ⌃1–9.";
+"A 3×3 overview of your macOS desktops, with gesture and keyboard switching." = "A 3×3 overview of your macOS desktops, with gesture and keyboard switching.";
+"Prerequisites" = "Prerequisites";
+"Re-check" = "Re-check";
+"Open guide" = "Open guide";
+"Overview style" = "Overview style";
+"Default · fills the screen, centre cell enlarged" = "Default · fills the screen, centre cell enlarged";
+"Optional · one centred panel" = "Optional · one centred panel";
+"Background" = "Background";
+"Overview backdrop" = "Overview backdrop";
+"Backdrop tint of the overview in light appearance. Dark appearance always uses graphite." = "Backdrop tint of the overview in light appearance. Dark appearance always uses graphite.";
+"Warm white" = "Warm white";
+"Pure white" = "Pure white";
+"Setup guide" = "Setup guide";
+"Prerequisite setup guide" = "Prerequisite setup guide";
+"Opens a separate window with each step and a link to the right System Settings pane." = "Opens a separate window with each step and a link to the right System Settings pane.";
+"Done" = "Done";
+"Not done" = "Not done";
+"Can’t check" = "Can’t check";
+"⌃1–9 desktop shortcuts" = "⌃1–9 desktop shortcuts";
+"Switchly uses the system “Switch to Desktop” shortcuts for empty desktops. Enable them in System Settings › Keyboard." = "Switchly uses the system “Switch to Desktop” shortcuts for empty desktops. Enable them in System Settings › Keyboard.";
+"macOS doesn’t let Switchly read this setting. Please confirm it in System Settings." = "macOS doesn’t let Switchly read this setting. Please confirm it in System Settings.";
+"%d of %d met" = "%d of %d met";
+"Grid setup" = "Grid setup";
+"Set up the desktop grid" = "Set up the desktop grid";
+"The grid relies on macOS permissions and settings. Switchly re-checks when you come back to it." = "The grid relies on macOS permissions and settings. Switchly re-checks when you come back to it.";
+"Prerequisites met" = "Prerequisites met";
+"All set. You can start using the desktop grid." = "All set. You can start using the desktop grid.";
+"Closing this window does not mark anything as done." = "Closing this window does not mark anything as done.";
+"Press Return to switch to this desktop." = "Press Return to switch to this desktop.";
+"Tab moves between cells" = "Tab moves between cells";

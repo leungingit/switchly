@@ -83,4 +83,25 @@ final class SettingsServiceTests: XCTestCase {
         XCTAssertEqual(fresh.loadSettings().windowGlassDensity, 0.12)
     }
 
+
+    /// The desktop grid axes ride the existing settings blob: saving them
+    /// persists every field, posts the one change notification the running
+    /// consumers already observe, and a fresh instance reads them back.
+    func testGridSettingsPersistAndNotify() {
+        var settings = AppSettings.default
+        settings.gridEnabled = true
+        settings.gridStyle = .b
+        settings.gridBackground = .white
+
+        let notified = expectation(forNotification: .settingsDidChange, object: nil)
+        XCTAssertNoThrow(try settingsService.saveSettings(settings))
+        wait(for: [notified], timeout: 1)
+
+        let freshDefaults = UserDefaults(suiteName: suiteName)!
+        let freshService = SettingsService(defaults: freshDefaults)
+        let loaded = freshService.loadSettings()
+        XCTAssertTrue(loaded.gridEnabled)
+        XCTAssertEqual(loaded.gridStyle, .b)
+        XCTAssertEqual(loaded.gridBackground, .white)
+    }
 }

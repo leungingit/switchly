@@ -8,56 +8,87 @@
 
 /* Begin PBXBuildFile section */
 		020BFDAE3FB688562345AD6C /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58738EAF78774734195AB7BB /* AppLogger.swift */; };
+		0399533991E0D3B32546D963 /* SkyLightSpaceBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */; };
 		09BD2162E6B3702DE9EC40B5 /* WindowMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */; };
+		09CD6512810271F4342F8AC5 /* MultitouchSupportBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DD14FAEB036825353009EA /* MultitouchSupportBridge.swift */; };
 		0AC113AF38FAB4A56F187DBC /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA808BAFE0367506C45C90FD /* PreferencesView.swift */; };
 		0CDB9415C6AF01F191F7743B /* DockPreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */; };
 		0D5D33312D630DEC557DBB80 /* PreviewTriggerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687A3E6FE32AE24C7E961024 /* PreviewTriggerMonitor.swift */; };
 		0EA1E4834CCF195ECE4166EA /* PreviewTriggerMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */; };
 		0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */; };
+		107C15C9C3A17DE414DBCDFC /* DesignTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */; };
 		137BC8984AC89E033BDC5621 /* SwitchlyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E029A87A20E2F1B6B9BC71AB /* SwitchlyUITests.swift */; };
 		139D992482CCDB0FB46C454E /* ThemeApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */; };
 		151067BD1D6A695FE5F669AE /* InstalledAppsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */; };
 		157C7530060444809235AB30 /* WindowAttribution.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D313B3216BABB3D45A8959 /* WindowAttribution.swift */; };
 		17970177CADBF3DF3FB0AA57 /* PreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */; };
+		1B23DE9DD03F57C4DBBFF9A2 /* DesktopGridPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */; };
 		24D6AB2547DFFC675DC0152E /* WorkspaceBarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */; };
 		25BEA26A797B70D0A0ED19DE /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1586F73A4F525E88C759A1C8 /* OnboardingView.swift */; };
+		29FE3B26CE9FFFCDD9CF0442 /* GridBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8CD30C6683B78FF9301D38 /* GridBackground.swift */; };
 		2D181B5276716FF5B25B182F /* WindowTrafficLights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BADD79FCDF554B4529EDB4 /* WindowTrafficLights.swift */; };
+		2DD527A51A91C49F01542D1C /* GridPrerequisite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */; };
 		33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */; };
 		349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */; };
 		34A8A5EB0367745AFAD728C3 /* ShortcutPrefix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D718DDF3DF82D909F59365 /* ShortcutPrefix.swift */; };
+		3F73C153038AA97997BC1FAD /* GridPrerequisiteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */; };
 		439324893176691BA6AF5D4C /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */; };
 		482D3D624B3DDC827D958FEE /* WindowInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A6A58BEAD9ACBF4698AC7 /* WindowInfo.swift */; };
 		4C8E285F29A903C506F74761 /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DC6D7B68AA6B89AFB14000 /* StatusBarView.swift */; };
 		4D945D85A7042393A06DDBF4 /* PreviewReplicaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E270A7C7525E09B303AE2508 /* PreviewReplicaPanel.swift */; };
+		4E48AD9509F16D3180F2B27F /* GridPrerequisiteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BE468141F782C97C514E73 /* GridPrerequisiteTests.swift */; };
+		4F2CDC5321222012203BA669 /* DesktopSpaceServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAA37AFCB4B01F4F1AF1D53 /* DesktopSpaceServiceTests.swift */; };
 		4F319DCCBFF23D406715CD88 /* NotificationStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */; };
+		506E964357AEA05CBD1E2D30 /* DesktopGridOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */; };
+		516DAFDA8F12E8738E11FEB1 /* GridOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */; };
+		5199B0E3B22217CBAEF9261E /* DesktopNavigationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D68B1BB3A196CF0B752C9B /* DesktopNavigationService.swift */; };
 		549DCC5C314E323C70534CF8 /* WorkspacesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB73E8A8C3255DFB68679B69 /* WorkspacesViewModelTests.swift */; };
 		557D68547549ED39FDA46C08 /* ShortcutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */; };
+		56515D6849D58FE6F491AA7F /* GridPanelLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */; };
+		5B9F757E94BC377A96C08E0E /* GridPrerequisiteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6893DEFCCFFFB529574170B /* GridPrerequisiteViewModel.swift */; };
 		5CFFD80558D38BC6FE92F240 /* UsageStatisticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */; };
+		5D570ABDDF02D56C2DFE0625 /* DesktopGridPreferencesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */; };
 		5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */; };
 		5FA543B9C254D62E25D6E1D4 /* DockPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B7824198BBB99C36B66461 /* DockPreviewView.swift */; };
 		65996F0D789B2455B3F83A18 /* SwitchlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */; };
+		674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */; };
 		6B0C967C9567C91B5E0FE76F /* StatisticsChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */; };
 		6CBAA46EEEABA09F7860EC6C /* EnumsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D3BA644980C96412DADE54F /* EnumsTests.swift */; };
 		6E4E83CA9748AD21074F4735 /* ThumbnailDiskCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */; };
 		6FDC73A8195B5E1DCED2DA5F /* WindowSwitchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EECBABDCC48455985B5E3C /* WindowSwitchService.swift */; };
+		718CB4B1F80D0A03803AC927 /* GridHUDViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6BAA4649436C3C22EAAA03E /* GridHUDViewModel.swift */; };
+		7325B1D7F9DDC54C1C9A0690 /* GridOverviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */; };
 		7326864C328885CC55E25D34 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1CF970731577ECF8B051637 /* Assets.xcassets */; };
 		74E0D2C645E1A103BF01BC87 /* DockHoverMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */; };
+		75791B6119F99767ACC30751 /* DesktopGridCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E053C29F12B5FFA9A9996CF4 /* DesktopGridCoordinatorTests.swift */; };
+		757EC4F4A1872830AA959C08 /* MotionTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */; };
 		775DDFD010B842421511E6F1 /* GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F9D7FC2A842D77756AF533 /* GlassEffect.swift */; };
 		78C77E295F7654AAC3B671AC /* StatisticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */; };
 		7BD89AFAC9DE588F75A61327 /* MonitoredAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B863AF7408FCE0FFF4B8F61 /* MonitoredAppTests.swift */; };
 		7CE92B9881FC19BB2489D2CF /* PreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 241C233749CBA2C47224E65F /* PreviewViewModel.swift */; };
+		7DD9B0976DE1C1C0D3CC3278 /* GridHUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38B7135CBF574BF9DAB0182 /* GridHUDView.swift */; };
 		81AD0B07D05A179F3E27DDD3 /* GlassRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */; };
 		81B5494B3F6F687518BA2CA8 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEDD2810190844B35AF5D61 /* AppSettings.swift */; };
 		82677B99BB10457B6211615B /* AppSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 279A55BC2D30608EC032F116 /* AppSettingsTests.swift */; };
+		828E32678D8B4FA71E990E8B /* DesktopSpaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A150EFC35E5F5EDD6F0524B /* DesktopSpaceService.swift */; };
+		83D916AA58F0659AEEE10FEA /* TrackpadGestureServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D43D871338D3C1938D8ABD7 /* TrackpadGestureServiceTests.swift */; };
+		854FD5E262C5B6F914D34821 /* GridOverviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A938B3D72FC8AB1E6C161FA /* GridOverviewViewModel.swift */; };
+		89C446418268E0251BB7C0F3 /* GridCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B3EA034319D24B8E19DFCC /* GridCellView.swift */; };
 		89C5AF0478503B5D4703D6FD /* ThumbnailSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46EE486121EF5CD8A2635C /* ThumbnailSize.swift */; };
 		8C57511E578886B778AB1A88 /* ThumbnailServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D554167CE0F0AE8B040A45CD /* ThumbnailServiceTests.swift */; };
 		8F13B62CA83D5DB7659B0DBB /* NativeCrystalContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71DD962701C1A4451D4506CE /* NativeCrystalContainer.swift */; };
 		90B9F9CC1ADB75648FDE5E1C /* MotionTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AA59073B11D0CDFB620270 /* MotionTokens.swift */; };
+		91E69686F8833EB4F628E203 /* SwipeDirectionClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */; };
 		92B7174F4610DC92BD3F2DBA /* WindowMatchRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4066514499DED03BE957824E /* WindowMatchRules.swift */; };
 		983D139B7130194FFB794D25 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6740DE703ADA5B5025E36CB0 /* Workspace.swift */; };
+		9E2F6C9478E07EB44021ED67 /* SwipeDirectionClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */; };
+		9E2FA5DCDBD20C995796CD33 /* DesktopNavigationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B327F0F758209F4FAF26918 /* DesktopNavigationServiceTests.swift */; };
+		9FABCB54E3792FEE65EEA7B1 /* GridStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA270BA7907E1777FD01E21 /* GridStyle.swift */; };
 		9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */; };
 		A072D06E5B68A96A4DCADA1E /* StatisticsEfficiencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */; };
+		A174EF356A7E1CE551E0E288 /* DesktopGridCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */; };
 		A4C6BA68425E77517DCE454B /* DockGlassRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E257EBC8C0FB7879E7D63D /* DockGlassRenderingTests.swift */; };
+		A52D55EC6F37CD0195757012 /* GridPrerequisiteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */; };
 		A5B6DCFD03AE0EDA6856C9CF /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = B6472048A84916C39E9693F6 /* HotKey */; };
 		A8787B16DE389140CF48D9AF /* UsageStatisticsPreferencesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */; };
 		AA7BEAF963CB36DDC1C4FA10 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337C977CD2AF7514192B081 /* DesignTokens.swift */; };
@@ -66,14 +97,19 @@
 		B808FD16B01FD587EFB8DA70 /* InstalledAppsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF9AC54C2BA7BEEA61A8C65 /* InstalledAppsService.swift */; };
 		BC8FB069C8563D3CDF42C047 /* UsageStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA61A7C92B5FC46B8B7D582B /* UsageStatisticsService.swift */; };
 		BF5217ACAFA0F8E24B46B4EB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA8089BA53B1D1CCC78BEC2 /* AppDelegate.swift */; };
+		C23BF8F8B71FBE85F7A8628B /* GridThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96510776297C69649DA4F443 /* GridThumbnailView.swift */; };
 		CC2F70B1D38D49A3904205C7 /* zh-Hans.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8C454449F43BF62BEDCE15AD /* zh-Hans.lproj */; };
 		CD3E7E5608B3CEB73C313AEE /* PreviewStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */; };
 		CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */; };
+		D00B5AC3244E006E5B970959 /* GridPrerequisiteViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E8B69F55E3915AA564A11E /* GridPrerequisiteViewModelTests.swift */; };
+		D0453BCE9645F02AC3F3C026 /* Desktop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3E2C79236802A9D96C8612 /* Desktop.swift */; };
 		D06DD1F8E4497FA98D2D1C24 /* SettingsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */; };
 		D0B57E255B5AD9C3E6F9911A /* StatusBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */; };
+		D1C8FA6C0521110E85CEE342 /* GridOverviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD5104F8699B3D346D80611 /* GridOverviewPanel.swift */; };
 		D1EBD23D19E96CAA0506A43C /* UsageStatisticsEfficiency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */; };
 		D44F5C97B2215F013DEA975A /* ThumbnailDiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */; };
 		D8EDE8ADB48BFEFC352C6A60 /* PreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960008BE3922EDC5D06FB1FC /* PreviewPanel.swift */; };
+		DA8CD524C8C7D059C6F4DAA7 /* TrackpadGestureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */; };
 		DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34689921552D03B9A0939D3 /* ThumbnailService.swift */; };
 		E1EFA0E2F5A80AEEAC6E7AD0 /* WorkspacesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */; };
 		E22A9ABF1ACE2446DE66423C /* DockHoverMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693CF0B38A421F3DDF54F3EB /* DockHoverMonitorTests.swift */; };
@@ -81,8 +117,11 @@
 		E261C9AD00EE827BE170FF1C /* AppIconCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 585D0FDE5B7ED9200D75A40D /* AppIconCache.swift */; };
 		E9DE129852F828C142F543D6 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B39BEC7FA3384FA15C08FF3B /* StatisticsView.swift */; };
 		F0BB21A07793A02139702B39 /* GlassAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A8B16C69B8E7ED74E9F2CEA /* GlassAppearanceTests.swift */; };
+		F1E7E91E4EFD3167DB313986 /* DesktopGridPaletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A9F687B26508A8F5DABF84 /* DesktopGridPaletteTests.swift */; };
+		F27C095E9B00CC976EA000B8 /* GridPanelLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */; };
 		F886856C261156BF633FE32A /* en.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 95256075698122B773FCA946 /* en.lproj */; };
 		FC4B737FDDAF385608C00299 /* PreviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */; };
+		FF32458B66D59F2EAC0A6AB2 /* GridHUDPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A3E053A9776181F04E2644 /* GridHUDPanel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,25 +143,38 @@
 
 /* Begin PBXFileReference section */
 		03BADD79FCDF554B4529EDB4 /* WindowTrafficLights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTrafficLights.swift; sourceTree = "<group>"; };
+		08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteService.swift; sourceTree = "<group>"; };
 		0A46EE486121EF5CD8A2635C /* ThumbnailSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailSize.swift; sourceTree = "<group>"; };
+		0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModelTests.swift; sourceTree = "<group>"; };
 		0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutService.swift; sourceTree = "<group>"; };
 		1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCacheTests.swift; sourceTree = "<group>"; };
 		1586F73A4F525E88C759A1C8 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewPanel.swift; sourceTree = "<group>"; };
 		188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewViewModel.swift; sourceTree = "<group>"; };
+		1A150EFC35E5F5EDD6F0524B /* DesktopSpaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSpaceService.swift; sourceTree = "<group>"; };
+		1BD5104F8699B3D346D80611 /* GridOverviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewPanel.swift; sourceTree = "<group>"; };
 		1F795794526AB4B760F1EE25 /* SwitchlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwitchlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		241C233749CBA2C47224E65F /* PreviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewModel.swift; sourceTree = "<group>"; };
+		2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokensTests.swift; sourceTree = "<group>"; };
+		250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteServiceTests.swift; sourceTree = "<group>"; };
 		279A55BC2D30608EC032F116 /* AppSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsTests.swift; sourceTree = "<group>"; };
 		2EC2911083058E80E93458EC /* SwitchlyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwitchlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3337C977CD2AF7514192B081 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanelLayoutTests.swift; sourceTree = "<group>"; };
+		3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPreferencesSection.swift; sourceTree = "<group>"; };
+		3D43D871338D3C1938D8ABD7 /* TrackpadGestureServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackpadGestureServiceTests.swift; sourceTree = "<group>"; };
 		3DEDD2810190844B35AF5D61 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		3E3E2C79236802A9D96C8612 /* Desktop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Desktop.swift; sourceTree = "<group>"; };
 		4066514499DED03BE957824E /* WindowMatchRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMatchRules.swift; sourceTree = "<group>"; };
 		41F9D7FC2A842D77756AF533 /* GlassEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassEffect.swift; sourceTree = "<group>"; };
+		421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisite.swift; sourceTree = "<group>"; };
 		46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewModelTests.swift; sourceTree = "<group>"; };
+		4B327F0F758209F4FAF26918 /* DesktopNavigationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNavigationServiceTests.swift; sourceTree = "<group>"; };
 		4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPanelTests.swift; sourceTree = "<group>"; };
 		4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewModel.swift; sourceTree = "<group>"; };
 		4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsPreferencesSection.swift; sourceTree = "<group>"; };
 		508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledAppsServiceTests.swift; sourceTree = "<group>"; };
+		54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTokensTests.swift; sourceTree = "<group>"; };
 		5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsEfficiencyView.swift; sourceTree = "<group>"; };
 		56E257EBC8C0FB7879E7D63D /* DockGlassRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockGlassRenderingTests.swift; sourceTree = "<group>"; };
 		57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMatchRulesTests.swift; sourceTree = "<group>"; };
@@ -141,6 +193,7 @@
 		782DDEA9B760B082A11AE14C /* Switchly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Switchly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeApplier.swift; sourceTree = "<group>"; };
 		7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewModel.swift; sourceTree = "<group>"; };
+		81E8B69F55E3915AA564A11E /* GridPrerequisiteViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteViewModelTests.swift; sourceTree = "<group>"; };
 		8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockHoverMonitor.swift; sourceTree = "<group>"; };
 		852B7D72F7154C2512A91E39 /* MonitoredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoredApp.swift; sourceTree = "<group>"; };
 		86E6C2CE23A3834E6FEAA800 /* PreviewHotspotEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHotspotEdge.swift; sourceTree = "<group>"; };
@@ -150,37 +203,62 @@
 		8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowInfoTests.swift; sourceTree = "<group>"; };
 		90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsPanelSnapshotTests.swift; sourceTree = "<group>"; };
 		95256075698122B773FCA946 /* en.lproj */ = {isa = PBXFileReference; path = en.lproj; sourceTree = "<group>"; };
+		95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDViewModelTests.swift; sourceTree = "<group>"; };
 		960008BE3922EDC5D06FB1FC /* PreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPanel.swift; sourceTree = "<group>"; };
+		96510776297C69649DA4F443 /* GridThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridThumbnailView.swift; sourceTree = "<group>"; };
+		96DD14FAEB036825353009EA /* MultitouchSupportBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultitouchSupportBridge.swift; sourceTree = "<group>"; };
 		98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationStrategy.swift; sourceTree = "<group>"; };
+		9A938B3D72FC8AB1E6C161FA /* GridOverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModel.swift; sourceTree = "<group>"; };
 		9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCache.swift; sourceTree = "<group>"; };
+		A1A3E053A9776181F04E2644 /* GridHUDPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDPanel.swift; sourceTree = "<group>"; };
 		A1CF970731577ECF8B051637 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBarPanel.swift; sourceTree = "<group>"; };
 		A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		AA61A7C92B5FC46B8B7D582B /* UsageStatisticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsService.swift; sourceTree = "<group>"; };
 		AAF9AC54C2BA7BEEA61A8C65 /* InstalledAppsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledAppsService.swift; sourceTree = "<group>"; };
+		B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackpadGestureService.swift; sourceTree = "<group>"; };
+		B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanelLayout.swift; sourceTree = "<group>"; };
 		B39BEC7FA3384FA15C08FF3B /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
+		B4A9F687B26508A8F5DABF84 /* DesktopGridPaletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPaletteTests.swift; sourceTree = "<group>"; };
+		B5D68B1BB3A196CF0B752C9B /* DesktopNavigationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNavigationService.swift; sourceTree = "<group>"; };
+		B6893DEFCCFFFB529574170B /* GridPrerequisiteViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteViewModel.swift; sourceTree = "<group>"; };
 		BB73E8A8C3255DFB68679B69 /* WorkspacesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacesViewModelTests.swift; sourceTree = "<group>"; };
+		BCAA37AFCB4B01F4F1AF1D53 /* DesktopSpaceServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSpaceServiceTests.swift; sourceTree = "<group>"; };
 		C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsService.swift; sourceTree = "<group>"; };
 		C4D313B3216BABB3D45A8959 /* WindowAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAttribution.swift; sourceTree = "<group>"; };
+		C6B3EA034319D24B8E19DFCC /* GridCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridCellView.swift; sourceTree = "<group>"; };
 		C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsEfficiency.swift; sourceTree = "<group>"; };
+		C8BE468141F782C97C514E73 /* GridPrerequisiteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteTests.swift; sourceTree = "<group>"; };
 		CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTriggerMonitorTests.swift; sourceTree = "<group>"; };
 		CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarViewModel.swift; sourceTree = "<group>"; };
+		D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewView.swift; sourceTree = "<group>"; };
 		D34689921552D03B9A0939D3 /* ThumbnailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailService.swift; sourceTree = "<group>"; };
+		D38B7135CBF574BF9DAB0182 /* GridHUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDView.swift; sourceTree = "<group>"; };
 		D554167CE0F0AE8B040A45CD /* ThumbnailServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailServiceTests.swift; sourceTree = "<group>"; };
+		D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridCoordinator.swift; sourceTree = "<group>"; };
+		D6BAA4649436C3C22EAAA03E /* GridHUDViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDViewModel.swift; sourceTree = "<group>"; };
+		D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPalette.swift; sourceTree = "<group>"; };
 		DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsTests.swift; sourceTree = "<group>"; };
+		DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridOnboardingView.swift; sourceTree = "<group>"; };
 		DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMonitorService.swift; sourceTree = "<group>"; };
+		DFA270BA7907E1777FD01E21 /* GridStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridStyle.swift; sourceTree = "<group>"; };
 		DFA8089BA53B1D1CCC78BEC2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E029A87A20E2F1B6B9BC71AB /* SwitchlyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchlyUITests.swift; sourceTree = "<group>"; };
+		E053C29F12B5FFA9A9996CF4 /* DesktopGridCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridCoordinatorTests.swift; sourceTree = "<group>"; };
 		E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityService.swift; sourceTree = "<group>"; };
 		E270A7C7525E09B303AE2508 /* PreviewReplicaPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewReplicaPanel.swift; sourceTree = "<group>"; };
 		E4B7824198BBB99C36B66461 /* DockPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewView.swift; sourceTree = "<group>"; };
 		E54F2C8AADF0827EEC8A96D8 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		E5DC6D7B68AA6B89AFB14000 /* StatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
 		E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassRenderingTests.swift; sourceTree = "<group>"; };
+		E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyLightSpaceBridge.swift; sourceTree = "<group>"; };
 		EA808BAFE0367506C45C90FD /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsChartView.swift; sourceTree = "<group>"; };
+		F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifierTests.swift; sourceTree = "<group>"; };
 		F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacesView.swift; sourceTree = "<group>"; };
 		F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchlyApp.swift; sourceTree = "<group>"; };
+		FC8CD30C6683B78FF9301D38 /* GridBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridBackground.swift; sourceTree = "<group>"; };
+		FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifier.swift; sourceTree = "<group>"; };
 		FEAB4ED3B6192B37D690238D /* UsageStatistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -200,6 +278,9 @@
 			isa = PBXGroup;
 			children = (
 				188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */,
+				D6BAA4649436C3C22EAAA03E /* GridHUDViewModel.swift */,
+				9A938B3D72FC8AB1E6C161FA /* GridOverviewViewModel.swift */,
+				B6893DEFCCFFFB529574170B /* GridPrerequisiteViewModel.swift */,
 				7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */,
 				241C233749CBA2C47224E65F /* PreviewViewModel.swift */,
 				4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */,
@@ -231,20 +312,34 @@
 			isa = PBXGroup;
 			children = (
 				279A55BC2D30608EC032F116 /* AppSettingsTests.swift */,
+				2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */,
+				E053C29F12B5FFA9A9996CF4 /* DesktopGridCoordinatorTests.swift */,
+				B4A9F687B26508A8F5DABF84 /* DesktopGridPaletteTests.swift */,
+				4B327F0F758209F4FAF26918 /* DesktopNavigationServiceTests.swift */,
+				BCAA37AFCB4B01F4F1AF1D53 /* DesktopSpaceServiceTests.swift */,
 				56E257EBC8C0FB7879E7D63D /* DockGlassRenderingTests.swift */,
 				693CF0B38A421F3DDF54F3EB /* DockHoverMonitorTests.swift */,
 				5D3BA644980C96412DADE54F /* EnumsTests.swift */,
 				8A8B16C69B8E7ED74E9F2CEA /* GlassAppearanceTests.swift */,
 				E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */,
+				95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */,
+				0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */,
+				34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */,
+				250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */,
+				C8BE468141F782C97C514E73 /* GridPrerequisiteTests.swift */,
+				81E8B69F55E3915AA564A11E /* GridPrerequisiteViewModelTests.swift */,
 				508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */,
 				6B863AF7408FCE0FFF4B8F61 /* MonitoredAppTests.swift */,
+				54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */,
 				4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */,
 				CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */,
 				46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */,
 				A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */,
 				90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */,
+				F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */,
 				1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */,
 				D554167CE0F0AE8B040A45CD /* ThumbnailServiceTests.swift */,
+				3D43D871338D3C1938D8ABD7 /* TrackpadGestureServiceTests.swift */,
 				DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */,
 				8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */,
 				57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */,
@@ -265,8 +360,16 @@
 		4B06527DD022F5A5110E2085 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */,
+				3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */,
 				183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */,
 				E4B7824198BBB99C36B66461 /* DockPreviewView.swift */,
+				C6B3EA034319D24B8E19DFCC /* GridCellView.swift */,
+				A1A3E053A9776181F04E2644 /* GridHUDPanel.swift */,
+				D38B7135CBF574BF9DAB0182 /* GridHUDView.swift */,
+				1BD5104F8699B3D346D80611 /* GridOverviewPanel.swift */,
+				D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */,
+				96510776297C69649DA4F443 /* GridThumbnailView.swift */,
 				1586F73A4F525E88C759A1C8 /* OnboardingView.swift */,
 				EA808BAFE0367506C45C90FD /* PreferencesView.swift */,
 				960008BE3922EDC5D06FB1FC /* PreviewPanel.swift */,
@@ -297,6 +400,7 @@
 			isa = PBXGroup;
 			children = (
 				DFA8089BA53B1D1CCC78BEC2 /* AppDelegate.swift */,
+				D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */,
 				F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */,
 			);
 			path = App;
@@ -305,6 +409,8 @@
 		9A6616176837D35F1D02BB2C /* Enums */ = {
 			isa = PBXGroup;
 			children = (
+				FC8CD30C6683B78FF9301D38 /* GridBackground.swift */,
+				DFA270BA7907E1777FD01E21 /* GridStyle.swift */,
 				98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */,
 				86E6C2CE23A3834E6FEAA800 /* PreviewHotspotEdge.swift */,
 				755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */,
@@ -335,13 +441,18 @@
 			isa = PBXGroup;
 			children = (
 				E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */,
+				B5D68B1BB3A196CF0B752C9B /* DesktopNavigationService.swift */,
+				1A150EFC35E5F5EDD6F0524B /* DesktopSpaceService.swift */,
 				8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */,
+				08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */,
 				AAF9AC54C2BA7BEEA61A8C65 /* InstalledAppsService.swift */,
 				687A3E6FE32AE24C7E961024 /* PreviewTriggerMonitor.swift */,
 				C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */,
 				0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */,
+				E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */,
 				9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */,
 				D34689921552D03B9A0939D3 /* ThumbnailService.swift */,
+				B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */,
 				AA61A7C92B5FC46B8B7D582B /* UsageStatisticsService.swift */,
 				DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */,
 				70EECBABDCC48455985B5E3C /* WindowSwitchService.swift */,
@@ -355,9 +466,13 @@
 				585D0FDE5B7ED9200D75A40D /* AppIconCache.swift */,
 				58738EAF78774734195AB7BB /* AppLogger.swift */,
 				3337C977CD2AF7514192B081 /* DesignTokens.swift */,
+				D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */,
 				41F9D7FC2A842D77756AF533 /* GlassEffect.swift */,
+				B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */,
 				89AA59073B11D0CDFB620270 /* MotionTokens.swift */,
+				96DD14FAEB036825353009EA /* MultitouchSupportBridge.swift */,
 				71DD962701C1A4451D4506CE /* NativeCrystalContainer.swift */,
+				FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */,
 				7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */,
 				C4D313B3216BABB3D45A8959 /* WindowAttribution.swift */,
 				4066514499DED03BE957824E /* WindowMatchRules.swift */,
@@ -369,6 +484,8 @@
 			isa = PBXGroup;
 			children = (
 				3DEDD2810190844B35AF5D61 /* AppSettings.swift */,
+				3E3E2C79236802A9D96C8612 /* Desktop.swift */,
+				421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */,
 				852B7D72F7154C2512A91E39 /* MonitoredApp.swift */,
 				FEAB4ED3B6192B37D690238D /* UsageStatistics.swift */,
 				C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */,
@@ -510,20 +627,34 @@
 			buildActionMask = 2147483647;
 			files = (
 				82677B99BB10457B6211615B /* AppSettingsTests.swift in Sources */,
+				107C15C9C3A17DE414DBCDFC /* DesignTokensTests.swift in Sources */,
+				75791B6119F99767ACC30751 /* DesktopGridCoordinatorTests.swift in Sources */,
+				F1E7E91E4EFD3167DB313986 /* DesktopGridPaletteTests.swift in Sources */,
+				9E2FA5DCDBD20C995796CD33 /* DesktopNavigationServiceTests.swift in Sources */,
+				4F2CDC5321222012203BA669 /* DesktopSpaceServiceTests.swift in Sources */,
 				A4C6BA68425E77517DCE454B /* DockGlassRenderingTests.swift in Sources */,
 				E22A9ABF1ACE2446DE66423C /* DockHoverMonitorTests.swift in Sources */,
 				6CBAA46EEEABA09F7860EC6C /* EnumsTests.swift in Sources */,
 				F0BB21A07793A02139702B39 /* GlassAppearanceTests.swift in Sources */,
 				81AD0B07D05A179F3E27DDD3 /* GlassRenderingTests.swift in Sources */,
+				674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */,
+				7325B1D7F9DDC54C1C9A0690 /* GridOverviewViewModelTests.swift in Sources */,
+				F27C095E9B00CC976EA000B8 /* GridPanelLayoutTests.swift in Sources */,
+				3F73C153038AA97997BC1FAD /* GridPrerequisiteServiceTests.swift in Sources */,
+				4E48AD9509F16D3180F2B27F /* GridPrerequisiteTests.swift in Sources */,
+				D00B5AC3244E006E5B970959 /* GridPrerequisiteViewModelTests.swift in Sources */,
 				151067BD1D6A695FE5F669AE /* InstalledAppsServiceTests.swift in Sources */,
 				7BD89AFAC9DE588F75A61327 /* MonitoredAppTests.swift in Sources */,
+				757EC4F4A1872830AA959C08 /* MotionTokensTests.swift in Sources */,
 				CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */,
 				0EA1E4834CCF195ECE4166EA /* PreviewTriggerMonitorTests.swift in Sources */,
 				FC4B737FDDAF385608C00299 /* PreviewViewModelTests.swift in Sources */,
 				D06DD1F8E4497FA98D2D1C24 /* SettingsServiceTests.swift in Sources */,
 				5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */,
+				9E2F6C9478E07EB44021ED67 /* SwipeDirectionClassifierTests.swift in Sources */,
 				6E4E83CA9748AD21074F4735 /* ThumbnailDiskCacheTests.swift in Sources */,
 				8C57511E578886B778AB1A88 /* ThumbnailServiceTests.swift in Sources */,
+				83D916AA58F0659AEEE10FEA /* TrackpadGestureServiceTests.swift in Sources */,
 				5CFFD80558D38BC6FE92F240 /* UsageStatisticsTests.swift in Sources */,
 				9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */,
 				349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */,
@@ -541,14 +672,36 @@
 				020BFDAE3FB688562345AD6C /* AppLogger.swift in Sources */,
 				81B5494B3F6F687518BA2CA8 /* AppSettings.swift in Sources */,
 				AA7BEAF963CB36DDC1C4FA10 /* DesignTokens.swift in Sources */,
+				D0453BCE9645F02AC3F3C026 /* Desktop.swift in Sources */,
+				A174EF356A7E1CE551E0E288 /* DesktopGridCoordinator.swift in Sources */,
+				506E964357AEA05CBD1E2D30 /* DesktopGridOnboardingView.swift in Sources */,
+				1B23DE9DD03F57C4DBBFF9A2 /* DesktopGridPalette.swift in Sources */,
+				5D570ABDDF02D56C2DFE0625 /* DesktopGridPreferencesSection.swift in Sources */,
+				5199B0E3B22217CBAEF9261E /* DesktopNavigationService.swift in Sources */,
+				828E32678D8B4FA71E990E8B /* DesktopSpaceService.swift in Sources */,
 				74E0D2C645E1A103BF01BC87 /* DockHoverMonitor.swift in Sources */,
 				0CDB9415C6AF01F191F7743B /* DockPreviewPanel.swift in Sources */,
 				5FA543B9C254D62E25D6E1D4 /* DockPreviewView.swift in Sources */,
 				0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */,
 				775DDFD010B842421511E6F1 /* GlassEffect.swift in Sources */,
+				29FE3B26CE9FFFCDD9CF0442 /* GridBackground.swift in Sources */,
+				89C446418268E0251BB7C0F3 /* GridCellView.swift in Sources */,
+				FF32458B66D59F2EAC0A6AB2 /* GridHUDPanel.swift in Sources */,
+				7DD9B0976DE1C1C0D3CC3278 /* GridHUDView.swift in Sources */,
+				718CB4B1F80D0A03803AC927 /* GridHUDViewModel.swift in Sources */,
+				D1C8FA6C0521110E85CEE342 /* GridOverviewPanel.swift in Sources */,
+				516DAFDA8F12E8738E11FEB1 /* GridOverviewView.swift in Sources */,
+				854FD5E262C5B6F914D34821 /* GridOverviewViewModel.swift in Sources */,
+				56515D6849D58FE6F491AA7F /* GridPanelLayout.swift in Sources */,
+				2DD527A51A91C49F01542D1C /* GridPrerequisite.swift in Sources */,
+				A52D55EC6F37CD0195757012 /* GridPrerequisiteService.swift in Sources */,
+				5B9F757E94BC377A96C08E0E /* GridPrerequisiteViewModel.swift in Sources */,
+				9FABCB54E3792FEE65EEA7B1 /* GridStyle.swift in Sources */,
+				C23BF8F8B71FBE85F7A8628B /* GridThumbnailView.swift in Sources */,
 				B808FD16B01FD587EFB8DA70 /* InstalledAppsService.swift in Sources */,
 				B797563475DF0ABB346F56CA /* MonitoredApp.swift in Sources */,
 				90B9F9CC1ADB75648FDE5E1C /* MotionTokens.swift in Sources */,
+				09CD6512810271F4342F8AC5 /* MultitouchSupportBridge.swift in Sources */,
 				8F13B62CA83D5DB7659B0DBB /* NativeCrystalContainer.swift in Sources */,
 				4F319DCCBFF23D406715CD88 /* NotificationStrategy.swift in Sources */,
 				25BEA26A797B70D0A0ED19DE /* OnboardingView.swift in Sources */,
@@ -563,17 +716,20 @@
 				33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */,
 				34A8A5EB0367745AFAD728C3 /* ShortcutPrefix.swift in Sources */,
 				557D68547549ED39FDA46C08 /* ShortcutService.swift in Sources */,
+				0399533991E0D3B32546D963 /* SkyLightSpaceBridge.swift in Sources */,
 				6B0C967C9567C91B5E0FE76F /* StatisticsChartView.swift in Sources */,
 				A072D06E5B68A96A4DCADA1E /* StatisticsEfficiencyView.swift in Sources */,
 				E9DE129852F828C142F543D6 /* StatisticsView.swift in Sources */,
 				78C77E295F7654AAC3B671AC /* StatisticsViewModel.swift in Sources */,
 				4C8E285F29A903C506F74761 /* StatusBarView.swift in Sources */,
 				D0B57E255B5AD9C3E6F9911A /* StatusBarViewModel.swift in Sources */,
+				91E69686F8833EB4F628E203 /* SwipeDirectionClassifier.swift in Sources */,
 				65996F0D789B2455B3F83A18 /* SwitchlyApp.swift in Sources */,
 				139D992482CCDB0FB46C454E /* ThemeApplier.swift in Sources */,
 				D44F5C97B2215F013DEA975A /* ThumbnailDiskCache.swift in Sources */,
 				DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */,
 				89C5AF0478503B5D4703D6FD /* ThumbnailSize.swift in Sources */,
+				DA8CD524C8C7D059C6F4DAA7 /* TrackpadGestureService.swift in Sources */,
 				B57FC5CB9FDE33585A8B546E /* UsageStatistics.swift in Sources */,
 				D1EBD23D19E96CAA0506A43C /* UsageStatisticsEfficiency.swift in Sources */,
 				A8787B16DE389140CF48D9AF /* UsageStatisticsPreferencesSection.swift in Sources */,

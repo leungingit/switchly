@@ -48,6 +48,17 @@ Group apps into named workspaces—for example, **Build**, **Write**, and **Plan
 
 Workspaces organize app groups and access to their windows; they do not create macOS Spaces or save and restore desktop layouts.
 
+## Desktop Grid (optional, off by default)
+
+Switchly can also show your macOS desktops as one 3×3 overview, so you can see where everything is before you go there.
+
+- **Overview:** a full-screen spatial grid (default) or one centered panel, on a warm-white or pure-white backdrop in light appearance. Each cell shows the desktop number, its windows and the apps that own them.
+- **Switching:** a four-finger swipe moves to the neighbouring desktop, and `⌃1`–`⌃9` jump straight to one. Arrow keys move between cells, `Tab` walks them in order, `Return` switches and `Esc` closes. A compact HUD shows where a swipe is taking you.
+- **Prerequisites, checked read-only:** the **Desktop Grid** tab in Preferences lists what macOS needs — Accessibility, Screen Recording, at least two desktops, the system “Switch to Desktop” shortcuts, and the system four-finger gestures turned off. Each row opens the right System Settings pane. Switchly never changes a system setting for you.
+- **Setup guide:** a separate window walks through the same list, folding the steps you have already met.
+
+Turn it on in **Preferences → Desktop Grid**. While it is off, the menu entry stays visible but cannot open the overview. The desktop grid is independent of Workspaces: it reads the Spaces macOS already has, and cannot create, delete or reorder them.
+
 ## Small details that fit your day
 
 | When you… | Switchly helps you… |
