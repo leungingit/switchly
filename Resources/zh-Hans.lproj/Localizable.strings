@@ -10,6 +10,13 @@
 "Preview behavior and system integration" = "预览行为与系统集成";
 "Preview" = "预览";
 "Window source" = "窗口来源";
+"Desktop range" = "桌面范围";
+"All desktops" = "所有桌面";
+"Current desktop" = "当前桌面";
+"This setting only affects the global preview. Dock previews always include all desktops." = "此设置仅控制全局预览；Dock 预览始终包含所有桌面。";
+"Window is on another desktop" = "窗口位于其他桌面";
+"Window is hidden" = "窗口已隐藏";
+"Cached preview" = "缓存预览";
 "Thumbnail size" = "缩略图大小";
 "Preview interaction" = "预览方式";
 "Highlight only" = "仅高亮";
@@ -311,3 +318,22 @@
 /* Native glass */
 "Remove glass overlays" = "清除玻璃叠层";
 "Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "保留所选材质、主题与卡片填充，清除附加的密度、染色与反光，恢复系统原生效果。";
+
+"Preview may be outdated" = "预览内容可能不是最新";
+
+"%d windows on other desktops" = "其他桌面还有 %d 个窗口";
+"Unable to save desktop range" = "无法保存桌面范围";
+
+"Finding windows on other desktops…" = "正在查找其他桌面的窗口…";
+
+"Finding windows…" = "正在查找窗口…";
+
+"Window desktop is unknown" = "暂无法确定窗口所在桌面";
+
+"Unable to focus this window" = "无法聚焦此窗口";
+"The window may have closed, or macOS did not switch to its desktop. You can try selecting it in Mission Control." = "窗口可能已关闭，或 macOS 未切换到它所在的桌面。可以尝试在调度中心选择该窗口。";
+
+"Switch to this window before using window controls." = "请先切换到此窗口，再使用窗口操作。";
+
+"Window list is limited without Accessibility permission" = "未授予辅助功能权限，窗口列表不完整";
+"Window list is limited" = "窗口列表不完整";

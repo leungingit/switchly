@@ -40,6 +40,8 @@ struct WindowTrafficLightButtons: View {
             dot(.minimize) { WindowAction.minimize(window) }
             dot(.zoom) { WindowAction.zoom(window) }
         }
+        .disabled(!window.canPerformWindowActions)
+        .help(window.canPerformWindowActions ? "" : language.localizedString("Switch to this window before using window controls."))
         .onHover { hovering in
             isHovered = hovering
         }

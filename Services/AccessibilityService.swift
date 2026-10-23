@@ -107,6 +107,7 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// enough to notice an app that re-asserts its own key window after
     /// activation (Chromium does).
     private static let frontmostSampleCount = 5
+    private static let otherSpaceSampleCount = 25
     private static let frontmostSampleInterval: TimeInterval = 0.06
 
     /// Score of an exact title match combined with matching size and position:
@@ -172,6 +173,7 @@ class AccessibilityService: AccessibilityServiceProtocol {
         if !isSynthesized, let exact = axWindows.first(where: { axWindowNumber($0) == window.id }) {
             append(exact, reason: "axWindowNumber")
         }
+        if window.isOnOtherSpace { return candidates }
 
         // 2. Scored matching (normalized title + geometry), best score first.
         let scored = axWindows
@@ -328,6 +330,11 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// clicked. Predicting the mapping cannot fix that; checking the result can.
     /// A wrong guess now costs one bounded attempt instead of failing the switch.
     func resolveAndFocus(_ window: WindowInfo) -> Bool {
+        // 跨桌面目标只提升精确身份，禁止失败后探测同应用的其他窗口。
+        if window.isOnOtherSpace {
+            guard let exact = windowCandidates(for: window).first?.element else { return false }
+            return focus(candidate: WindowFocusCandidate(element: exact, reason: "exactOtherSpace", needsUnminimize: window.isMinimized), window: window)
+        }
         let candidates = windowCandidates(for: window)
         AppLogger.info("Resolved focus candidates. windowID=\(window.id), count=\(candidates.count), order=\(candidates.map { $0.reason }.joined(separator: ","))")
 
@@ -461,12 +468,16 @@ class AccessibilityService: AccessibilityServiceProtocol {
     private func sampleFrontmost(window: WindowInfo) -> (sawTarget: Bool, stillTarget: Bool) {
         var sawTarget = false
         var stillTarget = false
-        for index in 0..<Self.frontmostSampleCount {
+        let sampleCount = window.isOnOtherSpace ? Self.otherSpaceSampleCount : Self.frontmostSampleCount
+        var consecutiveMatches = 0
+        for index in 0..<sampleCount {
             Thread.sleep(forTimeInterval: Self.frontmostSampleInterval)
             let frontmost = isFrontmostOnScreen(window)
             sawTarget = sawTarget || frontmost
-            if index == Self.frontmostSampleCount - 1 {
+            consecutiveMatches = frontmost ? consecutiveMatches + 1 : 0
+            if index == sampleCount - 1 || consecutiveMatches >= Self.frontmostSampleCount {
                 stillTarget = frontmost
+                break
             }
         }
         return (sawTarget, stillTarget)
@@ -484,6 +495,13 @@ class AccessibilityService: AccessibilityServiceProtocol {
         guard let frontmost = frontmostComparableWindow(to: window) else { return false }
 
         if frontmost.pid == window.ownerPID && frontmost.id == window.id {
+            if window.isOnOtherSpace {
+                var focused: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(AXUIElementCreateApplication(window.ownerPID),
+                    kAXFocusedWindowAttribute as CFString, &focused) == .success,
+                    let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return false }
+                return WindowSystemIdentity.windowID(focused as! AXUIElement) == window.id
+            }
             return true
         }
 
@@ -706,16 +724,7 @@ class AccessibilityService: AccessibilityServiceProtocol {
     }
 
     private func axWindowNumber(_ window: AXUIElement) -> CGWindowID? {
-        var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(window, "AXWindowNumber" as CFString, &value)
-        guard result == .success else {
-            return nil
-        }
-
-        if let number = value as? NSNumber {
-            return CGWindowID(number.uint32Value)
-        }
-        return nil
+        WindowSystemIdentity.windowID(window)
     }
 
     private func axWindowSubrole(_ window: AXUIElement) -> String? {

@@ -673,7 +673,10 @@ class ThumbnailService: ThumbnailServiceProtocol {
             windowTitle: meta.title,
             bounds: meta.bounds,
             isOnCurrentSpace: meta.isOnCurrentSpace,
-            windowNumber: Int(windowID)
+            windowNumber: Int(windowID),
+            isMinimized: meta.isMinimized,
+            isHidden: meta.isHidden,
+            isOnOtherSpace: meta.isOnOtherSpace
         )
     }
 
@@ -714,6 +717,9 @@ class ThumbnailService: ThumbnailServiceProtocol {
             title: window.windowTitle,
             bounds: window.bounds,
             isOnCurrentSpace: window.isOnCurrentSpace,
+            isMinimized: window.isMinimized,
+            isHidden: window.isHidden,
+            isOnOtherSpace: window.isOnOtherSpace,
             recordedAt: Date()
         )
         if let existing = entries[key] {
@@ -912,6 +918,9 @@ class ThumbnailService: ThumbnailServiceProtocol {
             title: window.windowTitle,
             bounds: window.bounds,
             isOnCurrentSpace: window.isOnCurrentSpace,
+            isMinimized: window.isMinimized,
+            isHidden: window.isHidden,
+            isOnOtherSpace: window.isOnOtherSpace,
             recordedAt: Date()
         )
         pruneWindowMetaLocked()
@@ -1063,7 +1072,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
         }
 
         // Minimized windows have no on-screen content; SCK cannot capture them.
-        guard window.isOnCurrentSpace else {
+        guard !window.isMinimized else {
             return nil
         }
 
@@ -1483,6 +1492,9 @@ private struct WindowMetadata {
     let title: String
     let bounds: CGRect
     let isOnCurrentSpace: Bool
+    let isMinimized: Bool
+    let isHidden: Bool
+    let isOnOtherSpace: Bool
     /// When this record was last written. The table used to grow without
     /// bound (nothing removed records for closed windows); records are now
     /// pruned by age once it passes its cap.

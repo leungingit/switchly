@@ -10,6 +10,13 @@
 "Preview behavior and system integration" = "Preview behavior and system integration";
 "Preview" = "Preview";
 "Window source" = "Window source";
+"Desktop range" = "Desktop range";
+"All desktops" = "All desktops";
+"Current desktop" = "Current desktop";
+"This setting only affects the global preview. Dock previews always include all desktops." = "This setting only affects the global preview. Dock previews always include all desktops.";
+"Window is on another desktop" = "Window is on another desktop";
+"Window is hidden" = "Window is hidden";
+"Cached preview" = "Cached preview";
 "Thumbnail size" = "Thumbnail size";
 "Preview interaction" = "Preview interaction";
 "Highlight only" = "Highlight only";
@@ -311,3 +318,22 @@
 /* Native glass */
 "Remove glass overlays" = "Remove glass overlays";
 "Keeps the selected material, theme and card fill. Removes added density, tint and reflections." = "Keeps the selected material, theme and card fill. Removes added density, tint and reflections.";
+
+"Preview may be outdated" = "Preview may be outdated";
+
+"%d windows on other desktops" = "%d windows on other desktops";
+"Unable to save desktop range" = "Unable to save desktop range";
+
+"Finding windows on other desktops…" = "Finding windows on other desktops…";
+
+"Finding windows…" = "Finding windows…";
+
+"Window desktop is unknown" = "Window desktop is unknown";
+
+"Unable to focus this window" = "Unable to focus this window";
+"The window may have closed, or macOS did not switch to its desktop. You can try selecting it in Mission Control." = "The window may have closed, or macOS did not switch to its desktop. You can try selecting it in Mission Control.";
+
+"Switch to this window before using window controls." = "Switch to this window before using window controls.";
+
+"Window list is limited without Accessibility permission" = "Window list is limited without Accessibility permission";
+"Window list is limited" = "Window list is limited";

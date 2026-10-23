@@ -12,6 +12,8 @@ import AppKit
 
 class DockPreviewViewModel: ObservableObject {
     @Published var windows: [WindowInfo] = []
+    @Published private(set) var isEnumeratingWindows = false
+    @Published private(set) var isWindowDiscoveryLimited = false
     @Published var selectedWindow: WindowInfo?
     @Published var isPanelVisible: Bool = false
     @Published var appName: String = ""
@@ -89,9 +91,9 @@ class DockPreviewViewModel: ObservableObject {
         AppLogger.info("Refreshing dock preview windows. appName=\(appName), bundleURL=\(bundleURL?.path ?? "nil"), resolvedPID=\(runningApp.processIdentifier), matchedCount=\(matched.count)")
 
         self.windows = matched
-        if selectedWindow == nil || !self.windows.contains(selectedWindow!) {
-            selectedWindow = self.windows.first
-        }
+        isEnumeratingWindows = windowMonitorService.isEnumeratingWindows
+        isWindowDiscoveryLimited = windowMonitorService.isWindowDiscoveryLimited
+        selectedWindow = matched.first { $0.id == selectedWindow?.id } ?? matched.first
         updatePanelWidth()
     }
 
@@ -237,14 +239,17 @@ class DockPreviewViewModel: ObservableObject {
         self.selectedWindow = windows[nextIndex]
     }
 
-    func switchToWindowAndHide(_ window: WindowInfo) async {
+    @discardableResult
+    func switchToWindowAndHide(_ window: WindowInfo) async -> Bool {
         do {
             try await windowSwitchService.switchToWindow(window)
             await MainActor.run {
                 self.hidePanel()
             }
+            return true
         } catch {
             AppLogger.error("Dock preview switch failed. windowID=\(window.id), owner=\(window.ownerName), error=\(error)")
+            return false
         }
     }
 
@@ -253,8 +258,7 @@ class DockPreviewViewModel: ObservableObject {
         guard let window = selectedWindow else {
             return false
         }
-        await switchToWindowAndHide(window)
-        return true
+        return await switchToWindowAndHide(window)
     }
 
     private func setupObservers() {

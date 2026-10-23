@@ -13,6 +13,8 @@ import SwiftUI
 class PreviewViewModel: ObservableObject {
     @Published var windows: [WindowInfo] = []
     @Published var filteredWindows: [WindowInfo] = []
+    @Published private(set) var isEnumeratingWindows = false
+    @Published private(set) var isWindowDiscoveryLimited = false
     @Published var searchText: String = ""
     @Published var selectedWindow: WindowInfo?
     @Published var isLoading: Bool = false
@@ -246,6 +248,24 @@ class PreviewViewModel: ObservableObject {
         }
     }
     
+    var usesDesktopScope: Bool {
+        if case .all = scope { return true }
+        return false
+    }
+
+    var otherSpaceWindowCount: Int { windows.filter(\.isOnOtherSpace).count }
+
+    func setPreviewSpaceScope(_ value: PreviewSpaceScope) {
+        var settings = settingsService.loadSettings()
+        settings.previewSpaceScope = value
+        do {
+            try settingsService.saveSettings(settings)
+            applyFilter()
+        } catch {
+            errorMessage = settings.language.localizedString("Unable to save desktop range")
+        }
+    }
+
     func showPanel() {
         isPanelVisible = true
         refreshAllWindows()
@@ -280,6 +300,8 @@ class PreviewViewModel: ObservableObject {
         if apps.count == 1,
            let app = apps.first,
            app.autoSwitchIfSingle,
+           !windowMonitorService.isEnumeratingWindows,
+           !windowMonitorService.isWindowDiscoveryLimited,
            windows.count == 1,
            windowMonitorService.getVisibleWindowCount(for: app.bundleIdentifier) == 1 {
             let targetWindow = windows[0]
@@ -309,23 +331,33 @@ class PreviewViewModel: ObservableObject {
     }
     
     private func applyFilter() {
-        var result = windows
+        isEnumeratingWindows = windowMonitorService.isEnumeratingWindows
+        isWindowDiscoveryLimited = windowMonitorService.isWindowDiscoveryLimited
+        let spaceScope: PreviewSpaceScope = usesDesktopScope ? settingsService.loadSettings().previewSpaceScope : .allSpaces
+        var result = spaceScope == .currentSpace ? windows.filter(\.isOnCurrentSpace) : windows
         
         if !searchText.isEmpty {
             result = windowMonitorService.filterWindows(result, by: searchText)
         }
         
         filteredWindows = result
-        if let selectedWindow, !filteredWindows.contains(selectedWindow) {
-            self.selectedWindow = filteredWindows.first
-        } else if selectedWindow == nil {
-            self.selectedWindow = filteredWindows.first
+        selectedWindow = result.first { $0.id == selectedWindow?.id } ?? result.first
+        if let replicaWindow {
+            self.replicaWindow = result.first { $0.id == replicaWindow.id }
         }
         reconcileReplicaWindow()
         AppLogger.debug("Applied preview search filter. searchText=\(searchText), outputCount=\(filteredWindows.count)")
     }
     
     private func setupObservers() {
+        NotificationCenter.default.publisher(for: .settingsDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.isPanelVisible else { return }
+                self.applyFilter()
+            }
+            .store(in: &cancellables)
+
         $searchText
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
