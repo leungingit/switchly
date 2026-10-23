@@ -36,6 +36,7 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertFalse(settings.gridEnabled)
         XCTAssertEqual(settings.gridStyle, .c)
         XCTAssertEqual(settings.gridBackground, .cream)
+        XCTAssertEqual(settings.windowCardBackdrop, .followingSystem)
     }
     
     func testSettingsCodable() {
@@ -449,5 +450,108 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(decoded.gridStyle, .c)
         XCTAssertEqual(decoded.gridBackground, .cream)
         XCTAssertEqual(decoded.theme, .light)
+    }
+
+    // MARK: - Window card background
+
+    /// The card behind a window thumbnail followed the system surface colour
+    /// before it became adjustable. Storage written then has no key for it, and
+    /// must keep following the system colour: freezing the light appearance's
+    /// white into a stored value would break the dark appearance on upgrade.
+    func testMissingWindowCardBackdropStaysOnSystemColour() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "windowCardBackdrop")
+        XCTAssertNil(object["windowCardBackdrop"])
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertNil(decoded.windowCardBackdrop.tintColor)
+        XCTAssertEqual(decoded.windowCardBackdrop, .followingSystem)
+    }
+
+    func testWindowCardBackdropRoundTrip() throws {
+        var settings = AppSettings.default
+        settings.windowCardBackdrop = WindowCardBackdrop(
+            tintColor: Color(red: 0.12, green: 0.45, blue: 0.78)
+        )
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        let decodedColor = try XCTUnwrap(decoded.windowCardBackdrop.tintColor)
+        let rgb = try XCTUnwrap(NSColor(decodedColor).usingColorSpace(.sRGB))
+        XCTAssertEqual(Double(rgb.redComponent), 0.12, accuracy: 0.01)
+        XCTAssertEqual(Double(rgb.greenComponent), 0.45, accuracy: 0.01)
+        XCTAssertEqual(Double(rgb.blueComponent), 0.78, accuracy: 0.01)
+    }
+
+    /// The unset value is not a stored white: it resolves the semantic system
+    /// surface at draw time, so the light and dark appearances each get their
+    /// own colour.
+    func testWindowCardBackdropResolvesSystemSurfaceWhenUnset() throws {
+        let resolved = try XCTUnwrap(
+            NSColor(WindowCardBackdrop.followingSystem.resolvedColor()).usingColorSpace(.sRGB)
+        )
+        let system = try XCTUnwrap(NSColor.controlBackgroundColor.usingColorSpace(.sRGB))
+        XCTAssertEqual(Double(resolved.redComponent), Double(system.redComponent), accuracy: 0.001)
+        XCTAssertEqual(Double(resolved.greenComponent), Double(system.greenComponent), accuracy: 0.001)
+        XCTAssertEqual(Double(resolved.blueComponent), Double(system.blueComponent), accuracy: 0.001)
+    }
+
+    /// The colour is a drawing decision, not just a stored value: the resting
+    /// card fill the three preview surfaces share must actually render the
+    /// picked colour. This samples the real drawing expression offscreen.
+    func testWindowCardBackgroundReachesTheRenderedPixels() throws {
+        var settings = AppSettings.default
+        settings.windowCardBackdrop = WindowCardBackdrop(
+            tintColor: Color(red: 1.0, green: 0.0, blue: 0.0)
+        )
+
+        // Opaque cards use a separation of 1 (glass off); the same expression
+        // scales by the material's cardOpacity under glass.
+        let fill = settings.windowCardFill(opacity: 1)
+        let host = NSHostingView(rootView: Color.white.overlay(fill))
+        host.frame = NSRect(x: 0, y: 0, width: 20, height: 20)
+        host.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
+            XCTFail("cannot create a bitmap rep")
+            return
+        }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        guard let pixel = rep.colorAt(x: 10, y: 10)?.usingColorSpace(.sRGB) else {
+            XCTFail("cannot read the rendered pixel")
+            return
+        }
+
+        // SwiftUI composites in a linear-light display space, so pure sRGB red
+        // does not land on zero in the other channels; the assertion checks the
+        // shape (unmistakably red, nowhere near the white it replaced).
+        XCTAssertGreaterThan(Double(pixel.redComponent), 0.90)
+        XCTAssertLessThan(Double(pixel.greenComponent), 0.30)
+        XCTAssertLessThan(Double(pixel.blueComponent), 0.30)
+    }
+
+    /// Text on the card must stay legible whichever colour the user picks: a
+    /// dark backing flips the card's semantic colours to the dark scheme and a
+    /// light one keeps the light scheme. Following the system colour stores no
+    /// scheme — the panel's own already matches that surface.
+    func testWindowCardBackdropChoosesContrastingTextScheme() {
+        XCTAssertNil(WindowCardBackdrop.followingSystem.textColorScheme)
+        XCTAssertEqual(WindowCardBackdrop(tintColor: Color(red: 0.05, green: 0.10, blue: 0.15)).textColorScheme, .dark)
+        XCTAssertEqual(WindowCardBackdrop(tintColor: Color(red: 0.95, green: 0.96, blue: 0.90)).textColorScheme, .light)
+    }
+
+    /// Card separation still scales the chosen colour, so the existing glass
+    /// density slider keeps its meaning instead of being overridden.
+    func testWindowCardFillKeepsCardSeparation() throws {
+        var settings = AppSettings.default
+        settings.windowCardBackdrop = WindowCardBackdrop(
+            tintColor: Color(red: 0.0, green: 0.0, blue: 0.0)
+        )
+
+        let fill = try XCTUnwrap(NSColor(settings.windowCardFill(opacity: 0.4)).usingColorSpace(.sRGB))
+        XCTAssertEqual(Double(fill.alphaComponent), 0.4, accuracy: 0.001)
     }
 }

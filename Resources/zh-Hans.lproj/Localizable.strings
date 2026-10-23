@@ -26,6 +26,9 @@
 "Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted." = "窗口缩略图下方衬底的颜色。只有图片未覆盖的区域会被着色。";
 "Thumbnail backdrop strength" = "衬底强度";
 "How strongly the backdrop colour is laid down behind a window thumbnail." = "衬底颜色在窗口缩略图下方的铺设强度。";
+"Window cards" = "窗口卡片";
+"Card background" = "卡片底色";
+"Colour of each window card in the preview grid, Dock preview and workspace bar. It follows the system surface colour until you pick one, so a white window no longer blends into its card." = "预览网格、Dock 预览与工作区栏中每张窗口卡片的底色。未选择时跟随系统表面色；为白色窗口挑一个能分开的底色即可。";
 /* PreferencesView - Pointer triggers (preview panel summoning) */
 "Pointer triggers" = "指针触发";
 "Edge hotspot" = "边缘热区";

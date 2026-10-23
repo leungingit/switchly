@@ -71,7 +71,7 @@ Turn it on in **Preferences → Desktop Grid** (it is off by default). The grid 
 | Target an app with just one window | Enable auto-switch to go directly to it. |
 | Alternate keyboard and mouse | Use shortcuts, Dock hover, or optional pointer triggers. |
 | Prefer a quieter desktop | Keep Switchly in the menu bar, with no Dock icon; optionally launch at login. |
-| Want the panel to feel like yours | Choose light, dark, or system appearance; choose clear or frosted glass, adjust shared density and tint, or turn glass off in the Appearance tab. On macOS 26+, **Remove glass overlays** restores the selected native material without added density, tint, or reflections. Settings groups keep their outlines in every material. Advanced controls adjust card separation and white reflections, with a live thumbnail-matte sample. |
+| Want the panel to feel like yours | Choose light, dark, or system appearance; choose clear or frosted glass, adjust shared density and tint, or turn glass off in the Appearance tab. On macOS 26+, **Remove glass overlays** restores the selected native material without added density, tint, or reflections. Settings groups keep their outlines in every material. A dedicated **Window cards** group sets the backing colour behind each window card in the preview grid, Dock preview and workspace bar; advanced controls adjust card separation and white reflections and include a live thumbnail-matte sample. |
 | Want to understand your usage | View local keyboard/mouse counts and estimated time savings; clear them at any time. Estimates are not measured productivity gains. |
 
 English and Simplified Chinese are built in. Animations respect the system **Reduce Motion** setting.

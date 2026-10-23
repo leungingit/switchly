@@ -196,6 +196,7 @@ struct DockWindowCard: View {
     /// Hover lives inside the card so moving the pointer across the strip
     /// does not re-run the whole strip body.
     @State private var isHovered = false
+    @Environment(\.colorScheme) private var inheritedColorScheme
 
     private var cardThumbnailWidth: CGFloat { settings.dockPreviewCardWidth }
     private var cardThumbnailHeight: CGFloat { cardThumbnailWidth * 0.625 } // 75/120 ratio
@@ -258,6 +259,7 @@ struct DockWindowCard: View {
         .shadow(color: .black.opacity(isSelected ? 0.28 : 0), radius: isSelected ? 10 : 0, x: 0, y: 4)
         .animation(MotionTokens.animated(MotionTokens.cardSpring), value: isSelected)
         .animation(MotionTokens.animated(MotionTokens.microSpring), value: isHovered)
+        .environment(\.colorScheme, cardColorScheme)
         .onHover { hovering in
             isHovered = hovering
         }
@@ -389,6 +391,14 @@ struct DockWindowCard: View {
         return t("Window")
     }
 
+    /// A custom card backing sets the card's own text contrast; hover and
+    /// selection replace the fill with an accent tint, so they keep the
+    /// scheme inherited from the panel.
+    private var cardColorScheme: ColorScheme {
+        guard !isHovered, !isSelected else { return inheritedColorScheme }
+        return settings.windowCardBackdrop.textColorScheme ?? inheritedColorScheme
+    }
+
     /// Hover lifts the card slightly; the keyboard selection lifts it a
     /// touch higher so it stays findable while tabbing through windows.
     private var cardScale: CGFloat {
@@ -409,7 +419,7 @@ struct DockWindowCard: View {
         if isSelected {
             return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.12 : 0.06)
         }
-        return Color.crystalSurfaceBase.opacity(cardFillOpacity)
+        return settings.windowCardFill(opacity: cardFillOpacity)
     }
 
     private var cardFillOpacity: Double {

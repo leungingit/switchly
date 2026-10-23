@@ -26,6 +26,9 @@
 "Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted." = "Colour of the matte behind a window thumbnail. Only the area the image does not cover is tinted.";
 "Thumbnail backdrop strength" = "Thumbnail backdrop strength";
 "How strongly the backdrop colour is laid down behind a window thumbnail." = "How strongly the backdrop colour is laid down behind a window thumbnail.";
+"Window cards" = "Window cards";
+"Card background" = "Card background";
+"Colour of each window card in the preview grid, Dock preview and workspace bar. It follows the system surface colour until you pick one, so a white window no longer blends into its card." = "Colour of each window card in the preview grid, Dock preview and workspace bar. It follows the system surface colour until you pick one, so a white window no longer blends into its card.";
 /* PreferencesView - Pointer triggers (preview panel summoning) */
 "Pointer triggers" = "Pointer triggers";
 "Edge hotspot" = "Edge hotspot";

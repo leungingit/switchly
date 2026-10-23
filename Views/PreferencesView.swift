@@ -277,6 +277,29 @@ struct PreferencesView: View {
                     }
                 }
 
+                settingsGroup(t("Window cards")) {
+                    settingRow(t("Card background"),
+                               systemImage: "rectangle.on.rectangle",
+                               help: t("Colour of each window card in the preview grid, Dock preview and workspace bar. It follows the system surface colour until you pick one, so a white window no longer blends into its card.")) {
+                        HStack(spacing: 10) {
+                            ColorPicker(t("Card background"), selection: windowCardBackgroundBinding, supportsOpacity: false)
+                                .labelsHidden()
+                                .frame(width: 52)
+                            Text(windowCardBackgroundHex)
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .frame(width: 72, alignment: .leading)
+                            Button(t("Follow System")) {
+                                viewModel.updateSettings { $0.windowCardBackdrop = .followingSystem }
+                            }
+                            .font(.caption)
+                            .disabled(viewModel.settings.windowCardBackdrop.tintColor == nil)
+                        }
+                    }
+                }
+
                 settingsGroup(t("Glass appearance")) {
                     settingRow(t("Glass material"), systemImage: "sparkles") {
                         Picker(t("Glass material"), selection: glassStyleBinding) {
@@ -694,6 +717,27 @@ struct PreferencesView: View {
                 viewModel.updateSettings { $0.thumbnailBackdrop.tintColor = newValue }
             }
         )
+    }
+
+    /// `nil` means "follow the system surface colour": the picker shows that
+    /// resolved colour, and picking one stores an explicit tint.
+    private var windowCardBackgroundBinding: Binding<Color> {
+        Binding(
+            get: { viewModel.settings.windowCardBackdrop.resolvedColor() },
+            set: { newValue in
+                viewModel.updateSettings { $0.windowCardBackdrop.tintColor = newValue }
+            }
+        )
+    }
+
+    /// The card background as a hex triplet, next to the picker so the value is
+    /// readable rather than only visible.
+    private var windowCardBackgroundHex: String {
+        let resolved = NSColor(viewModel.settings.windowCardBackdrop.resolvedColor()).usingColorSpace(.sRGB) ?? .black
+        return String(format: "#%02X%02X%02X",
+                      Int((resolved.redComponent * 255).rounded()),
+                      Int((resolved.greenComponent * 255).rounded()),
+                      Int((resolved.blueComponent * 255).rounded()))
     }
 
     private var thumbnailBackdropOpacityBinding: Binding<Double> {
