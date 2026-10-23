@@ -1006,6 +1006,7 @@ struct WindowThumbnailView: View {
     /// pointer move re-ran the whole grid body — and every icon lookup and
     /// blur layer inside it.
     @State private var isHovered = false
+    @Environment(\.colorScheme) private var inheritedColorScheme
 
     init(
         window: WindowInfo,
@@ -1178,6 +1179,15 @@ struct WindowThumbnailView: View {
                 thumbnailState = .loaded(cached)
             }
         }
+        .environment(\.colorScheme, cardColorScheme)
+    }
+
+    /// A custom card backing sets the card's own text contrast; hover and
+    /// selection replace the fill with an accent tint, so they keep the
+    /// scheme inherited from the panel.
+    private var cardColorScheme: ColorScheme {
+        guard !isHovered, !isSelected else { return inheritedColorScheme }
+        return settings.windowCardBackdrop.textColorScheme ?? inheritedColorScheme
     }
 
     private var primaryTitle: String {
@@ -1230,7 +1240,7 @@ struct WindowThumbnailView: View {
         if isSelected {
             return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.12 : 0.06)
         }
-        return Color.crystalSurfaceBase.opacity(cardFillOpacity)
+        return settings.windowCardFill(opacity: cardFillOpacity)
     }
 
     /// Shared card separation; independent of backdrop density.

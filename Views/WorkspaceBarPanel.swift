@@ -905,6 +905,7 @@ private struct WorkspaceBarCard: View {
     @State private var thumbnailState: ThumbnailLoadState
     /// Hover lives inside the card — see WindowThumbnailView.
     @State private var isHovered = false
+    @Environment(\.colorScheme) private var inheritedColorScheme
     /// Resolved once in init: NSWorkspace.icon(forFile:) hits the file system
     /// and QuickLook, and this used to run on every body evaluation.
     private let appIcon: NSImage
@@ -1018,9 +1019,18 @@ private struct WorkspaceBarCard: View {
                 thumbnailState = .loaded(cached)
             }
         }
+        .environment(\.colorScheme, cardColorScheme)
         .accessibilityLabel(primaryTitle)
         .accessibilityHint(item.isWindow ? t("Switch") : settings.language.localizedString("Open app"))
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// A custom card backing sets the card's own text contrast; hover and
+    /// selection replace the fill with an accent tint, so they keep the
+    /// scheme inherited from the panel.
+    private var cardColorScheme: ColorScheme {
+        guard !isHovered, !isSelected else { return inheritedColorScheme }
+        return settings.windowCardBackdrop.textColorScheme ?? inheritedColorScheme
     }
 
     // MARK: - Thumbnail
@@ -1177,7 +1187,7 @@ private struct WorkspaceBarCard: View {
         if isSelected {
             return Color.accentColor.opacity((settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque) ? 0.12 : 0.06)
         }
-        return Color.crystalSurfaceBase.opacity(cardFillOpacity)
+        return settings.windowCardFill(opacity: cardFillOpacity)
     }
 
     private var cardFillOpacity: Double {

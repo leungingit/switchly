@@ -24,6 +24,14 @@ struct AppSettings: Codable, Equatable {
     /// area behind the image is visible. It used to be a fixed black wash;
     /// this makes that backdrop tint adjustable.
     var thumbnailBackdrop: ThumbnailBackdrop
+    /// Colour of the card each window thumbnail sits on in the preview grid,
+    /// Dock preview and workspace bar.
+    ///
+    /// The resting card follows the system surface colour by default, which is
+    /// near-white in the light appearance. A window whose own content is white
+    /// then blends into the card; this lets the user pick a different backing
+    /// without changing the default look on upgrade.
+    var windowCardBackdrop: WindowCardBackdrop
     /// Glass wash strength for the floating panels (preview, Dock preview,
     /// workspace bar) — surfaces that appear over the user's work and vanish.
     var backgroundBlurOpacity: Double
@@ -113,6 +121,7 @@ struct AppSettings: Codable, Equatable {
         refreshInterval: TimeInterval,
         enableBackgroundBlur: Bool,
         thumbnailBackdrop: ThumbnailBackdrop = .legacyDefault,
+        windowCardBackdrop: WindowCardBackdrop = .followingSystem,
         backgroundBlurOpacity: Double = 0.30,
         preferencesGlassOpacity: Double = 0.70,
         previewDisplayMode: PreviewDisplayMode,
@@ -160,6 +169,7 @@ struct AppSettings: Codable, Equatable {
         self.refreshInterval = refreshInterval
         self.enableBackgroundBlur = enableBackgroundBlur
         self.thumbnailBackdrop = thumbnailBackdrop
+        self.windowCardBackdrop = windowCardBackdrop
         self.backgroundBlurOpacity = backgroundBlurOpacity
         self.preferencesGlassOpacity = preferencesGlassOpacity
         self.previewDisplayMode = previewDisplayMode
@@ -209,6 +219,7 @@ struct AppSettings: Codable, Equatable {
         case refreshInterval
         case enableBackgroundBlur
         case thumbnailBackdrop
+        case windowCardBackdrop
         case backgroundBlurOpacity
         case preferencesGlassOpacity
         case previewDisplayMode
@@ -280,6 +291,13 @@ struct AppSettings: Codable, Equatable {
         } else {
             self.thumbnailBackdrop = .legacyDefault
         }
+        // Absent in settings written before the card backing could be chosen:
+        // those files rendered the semantic system surface, so the default
+        // keeps the upgrade invisible.
+        self.windowCardBackdrop = try container.decodeIfPresent(
+            WindowCardBackdrop.self,
+            forKey: .windowCardBackdrop
+        ) ?? .followingSystem
         self.backgroundBlurOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundBlurOpacity) ?? 0.30
         // Absent before the settings window got its own control: keep the
         // window opaque enough that text over a bright desktop stays readable,
@@ -355,6 +373,13 @@ struct AppSettings: Codable, Equatable {
     
     var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }
     var windowGlassDensity: Double { crystalMaterial.sharedDensity ?? preferencesGlassOpacity }
+
+    /// Resting fill for a per-window card. The preview grid, Dock preview and
+    /// workspace bar all read this one expression, so the chosen colour cannot
+    /// drift between surfaces. `opacity` stays the material's card separation.
+    func windowCardFill(opacity: Double) -> Color {
+        windowCardBackdrop.resolvedColor().opacity(opacity)
+    }
 
     /// Keep the selected native material, theme and card fill; remove only
     /// our panel-wide overlays. Write legacy density keys for older readers too.
@@ -769,6 +794,78 @@ struct ThumbnailBackdrop: Hashable {
     /// panel style. A hidden solid-panel multiplier made this slider misleading.
     func resolvedColor() -> Color {
         tintColor.opacity(opacity)
+    }
+}
+
+/// The backing of a single window's card.
+///
+/// Every window thumbnail sits on a card (the preview grid, Dock preview and
+/// workspace bar all share it). The card used to be the plain semantic surface
+/// colour, which is near-white in the light appearance; a white window then had
+/// nothing to separate it from its own backing. The tint is optional on purpose:
+/// `nil` keeps following the system surface colour, so an upgrade looks
+/// unchanged until the user actually picks a colour.
+struct WindowCardBackdrop: Hashable {
+    /// Nil follows the system surface colour.
+    var tintColor: Color?
+
+    /// The default: no stored colour, resolve the semantic surface at draw time.
+    static let followingSystem = WindowCardBackdrop(tintColor: nil)
+
+    func resolvedColor() -> Color {
+        tintColor ?? Color(nsColor: .controlBackgroundColor)
+    }
+
+    /// The colour scheme that keeps the card's text legible on a custom
+    /// backing. Nil while following the system colour: the panel's own scheme
+    /// already matches that surface.
+    ///
+    /// Without this a dark backing picked in the light appearance would keep
+    /// black card titles, and a light backing picked in the dark appearance
+    /// would keep white ones.
+    var textColorScheme: ColorScheme? {
+        guard let tintColor else { return nil }
+        let resolved = NSColor(tintColor).usingColorSpace(.sRGB) ?? .black
+        func linear(_ component: CGFloat) -> CGFloat {
+            component <= 0.04045 ? component / 12.92 : pow((component + 0.055) / 1.055, 2.4)
+        }
+        let luminance = 0.2126 * linear(resolved.redComponent)
+            + 0.7152 * linear(resolved.greenComponent)
+            + 0.0722 * linear(resolved.blueComponent)
+        return luminance < 0.5 ? .dark : .light
+    }
+}
+
+// MARK: - WindowCardBackdrop Codable
+
+extension WindowCardBackdrop: Codable {
+    enum CodingKeys: String, CodingKey {
+        case tintColor
+    }
+
+    /// The tint is stored as three sRGB components rather than an archived
+    /// colour: the settings file is JSON and Color has no canonical encoded
+    /// form, so a component triple is what survives a round trip on every OS.
+    private struct RGB: Codable {
+        var red: Double
+        var green: Double
+        var blue: Double
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rgb = try container.decodeIfPresent(RGB.self, forKey: .tintColor)
+        self.tintColor = rgb.map { Color(red: $0.red, green: $0.green, blue: $0.blue) }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        guard let tintColor else { return }
+        let resolved = NSColor(tintColor).usingColorSpace(.sRGB) ?? .black
+        try container.encode(RGB(red: Double(resolved.redComponent),
+                                  green: Double(resolved.greenComponent),
+                                  blue: Double(resolved.blueComponent)),
+                             forKey: .tintColor)
     }
 }
 
