@@ -258,9 +258,11 @@ class DockPreviewPanel: NSPanel {
         viewModel.selectedWindow = window
         hide()
         Task { [weak self] in
-            await self?.viewModel.switchToWindowAndHide(window)
+            guard let self else { return }
+            let success = await self.viewModel.switchToWindowAndHide(window)
             await MainActor.run {
-                self?.isSwitching = false
+                self.isSwitching = false
+                if !success { WindowSwitchFeedback.presentFailure(language: self.viewModel.settings.language) }
             }
         }
     }
@@ -299,7 +301,10 @@ class DockPreviewPanel: NSPanel {
             // (`switchToWindowAndHide`) already went through `hide()`.
             hide()
             Task {
-                await viewModel.switchToSelectedWindow()
+                let success = await viewModel.switchToSelectedWindow()
+                if !success {
+                    WindowSwitchFeedback.presentFailure(language: viewModel.settings.language)
+                }
             }
             return true
         default:

@@ -15,6 +15,8 @@ import AppKit
 private final class MockWindowMonitorService: WindowMonitorServiceProtocol {
     var windows: [WindowInfo] = []
     var visibleWindowCount = 0
+    var isEnumeratingWindows = false
+    var isWindowDiscoveryLimited = false
     private(set) var allWindowsCallCount = 0
     private(set) var appWindowsCallCount = 0
     var windowsByBundle: [String: [WindowInfo]] = [:]
@@ -66,7 +68,12 @@ private final class MockWindowMonitorService: WindowMonitorServiceProtocol {
 }
 
 private final class MockWindowSwitchService: WindowSwitchServiceProtocol {
-    func switchToWindow(_ window: WindowInfo) async throws {}
+    var shouldFail = false
+    private(set) var switchCount = 0
+    func switchToWindow(_ window: WindowInfo) async throws {
+        switchCount += 1
+        if shouldFail { throw SwitchError.applicationNotFound }
+    }
     func switchToApplication(pid: pid_t) async throws {}
 }
 
@@ -91,7 +98,7 @@ private final class MockThumbnailService: ThumbnailServiceProtocol {
 }
 
 private final class MockSettingsService: SettingsServiceProtocol {
-    private let settings: AppSettings
+    private var settings: AppSettings
 
     init(settings: AppSettings = .default) {
         self.settings = settings
@@ -101,12 +108,109 @@ private final class MockSettingsService: SettingsServiceProtocol {
         settings
     }
 
-    func saveSettings(_ settings: AppSettings) throws {}
+    func saveSettings(_ settings: AppSettings) throws { self.settings = settings }
 
     func observeChanges(_ handler: @escaping (AppSettings) -> Void) {}
 }
 
 final class PreviewViewModelTests: XCTestCase {
+
+    func testDesktopScopePreservesGlobalInventoryAndCanRevealOtherDesktop() {
+        let monitor = MockWindowMonitorService()
+        let current = WindowInfo(id: 91, ownerPID: 1, ownerName: "App", windowTitle: "Current",
+                                 bounds: .zero, isOnCurrentSpace: true, windowNumber: 91)
+        let other = WindowInfo(id: 92, ownerPID: 1, ownerName: "App", windowTitle: "Other",
+                               bounds: .zero, isOnCurrentSpace: false, windowNumber: 92, isOnOtherSpace: true)
+        let minimized = WindowInfo(id: 93, ownerPID: 1, ownerName: "App", windowTitle: "Minimized",
+                                   bounds: .zero, isOnCurrentSpace: true, windowNumber: 93, isMinimized: true)
+        monitor.windows = [current, other, minimized]
+        let settings = MockSettingsService()
+        let model = PreviewViewModel(windowMonitorService: monitor, windowSwitchService: MockWindowSwitchService(),
+                                     thumbnailService: MockThumbnailService(), settingsService: settings)
+        model.refreshAllWindows()
+        XCTAssertEqual(model.filteredWindows.map(\.id), [91, 92, 93])
+        model.setPreviewSpaceScope(.currentSpace)
+        XCTAssertEqual(model.filteredWindows.map(\.id), [91, 93])
+        XCTAssertEqual(model.windows.count, 3)
+        XCTAssertEqual(model.otherSpaceWindowCount, 1)
+        model.setPreviewSpaceScope(.allSpaces)
+        XCTAssertEqual(model.filteredWindows.map(\.id), [91, 92, 93])
+        XCTAssertEqual(monitor.allWindowsCallCount, 1)
+    }
+
+    func testAppScopedPreviewIgnoresGlobalCurrentDesktopFilter() {
+        let monitor = MockWindowMonitorService()
+        monitor.windows = [WindowInfo(id: 19, ownerPID: 1, ownerName: "App", windowTitle: "Other desktop",
+                                     bounds: .zero, isOnCurrentSpace: false, windowNumber: 19, isOnOtherSpace: true)]
+        var settings = AppSettings.default
+        settings.previewSpaceScope = .currentSpace
+        let model = PreviewViewModel(windowMonitorService: monitor, windowSwitchService: MockWindowSwitchService(),
+                                     thumbnailService: MockThumbnailService(), settingsService: MockSettingsService(settings: settings))
+        model.showWindows(for: MonitoredApp(bundleIdentifier: "com.test.app", appName: "App"))
+        XCTAssertEqual(model.filteredWindows.map(\.id), [19])
+        XCTAssertFalse(model.usesDesktopScope)
+    }
+
+    func testRefreshReplacesSelectedWindowStateWithoutChangingIdentity() {
+        let monitor = MockWindowMonitorService()
+        monitor.windows = [makeWindow(id: 29)]
+        let model = makeViewModel(monitor: monitor)
+        model.refreshAllWindows()
+        monitor.windows = [WindowInfo(id: 29, ownerPID: 1, ownerName: "App", windowTitle: "Other desktop",
+                                     bounds: .zero, isOnCurrentSpace: false, windowNumber: 29, isOnOtherSpace: true)]
+        model.refreshWindows()
+        XCTAssertEqual(model.selectedWindow?.id, 29)
+        XCTAssertEqual(model.selectedWindow?.isOnOtherSpace, true)
+        XCTAssertEqual(model.selectedWindow?.isOnCurrentSpace, false)
+    }
+
+    @MainActor
+    func testPendingEnumerationDoesNotAutoSwitchAnApparentlySingleWindow() async throws {
+        let monitor = MockWindowMonitorService()
+        monitor.windows = [makeWindow(id: 71)]
+        monitor.visibleWindowCount = 1
+        monitor.isEnumeratingWindows = true
+        let switcher = MockWindowSwitchService()
+        let model = PreviewViewModel(windowMonitorService: monitor, windowSwitchService: switcher,
+                                     thumbnailService: MockThumbnailService(), settingsService: MockSettingsService())
+        var app = MonitoredApp(bundleIdentifier: "com.test.app", appName: "App")
+        app.autoSwitchIfSingle = true
+        model.showWindows(for: app)
+        await Task.yield()
+        XCTAssertEqual(switcher.switchCount, 0)
+        XCTAssertTrue(model.isPanelVisible)
+        XCTAssertTrue(model.isEnumeratingWindows)
+    }
+
+    @MainActor
+    func testLimitedInventoryDoesNotAutoSwitchAnApparentlySingleWindow() async {
+        let monitor = MockWindowMonitorService()
+        monitor.windows = [makeWindow(id: 73)]
+        monitor.visibleWindowCount = 1
+        monitor.isWindowDiscoveryLimited = true
+        let switcher = MockWindowSwitchService()
+        let model = PreviewViewModel(windowMonitorService: monitor, windowSwitchService: switcher,
+                                     thumbnailService: MockThumbnailService(), settingsService: MockSettingsService())
+        var app = MonitoredApp(bundleIdentifier: "com.test.app", appName: "App")
+        app.autoSwitchIfSingle = true
+        model.showWindows(for: app)
+        await Task.yield()
+        XCTAssertEqual(switcher.switchCount, 0)
+        XCTAssertTrue(model.isWindowDiscoveryLimited)
+    }
+
+    @MainActor
+    func testDockSwitchFailureIsNotReportedAsSuccess() async {
+        let switcher = MockWindowSwitchService()
+        switcher.shouldFail = true
+        let model = DockPreviewViewModel(windowMonitorService: MockWindowMonitorService(),
+                                         windowSwitchService: switcher, settingsService: MockSettingsService())
+        model.selectedWindow = makeWindow(id: 72)
+        model.isPanelVisible = true
+        let success = await model.switchToSelectedWindow()
+        XCTAssertFalse(success)
+        XCTAssertTrue(model.isPanelVisible)
+    }
 
     private func makeViewModel(monitor: MockWindowMonitorService) -> PreviewViewModel {
         PreviewViewModel(

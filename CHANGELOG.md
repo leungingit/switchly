@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- 全局窗口预览新增全部桌面／当前桌面范围，默认全部桌面；应用专属及 Dock 预览保持全量。异步补充 AX 用户窗口及有明确跨桌面归属的 CG 窗口，区分最小化、隐藏和其他桌面状态。
+- 跨桌面目标采用精确窗口 ID 聚焦，不再失败后探测同应用其他窗口。实机视觉与切换验收尚未完成，详见 `docs/reviews/all-spaces-window-preview.md`。
+
+
 ## [1.2.1] - 2026-10-21
 
 ### Added
