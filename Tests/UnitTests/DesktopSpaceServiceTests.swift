@@ -11,7 +11,9 @@ import XCTest
 import CoreGraphics
 @testable import Switchly
 
-private final class FakeSpaceBridge: SpaceReading {
+/// `@unchecked Sendable`: configured on the test thread before it is handed to
+/// the service, then only read from the service's serial queue.
+private final class FakeSpaceBridge: SpaceReading, @unchecked Sendable {
     var isAvailable = true
     var displays: [RawDisplaySpaces]?
     var memberships: [CGWindowID: [UInt64]] = [:]

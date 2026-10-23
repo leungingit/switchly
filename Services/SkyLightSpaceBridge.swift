@@ -36,14 +36,24 @@ struct RawSpace: Equatable {
 
 /// Abstraction over the private framework so the service can be tested with
 /// fabricated Space layouts.
-protocol SpaceReading: AnyObject {
+///
+/// Sendable because the service hands the bridge to its serial
+/// `com.switchly.desktopSpace` queue: the read-only contract (plus the
+/// conformance note below) is what makes that hand-off safe.
+protocol SpaceReading: AnyObject, Sendable {
     var isAvailable: Bool { get }
     /// Nil when the display snapshot cannot be read.
     func readSpaces() -> [RawDisplaySpaces]?
     func spaceIDs(forWindowIDs ids: [CGWindowID]) -> [CGWindowID: [UInt64]]
 }
 
-final class SkyLightSpaceBridge: SpaceReading {
+/// `@unchecked Sendable`: the class caches resolved private symbols at init and
+/// lazily resolves the process-wide connection on first use. `DesktopSpaceService`
+/// only touches it from its serial `com.switchly.desktopSpace` queue, so that
+/// cache is never read and written concurrently; the protocol conformance lets
+/// the service capture the bridge in the queue's `@Sendable` closure without
+/// the non-Sendable-existential warning.
+final class SkyLightSpaceBridge: SpaceReading, @unchecked Sendable {
     typealias MainConnectionID = @convention(c) () -> Int32
     typealias CopyManagedDisplaySpaces = @convention(c) (Int32) -> Unmanaged<CFArray>?
     typealias ManagedDisplayGetCurrentSpace = @convention(c) (Int32, CFString) -> UInt64
