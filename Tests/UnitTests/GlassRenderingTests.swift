@@ -26,7 +26,7 @@ final class GlassRenderingTests: XCTestCase {
         settings.crystalMaterial.glassStyle = .transparent
         settings.theme = .light
         try service.saveSettings(settings)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        spinMainRunLoop(until: { model.settings.crystalMaterial.glassStyle == .transparent })
         XCTAssertEqual(model.settings.crystalMaterial.glassStyle, .transparent)
         XCTAssertEqual(model.settings.panelGlassDensity, 0)
 
@@ -50,7 +50,10 @@ final class GlassRenderingTests: XCTestCase {
                 settings.theme = style == .frosted ? .dark : .light
                 settings.crystalMaterial.sharedDensity = style == .frosted ? 0.6 : 0
                 try service.saveSettings(settings)
-                RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+                spinMainRunLoop(until: {
+                    model.settings.theme == settings.theme
+                        && model.settings.panelGlassDensity == settings.panelGlassDensity
+                })
                 host.layoutSubtreeIfNeeded()
                 XCTAssertEqual(model.settings.theme, settings.theme)
                 XCTAssertEqual(model.settings.panelGlassDensity, settings.panelGlassDensity)
@@ -331,6 +334,15 @@ final class GlassRenderingTests: XCTestCase {
                 }
             }
         }
+    }
+
+    /// The settings notification hops through the main queue; a slow CI
+    /// runner can need more than one fixed short wait to deliver it.
+    private func spinMainRunLoop(timeout: TimeInterval = 2, until done: () -> Bool) {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+        } while !done() && Date() < deadline
     }
 }
 
