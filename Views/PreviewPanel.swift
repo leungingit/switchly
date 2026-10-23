@@ -1018,11 +1018,7 @@ struct WindowThumbnailView: View {
         self.isSelected = isSelected
         self.settings = settings
         self.onHoverChange = onHoverChange
-        // Show the cached thumbnail synchronously on first render so the card
-        // never flashes a loading spinner when the preview was already
-        // captured (the common case, since the monitor preheats on every
-        // window-list change). Falls back to `.loading` only when no cache
-        // entry exists yet; the `.task` modifier then drives the capture.
+        // 已有缓存立即显示；首次预览没有缓存时，由 `.task` 按需截图。
         let initial: ThumbnailLoadState
         if let cached = ThumbnailService.shared.getCachedThumbnail(for: window) {
             initial = .loaded(cached)

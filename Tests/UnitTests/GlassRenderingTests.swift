@@ -417,6 +417,7 @@ private final class RenderingThumbnails: ThumbnailServiceProtocol {
     }
 
     func preheatThumbnails(for windows: [WindowInfo], size: CGSize, tier: ThumbnailTier, reason: String) {}
+    func preheatUncachedThumbnails(for windows: [WindowInfo], size: CGSize, reason: String) {}
 
     func setRefreshInterest(_ windowIDs: Set<CGWindowID>, owner: AnyObject, tier: ThumbnailTier) {}
 

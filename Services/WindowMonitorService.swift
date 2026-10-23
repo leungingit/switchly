@@ -46,14 +46,14 @@ extension WindowMonitorServiceProtocol {
 
 class WindowMonitorService: WindowMonitorServiceProtocol {
     private let settingsService: SettingsServiceProtocol
+    private let thumbnailService: ThumbnailServiceProtocol
+    private var activeBundleIdentifier: String?
+    private let maxPreheatWindowsPerTick = 8
     private var monitorTimer: Timer?
     private var workspaceObservers: [NSObjectProtocol] = []
-    private var lastWindowSnapshots: [CGWindowID: WindowSnapshot] = [:]
-    private var activeBundleIdentifier: String?
     /// Interval the running timer was built with, so a settings change can be
     /// compared against it (see `restartMonitoringIfFrequencyChanged`).
     private var monitorInterval: TimeInterval = 0
-    private let maxPreheatWindowsPerTick = 8
 
     /// Cache of the AX-minimized-window enumeration so the main thread is not
     /// blocked re-querying every app's accessibility hierarchy on each window
@@ -62,8 +62,12 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     
     static let shared = WindowMonitorService()
     
-    private init(settingsService: SettingsServiceProtocol = SettingsService.shared) {
+    init(
+        settingsService: SettingsServiceProtocol = SettingsService.shared,
+        thumbnailService: ThumbnailServiceProtocol = ThumbnailService.shared
+    ) {
         self.settingsService = settingsService
+        self.thumbnailService = thumbnailService
         AppLogger.debug("WindowMonitorService initialized")
     }
     
@@ -676,92 +680,47 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         AppLogger.debug("Workspace observers registered")
     }
 
-    private func processWindowChanges(reason: String) {
+    /// 通知可见面板刷新，并为尚无缓存截图的窗口预热。
+    /// 已有缓存（内存或磁盘）的窗口不再预热；它们由打开面板时的按需路径
+    /// 和可见面板的 refresh interest 维护。
+    func processWindowChanges(reason: String) {
         // Use the on-screen-only fast path here so focus switches stay snappy:
         // the full (AX-heavy) enumeration is reserved for the preview panel.
         let windows = getOnScreenWindows()
-        let snapshots = Dictionary(uniqueKeysWithValues: windows.map { ($0.id, WindowSnapshot(window: $0)) })
-        let changedWindowIDs = Set(snapshots.compactMap { windowID, snapshot in
-            lastWindowSnapshots[windowID] == snapshot ? nil : windowID
-        })
-        let removedWindowIDs = Set(lastWindowSnapshots.keys).subtracting(snapshots.keys)
-        lastWindowSnapshots = snapshots
-
-        AppLogger.verbose("Processed window changes. reason=\(reason), windows=\(windows.count), changed=\(changedWindowIDs.count), removed=\(removedWindowIDs.count)")
+        AppLogger.verbose("Processed window changes. reason=\(reason), windows=\(windows.count)")
         refreshWindowList()
-        preheatHighValueThumbnails(windows: windows, changedWindowIDs: changedWindowIDs, reason: reason)
+        preheatUncachedThumbnails(windows: windows, reason: reason)
     }
 
-    private func preheatHighValueThumbnails(windows: [WindowInfo], changedWindowIDs: Set<CGWindowID>, reason: String) {
-        guard !windows.isEmpty else {
-            return
-        }
+    private func preheatUncachedThumbnails(windows: [WindowInfo], reason: String) {
+        guard !windows.isEmpty else { return }
 
         let settings = settingsService.loadSettings()
         let monitoredBundleIDs = Set(settings.monitoredApps.filter(\.isEnabled).map(\.bundleIdentifier))
         let activeBundleID = activeBundleIdentifier
 
-        // One LaunchServices lookup per window, up front. `score` used to call
-        // `NSRunningApplication(processIdentifier:)` inside `sorted`'s
-        // comparator — O(n log n) IPC round-trips on the main thread per
-        // monitor tick.
+        // 先挑出没有缓存的窗口，再做 LaunchServices 查询，避免缓存命中的窗口白付 IPC 成本。
+        let uncached = windows.filter { thumbnailService.getCachedThumbnail(for: $0, tier: .grid) == nil }
+        guard !uncached.isEmpty else { return }
+
         let bundleIDs: [CGWindowID: String?] = Dictionary(
-            uniqueKeysWithValues: windows.map { ($0.id, NSRunningApplication(processIdentifier: $0.ownerPID)?.bundleIdentifier) }
+            uniqueKeysWithValues: uncached.map { ($0.id, NSRunningApplication(processIdentifier: $0.ownerPID)?.bundleIdentifier) }
         )
-
-        let highValueWindows = windows.filter { window in
+        func score(_ window: WindowInfo) -> Int {
             let bundleID = bundleIDs[window.id] ?? nil
-            return changedWindowIDs.contains(window.id)
-                || bundleID == activeBundleID
-                || bundleID.map { monitoredBundleIDs.contains($0) } == true
+            var score = 0
+            if bundleID == activeBundleID { score += 30 }
+            if bundleID.map({ monitoredBundleIDs.contains($0) }) == true { score += 20 }
+            if !window.windowTitle.isEmpty { score += 5 }
+            return score
         }
 
-        let prioritizedWindows = highValueWindows.sorted { lhs, rhs in
-            score(window: lhs, bundleID: bundleIDs[lhs.id] ?? nil, changedWindowIDs: changedWindowIDs, monitoredBundleIDs: monitoredBundleIDs, activeBundleID: activeBundleID)
-                > score(window: rhs, bundleID: bundleIDs[rhs.id] ?? nil, changedWindowIDs: changedWindowIDs, monitoredBundleIDs: monitoredBundleIDs, activeBundleID: activeBundleID)
-        }
-        .prefix(maxPreheatWindowsPerTick)
-
-        ThumbnailService.shared.preheatThumbnails(
-            for: Array(prioritizedWindows),
+        let prioritized = uncached.sorted { score($0) > score($1) }.prefix(maxPreheatWindowsPerTick)
+        thumbnailService.preheatUncachedThumbnails(
+            for: Array(prioritized),
             size: settings.thumbnailSize.dimensions,
             reason: reason
         )
-    }
-
-    private func score(
-        window: WindowInfo,
-        bundleID: String?,
-        changedWindowIDs: Set<CGWindowID>,
-        monitoredBundleIDs: Set<String>,
-        activeBundleID: String?
-    ) -> Int {
-        var score = 0
-        if changedWindowIDs.contains(window.id) {
-            score += 40
-        }
-        if bundleID == activeBundleID {
-            score += 30
-        }
-        if bundleID.map({ monitoredBundleIDs.contains($0) }) == true {
-            score += 20
-        }
-        if !window.windowTitle.isEmpty {
-            score += 5
-        }
-        return score
-    }
-}
-
-private struct WindowSnapshot: Equatable {
-    let ownerPID: pid_t
-    let title: String
-    let bounds: CGRect
-
-    init(window: WindowInfo) {
-        self.ownerPID = window.ownerPID
-        self.title = window.windowTitle
-        self.bounds = window.bounds
     }
 }
 

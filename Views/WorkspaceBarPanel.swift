@@ -918,11 +918,7 @@ private struct WorkspaceBarCard: View {
         self.appIcon = AppIconCache.icon(forBundleIdentifier: item.appItem.bundleIdentifier)
             ?? NSImage(systemSymbolName: "app", accessibilityDescription: nil)
             ?? NSImage()
-        // Show the cached thumbnail immediately so workspace cards never flash
-        // a loading spinner for a window that was already captured (the common
-        // case, since the monitor preheats high-value windows on every window-
-        // list change). Placeholder items have no window, so they stay on
-        // `.loading` and render the placeholder via `thumbnailArea`.
+        // 复用先前按需截图的缓存，避免重复显示加载状态。
         let initial: ThumbnailLoadState
         if let window = item.window,
            let cached = ThumbnailService.shared.getCachedThumbnail(for: window) {
