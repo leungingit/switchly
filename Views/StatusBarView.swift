@@ -42,12 +42,13 @@ class StatusBarController {
     }
 
     private func configureStatusButton(_ button: NSStatusBarButton) {
-        let configuration = NSImage.SymbolConfiguration(hierarchicalColor: .white)
-        let image = NSImage(systemSymbolName: "square.on.square", accessibilityDescription: "Switchly")?
-            .withSymbolConfiguration(configuration)
-        image?.isTemplate = false
+        // Template image: the system tints it for the menu bar's appearance
+        // (dark text on a light bar, white on a dark one).
+        let symbol = SettingsService.shared.loadSettings().menuBarIcon.symbolName
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Switchly")
+        image?.isTemplate = true
         button.image = image
-        button.contentTintColor = .white
+        button.contentTintColor = nil
     }
     
     private func setupMenu() {

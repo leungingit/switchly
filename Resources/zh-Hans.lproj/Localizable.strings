@@ -413,3 +413,22 @@
 "The system's four-finger swipes stop while the grid is on. Swipe up with five fingers to open Mission Control." = "九宫格开启时，系统的四指滑动不再响应；五指上滑可打开调度中心。";
 "Natural swipe direction" = "自然滑动方向";
 "On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want." = "开启：桌面跟随手指移动，与系统四指滑动一致；关闭：朝目标桌面的方向滑动。";
+
+/* Dock preview plugins */
+"Plugins" = "插件";
+"No plugins installed" = "尚未安装插件";
+"Open Plugins Folder" = "打开插件文件夹";
+"Reload Plugins" = "重新加载插件";
+"Allow “%@”?" = "允许“%@”吗？";
+"This plugin will be able to:" = "此插件将可以：";
+"Allow" = "允许";
+"Built-in" = "内置";
+"Installed" = "已安装";
+"Not allowed yet" = "尚未允许";
+"Read what's playing" = "读取正在播放的内容";
+"Control playback" = "控制播放";
+"Focus windows" = "聚焦窗口";
+"Run Switchly's built-in scripts for %@" = "为 %@ 运行 Switchly 内置脚本";
+
+"Extra controls shown in the Dock preview" = "在 Dock 预览中显示的附加控件";
+"Menu bar icon" = "菜单栏图标";

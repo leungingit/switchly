@@ -18,6 +18,14 @@ class DockPreviewViewModel: ObservableObject {
     @Published var panelWidth: CGFloat = 200
     @Published var panelHeight: CGFloat = 180
     @Published private(set) var settings: AppSettings
+    /// The plugin card replaces the window strip (plugin option).
+    @Published private(set) var hidesWindowStrip = false
+    /// A plugin card (`center` slot) sits below the window strip.
+    private var hasPluginCard = false
+    /// Natural height of the plugin card as laid out (0 until measured).
+    private var measuredPluginCardHeight: CGFloat = 0
+    /// Plugin overlays for the hovered app (docs/dock-preview-plugins-design.md).
+    let pluginOverlay: DockPluginOverlayModel
 
     private let windowMonitorService: WindowMonitorServiceProtocol
     private let windowSwitchService: WindowSwitchServiceProtocol
@@ -29,8 +37,10 @@ class DockPreviewViewModel: ObservableObject {
     init(
         windowMonitorService: WindowMonitorServiceProtocol = WindowMonitorService.shared,
         windowSwitchService: WindowSwitchServiceProtocol = WindowSwitchService.shared,
-        settingsService: SettingsServiceProtocol = SettingsService.shared
+        settingsService: SettingsServiceProtocol = SettingsService.shared,
+        pluginOverlay: DockPluginOverlayModel = DockPluginOverlayModel()
     ) {
+        self.pluginOverlay = pluginOverlay
         self.windowMonitorService = windowMonitorService
         self.windowSwitchService = windowSwitchService
         self.settingsService = settingsService
@@ -50,6 +60,7 @@ class DockPreviewViewModel: ObservableObject {
 
     func hidePanel() {
         isPanelVisible = false
+        pluginOverlay.stop()
     }
 
     func refreshWindows(forApp appName: String, bundleURL: URL? = nil) {
@@ -61,6 +72,7 @@ class DockPreviewViewModel: ObservableObject {
               let bundleID = runningApp.bundleIdentifier else {
             AppLogger.warning("Dock preview: could not find running app. appName=\(appName), bundleURL=\(bundleURL?.path ?? "nil")")
             self.windows = []
+            pluginOverlay.stop()
             updatePanelWidth()
             return
         }
@@ -93,6 +105,22 @@ class DockPreviewViewModel: ObservableObject {
             selectedWindow = self.windows.first
         }
         updatePanelWidth()
+        updatePluginOverlay(app: runningApp, bundleID: bundleID)
+    }
+
+    /// Plugins render per app; the first window (if any) supplies ctx.window.
+    /// Apps such as Music are often used with their window closed, so an
+    /// empty window list still mounts the overlay.
+    private func updatePluginOverlay(app: NSRunningApplication, bundleID: String) {
+        guard isPanelVisible else { return }
+        let window = windows.first
+        pluginOverlay.start(context: PluginRenderContext(
+            bundleID: bundleID,
+            pid: app.processIdentifier,
+            appName: app.localizedName ?? appName,
+            windowID: window.map { UInt32($0.id) } ?? 0,
+            titleSummary: PluginRenderContext.summarize(title: window?.windowTitle ?? "")
+        ))
     }
 
     /// Finds the running application for a hovered Dock icon.
@@ -186,6 +214,16 @@ class DockPreviewViewModel: ObservableObject {
         return first
     }
 
+    /// Called by the view with the card's laid-out height so the panel grows
+    /// to fit whichever layout the plugin renders.
+    func pluginCardHeightMeasured(_ height: CGFloat) {
+        // Not gated on hasPluginCard: the card can lay out (and report) a
+        // frame before the slot publisher flips that flag.
+        guard abs(height - measuredPluginCardHeight) > 0.5 else { return }
+        measuredPluginCardHeight = height
+        updatePanelWidth()
+    }
+
     /// Recalculates the panel width and height based on the current card size
     /// setting and window count. The panel exactly fits the content without
     /// clipping or extra padding.
@@ -201,18 +239,30 @@ class DockPreviewViewModel: ObservableObject {
         let cardTotalHeight = thumbnailHeight + 12 + 6 + 20  // padding + spacing + text
         let stripVerticalPadding: CGFloat = 20  // 10+10
         let headerHeight: CGFloat = 40
-        panelHeight = headerHeight + stripVerticalPadding + cardTotalHeight
+        let cardExtra = !hasPluginCard ? 0
+            : measuredPluginCardHeight > 0 ? measuredPluginCardHeight + DesignTokens.Spacing.sm
+            : DesignTokens.Plugin.belowCardHeight
+        let minWidth = hasPluginCard ? DesignTokens.Plugin.belowCardMinWidth : 200
+        let hideStrip = hasPluginCard && pluginOverlay.hidesWindowPreviews(in: settings)
+        if hidesWindowStrip != hideStrip { hidesWindowStrip = hideStrip }
+        // With no windows (or the option on) the card replaces the strip area.
+        let stripHeight = (count == 0 || hideStrip) && hasPluginCard ? 0 : stripVerticalPadding + cardTotalHeight
+        panelHeight = headerHeight + cardExtra + stripHeight
+        if hideStrip {
+            panelWidth = minWidth
+            return
+        }
 
         // Width calculation
         guard count > 0 else {
-            panelWidth = 200
+            panelWidth = minWidth
             return
         }
 
         let totalWidth = CGFloat(count) * cardTotalWidth + CGFloat(count - 1) * spacing + horizontalPadding
         let screenWidth = NSScreen.main?.visibleFrame.width ?? 800
         let maxWidth = screenWidth - 96  // 48px margin on each side
-        panelWidth = min(maxWidth, totalWidth)
+        panelWidth = min(maxWidth, max(totalWidth, minWidth))
     }
 
     /// Refreshes the current app's windows (called on windowListDidRefresh).
@@ -258,6 +308,15 @@ class DockPreviewViewModel: ObservableObject {
     }
 
     private func setupObservers() {
+        pluginOverlay.$slots
+            .map { $0[.center] != nil }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] has in
+                self?.hasPluginCard = has
+                self?.updatePanelWidth()
+            }
+            .store(in: &cancellables)
         NotificationCenter.default.publisher(for: .settingsDidChange)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

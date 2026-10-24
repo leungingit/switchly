@@ -50,6 +50,25 @@ enum DesignTokens {
         static let groupBorderOpacity: Double = 0.25
     }
 
+    /// Dock preview plugin overlays (docs/dock-preview-plugins-design.md §3.5).
+    /// Plugins pick a named size; these are the only point values they get.
+    enum Plugin {
+        static let controlSmall: CGFloat = 22
+        static let controlMedium: CGFloat = 28
+        static let controlLarge: CGFloat = 40
+        static let imageSmall: CGFloat = 24
+        static let imageMedium: CGFloat = 32
+        static let imageLarge: CGFloat = 88
+        /// Fraction of the thumbnail height a bottom bar may take.
+        static let bottomBarMaxHeightFraction: CGFloat = 0.45
+        /// Card below the window strip (`center` slot): cover + insets.
+        static let belowCardHeight: CGFloat = 132
+        static let screenBorder: CGFloat = 2
+        static let wheelDiameter: CGFloat = 148
+        static let wheelCenter: CGFloat = 54
+        static let belowCardMinWidth: CGFloat = 300
+    }
+
     /// Hairline border weight. 0.5pt reads as a crisp specular line on Retina.
     static let hairline: CGFloat = 0.5
 
