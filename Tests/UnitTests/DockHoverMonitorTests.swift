@@ -128,4 +128,24 @@ final class DockHoverMonitorTests: XCTestCase {
         XCTAssertNil(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 200, y: 20), orientation: "bottom"))
         XCTAssertNil(DockHoverState.bestIcon(in: icons, at: NSPoint(x: 20, y: 200), orientation: "left"))
     }
+
+    // MARK: Auto-hide extent
+
+    /// Regression: with magnification a hovered icon is ~150 pt tall, taller
+    /// than the fixed 80 pt strip, so the pointer on it fell outside the Dock
+    /// area and the preview went dead until the pointer re-touched the edge.
+    func testAutohideExtentGrowsWithMagnifiedIcons() {
+        let icons = [icon("A", x: 0, y: 0, size: 98), icon("B", x: 98, y: 0, size: 149)]
+        XCTAssertEqual(DockHoverState.autohideExtent(icons: icons, orientation: "bottom"), 165)
+    }
+
+    func testAutohideExtentNeverShrinksBelowTheMinimumStrip() {
+        XCTAssertEqual(DockHoverState.autohideExtent(icons: [icon("A", x: 0, y: 0)], orientation: "bottom"), 80)
+        XCTAssertEqual(DockHoverState.autohideExtent(icons: [], orientation: "bottom"), 80)
+    }
+
+    func testAutohideExtentUsesWidthForSideDock() {
+        let tall = DockIconInfo(appName: "A", frame: CGRect(x: 0, y: 0, width: 120, height: 30), bundleURL: nil)
+        XCTAssertEqual(DockHoverState.autohideExtent(icons: [tall], orientation: "left"), 136)
+    }
 }
