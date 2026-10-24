@@ -26,11 +26,27 @@ struct DockPreviewView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            if viewModel.windows.isEmpty {
-                emptyState
+            if viewModel.hidesWindowStrip {
+                // Plugin option: widget only, no window previews.
+            } else if viewModel.windows.isEmpty {
+                // Apps like Music are often used with no window open; their
+                // plugin card (below) replaces the empty state.
+                if !viewModel.pluginOverlay.hasCenter { emptyState }
             } else {
                 windowStrip
             }
+            // Plugin card sits below the previews, never over them.
+            DockPluginSlotView(overlay: viewModel.pluginOverlay, slots: [.center],
+                               settings: settings, fallback: nil)
+                // Ideal height, so a too-small panel can't squeeze the card
+                // and have that squeezed height measured back.
+                .fixedSize(horizontal: false, vertical: true)
+                .background(GeometryReader { proxy in
+                    Color.clear.preference(key: PluginCardHeightKey.self, value: proxy.size.height)
+                })
+                .onPreferenceChange(PluginCardHeightKey.self) { viewModel.pluginCardHeightMeasured($0) }
+                .padding(.horizontal, DesignTokens.Spacing.sm)
+                .padding(.bottom, DesignTokens.Spacing.sm)
         }
         .frame(width: viewModel.panelWidth, height: viewModel.panelHeight)
         .scaleEffect(viewModel.isPanelVisible ? 1 : 0.88, anchor: .bottom)
@@ -96,7 +112,9 @@ struct DockPreviewView: View {
                     DockWindowCard(
                         window: window,
                         isSelected: viewModel.selectedWindow?.id == window.id,
-                        settings: settings
+                        settings: settings,
+                        // Plugins render against the first window (ctx.window).
+                        pluginOverlay: window.id == viewModel.windows.first?.id ? viewModel.pluginOverlay : nil
                     )
                     .transition(.opacity)
                     .onTapGesture {
@@ -191,6 +209,7 @@ struct DockWindowCard: View {
     let isSelected: Bool
     /// Resolved once by the panel — see WindowThumbnailView.settings.
     let settings: AppSettings
+    let pluginOverlay: DockPluginOverlayModel?
 
     @State private var thumbnailState: ThumbnailLoadState
     /// Hover lives inside the card so moving the pointer across the strip
@@ -201,10 +220,11 @@ struct DockWindowCard: View {
     private var cardThumbnailWidth: CGFloat { settings.dockPreviewCardWidth }
     private var cardThumbnailHeight: CGFloat { cardThumbnailWidth * 0.625 } // 75/120 ratio
 
-    init(window: WindowInfo, isSelected: Bool, settings: AppSettings) {
+    init(window: WindowInfo, isSelected: Bool, settings: AppSettings, pluginOverlay: DockPluginOverlayModel? = nil) {
         self.window = window
         self.isSelected = isSelected
         self.settings = settings
+        self.pluginOverlay = pluginOverlay
         // Render the cached thumbnail immediately so the dock card never shows
         // a loading spinner for a window that was already captured (the common
         // case, since the monitor preheats high-value windows on every window-
@@ -223,6 +243,15 @@ struct DockWindowCard: View {
             ZStack(alignment: .topLeading) {
                 thumbnailContainer
                     .frame(width: cardThumbnailWidth, height: cardThumbnailHeight)
+                    .overlay(alignment: .bottom) {
+                        if let pluginOverlay {
+                            // Buttons inside take the click, so the card's tap
+                            // (switch window) only fires outside them.
+                            DockPluginSlotView(overlay: pluginOverlay, slots: [.bottomBar], settings: settings, fallback: nil)
+                                .frame(maxHeight: cardThumbnailHeight * DesignTokens.Plugin.bottomBarMaxHeightFraction)
+                                .padding(DesignTokens.Spacing.xs)
+                        }
+                    }
 
                 // macOS standard traffic light buttons (close / minimize / zoom)
                 // visible on hover or when selected.
@@ -440,9 +469,50 @@ struct DockWindowCard: View {
     }
 }
 
+// MARK: - Plugin slots
+
+/// Observes the overlay model so plugin re-renders only redraw this view, not
+/// the whole strip.
+struct DockPluginSlotView: View {
+    @ObservedObject var overlay: DockPluginOverlayModel
+    let slots: [PluginSlot]
+    let settings: AppSettings
+    let fallback: AnyView?
+
+    var body: some View {
+        let nodes = slots.compactMap { overlay.slots[$0] }
+        if nodes.isEmpty {
+            fallback
+        } else {
+            VStack(spacing: DesignTokens.Spacing.xs) {
+                ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
+                    PluginOverlayView(
+                        node: node,
+                        material: settings.crystalMaterial,
+                        isGlassActive: settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque,
+                        artwork: overlay.artwork,
+                        onAction: { overlay.perform(actionID: $0, value: $1) }
+                    )
+                }
+            }
+            .padding(fallback == nil ? 0 : DesignTokens.Spacing.sm)
+            .frame(maxWidth: .infinity, maxHeight: fallback == nil ? nil : .infinity)
+            .transition(.opacity)
+        }
+    }
+}
+
 /// Content width of the dock preview's horizontal strip. Compared
 /// against the panel width to decide whether the scroll-affordance edge fade
 /// should be shown.
+private struct PluginCardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 private struct StripWidthKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
 

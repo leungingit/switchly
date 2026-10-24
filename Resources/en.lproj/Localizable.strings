@@ -413,3 +413,22 @@
 "The system's four-finger swipes stop while the grid is on. Swipe up with five fingers to open Mission Control." = "The system's four-finger swipes stop while the grid is on. Swipe up with five fingers to open Mission Control.";
 "Natural swipe direction" = "Natural swipe direction";
 "On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want." = "On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want.";
+
+/* Dock preview plugins */
+"Plugins" = "Plugins";
+"No plugins installed" = "No plugins installed";
+"Open Plugins Folder" = "Open Plugins Folder";
+"Reload Plugins" = "Reload Plugins";
+"Allow “%@”?" = "Allow “%@”?";
+"This plugin will be able to:" = "This plugin will be able to:";
+"Allow" = "Allow";
+"Built-in" = "Built-in";
+"Installed" = "Installed";
+"Not allowed yet" = "Not allowed yet";
+"Read what's playing" = "Read what's playing";
+"Control playback" = "Control playback";
+"Focus windows" = "Focus windows";
+"Run Switchly's built-in scripts for %@" = "Run Switchly's built-in scripts for %@";
+
+"Extra controls shown in the Dock preview" = "Extra controls shown in the Dock preview";
+"Menu bar icon" = "Menu bar icon";

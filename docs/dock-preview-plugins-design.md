@@ -1,6 +1,6 @@
 # Dock 预览插件系统 — 方案调研与设计（草案）
 
-> 状态：调研 / 设计草案，未实现。日期：2026-10-23。分支：`feat/dock-preview-plugins`。
+> 状态：Phase 1 运行时已实现；Phase 0 的 AppleScript 验证已完成（见 §6 R1）；内置 Music 插件（`Resources/Plugins/com.switchly.music-controls/`）、`PluginOverlayView` 渲染、Music 媒体桥已接入 Dock 预览，真机悬停验收待完成（R2）。封面（宿主读取，插件拿不到像素）、曲名滚动、插件授权（`AppSettings.pluginGrants` + 设置 → 权限 → 插件）已实现；SDK 尚未开始。日期：2026-10-23。分支：`feat/dock-preview-plugins`。
 > 本文的结论尚未经原型验证，标注「待验证」的条目需在 Phase 0 原型中实测后更新。
 
 ## 1. 目标与非目标
@@ -119,7 +119,7 @@ export default definePlugin({
 });
 ```
 
-- `ctx` 每次调用都是只读快照：`ctx.app`（bundleID、pid、name）、`ctx.window`（windowID、标题摘要、是否最小化）。
+- `ctx` 每次调用都是只读快照：`ctx.app`（bundleID、pid、name）、`ctx.window`（windowID、标题摘要；无窗口时 windowID 为 0。「是否最小化」待 `WindowInfo` 提供后再加）。
 - 状态刷新由宿主驱动：预览可见时按插件声明的 `refreshInterval`（下限 1s）或 `ctx.invalidate()` 重绘；不可见时零调用。
 
 ### 3.5 声明式 UI 与渲染
@@ -261,8 +261,9 @@ render: async (ctx) => {
 
 | 编号 | 事项 | 当前判断 | 后续动作 |
 |---|---|---|---|
-| R1 | AppleScript 调用延迟可能影响叠层首帧 | 待验证 | Phase 0 测量，必要时异步 + 占位 |
-| R2 | Dock 预览按钮点击与切窗手势冲突 | 待验证 | Phase 0 确认命中测试方案 |
+| R1 | AppleScript 调用延迟可能影响叠层首帧 | 2026-10-23 实测：osascript 单次约 130ms（含进程启动）；状态、元数据、`favorited` 读写、playpause / next / previous 均可用；无当前曲目返回 -1728 | 宿主内 NSAppleScript 在专用串行队列执行；首次自动化授权在后台请求，未授权前不渲染叠层 |
+| R2 | Dock 预览按钮点击与切窗手势冲突 | 插件按钮用 SwiftUI `Button`，与现有红绿灯按钮同一方式截获点击；离屏渲染已核对布局 | 真机悬停点击验收 |
+| R2a | 流媒体（`URL track`）曲目 AppleScript 取不到封面（`count of artworks` 为 0） | 2026-10-24 实测；本地曲库曲目可取到 | 现状显示音符占位图；是否读取 Music 本地缓存或其他来源待用户裁决，联网方案与隐私政策冲突不采用 |
 | R3 | 自动化权限对用户的打扰 | 每目标 App 首次一次 | 设置页提供引导说明 |
 | R4 | 第三方插件恶意行为 | 能力白名单可控 | 不开放任意脚本 / 网络 |
 | R5 | 插件分发渠道 | 初期仅本地安装 | 市场化需单独评估隐私影响 |
@@ -275,3 +276,9 @@ render: async (ctx) => {
 | D01 | 2026-10-23 | 运行时采用内嵌 JavaScriptCore + 声明式 UI（方案 A） | §2 对比；零依赖、隐私边界、视觉一致 |
 | D02 | 2026-10-23 | 首期不提供网络、文件、任意 AppleScript、MediaRemote 能力 | §3.6、§4.1 |
 | D03 | 2026-10-23 | 界面采用「slot + 声明式组件树」由宿主绘制；首期不开放 Canvas / WebView 自由绘制 | §3.5.5；视觉一致、无障碍、性能 |
+| D04 | 2026-10-23 | 插件包以 `globalThis.__switchlyPlugin = { render, onAction }` 注册（SDK `definePlugin` 产出 IIFE）；超时为软超时：JSC 无公开中断 API，迟到结果丢弃，连续 3 次停用 | Phase 1 实现；`make test-unit` 通过 |
+| D05 | 2026-10-23 | 预留远端（GitHub）加载：所有来源统一为「本地目录 + 同一加载器」，`PluginOrigin` 目前为 `builtin` / `user`；远端来源将新增 `remote(repo, commit)`，流程为用户显式确认 → 按固定 commit 下载到缓存目录 → 校验 sha256 → 首次展示权限清单 → 交给现有加载器。默认关闭，不做后台自动更新 | 用户要求后续支持 GitHub 地址；联网与 PRIVACY_POLICY「完全本地」冲突，启用前需单独修订隐私政策并经用户裁决 |
+| D06 | 2026-10-23 | 内置插件随 App 打包于 `Contents/Resources/Plugins`，搜索顺序内置优先，同 id 的用户副本不能覆盖内置插件 | 防止伪装内置插件获取已授予的权限 |
+| D07 | 2026-10-23 | `bottomBar` 高度上限由约 30% 调整为缩略图高度 45%（`DesignTokens.Plugin.bottomBarMaxHeightFraction`）；默认 120pt 卡片仅放一行紧凑按钮，无窗口时在空状态区域显示曲目与进度 | 120×75 卡片 30% 仅 22pt，放不下带内边距的按钮行；Music 常在无窗口时使用 |
+| D08 | 2026-10-23 | 授权规则：内置插件默认按声明启用、可关闭；用户插件默认关闭，确认权限清单后启用；插件更新新增的权限保持“尚未允许”且不注入，直到再次确认。运行时只拿到「声明 ∩ 已确认」的权限，授权变化时重建 JS 环境 | §3.6；`PluginAuthorizationTests` |
+| D09 | 2026-10-23 | 封面由宿主经媒体桥按曲目 persistent ID 缓存读取，只在插件树含 `image{artwork}` 且有已授权 `media.nowPlaying` 的插件时请求；曲名滚动速度、停顿放 `MotionTokens`，减少动态效果时退化为截断 | §3.5.2、§4.1 |
