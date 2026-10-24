@@ -14,6 +14,7 @@ enum PreferencesTab: Hashable {
     case apps
     case grid
     case permissions
+    case plugins
     case shortcuts
 }
 
@@ -45,6 +46,7 @@ struct PreferencesView: View {
                     Text(t("Apps")).tag(PreferencesTab.apps)
                     Text(t("Desktop Grid")).tag(PreferencesTab.grid)
                     Text(t("Permissions")).tag(PreferencesTab.permissions)
+                    Text(t("Plugins")).tag(PreferencesTab.plugins)
                     Text(t("Shortcuts")).tag(PreferencesTab.shortcuts)
                 }
                 .labelsHidden()
@@ -59,6 +61,7 @@ struct PreferencesView: View {
                     case .apps: appsSettingsTab
                     case .grid: gridSettingsTab
                     case .permissions: permissionsSettingsTab
+                    case .plugins: pluginsSettingsTab
                     case .shortcuts: shortcutsSettingsTab
                     }
                 }
@@ -264,6 +267,20 @@ struct PreferencesView: View {
                         Picker("", selection: languageBinding) {
                             ForEach(AppLanguage.allCases, id: \.self) { language in
                                 Text(language.displayName).tag(language)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 260)
+                    }
+
+                    settingRow(t("Menu bar icon"), systemImage: "menubar.rectangle") {
+                        Picker("", selection: Binding(
+                            get: { viewModel.settings.menuBarIcon },
+                            set: { value in viewModel.updateSettings { $0.menuBarIcon = value } }
+                        )) {
+                            ForEach(MenuBarIcon.allCases, id: \.self) { icon in
+                                Image(systemName: icon.symbolName).tag(icon)
                             }
                         }
                         .labelsHidden()
@@ -505,6 +522,20 @@ struct PreferencesView: View {
         }
         .onAppear {
             viewModel.refreshPermissionStatus()
+        }
+    }
+
+    private var pluginsSettingsTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header(t("Plugins"), subtitle: t("Extra controls shown in the Dock preview"))
+                PluginPreferencesSection(
+                    settings: viewModel.settings,
+                    onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } },
+                    group: { title, content in AnyView(settingsGroup(title) { content }) }
+                )
+            }
+            .padding(24)
         }
     }
 

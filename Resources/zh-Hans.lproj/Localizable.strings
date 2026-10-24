@@ -443,3 +443,22 @@
 
 "Window list is limited without Accessibility permission" = "未授予辅助功能权限，窗口列表不完整";
 "Window list is limited" = "窗口列表不完整";
+
+/* Dock preview plugins */
+"Plugins" = "插件";
+"No plugins installed" = "尚未安装插件";
+"Open Plugins Folder" = "打开插件文件夹";
+"Reload Plugins" = "重新加载插件";
+"Allow “%@”?" = "允许“%@”吗？";
+"This plugin will be able to:" = "此插件将可以：";
+"Allow" = "允许";
+"Built-in" = "内置";
+"Installed" = "已安装";
+"Not allowed yet" = "尚未允许";
+"Read what's playing" = "读取正在播放的内容";
+"Control playback" = "控制播放";
+"Focus windows" = "聚焦窗口";
+"Run Switchly's built-in scripts for %@" = "为 %@ 运行 Switchly 内置脚本";
+
+"Extra controls shown in the Dock preview" = "在 Dock 预览中显示的附加控件";
+"Menu bar icon" = "菜单栏图标";
