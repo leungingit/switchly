@@ -88,6 +88,23 @@ enum DockHoverState {
         }
         return bestIcon
     }
+
+    /// How far from the screen edge an auto-hidden Dock extends.
+    ///
+    /// A fixed 80 pt strip is too thin once Dock magnification is on: a
+    /// magnified icon is ~150 pt tall, so a pointer resting on it sits outside
+    /// the strip. Leaving the strip clears the "Dock revealed" latch, and the
+    /// preview then stays dead until the pointer touches the screen edge again
+    /// — every app at once, recovering seconds later. The extent therefore
+    /// follows the tallest icon (thickness axis) the last Dock walk reported.
+    static func autohideExtent(icons: [DockIconInfo],
+                               orientation: String,
+                               minimum: CGFloat = 80,
+                               margin: CGFloat = 16) -> CGFloat {
+        let vertical = (orientation == "left" || orientation == "right")
+        let thickest = icons.map { vertical ? $0.frame.width : $0.frame.height }.max() ?? 0
+        return max(minimum, thickest + margin)
+    }
 }
 
 class DockHoverMonitor {
@@ -130,6 +147,9 @@ class DockHoverMonitor {
     /// Icons do not move on that timescale (Dock magnification shifts frames,
     /// but a ≤120 ms stale frame is imperceptible for preview switching).
     private var dockIconCache: (date: Date, icons: [DockIconInfo])?
+    /// Auto-hidden Dock thickness, grown with magnified icons (see
+    /// `DockHoverState.autohideExtent`). Defaults to the unmagnified strip.
+    private var autohideDockExtent: CGFloat = 80
     /// How long a Dock icon layout stays authoritative between AX walks.
     private let dockIconCacheInterval: TimeInterval = 0.12
 
@@ -172,6 +192,7 @@ class DockHoverMonitor {
         lastProcessedLocation = nil
         isDockRevealed = false
         dockIconCache = nil
+        autohideDockExtent = 80
         AppLogger.info("DockHoverMonitor stopped")
     }
 
@@ -323,8 +344,8 @@ class DockHoverMonitor {
     /// Quick geometric check: is the cursor in the Dock area?
     /// Used as a cheap pre-filter before the expensive AX query.
     private func isInDockArea(_ point: NSPoint) -> Bool {
-        // Auto-hidden Dock height: covers the full Dock strip when slid out.
-        let autohideDockSize: CGFloat = 80
+        // Auto-hidden Dock thickness: covers the full Dock strip when slid out.
+        let autohideDockSize = autohideDockExtent
 
         for screen in NSScreen.screens {
             let fullFrame = screen.frame
@@ -400,6 +421,9 @@ class DockHoverMonitor {
         refreshDockDefaultsCache()
         let icons = queryDockIcons()
         dockIconCache = (Date(), icons)
+        if !icons.isEmpty {
+            autohideDockExtent = DockHoverState.autohideExtent(icons: icons, orientation: cachedDockOrientation)
+        }
         return DockHoverState.bestIcon(in: icons, at: location, orientation: cachedDockOrientation)
     }
 

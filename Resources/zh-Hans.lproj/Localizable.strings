@@ -60,6 +60,10 @@
 "Enable dock preview" = "启用 Dock 预览";
 "Hover to show" = "悬停显示";
 "Hover delay" = "悬停延迟";
+"Card layout" = "卡片布局";
+"Layout Horizontal" = "横向";
+"Layout Vertical" = "纵向";
+"Layout Grid" = "网格";
 "Card size" = "卡片大小";
 
 /* DockPreviewView */
