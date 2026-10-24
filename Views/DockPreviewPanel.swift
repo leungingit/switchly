@@ -218,8 +218,12 @@ class DockPreviewPanel: NSPanel {
         case "right":
             originY = visibleFrame.midY - 90
         default: // "bottom"
-            let dockTopY = autohide ? fullFrame.minY + 80 : visibleFrame.minY
-            originY = dockTopY + gap
+            let restingTopY = autohide ? fullFrame.minY + 80 : visibleFrame.minY
+            // Magnification lifts the hovered icon above the resting Dock
+            // (~150 pt vs ~80 pt), so clear whichever is taller. Only the
+            // icon's size is trusted, not its AX origin (see above).
+            let magnifiedTopY = fullFrame.minY + currentIconFrame.height
+            originY = max(restingTopY, magnifiedTopY) + gap
         }
 
         return NSRect(x: clampedX, y: originY, width: panelWidth, height: viewModel.panelHeight)
