@@ -15,9 +15,9 @@ struct DockPreviewView: View {
     @StateObject private var viewModel: DockPreviewViewModel
     // The model observes settings even while this transient view is unmounted.
     private var settings: AppSettings { viewModel.settings }
-    /// Content width of the window strip, measured so the edge fade only
+    /// Content size of the window strip, measured so the edge fade only
     /// appears when the strip actually overflows.
-    @State private var stripContentWidth: CGFloat = 0
+    @State private var stripContentSize: CGSize = .zero
 
     init(viewModel: DockPreviewViewModel = DockPreviewViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -90,44 +90,69 @@ struct DockPreviewView: View {
 
     // MARK: - Window strip
 
+    private var layoutSpec: DockLayoutSpec { settings.dockPreviewLayout.spec }
+
     private var windowStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(viewModel.windows) { window in
-                    DockWindowCard(
-                        window: window,
-                        isSelected: viewModel.selectedWindow?.id == window.id,
-                        settings: settings
-                    )
-                    .transition(.opacity)
-                    .onTapGesture {
-                        DockPreviewPanel.shared.switchToWindowAndHide(window)
+        let spec = layoutSpec
+        return ScrollView(spec.axis == .horizontal ? .horizontal : .vertical, showsIndicators: false) {
+            stripContent(spec: spec)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    // Measure the strip content so the edge fade below only
+                    // appears when there is actually something to scroll to.
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: StripSizeKey.self, value: proxy.size)
                     }
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(
-                // Measure the strip content so the edge fade below only
-                // appears when there is actually something to scroll to.
-                GeometryReader { proxy in
-                    Color.clear.preference(key: StripWidthKey.self, value: proxy.size.width)
-                }
+                )
+                .animation(MotionTokens.animated(.easeOut(duration: MotionTokens.contentSwapDuration)), value: viewModel.windows)
+        }
+        .onPreferenceChange(StripSizeKey.self) { size in
+            stripContentSize = size
+        }
+        .mask(stripMask(spec: spec))
+    }
+
+    @ViewBuilder
+    private func stripContent(spec: DockLayoutSpec) -> some View {
+        switch spec.axis {
+        case .horizontal:
+            HStack(spacing: spec.spacing) { windowCards }
+        case .vertical:
+            let cardWidth = DockPanelMetrics.cardSize(cardWidth: settings.dockPreviewCardWidth).width
+            let columns = Array(
+                repeating: GridItem(.fixed(cardWidth), spacing: spec.spacing, alignment: .top),
+                count: spec.columns(for: viewModel.windows.count)
             )
-            .animation(MotionTokens.animated(.easeOut(duration: MotionTokens.contentSwapDuration)), value: viewModel.windows)
+            LazyVGrid(columns: columns, alignment: .center, spacing: spec.spacing) { windowCards }
         }
-        .onPreferenceChange(StripWidthKey.self) { width in
-            stripContentWidth = width
+    }
+
+    @ViewBuilder
+    private var windowCards: some View {
+        ForEach(viewModel.windows) { window in
+            DockWindowCard(
+                window: window,
+                isSelected: viewModel.selectedWindow?.id == window.id,
+                settings: settings
+            )
+            .transition(.opacity)
+            .onTapGesture {
+                DockPreviewPanel.shared.switchToWindowAndHide(window)
+            }
         }
-        .mask(stripMask)
     }
 
     /// Fades both edges when the strip overflows its panel — the strip hides
     /// its scroll indicators, so without this there is no affordance that
     /// more windows exist off-screen.
     @ViewBuilder
-    private var stripMask: some View {
-        if stripContentWidth > viewModel.panelWidth {
+    private func stripMask(spec: DockLayoutSpec) -> some View {
+        let horizontal = spec.axis == .horizontal
+        let overflows = horizontal
+            ? stripContentSize.width > viewModel.panelWidth
+            : stripContentSize.height > viewModel.panelHeight - DockPanelMetrics.headerHeight
+        if overflows {
             LinearGradient(
                 stops: [
                     .init(color: .clear, location: 0),
@@ -135,8 +160,8 @@ struct DockPreviewView: View {
                     .init(color: .black, location: 0.95),
                     .init(color: .clear, location: 1)
                 ],
-                startPoint: .leading,
-                endPoint: .trailing
+                startPoint: horizontal ? .leading : .top,
+                endPoint: horizontal ? .trailing : .bottom
             )
         } else {
             Rectangle()
@@ -451,14 +476,14 @@ struct DockWindowCard: View {
     }
 }
 
-/// Content width of the dock preview's horizontal strip. Compared
-/// against the panel width to decide whether the scroll-affordance edge fade
-/// should be shown.
-private struct StripWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+/// Content size of the dock preview's card strip. Compared against the panel
+/// size to decide whether the scroll-affordance edge fade should be shown.
+private struct StripSizeKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        value = CGSize(width: max(value.width, next.width), height: max(value.height, next.height))
     }
 }
 

@@ -192,29 +192,15 @@ class DockPreviewViewModel: ObservableObject {
     /// setting and window count. The panel exactly fits the content without
     /// clipping or extra padding.
     private func updatePanelWidth() {
-        let cardThumbnailWidth = settings.dockPreviewCardWidth
-        let cardTotalWidth = cardThumbnailWidth + 12  // 6+6 padding
-        let spacing: CGFloat = 10
-        let horizontalPadding: CGFloat = 24  // 12+12 edge insets
-        let count = windows.count
-
-        // Height calculation
-        let thumbnailHeight = cardThumbnailWidth * 0.625  // keep 75/120 ratio
-        let cardTotalHeight = thumbnailHeight + 12 + 6 + 20  // padding + spacing + text
-        let stripVerticalPadding: CGFloat = 20  // 10+10
-        let headerHeight: CGFloat = 40
-        panelHeight = headerHeight + stripVerticalPadding + cardTotalHeight
-
-        // Width calculation
-        guard count > 0 else {
-            panelWidth = 200
-            return
-        }
-
-        let totalWidth = CGFloat(count) * cardTotalWidth + CGFloat(count - 1) * spacing + horizontalPadding
-        let screenWidth = NSScreen.main?.visibleFrame.width ?? 800
-        let maxWidth = screenWidth - 96  // 48px margin on each side
-        panelWidth = min(maxWidth, totalWidth)
+        let visible = NSScreen.main?.visibleFrame.size ?? CGSize(width: 800, height: 600)
+        let size = DockPanelMetrics.panelSize(
+            spec: settings.dockPreviewLayout.spec,
+            count: windows.count,
+            cardWidth: settings.dockPreviewCardWidth,
+            visibleSize: visible
+        )
+        panelHeight = size.height
+        panelWidth = size.width
     }
 
     /// Refreshes the current app's windows (called on windowListDidRefresh).

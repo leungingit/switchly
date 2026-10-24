@@ -62,6 +62,8 @@ struct AppSettings: Codable, Equatable {
     var dockPreviewHoverEnabled: Bool
     var dockPreviewHoverDelay: Double
     var dockPreviewCardWidth: Double
+    /// How the Dock preview arranges one app's window cards.
+    var dockPreviewLayout: DockPreviewLayout
 
     /// How the preview panel presents window previews. Defaults to the
     /// historical grid so an upgrade never changes what the user sees.
@@ -145,6 +147,7 @@ struct AppSettings: Codable, Equatable {
         dockPreviewHoverEnabled: Bool = true,
         dockPreviewHoverDelay: Double = 0.4,
         dockPreviewCardWidth: Double = 120,
+        dockPreviewLayout: DockPreviewLayout = .horizontal,
         previewInteractionMode: PreviewInteractionMode = .highlightOnly,
         previewReplicaHoverDelay: Double = 0.4,
         previewHotspotEnabled: Bool = false,
@@ -194,6 +197,7 @@ struct AppSettings: Codable, Equatable {
         self.dockPreviewHoverEnabled = dockPreviewHoverEnabled
         self.dockPreviewHoverDelay = dockPreviewHoverDelay
         self.dockPreviewCardWidth = dockPreviewCardWidth
+        self.dockPreviewLayout = dockPreviewLayout
         self.previewInteractionMode = previewInteractionMode
         self.previewReplicaHoverDelay = previewReplicaHoverDelay
         self.previewHotspotEnabled = previewHotspotEnabled
@@ -245,6 +249,7 @@ struct AppSettings: Codable, Equatable {
         case dockPreviewHoverEnabled
         case dockPreviewHoverDelay
         case dockPreviewCardWidth
+        case dockPreviewLayout
         case previewInteractionMode
         case previewReplicaHoverDelay
         case previewHotspotEnabled
@@ -327,6 +332,7 @@ struct AppSettings: Codable, Equatable {
         self.dockPreviewHoverEnabled = try container.decodeIfPresent(Bool.self, forKey: .dockPreviewHoverEnabled) ?? true
         self.dockPreviewHoverDelay = try container.decodeIfPresent(Double.self, forKey: .dockPreviewHoverDelay) ?? 0.4
         self.dockPreviewCardWidth = try container.decodeIfPresent(Double.self, forKey: .dockPreviewCardWidth) ?? 120
+        self.dockPreviewLayout = try container.decodeIfPresent(DockPreviewLayout.self, forKey: .dockPreviewLayout) ?? .horizontal
         // Absent in settings written before the enlarged preview existed: keep
         // the historical grid behaviour instead of failing the whole decode.
         self.previewInteractionMode = try container.decodeIfPresent(

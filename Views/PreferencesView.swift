@@ -235,6 +235,17 @@ struct PreferencesView: View {
                             }
                         }
 
+                        settingRow(t("Card layout"), systemImage: "rectangle.3.group") {
+                            Picker("", selection: dockPreviewLayoutBinding) {
+                                ForEach(DockPreviewLayout.allCases, id: \.self) { layout in
+                                    Text(t(layout.title)).tag(layout)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: 280)
+                        }
+
                         settingRow(t("Card size"), systemImage: "rectangle.expand.vertical") {
                             HStack(spacing: 10) {
                                 Slider(value: dockPreviewCardWidthBinding, in: 80...600, step: 10)
@@ -1035,6 +1046,15 @@ struct PreferencesView: View {
             get: { viewModel.settings.dockPreviewHoverDelay },
             set: { newValue in
                 viewModel.updateSettings { $0.dockPreviewHoverDelay = newValue }
+            }
+        )
+    }
+
+    private var dockPreviewLayoutBinding: Binding<DockPreviewLayout> {
+        Binding(
+            get: { viewModel.settings.dockPreviewLayout },
+            set: { newValue in
+                viewModel.updateSettings { $0.dockPreviewLayout = newValue }
             }
         )
     }
