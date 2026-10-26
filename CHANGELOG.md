@@ -16,6 +16,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - 跨桌面目标采用精确窗口 ID 聚焦，不再失败后探测同应用其他窗口；通过枚举其他 Space 的 AX 元素并前置后切换，已修复点击其他桌面窗口提示无法聚焦的问题。实机视觉与切换验收尚未完成，详见 `docs/reviews/all-spaces-window-preview.md`。
 - Dock 预览的窗口卡片布局可在「Dock 预览 → 卡片布局」中选择横向（默认，升级后不变）、纵向或网格。面板尺寸由统一的布局参数计算并按目标屏幕 `visibleFrame` 限制，窗口过多时滚动。
 
+- Dock 预览插件系统（内嵌 JavaScriptCore + 声明式界面）与内置 Music 插件：悬停 Apple Music 时显示封面、曲名、播放 / 暂停、上一首、下一首和喜欢按钮，Music 窗口关闭时也可使用。首次使用需允许 Switchly 控制「音乐」（自动化权限）；插件权限可在「设置 → 权限 → 插件」中查看和关闭。流媒体（URL）曲目 Music 不提供封面，此时显示音符占位图。
+
 ### Fixed
 
 - 消除 Release / `make dist` 构建中桌面空间枚举桥接的 Sendable 警告。桌面枚举仍只在同一条串行队列上运行，行为不变。

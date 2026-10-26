@@ -50,6 +50,11 @@ targets:
         buildPhase: resources
       - path: Resources/zh-Hans.lproj
         buildPhase: resources
+      # Built-in Dock preview plugins, copied as a folder reference so the
+      # bundle keeps Contents/Resources/Plugins/<id>/ intact.
+      - path: Resources/Plugins
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.switchly.app
@@ -62,7 +67,10 @@ targets:
       - package: HotKey
     entitlements:
       path: Supporting/Switchly.entitlements
-      properties: {}
+      properties:
+        # Hardened runtime blocks Apple Events without this; the built-in
+        # Music plugin controls Music through host-owned AppleScript.
+        com.apple.security.automation.apple-events: true
     # Generate a shared scheme so that `xcodebuild -scheme Switchly` works
     # deterministically (on CI, and for anyone who never opens Xcode). Without
     # this, the scheme only exists implicitly and `-scheme` depends on Xcode's

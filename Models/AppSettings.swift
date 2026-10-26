@@ -32,6 +32,12 @@ struct AppSettings: Codable, Equatable {
     /// then blends into the card; this lets the user pick a different backing
     /// without changing the default look on upgrade.
     var windowCardBackdrop: WindowCardBackdrop
+    var menuBarIcon: MenuBarIcon
+    /// Per-plugin enablement and confirmed permissions, keyed by plugin id.
+    /// Absent ids fall back to PluginAuthorization's origin defaults.
+    var pluginGrants: [String: PluginGrant]
+    /// Per-plugin option values (PluginManifest.settings), keyed by plugin id then option key.
+    var pluginSettings: [String: [String: Bool]]
     /// Glass wash strength for the floating panels (preview, Dock preview,
     /// workspace bar) — surfaces that appear over the user's work and vanish.
     var backgroundBlurOpacity: Double
@@ -126,6 +132,9 @@ struct AppSettings: Codable, Equatable {
         enableBackgroundBlur: Bool,
         thumbnailBackdrop: ThumbnailBackdrop = .legacyDefault,
         windowCardBackdrop: WindowCardBackdrop = .followingSystem,
+        menuBarIcon: MenuBarIcon = .squareOnSquare,
+        pluginGrants: [String: PluginGrant] = [:],
+        pluginSettings: [String: [String: Bool]] = [:],
         backgroundBlurOpacity: Double = 0.30,
         preferencesGlassOpacity: Double = 0.70,
         previewDisplayMode: PreviewDisplayMode,
@@ -176,6 +185,9 @@ struct AppSettings: Codable, Equatable {
         self.enableBackgroundBlur = enableBackgroundBlur
         self.thumbnailBackdrop = thumbnailBackdrop
         self.windowCardBackdrop = windowCardBackdrop
+        self.menuBarIcon = menuBarIcon
+        self.pluginGrants = pluginGrants
+        self.pluginSettings = pluginSettings
         self.backgroundBlurOpacity = backgroundBlurOpacity
         self.preferencesGlassOpacity = preferencesGlassOpacity
         self.previewDisplayMode = previewDisplayMode
@@ -228,6 +240,9 @@ struct AppSettings: Codable, Equatable {
         case enableBackgroundBlur
         case thumbnailBackdrop
         case windowCardBackdrop
+        case menuBarIcon
+        case pluginGrants
+        case pluginSettings
         case backgroundBlurOpacity
         case preferencesGlassOpacity
         case previewDisplayMode
@@ -308,6 +323,11 @@ struct AppSettings: Codable, Equatable {
             WindowCardBackdrop.self,
             forKey: .windowCardBackdrop
         ) ?? .followingSystem
+        // Absent (or unknown, from a newer build) before the icon was selectable.
+        self.menuBarIcon = (try? container.decodeIfPresent(MenuBarIcon.self, forKey: .menuBarIcon)) ?? .squareOnSquare
+        // Absent before plugins existed: no decisions recorded yet.
+        self.pluginGrants = try container.decodeIfPresent([String: PluginGrant].self, forKey: .pluginGrants) ?? [:]
+        self.pluginSettings = try container.decodeIfPresent([String: [String: Bool]].self, forKey: .pluginSettings) ?? [:]
         self.backgroundBlurOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundBlurOpacity) ?? 0.30
         // Absent before the settings window got its own control: keep the
         // window opaque enough that text over a bright desktop stays readable,

@@ -44,6 +44,8 @@ Want a closer look? Use Window replica mode to preview the highlighted window at
 
 Hover a Dock icon to see that app’s window thumbnails. Go straight to the document you recognize without opening the full preview panel. Prefer pointer gestures? Enable a screen-edge hotspot or shake-to-open in Preferences.
 
+Hovering Apple Music also shows play / pause, previous, next and Love controls, even when its window is closed. The first time, macOS asks you to allow Switchly to control Music (Automation).
+
 ### Make room for different kinds of work
 
 Group apps into named workspaces—for example, **Build**, **Write**, and **Plan**. Give each workspace a shortcut and choose its window ordering, then access it from a centered workspace bar.

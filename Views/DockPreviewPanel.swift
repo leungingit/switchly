@@ -87,7 +87,7 @@ class DockPreviewPanel: NSPanel {
     }
 
     private func observePanelWidth() {
-        panelWidthCancellable = viewModel.$panelWidth
+        panelWidthCancellable = Publishers.CombineLatest(viewModel.$panelWidth, viewModel.$panelHeight)
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

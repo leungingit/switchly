@@ -55,6 +55,11 @@ enum MotionTokens {
     static let staggerStep: TimeInterval = 0.02
     static let maxStagger: TimeInterval = 0.15
 
+    /// Plugin marquee: scroll speed (points per second) and the rest at the
+    /// start of each loop. Static under Reduce Motion.
+    static let marqueeSpeed: CGFloat = 30
+    static let marqueePause: TimeInterval = 1.5
+
     /// How far a card travels during its entrance.
     static let cardEntranceOffset: CGFloat = 10
 
