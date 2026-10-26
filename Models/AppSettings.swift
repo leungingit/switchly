@@ -112,6 +112,8 @@ struct AppSettings: Codable, Equatable {
     /// Natural: the desktop moves with the fingers, as the system's own
     /// four-finger swipe does (fingers left → desktop on the right).
     var gridNaturalSwipeDirection: Bool
+    /// Four fingers resting still show where the current desktop sits.
+    var gridHoldLocateEnabled: Bool
     /// Swallow the system's four-finger swipes while the grid is on, so the
     /// system settings can stay as they are. Five-finger up then opens
     /// Mission Control in place of the system's four-finger up.
@@ -173,6 +175,7 @@ struct AppSettings: Codable, Equatable {
         gridEnabled: Bool = false,
         gridOverviewGestureEnabled: Bool = true,
         gridNaturalSwipeDirection: Bool = true,
+        gridHoldLocateEnabled: Bool = true,
         gridInterceptSystemGestures: Bool = true,
         gridStyle: GridStyle = .default,
         gridBackground: GridBackground = .default,
@@ -227,6 +230,7 @@ struct AppSettings: Codable, Equatable {
         self.gridEnabled = gridEnabled
         self.gridOverviewGestureEnabled = gridOverviewGestureEnabled
         self.gridNaturalSwipeDirection = gridNaturalSwipeDirection
+        self.gridHoldLocateEnabled = gridHoldLocateEnabled
         self.gridInterceptSystemGestures = gridInterceptSystemGestures
         self.gridStyle = gridStyle
         self.gridBackground = gridBackground
@@ -283,6 +287,7 @@ struct AppSettings: Codable, Equatable {
         case gridEnabled
         case gridOverviewGestureEnabled
         case gridNaturalSwipeDirection
+        case gridHoldLocateEnabled
         case gridInterceptSystemGestures
         case gridStyle
         case gridBackground
@@ -403,6 +408,7 @@ struct AppSettings: Codable, Equatable {
         self.gridEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridEnabled) ?? false
         self.gridOverviewGestureEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridOverviewGestureEnabled) ?? true
         self.gridNaturalSwipeDirection = try container.decodeIfPresent(Bool.self, forKey: .gridNaturalSwipeDirection) ?? true
+        self.gridHoldLocateEnabled = try container.decodeIfPresent(Bool.self, forKey: .gridHoldLocateEnabled) ?? true
         self.gridInterceptSystemGestures = try container.decodeIfPresent(Bool.self, forKey: .gridInterceptSystemGestures) ?? true
         self.gridStyle = try container.decodeIfPresent(GridStyle.self, forKey: .gridStyle) ?? .default
         self.gridBackground = try container.decodeIfPresent(GridBackground.self, forKey: .gridBackground) ?? .default

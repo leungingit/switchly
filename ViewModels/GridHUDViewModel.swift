@@ -19,6 +19,9 @@ import ApplicationServices
 enum GridHUDPhase: Equatable {
     /// Current → target, switch in flight.
     case switching
+    /// Four fingers resting: shows where the current desktop sits. Not a
+    /// warning, and nothing switches.
+    case locate
     /// The swipe points outside the 3×3 grid; the grid does not wrap.
     case edge
     /// A swipe landed inside the cooldown window; it was ignored.
@@ -36,7 +39,7 @@ enum GridHUDPhase: Equatable {
     /// Colour-coded as a warning state (the prototype's `.warn` pill).
     var isWarning: Bool {
         switch self {
-        case .switching: return false
+        case .switching, .locate: return false
         default: return true
         }
     }
@@ -71,6 +74,13 @@ final class GridHUDViewModel: ObservableObject {
     /// Auto-hide delays. The switch state hides itself when navigation
     /// returns; the warning states need a short dwell so the copy is readable.
     static let warningDwell: TimeInterval = 1.6
+    /// With a rearranged grid the system slide can run against the finger
+    /// direction, so the HUD stays a little after the switch to carry the
+    /// "from → to" message instead of the animation.
+    static let customLayoutDwell: TimeInterval = 0.9
+
+    /// True while a finished switch keeps the HUD up for `customLayoutDwell`.
+    private(set) var isLingering = false
 
     private let accessibilityStatus: () -> Bool
     private var lastSnapshot: DesktopSpaceSnapshot = .empty
@@ -105,6 +115,7 @@ final class GridHUDViewModel: ObservableObject {
     /// Feeds a recognised swipe. Returns the navigation the panel should run.
     func handle(swipe: TrackpadSwipeEvent, snapshot: DesktopSpaceSnapshot) -> GridHUDAction {
         lastSnapshot = snapshot
+        isLingering = false
         layout = DesktopGridLayout.sanitized(layouts[DesktopGridLayout.key(for: snapshot.displayID)] ?? [])
         currentNumber = snapshot.currentDesktop?.number
         createdNumbers = Set(snapshot.desktops.map(\.number))
@@ -142,10 +153,28 @@ final class GridHUDViewModel: ObservableObject {
         return .navigate(target)
     }
 
+    /// Shows the mini map for a resting hand. Reads the same layout as a
+    /// swipe, so the arrangement matches what the swipe would do.
+    func showLocate(snapshot: DesktopSpaceSnapshot) {
+        lastSnapshot = snapshot
+        isLingering = false
+        layout = DesktopGridLayout.sanitized(layouts[DesktopGridLayout.key(for: snapshot.displayID)] ?? [])
+        currentNumber = snapshot.currentDesktop?.number
+        createdNumbers = Set(snapshot.desktops.map(\.number))
+        direction = nil
+        targetNumber = nil
+        phase = currentNumber == nil ? .spacesUnavailable : .locate
+        isVisible = true
+    }
+
     /// Called when the navigation service reports back.
     func finish(navigation result: DesktopNavigationResult) {
         switch result {
         case .switched:
+            if layout != DesktopGridLayout.identity {
+                isLingering = true
+                return
+            }
             isVisible = false
             phase = nil
             targetNumber = nil
@@ -166,11 +195,13 @@ final class GridHUDViewModel: ObservableObject {
 
     /// Edge / cooldown / not-created / failure states dwell briefly, then hide.
     var autoDismissDelay: TimeInterval? {
-        guard let phase, phase != .switching else { return nil }
+        if isLingering { return Self.customLayoutDwell }
+        guard let phase, phase != .switching, phase != .locate else { return nil }
         return Self.warningDwell
     }
 
     func dismiss() {
+        isLingering = false
         isVisible = false
         phase = nil
         direction = nil
@@ -199,6 +230,8 @@ final class GridHUDViewModel: ObservableObject {
     var title: String {
         guard let phase else { return "" }
         switch phase {
+        case .locate:
+            return String(format: t("You are on Desktop %d"), currentNumber ?? 1)
         case .switching:
             return String(format: t("Switching to Desktop %d…"), targetNumber ?? currentNumber ?? 1)
         case .edge:
@@ -219,6 +252,8 @@ final class GridHUDViewModel: ObservableObject {
     var subtitle: String {
         guard let phase else { return "" }
         switch phase {
+        case .locate:
+            return t("Lift your fingers to dismiss")
         case .switching:
             return t("Dismisses when the system switch finishes")
         case .edge:

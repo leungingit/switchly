@@ -13,6 +13,7 @@ private final class StubGestureService: TrackpadGestureServiceProtocol {
     var isAvailable = true
     var isRunning = false
     var onSwipe: ((TrackpadSwipeEvent) -> Void)?
+    var onHold: ((FourFingerHoldEvent) -> Void)?
     var systemState = SystemFourFingerGestureState(
         horizontalSwipeEnabled: false,
         verticalSwipeEnabled: false

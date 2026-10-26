@@ -15,6 +15,7 @@ private final class FakeGestureService: TrackpadGestureServiceProtocol {
     var isAvailable = true
     var isRunning = false
     var onSwipe: ((TrackpadSwipeEvent) -> Void)?
+    var onHold: ((FourFingerHoldEvent) -> Void)?
     var startCount = 0
     var stopCount = 0
     var startResult = true
