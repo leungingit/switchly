@@ -39,6 +39,10 @@ final class DesktopGridCoordinator {
     var onOverviewRequested: (() -> Void)?
     private var overviewGestureEnabled = true
     private var naturalSwipeDirection = true
+    private var holdLocateEnabled = true
+    /// True between a hold beginning and the fingers lifting, so a slow
+    /// layout read cannot show the HUD after the fingers are already up.
+    private var holdActive = false
     private var interceptSystemGestures = true
 
     /// Five-finger swipe up while the system gestures are taken over.
@@ -65,6 +69,7 @@ final class DesktopGridCoordinator {
     func apply(settings: AppSettings) {
         overviewGestureEnabled = settings.gridOverviewGestureEnabled
         naturalSwipeDirection = settings.gridNaturalSwipeDirection
+        holdLocateEnabled = settings.gridHoldLocateEnabled
         interceptSystemGestures = settings.gridInterceptSystemGestures
         guard settings.gridEnabled else {
             stop()
@@ -84,6 +89,9 @@ final class DesktopGridCoordinator {
         gestureService.onSwipe = { [weak self] swipe in
             self?.handle(swipe: swipe)
         }
+        gestureService.onHold = { [weak self] hold in
+            self?.handle(hold: hold)
+        }
 
         guard gestureService.start() else {
             // The design spec keeps the HUD off screen when the framework is
@@ -91,6 +99,7 @@ final class DesktopGridCoordinator {
             // rather than a panel the user cannot act on. `isEnabled` stays
             // false, so a later settings change retries the start.
             gestureService.onSwipe = nil
+            gestureService.onHold = nil
             AppLogger.warning("Desktop grid gestures unavailable. fallingBack=menu,shortcut")
             onListenerStateChanged?(false)
             return
@@ -113,11 +122,14 @@ final class DesktopGridCoordinator {
         guard isEnabled else {
             interceptor.stop()
             gestureService.onSwipe = nil
+            gestureService.onHold = nil
             return
         }
         interceptor.stop()
         gestureService.stop()
         gestureService.onSwipe = nil
+        gestureService.onHold = nil
+        holdActive = false
         isEnabled = false
         onListenerStateChanged?(false)
         AppLogger.info("Desktop grid gestures stopped")
@@ -139,6 +151,29 @@ final class DesktopGridCoordinator {
 
     func prerequisiteSnapshot(spaceCount: Int) -> GridPrerequisiteSnapshot {
         prerequisites.snapshot(spaceCount: spaceCount)
+    }
+
+    // MARK: - Hold handling
+
+    /// Four fingers resting still: show the mini map with the current desktop
+    /// highlighted. Nothing switches, and a display with a single desktop
+    /// stays silent like the swipe does.
+    private func handle(hold: FourFingerHoldEvent) {
+        switch hold {
+        case .began:
+            holdActive = true
+            guard isEnabled, holdLocateEnabled else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let snapshot = await self.spaceService.loadLayout()
+                guard self.holdActive, self.isEnabled, self.holdLocateEnabled,
+                      snapshot.desktops.count >= 2 else { return }
+                GridHUDPanel.shared.presentLocate(snapshot: snapshot)
+            }
+        case .ended:
+            holdActive = false
+            GridHUDPanel.shared.dismissLocate()
+        }
     }
 
     // MARK: - Swipe handling

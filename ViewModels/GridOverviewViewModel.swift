@@ -41,6 +41,20 @@ final class GridOverviewViewModel: ObservableObject {
     @Published private(set) var screenRecordingGranted = true
     @Published private(set) var thumbnailRevision = 0
 
+    /// Per-display arrangements (see `AppSettings.gridLayouts`). Persisted by
+    /// the owner through `onLayoutChanged`.
+    @Published private(set) var layouts: [String: [Int]] = [:]
+
+    /// Grid positions (0-based) of the card being dragged and of the card it
+    /// would swap with; drive the drag feedback.
+    @Published private(set) var draggingPosition: Int?
+    @Published private(set) var dropTargetPosition: Int?
+
+    /// Grid position → real desktop number for the display being shown.
+    var layout: [Int] {
+        DesktopGridLayout.sanitized(layouts[DesktopGridLayout.key(for: snapshot.displayID)] ?? [])
+    }
+
     @Published var selectedNumber = 1
     @Published var style: GridStyle
     @Published var background: GridBackground
@@ -53,6 +67,7 @@ final class GridOverviewViewModel: ObservableObject {
     /// the chosen desktop; the default handler logs so stage 3 never switches
     /// anything by accident.
     var onSwitchRequested: ((Desktop) -> Void)?
+    var onLayoutChanged: ((String, [Int]) -> Void)?
 
     private let spaceService: DesktopSpaceServiceProtocol
     private let accessibilityStatus: () -> Bool
@@ -67,6 +82,7 @@ final class GridOverviewViewModel: ObservableObject {
         material: CrystalMaterial = .legacyDefault,
         glassOpacity: Double = 0.30,
         enableGlass: Bool = true,
+        layouts: [String: [Int]] = [:],
         accessibilityStatus: @escaping () -> Bool = { AXIsProcessTrusted() },
         screenRecordingStatus: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() }
     ) {
@@ -77,6 +93,7 @@ final class GridOverviewViewModel: ObservableObject {
         self.material = material
         self.glassOpacity = glassOpacity
         self.enableGlass = enableGlass
+        self.layouts = layouts
         self.accessibilityStatus = accessibilityStatus
         self.screenRecordingStatus = screenRecordingStatus
         self.accessibilityGranted = accessibilityStatus()
@@ -135,6 +152,7 @@ final class GridOverviewViewModel: ObservableObject {
     func deactivate() {
         isActive = false
         isLoading = false
+        endDrag()
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
@@ -153,7 +171,7 @@ final class GridOverviewViewModel: ObservableObject {
         guard isActive else { return }
 
         snapshot = result
-        slots = DesktopGridSlot.makeSlots(from: result)
+        slots = DesktopGridSlot.makeSlots(from: result, layout: layout)
         refreshPermissions()
         clampSelection()
         thumbnailRevision &+= 1
@@ -180,7 +198,37 @@ final class GridOverviewViewModel: ObservableObject {
         material = settings.crystalMaterial
         glassOpacity = settings.backgroundBlurOpacity
         enableGlass = settings.enableBackgroundBlur
+        layouts = settings.gridLayouts
+        slots = DesktopGridSlot.makeSlots(from: snapshot, layout: layout)
     }
+
+    /// Drag-and-drop: swaps the desktops shown at two grid positions
+    /// (0-based) and reports the new layout so it can be persisted.
+    func swapPositions(_ a: Int, _ b: Int) {
+        endDrag()
+        let swapped = DesktopGridLayout.swapped(layout, a, b)
+        guard swapped != layout else { return }
+        let key = DesktopGridLayout.key(for: snapshot.displayID)
+        layouts[key] = swapped
+        slots = DesktopGridSlot.makeSlots(from: snapshot, layout: swapped)
+        onLayoutChanged?(key, swapped)
+        AppLogger.info("Desktop grid layout changed. layout=\(swapped.map(String.init).joined(separator: ","))")
+    }
+
+    func beginDrag(_ position: Int) {
+        draggingPosition = position
+        dropTargetPosition = nil
+    }
+
+    func setDropTarget(_ position: Int?) {
+        dropTargetPosition = position
+    }
+
+    func endDrag() {
+        draggingPosition = nil
+        dropTargetPosition = nil
+    }
+
 
     // MARK: - Selection
 
@@ -190,8 +238,9 @@ final class GridOverviewViewModel: ObservableObject {
     }
 
     func moveSelection(_ direction: GridSelectionDirection) {
-        let row = (selectedNumber - 1) / 3
-        let column = (selectedNumber - 1) % 3
+        let position = position(of: selectedNumber)
+        let row = position / 3
+        let column = position % 3
 
         let target: (row: Int, column: Int)
         switch direction {
@@ -200,16 +249,19 @@ final class GridOverviewViewModel: ObservableObject {
         case .left: target = (row, max(0, column - 1))
         case .right: target = (row, min(2, column + 1))
         }
-        select(target.row * 3 + target.column + 1)
+        select(layout[target.row * 3 + target.column])
+    }
+
+    private func position(of number: Int) -> Int {
+        layout.firstIndex(of: number) ?? 0
     }
 
     /// Tab / Shift-Tab. The focus path runs 1…9 in visual order and wraps at
     /// the ends, which is what a keyboard user expects from Tab (T21).
     func focusAdjacent(forward: Bool) {
-        let next = forward
-            ? (selectedNumber % 9) + 1
-            : ((selectedNumber - 2 + 9) % 9) + 1
-        select(next)
+        let current = position(of: selectedNumber)
+        let next = forward ? (current + 1) % 9 : (current + 8) % 9
+        select(layout[next])
     }
 
     /// Selects the desktop and asks for the switch. A not-created slot is

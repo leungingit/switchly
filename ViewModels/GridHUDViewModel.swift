@@ -19,6 +19,9 @@ import ApplicationServices
 enum GridHUDPhase: Equatable {
     /// Current → target, switch in flight.
     case switching
+    /// Four fingers resting: shows where the current desktop sits. Not a
+    /// warning, and nothing switches.
+    case locate
     /// The swipe points outside the 3×3 grid; the grid does not wrap.
     case edge
     /// A swipe landed inside the cooldown window; it was ignored.
@@ -36,7 +39,7 @@ enum GridHUDPhase: Equatable {
     /// Colour-coded as a warning state (the prototype's `.warn` pill).
     var isWarning: Bool {
         switch self {
-        case .switching: return false
+        case .switching, .locate: return false
         default: return true
         }
     }
@@ -57,6 +60,9 @@ final class GridHUDViewModel: ObservableObject {
     @Published private(set) var currentNumber: Int?
     @Published private(set) var createdNumbers: Set<Int> = []
     @Published private(set) var isVisible = false
+    /// Grid position → real desktop number for the display being navigated,
+    /// so swipes and the mini map follow the user's arrangement.
+    @Published private(set) var layout: [Int] = DesktopGridLayout.identity
     @Published private(set) var language: AppLanguage
     @Published private(set) var material: CrystalMaterial
     /// Mirrors `AppSettings.enableBackgroundBlur`, so the HUD follows the same
@@ -68,21 +74,31 @@ final class GridHUDViewModel: ObservableObject {
     /// Auto-hide delays. The switch state hides itself when navigation
     /// returns; the warning states need a short dwell so the copy is readable.
     static let warningDwell: TimeInterval = 1.6
+    /// With a rearranged grid the system slide can run against the finger
+    /// direction, so the HUD stays a little after the switch to carry the
+    /// "from → to" message instead of the animation.
+    static let customLayoutDwell: TimeInterval = 0.9
+
+    /// True while a finished switch keeps the HUD up for `customLayoutDwell`.
+    private(set) var isLingering = false
 
     private let accessibilityStatus: () -> Bool
     private var lastSnapshot: DesktopSpaceSnapshot = .empty
+    private var layouts: [String: [Int]]
 
     init(
         language: AppLanguage = .english,
         material: CrystalMaterial = .legacyDefault,
         enableGlass: Bool = true,
         glassOpacity: Double = 0.30,
+        layouts: [String: [Int]] = [:],
         accessibilityStatus: @escaping () -> Bool = { AXIsProcessTrusted() }
     ) {
         self.language = language
         self.material = material
         self.enableGlass = enableGlass
         self.glassOpacity = glassOpacity
+        self.layouts = layouts
         self.accessibilityStatus = accessibilityStatus
     }
 
@@ -93,11 +109,14 @@ final class GridHUDViewModel: ObservableObject {
         material = settings.crystalMaterial
         enableGlass = settings.enableBackgroundBlur
         glassOpacity = settings.backgroundBlurOpacity
+        layouts = settings.gridLayouts
     }
 
     /// Feeds a recognised swipe. Returns the navigation the panel should run.
     func handle(swipe: TrackpadSwipeEvent, snapshot: DesktopSpaceSnapshot) -> GridHUDAction {
         lastSnapshot = snapshot
+        isLingering = false
+        layout = DesktopGridLayout.sanitized(layouts[DesktopGridLayout.key(for: snapshot.displayID)] ?? [])
         currentNumber = snapshot.currentDesktop?.number
         createdNumbers = Set(snapshot.desktops.map(\.number))
         direction = swipe.gesture.direction
@@ -115,7 +134,7 @@ final class GridHUDViewModel: ObservableObject {
             return .none
         }
 
-        guard let target = Self.target(from: current, direction: swipe.gesture.direction) else {
+        guard let target = Self.target(from: current, direction: swipe.gesture.direction, layout: layout) else {
             targetNumber = nil
             phase = .edge
             isVisible = true
@@ -134,10 +153,28 @@ final class GridHUDViewModel: ObservableObject {
         return .navigate(target)
     }
 
+    /// Shows the mini map for a resting hand. Reads the same layout as a
+    /// swipe, so the arrangement matches what the swipe would do.
+    func showLocate(snapshot: DesktopSpaceSnapshot) {
+        lastSnapshot = snapshot
+        isLingering = false
+        layout = DesktopGridLayout.sanitized(layouts[DesktopGridLayout.key(for: snapshot.displayID)] ?? [])
+        currentNumber = snapshot.currentDesktop?.number
+        createdNumbers = Set(snapshot.desktops.map(\.number))
+        direction = nil
+        targetNumber = nil
+        phase = currentNumber == nil ? .spacesUnavailable : .locate
+        isVisible = true
+    }
+
     /// Called when the navigation service reports back.
     func finish(navigation result: DesktopNavigationResult) {
         switch result {
         case .switched:
+            if layout != DesktopGridLayout.identity {
+                isLingering = true
+                return
+            }
             isVisible = false
             phase = nil
             targetNumber = nil
@@ -158,11 +195,13 @@ final class GridHUDViewModel: ObservableObject {
 
     /// Edge / cooldown / not-created / failure states dwell briefly, then hide.
     var autoDismissDelay: TimeInterval? {
-        guard let phase, phase != .switching else { return nil }
+        if isLingering { return Self.customLayoutDwell }
+        guard let phase, phase != .switching, phase != .locate else { return nil }
         return Self.warningDwell
     }
 
     func dismiss() {
+        isLingering = false
         isVisible = false
         phase = nil
         direction = nil
@@ -171,13 +210,19 @@ final class GridHUDViewModel: ObservableObject {
 
     // MARK: - Mapping
 
-    /// Neighbouring cell for a swipe, or nil at the grid edge.
-    static func target(from current: Int, direction: SwipeDirection) -> Int? {
-        guard (1...9).contains(current) else { return nil }
-        let column = (current - 1) % 3 + direction.columnDelta
-        let row = (current - 1) / 3 + direction.rowDelta
+    /// Neighbouring desktop for a swipe, or nil at the grid edge. Neighbours
+    /// are taken from grid positions, so a rearranged grid swipes as shown.
+    static func target(
+        from current: Int,
+        direction: SwipeDirection,
+        layout: [Int] = DesktopGridLayout.identity
+    ) -> Int? {
+        let layout = DesktopGridLayout.sanitized(layout)
+        guard let position = layout.firstIndex(of: current) else { return nil }
+        let column = position % 3 + direction.columnDelta
+        let row = position / 3 + direction.rowDelta
         guard (0..<3).contains(column), (0..<3).contains(row) else { return nil }
-        return row * 3 + column + 1
+        return layout[row * 3 + column]
     }
 
     // MARK: - Copy
@@ -185,6 +230,8 @@ final class GridHUDViewModel: ObservableObject {
     var title: String {
         guard let phase else { return "" }
         switch phase {
+        case .locate:
+            return String(format: t("You are on Desktop %d"), currentNumber ?? 1)
         case .switching:
             return String(format: t("Switching to Desktop %d…"), targetNumber ?? currentNumber ?? 1)
         case .edge:
@@ -205,6 +252,8 @@ final class GridHUDViewModel: ObservableObject {
     var subtitle: String {
         guard let phase else { return "" }
         switch phase {
+        case .locate:
+            return t("Lift your fingers to dismiss")
         case .switching:
             return t("Dismisses when the system switch finishes")
         case .edge:

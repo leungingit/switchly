@@ -358,10 +358,13 @@ struct GridOverviewView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    private func cell(number: Int, width: CGFloat) -> some View {
-        let slot = viewModel.slots.indices.contains(number - 1)
-            ? viewModel.slots[number - 1]
-            : DesktopGridSlot(number: number, desktop: nil)
+    /// `number` is the 1-based grid position; the slot carries the real
+    /// desktop number placed there by the user's layout.
+    private func cell(number position: Int, width: CGFloat) -> some View {
+        let slot = viewModel.slots.indices.contains(position - 1)
+            ? viewModel.slots[position - 1]
+            : DesktopGridSlot(number: position, desktop: nil)
+        let number = slot.number
 
         return GridCellView(
             slot: slot,
@@ -380,6 +383,33 @@ struct GridOverviewView: View {
             material: viewModel.material,
             onTap: { viewModel.selectAndActivate(number) }
         )
+        // Drag feedback: the source dims, the swap target gets the accent
+        // ring and a slight lift. A static ring needs no motion, so it stays
+        // under Reduce Motion.
+        .opacity(viewModel.draggingPosition == position - 1 ? 0.45 : 1)
+        .overlay(dropHighlight(isTarget: viewModel.dropTargetPosition == position - 1))
+        .animation(MotionTokens.animated(MotionTokens.microSpring), value: viewModel.dropTargetPosition)
+        .onHover { hovering in
+            // A cancelled drag never reports its end; the first hover after
+            // the button is released clears the stale dimming.
+            if hovering, viewModel.draggingPosition != nil, NSEvent.pressedMouseButtons & 1 == 0 {
+                viewModel.endDrag()
+            }
+        }
+        .onDrag {
+            viewModel.beginDrag(position - 1)
+            return NSItemProvider(object: String(position - 1) as NSString)
+        }
+        .onDrop(of: [.plainText], delegate: GridCellDropDelegate(position: position - 1, viewModel: viewModel))
+    }
+
+    @ViewBuilder
+    private func dropHighlight(isTarget: Bool) -> some View {
+        if isTarget {
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.card + 4, style: .continuous)
+                .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+                .allowsHitTesting(false)
+        }
     }
 
     // MARK: - Copy
@@ -391,5 +421,35 @@ struct GridOverviewView: View {
 
     private func t(_ key: String) -> String {
         viewModel.language.localizedString(key)
+    }
+}
+
+/// Drop target for one grid position: reports the hover for the highlight and
+/// swaps the dragged card with this one on drop.
+private struct GridCellDropDelegate: DropDelegate {
+    let position: Int
+    let viewModel: GridOverviewViewModel
+
+    func validateDrop(info: DropInfo) -> Bool {
+        viewModel.draggingPosition != nil
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let source = viewModel.draggingPosition, source != position else { return }
+        viewModel.setDropTarget(position)
+    }
+
+    func dropExited(info: DropInfo) {
+        if viewModel.dropTargetPosition == position { viewModel.setDropTarget(nil) }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        guard let source = viewModel.draggingPosition else { return false }
+        viewModel.swapPositions(source, position)
+        return true
     }
 }

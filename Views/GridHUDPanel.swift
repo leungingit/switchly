@@ -27,7 +27,8 @@ final class GridHUDPanel: NSPanel {
             language: settings.language,
             material: settings.crystalMaterial,
             enableGlass: settings.enableBackgroundBlur,
-            glassOpacity: settings.backgroundBlurOpacity
+            glassOpacity: settings.backgroundBlurOpacity,
+            layouts: settings.gridLayouts
         )
 
         super.init(
@@ -74,6 +75,24 @@ final class GridHUDPanel: NSPanel {
         }
         return action
     }
+
+    /// Shows the locate HUD while four fingers rest. The fingers lifting
+    /// dismisses it; the delayed hide is only a safety net for a lost event.
+    func presentLocate(snapshot: DesktopSpaceSnapshot) {
+        dismissWorkItem?.cancel()
+        dismissWorkItem = nil
+        viewModel.showLocate(snapshot: snapshot)
+        show()
+        scheduleDismiss(after: Self.locateSafetyDismiss)
+    }
+
+    /// Hides the locate HUD only; a swipe that took over the HUD is left alone.
+    func dismissLocate() {
+        guard viewModel.phase == .locate else { return }
+        hide()
+    }
+
+    private static let locateSafetyDismiss: TimeInterval = 15
 
     /// Updates the HUD after navigation finished, then hides it.
     func finish(navigation result: DesktopNavigationResult) {

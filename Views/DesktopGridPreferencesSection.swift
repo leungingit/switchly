@@ -61,6 +61,19 @@ struct DesktopGridPreferencesSection: View {
                         help: t("On: the desktop follows your fingers, like the system's four-finger swipe. Off: swipe toward the desktop you want.")
                     )
                     .disabled(!settings.gridEnabled)
+                    toggleRow(
+                        t("Show desktop map when four fingers rest"),
+                        systemImage: "hand.point.up.left",
+                        isOn: holdLocateBinding,
+                        help: t("Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches.")
+                    )
+                    .disabled(!settings.gridEnabled)
+                    if hasCustomLayout {
+                        Text(t("The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade."))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 prerequisitesGroup
@@ -311,6 +324,19 @@ struct DesktopGridPreferencesSection: View {
             get: { settings.gridInterceptSystemGestures },
             set: { newValue in
                 save { $0.gridInterceptSystemGestures = newValue }
+            }
+        )
+    }
+
+    private var hasCustomLayout: Bool {
+        settings.gridLayouts.values.contains { $0 != DesktopGridLayout.identity }
+    }
+
+    private var holdLocateBinding: Binding<Bool> {
+        Binding(
+            get: { settings.gridHoldLocateEnabled },
+            set: { newValue in
+                save { $0.gridHoldLocateEnabled = newValue }
             }
         )
     }

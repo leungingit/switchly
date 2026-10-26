@@ -462,3 +462,8 @@
 
 "Extra controls shown in the Dock preview" = "在 Dock 预览中显示的附加控件";
 "Menu bar icon" = "菜单栏图标";
+"You are on Desktop %d" = "当前在桌面 %d";
+"Lift your fingers to dismiss" = "抬起手指即可关闭";
+"Show desktop map when four fingers rest" = "四指静置时显示桌面小图";
+"Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches." = "四指在触控板上静置约 1 秒，显示当前所在桌面，不会切换桌面。";
+"The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade." = "系统的滑动动画按真实桌面顺序播放，可能与你的排列方向不一致。在系统设置中开启“减少动态效果”可将其变为淡入淡出。";

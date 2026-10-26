@@ -65,7 +65,7 @@ struct GridHUDView: View {
             if viewModel.arrowSymbol.isEmpty {
                 Image(systemName: warningSymbol)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(warningTint)
+                    .foregroundColor(viewModel.phase == .locate ? .primary : warningTint)
             } else {
                 Image(systemName: viewModel.arrowSymbol)
                     .font(.system(size: 20, weight: .semibold))
@@ -133,7 +133,7 @@ struct GridHUDView: View {
             ForEach(0..<3, id: \.self) { row in
                 HStack(spacing: DesignTokens.Grid.HUD.miniGap) {
                     ForEach(0..<3, id: \.self) { column in
-                        miniCell(number: row * 3 + column + 1)
+                        miniCell(number: viewModel.layout[row * 3 + column])
                     }
                 }
             }
@@ -206,6 +206,7 @@ struct GridHUDView: View {
         case .notCreated: return "questionmark.square.dashed"
         case .accessibilityMissing: return "lock"
         case .spacesUnavailable, .failed: return "exclamationmark.triangle"
+        case .locate: return "mappin.and.ellipse"
         case .switching, .none: return "arrow.up.arrow.down"
         }
     }

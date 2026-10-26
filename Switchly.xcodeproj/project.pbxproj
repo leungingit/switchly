@@ -19,6 +19,7 @@
 		0EA1E4834CCF195ECE4166EA /* PreviewTriggerMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */; };
 		0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */; };
 		107C15C9C3A17DE414DBCDFC /* DesignTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */; };
+		1260AE175CC5B873AC780E0B /* FourFingerHoldDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */; };
 		137BC8984AC89E033BDC5621 /* SwitchlyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E029A87A20E2F1B6B9BC71AB /* SwitchlyUITests.swift */; };
 		139D992482CCDB0FB46C454E /* ThemeApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */; };
 		151067BD1D6A695FE5F669AE /* InstalledAppsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */; };
@@ -34,6 +35,7 @@
 		33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */; };
 		349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */; };
 		34A8A5EB0367745AFAD728C3 /* ShortcutPrefix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D718DDF3DF82D909F59365 /* ShortcutPrefix.swift */; };
+		3872D32FFC7C541791332DF2 /* FourFingerHoldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42493C0F49C6551919403DCB /* FourFingerHoldDetector.swift */; };
 		3BC8F841531D50863EF0599A /* PluginRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EBA602A293A20853A59E9F /* PluginRegistry.swift */; };
 		3F73C153038AA97997BC1FAD /* GridPrerequisiteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */; };
 		42E090248740FFDC71FE92AE /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */; };
@@ -164,6 +166,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FourFingerHoldDetectorTests.swift; sourceTree = "<group>"; };
 		03BADD79FCDF554B4529EDB4 /* WindowTrafficLights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTrafficLights.swift; sourceTree = "<group>"; };
 		08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteService.swift; sourceTree = "<group>"; };
 		0A46EE486121EF5CD8A2635C /* ThumbnailSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailSize.swift; sourceTree = "<group>"; };
@@ -198,6 +201,7 @@
 		4066514499DED03BE957824E /* WindowMatchRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMatchRules.swift; sourceTree = "<group>"; };
 		41F9D7FC2A842D77756AF533 /* GlassEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassEffect.swift; sourceTree = "<group>"; };
 		421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisite.swift; sourceTree = "<group>"; };
+		42493C0F49C6551919403DCB /* FourFingerHoldDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FourFingerHoldDetector.swift; sourceTree = "<group>"; };
 		429241B0962218A3BBA8A97F /* PluginPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreferencesSection.swift; sourceTree = "<group>"; };
 		46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewModelTests.swift; sourceTree = "<group>"; };
 		46EBA602A293A20853A59E9F /* PluginRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginRegistry.swift; sourceTree = "<group>"; };
@@ -368,6 +372,7 @@
 				693CF0B38A421F3DDF54F3EB /* DockHoverMonitorTests.swift */,
 				6C19BAC5C9EF47AC41565D78 /* DockLayoutSpecTests.swift */,
 				5D3BA644980C96412DADE54F /* EnumsTests.swift */,
+				0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */,
 				8A8B16C69B8E7ED74E9F2CEA /* GlassAppearanceTests.swift */,
 				E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */,
 				95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */,
@@ -544,6 +549,7 @@
 				58738EAF78774734195AB7BB /* AppLogger.swift */,
 				3337C977CD2AF7514192B081 /* DesignTokens.swift */,
 				D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */,
+				42493C0F49C6551919403DCB /* FourFingerHoldDetector.swift */,
 				41F9D7FC2A842D77756AF533 /* GlassEffect.swift */,
 				B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */,
 				89AA59073B11D0CDFB620270 /* MotionTokens.swift */,
@@ -721,6 +727,7 @@
 				E22A9ABF1ACE2446DE66423C /* DockHoverMonitorTests.swift in Sources */,
 				9376AE35E2410FF0499A7FDC /* DockLayoutSpecTests.swift in Sources */,
 				6CBAA46EEEABA09F7860EC6C /* EnumsTests.swift in Sources */,
+				1260AE175CC5B873AC780E0B /* FourFingerHoldDetectorTests.swift in Sources */,
 				F0BB21A07793A02139702B39 /* GlassAppearanceTests.swift in Sources */,
 				81AD0B07D05A179F3E27DDD3 /* GlassRenderingTests.swift in Sources */,
 				674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */,
@@ -774,6 +781,7 @@
 				0CDB9415C6AF01F191F7743B /* DockPreviewPanel.swift in Sources */,
 				5FA543B9C254D62E25D6E1D4 /* DockPreviewView.swift in Sources */,
 				0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */,
+				3872D32FFC7C541791332DF2 /* FourFingerHoldDetector.swift in Sources */,
 				775DDFD010B842421511E6F1 /* GlassEffect.swift in Sources */,
 				29FE3B26CE9FFFCDD9CF0442 /* GridBackground.swift in Sources */,
 				89C446418268E0251BB7C0F3 /* GridCellView.swift in Sources */,

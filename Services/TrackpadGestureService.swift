@@ -43,6 +43,8 @@ protocol TrackpadGestureServiceProtocol: AnyObject {
     var isRunning: Bool { get }
     /// Called on the main queue for every recognised swipe.
     var onSwipe: ((TrackpadSwipeEvent) -> Void)? { get set }
+    /// Called on the main queue when four fingers rest still, and when they lift.
+    var onHold: ((FourFingerHoldEvent) -> Void)? { get set }
     /// Starts listening. Returns false when the framework or a device is
     /// unavailable; the caller degrades to ⌃1–9.
     @discardableResult
@@ -107,6 +109,7 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
     static let shared = TrackpadGestureService()
 
     var onSwipe: ((TrackpadSwipeEvent) -> Void)?
+    var onHold: ((FourFingerHoldEvent) -> Void)?
 
     private let bridge: MultitouchSupportBridge
     private let preferences: SystemGesturePreferenceReading
@@ -118,6 +121,7 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
     private var classifier: SwipeDirectionClassifier
     /// Five-finger recogniser for the overview gesture, fed the same frames.
     private var overviewClassifier = SwipeDirectionClassifier(configuration: .overview)
+    private var holdDetector = FourFingerHoldDetector()
     private var surfaceSizes: [UInt: CGSize] = [:]
 
     private(set) var isRunning = false
@@ -161,6 +165,7 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
         )
         classifier.reset()
         overviewClassifier.reset()
+        holdDetector.reset()
         lock.unlock()
 
         isRunning = true
@@ -179,6 +184,7 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
         lock.lock()
         classifier.reset()
         overviewClassifier.reset()
+        holdDetector.reset()
         surfaceSizes = [:]
         lock.unlock()
 
@@ -214,7 +220,20 @@ final class TrackpadGestureService: TrackpadGestureServiceProtocol {
             centroidMM: centroid,
             timestamp: frame.timestamp
         )
+        let holdEvent = holdDetector.process(
+            fingers: frame.fingers,
+            centroidMM: centroid,
+            timestamp: frame.timestamp
+        )
         lock.unlock()
+
+        if let holdEvent {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isRunning else { return }
+                AppLogger.debug("Trackpad hold. event=\(holdEvent)")
+                self.onHold?(holdEvent)
+            }
+        }
 
         guard let event else { return }
         let swipe: TrackpadSwipeEvent

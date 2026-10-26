@@ -227,5 +227,44 @@ final class GridHUDViewModelTests: XCTestCase {
         XCTAssertNil(GridHUDViewModel.target(from: 3, direction: .right))
         XCTAssertNil(GridHUDViewModel.target(from: 7, direction: .left))
         XCTAssertNil(GridHUDViewModel.target(from: 0, direction: .right))
+
+        // Desktops 1 and 5 swapped: 5 now sits top-left, 1 in the centre.
+        let swapped = [5, 2, 3, 4, 1, 6, 7, 8, 9]
+        XCTAssertNil(GridHUDViewModel.target(from: 5, direction: .left, layout: swapped))
+        XCTAssertEqual(GridHUDViewModel.target(from: 5, direction: .right, layout: swapped), 2)
+        XCTAssertEqual(GridHUDViewModel.target(from: 1, direction: .left, layout: swapped), 4)
+        XCTAssertEqual(GridHUDViewModel.target(from: 1, direction: .upLeft, layout: swapped), 5)
+    }
+
+    func testShowLocateHighlightsCurrentAndFollowsLayout() {
+        let viewModel = GridHUDViewModel(
+            layouts: ["main": [5, 2, 3, 4, 1, 6, 7, 8, 9]],
+            accessibilityStatus: { true }
+        )
+        viewModel.showLocate(snapshot: snapshot(count: 9, current: 5))
+
+        XCTAssertEqual(viewModel.phase, .locate)
+        XCTAssertTrue(viewModel.isVisible)
+        XCTAssertEqual(viewModel.currentNumber, 5)
+        XCTAssertEqual(viewModel.layout, [5, 2, 3, 4, 1, 6, 7, 8, 9])
+        XCTAssertEqual(viewModel.miniState(for: 5), .current)
+        XCTAssertNil(viewModel.autoDismissDelay)
+        XCTAssertFalse(viewModel.phase?.isWarning ?? true)
+    }
+
+    func testSwitchLingersOnlyWithACustomLayout() {
+        let custom = GridHUDViewModel(
+            layouts: ["main": [5, 2, 3, 4, 1, 6, 7, 8, 9]],
+            accessibilityStatus: { true }
+        )
+        _ = custom.handle(swipe: swipe(.right), snapshot: snapshot(count: 9, current: 5))
+        custom.finish(navigation: .switched(number: 6, path: .applicationActivation, confirmed: true))
+        XCTAssertTrue(custom.isVisible)
+        XCTAssertEqual(custom.autoDismissDelay, GridHUDViewModel.customLayoutDwell)
+
+        let plain = GridHUDViewModel(accessibilityStatus: { true })
+        _ = plain.handle(swipe: swipe(.right), snapshot: snapshot(count: 9, current: 1))
+        plain.finish(navigation: .switched(number: 6, path: .applicationActivation, confirmed: true))
+        XCTAssertFalse(plain.isVisible)
     }
 }

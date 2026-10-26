@@ -14,6 +14,7 @@ private final class RecordingGestureService: TrackpadGestureServiceProtocol {
     var isAvailable = true
     var isRunning = false
     var onSwipe: ((TrackpadSwipeEvent) -> Void)?
+    var onHold: ((FourFingerHoldEvent) -> Void)?
     var startResult = true
     var startCount = 0
     var stopCount = 0

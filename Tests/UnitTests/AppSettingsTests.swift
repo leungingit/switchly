@@ -422,6 +422,26 @@ final class AppSettingsTests: XCTestCase {
     // MARK: - Desktop grid
 
     /// A settings file written before the desktop grid existed has none of
+    func testHoldLocateDefaultsOnForOldData() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "gridHoldLocateEnabled")
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        XCTAssertTrue(try JSONDecoder().decode(AppSettings.self, from: stripped).gridHoldLocateEnabled)
+    }
+
+    func testGridLayoutRoundTripsAndOldDataDefaultsToIdentity() throws {
+        var settings = AppSettings.default
+        settings.gridLayouts = ["A": [5, 2, 3, 4, 1, 6, 7, 8, 9]]
+        let data = try JSONEncoder().encode(settings)
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: data).gridLayouts, settings.gridLayouts)
+
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "gridLayouts")
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        XCTAssertEqual(try JSONDecoder().decode(AppSettings.self, from: stripped).gridLayouts, [:])
+    }
+
     /// its keys: the grid must decode as off, style C and the cream wall, and
     /// the existing theme must still be read.
     func testMissingDesktopGridKeysFallBackToDefaults() throws {

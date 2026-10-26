@@ -462,3 +462,8 @@
 
 "Extra controls shown in the Dock preview" = "Extra controls shown in the Dock preview";
 "Menu bar icon" = "Menu bar icon";
+"You are on Desktop %d" = "You are on Desktop %d";
+"Lift your fingers to dismiss" = "Lift your fingers to dismiss";
+"Show desktop map when four fingers rest" = "Show desktop map when four fingers rest";
+"Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches." = "Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches.";
+"The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade." = "The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade.";
