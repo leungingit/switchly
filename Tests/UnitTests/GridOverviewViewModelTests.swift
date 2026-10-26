@@ -58,6 +58,78 @@ final class GridOverviewViewModelTests: XCTestCase {
         )
     }
 
+    func testSwapPositionsRemapsSlotsAndReportsLayout() async {
+        let viewModel = makeViewModel(snapshot: makeSnapshot(count: 9))
+        var reported: [Int]?
+        var reportedKey: String?
+        viewModel.onLayoutChanged = { reportedKey = $0; reported = $1 }
+        await viewModel.activate()
+        defer { viewModel.deactivate() }
+
+        viewModel.swapPositions(0, 4)
+
+        XCTAssertEqual(viewModel.slots.map(\.number), [5, 2, 3, 4, 1, 6, 7, 8, 9])
+        XCTAssertEqual(reported, [5, 2, 3, 4, 1, 6, 7, 8, 9])
+        XCTAssertEqual(reportedKey, "main")
+        // The slot keeps the real desktop, so switching still targets it.
+        XCTAssertEqual(viewModel.slots[4].desktop?.number, 1)
+    }
+
+    func testNavigationFollowsGridPositionsNotDesktopNumbers() async {
+        let viewModel = GridOverviewViewModel(
+            spaceService: StubDesktopSpaceService(snapshot: makeSnapshot(count: 9)),
+            layouts: ["main": [5, 2, 3, 4, 1, 6, 7, 8, 9]],
+            accessibilityStatus: { true },
+            screenRecordingStatus: { true }
+        )
+        viewModel.select(1)
+        viewModel.moveSelection(.up)
+        XCTAssertEqual(viewModel.selectedNumber, 2)
+        viewModel.moveSelection(.left)
+        XCTAssertEqual(viewModel.selectedNumber, 5)
+    }
+
+    func testLayoutIsKeptPerDisplay() async {
+        func snapshot(display: String) -> DesktopSpaceSnapshot {
+            var base = makeSnapshot(count: 9)
+            base.displayID = display
+            return base
+        }
+        let service = StubDesktopSpaceService(snapshot: snapshot(display: "A"))
+        let viewModel = GridOverviewViewModel(
+            spaceService: service,
+            layouts: ["A": [5, 2, 3, 4, 1, 6, 7, 8, 9]],
+            accessibilityStatus: { true },
+            screenRecordingStatus: { true }
+        )
+        await viewModel.activate()
+        defer { viewModel.deactivate() }
+        XCTAssertEqual(viewModel.slots.map(\.number), [5, 2, 3, 4, 1, 6, 7, 8, 9])
+
+        service.snapshot = snapshot(display: "B")
+        await viewModel.reload()
+        XCTAssertEqual(viewModel.slots.map(\.number), Array(1...9))
+    }
+
+    func testDragStateIsClearedBySwapAndDeactivate() async {
+        let viewModel = makeViewModel(snapshot: makeSnapshot(count: 9))
+        await viewModel.activate()
+        viewModel.beginDrag(0)
+        viewModel.setDropTarget(3)
+        viewModel.swapPositions(0, 3)
+        XCTAssertNil(viewModel.draggingPosition)
+        XCTAssertNil(viewModel.dropTargetPosition)
+
+        viewModel.beginDrag(1)
+        viewModel.deactivate()
+        XCTAssertNil(viewModel.draggingPosition)
+    }
+
+    func testInvalidLayoutFallsBackToIdentity() {
+        XCTAssertEqual(DesktopGridLayout.sanitized([1, 1, 3, 4, 5, 6, 7, 8, 9]), DesktopGridLayout.identity)
+        XCTAssertEqual(DesktopGridLayout.sanitized([]), DesktopGridLayout.identity)
+    }
+
     func testNineSlotsIncludeNotCreatedDesktops() async {
         let viewModel = makeViewModel(snapshot: makeSnapshot(count: 5))
         await viewModel.activate()

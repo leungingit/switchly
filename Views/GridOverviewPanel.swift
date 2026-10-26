@@ -28,8 +28,18 @@ final class GridOverviewPanel: NSPanel {
             language: settings.language,
             material: settings.crystalMaterial,
             glassOpacity: settings.backgroundBlurOpacity,
-            enableGlass: settings.enableBackgroundBlur
+            enableGlass: settings.enableBackgroundBlur,
+            layouts: settings.gridLayouts
         )
+        viewModel.onLayoutChanged = { key, layout in
+            var current = SettingsService.shared.loadSettings()
+            current.gridLayouts[key] = layout
+            do {
+                try SettingsService.shared.saveSettings(current)
+            } catch {
+                AppLogger.error("Failed to save desktop grid layout. error=\(error)")
+            }
+        }
 
         super.init(
             contentRect: .zero,
@@ -96,6 +106,10 @@ final class GridOverviewPanel: NSPanel {
         applyAppearanceOverride(settings)
         applyRoundedCorners(style: settings.gridStyle)
         layout(on: targetScreen(), style: settings.gridStyle)
+
+        // The apps preview panel shares this window level and, opened by its
+        // gesture, would sit above the overview; opening the overview closes it.
+        if PreviewPanel.shared.isVisible { PreviewPanel.shared.hide() }
 
         isDismissing = false
         alphaValue = 0
@@ -217,6 +231,16 @@ final class GridOverviewPanel: NSPanel {
     // MARK: - Keyboard
 
     override var canBecomeKey: Bool { true }
+
+    /// Clicking the overview while the apps panel is also open closes the
+    /// apps panel and raises the overview, so the two never fight for the top.
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown, PreviewPanel.shared.isVisible {
+            PreviewPanel.shared.hide()
+            orderFrontRegardless()
+        }
+        super.sendEvent(event)
+    }
     override var canBecomeMain: Bool { false }
 
     override func keyDown(with event: NSEvent) {

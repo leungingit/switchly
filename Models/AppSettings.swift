@@ -120,6 +120,9 @@ struct AppSettings: Codable, Equatable {
     var gridStyle: GridStyle
     /// Overview wallpaper in the light appearance; dark always uses graphite.
     var gridBackground: GridBackground
+    /// Per-display grid arrangement, keyed by `DesktopGridLayout.key(for:)`:
+    /// grid position → real desktop number (permutation of 1...9).
+    var gridLayouts: [String: [Int]]
 
     init(
         previewStrategy: PreviewStrategy,
@@ -173,7 +176,8 @@ struct AppSettings: Codable, Equatable {
         gridInterceptSystemGestures: Bool = true,
         gridStyle: GridStyle = .default,
         gridBackground: GridBackground = .default,
-        previewSpaceScope: PreviewSpaceScope = .allSpaces
+        previewSpaceScope: PreviewSpaceScope = .allSpaces,
+        gridLayouts: [String: [Int]] = [:]
     ) {
         self.previewStrategy = previewStrategy
         self.shortcutPrefix = shortcutPrefix
@@ -227,6 +231,7 @@ struct AppSettings: Codable, Equatable {
         self.gridStyle = gridStyle
         self.gridBackground = gridBackground
         self.previewSpaceScope = previewSpaceScope
+        self.gridLayouts = gridLayouts
     }
 
     enum CodingKeys: String, CodingKey {
@@ -282,6 +287,7 @@ struct AppSettings: Codable, Equatable {
         case gridStyle
         case gridBackground
         case previewSpaceScope
+        case gridLayouts
     }
 
     /// Keys that are read but never written.
@@ -405,6 +411,7 @@ struct AppSettings: Codable, Equatable {
             PreviewSpaceScope.self,
             forKey: .previewSpaceScope
         ) ?? .allSpaces
+        self.gridLayouts = try container.decodeIfPresent([String: [Int]].self, forKey: .gridLayouts) ?? [:]
     }
     
     var panelGlassDensity: Double { crystalMaterial.sharedDensity ?? backgroundBlurOpacity }

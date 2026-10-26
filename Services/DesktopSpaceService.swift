@@ -143,7 +143,7 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
     static func ordinarySpaces(
         in displays: [RawDisplaySpaces],
         activeDisplay: String? = nil
-    ) -> (spaces: [RawSpace], currentSpaceID: UInt64)? {
+    ) -> (spaces: [RawSpace], currentSpaceID: UInt64, displayID: String)? {
         let candidates = displays.filter { display in
             display.spaces.contains { $0.type == 0 }
         }
@@ -152,7 +152,7 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
             ?? candidates.first else {
             return nil
         }
-        return (display.spaces.filter { $0.type == 0 }, display.currentSpaceID)
+        return (display.spaces.filter { $0.type == 0 }, display.currentSpaceID, display.identifier)
     }
 
     /// Maps one raw display snapshot to the overview's domain model.
@@ -206,7 +206,8 @@ final class DesktopSpaceService: DesktopSpaceServiceProtocol, DesktopCurrentDesk
             desktops: desktops,
             availability: .available,
             capturedAt: capturedAt,
-            maxDisplayDesktopCount: maxDisplayDesktopCount
+            maxDisplayDesktopCount: maxDisplayDesktopCount,
+            displayID: selection.displayID
         )
     }
 
