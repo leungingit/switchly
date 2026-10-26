@@ -29,7 +29,15 @@ class PreviewViewModel: ObservableObject {
     /// its own size and place. Follows the selection immediately (keyboard /
     /// click) and the pointer after `AppSettings.previewReplicaHoverDelay` —
     /// see `setHoveredWindow`.
-    @Published var replicaWindow: WindowInfo?
+    ///
+    /// Not `@Published`: only `PreviewPanel` reads it (through
+    /// `replicaWindowSubject`), and publishing would re-evaluate the whole
+    /// grid body on every hover-driven replica switch.
+    let replicaWindowSubject = CurrentValueSubject<WindowInfo?, Never>(nil)
+    var replicaWindow: WindowInfo? {
+        get { replicaWindowSubject.value }
+        set { replicaWindowSubject.send(newValue) }
+    }
 
     /// Content size of the panel, resolved from the target screen's
     /// `visibleFrame` by `PreviewPanel.layoutForDisplayMode()`. Lives here so

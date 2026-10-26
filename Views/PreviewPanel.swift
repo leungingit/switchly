@@ -170,7 +170,7 @@ class PreviewPanel: NSPanel {
     /// changes, so its bitmap is the one entry the auto-refresh tick keeps warm
     /// while the panel is open.
     private func observeReplicaWindow() {
-        replicaCancellable = viewModel.$replicaWindow
+        replicaCancellable = viewModel.replicaWindowSubject
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self, self.isVisible else {
@@ -686,18 +686,22 @@ struct PreviewView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Switchly")
                         .font(.title3.weight(.semibold))
-                    windowCountText
+                    // Same line as the count: a separate row would push the grid
+                    // down while the other-desktop scan runs and back up after.
+                    HStack(spacing: 6) {
+                        windowCountText
+                        if viewModel.isEnumeratingWindows {
+                            Text(t("Finding windows on other desktops…"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                     if viewModel.isWindowDiscoveryLimited {
                         Text(t("Window list is limited without Accessibility permission"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .lineLimit(2)
                             .frame(maxWidth: 220, alignment: .leading)
-                    }
-                    if viewModel.isEnumeratingWindows {
-                        Text(t("Finding windows on other desktops…"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
                     if viewModel.usesDesktopScope, settings.previewSpaceScope == .currentSpace, viewModel.otherSpaceWindowCount > 0 {
                         Button(String(format: t("%d windows on other desktops"), viewModel.otherSpaceWindowCount)) {
@@ -848,8 +852,10 @@ struct PreviewView: View {
                 guard let selectedWindow else {
                     return
                 }
+                // nil anchor = minimal scroll: a card that is already in view
+                // must not drag the whole grid to the centre on every step.
                 withAnimation(MotionTokens.animated(.easeOut(duration: MotionTokens.microDuration))) {
-                    proxy.scrollTo(selectedWindow.id, anchor: .center)
+                    proxy.scrollTo(selectedWindow.id, anchor: nil)
                 }
             }
             .background(sectionBackground)

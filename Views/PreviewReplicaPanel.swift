@@ -45,7 +45,7 @@ final class PreviewReplicaPanel: NSPanel {
     /// (the replica disappears until the next selection change).
     private var generation = 0
 
-    private init() {
+    init() {
         super.init(
             contentRect: .zero,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -93,16 +93,57 @@ final class PreviewReplicaPanel: NSPanel {
         // Any dismissal animation still in flight was superseded: its
         // completion must not order this panel out.
         generation += 1
-        imageView.image = image
-        // The frame is set directly rather than animated: the replica must land
-        // exactly on the window it replays, not slide there.
-        setFrame(rect, display: true)
+
+        let wasShowing = isVisible && alphaValue > 0.5
+        let previousImage = imageView.image
+        let previousFrame = frame
+
+        if wasShowing, !MotionTokens.reduceMotion, frame != rect, let previousImage {
+            // Another window: the old one fades out in a ghost that keeps its
+            // size and place, while this panel lands exactly on the new window
+            // and fades in. Reusing one panel would stretch the old image into
+            // the new frame for the duration of the swap.
+            fadeOutGhost(image: previousImage, frame: previousFrame, duration: fadeDuration)
+            imageView.image = image
+            setFrame(rect, display: true)
+            // Opaque at once: the ghost above dissolves away, so the screen
+            // never passes through a half-transparent mix of both windows.
+            alphaValue = 1
+        } else {
+            if wasShowing, !MotionTokens.reduceMotion, frame == rect, imageView.image !== image {
+                // Same window, sharper capture: dissolve instead of popping.
+                let fade = CATransition()
+                fade.type = .fade
+                fade.duration = fadeDuration
+                imageView.layer?.add(fade, forKey: "replicaImage")
+            }
+            imageView.image = image
+            // The frame is set directly rather than animated: the replica must
+            // land exactly on the window it replays, not slide there.
+            setFrame(rect, display: true)
+        }
 
         if !isVisible {
             alphaValue = 0
             orderFront(nil)
         }
-        Motion.fadePanel(self, to: 1, duration: fadeDuration)
+        if alphaValue < 1 {
+            Motion.fadePanel(self, to: 1, duration: fadeDuration)
+        }
+    }
+
+    /// Leaves `image` on screen at `frame` just above this panel, then fades
+    /// it out and discards it.
+    private func fadeOutGhost(image: NSImage, frame: CGRect, duration: TimeInterval) {
+        let ghost = PreviewReplicaPanel()
+        ghost.imageView.image = image
+        ghost.setFrame(frame, display: true)
+        ghost.alphaValue = 1
+        ghost.order(.above, relativeTo: windowNumber)
+        Motion.fadePanel(ghost, to: 0, duration: duration) {
+            ghost.orderOut(nil)
+            ghost.imageView.image = nil
+        }
     }
 
     /// Swaps the image while the replica is already on screen (a sharper capture
