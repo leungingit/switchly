@@ -37,6 +37,7 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(settings.gridStyle, .c)
         XCTAssertEqual(settings.gridBackground, .cream)
         XCTAssertEqual(settings.windowCardBackdrop, .followingSystem)
+        XCTAssertEqual(settings.previewSpaceScope, .allSpaces)
     }
     
     func testSettingsCodable() {
@@ -69,7 +70,8 @@ final class AppSettingsTests: XCTestCase {
             theme: .dark,
             workspaces: [workspace],
             defaultWorkspaceMissingAppDisplayMode: .placeholder,
-            defaultWorkspaceWindowSortStrategy: .titleAscending
+            defaultWorkspaceWindowSortStrategy: .titleAscending,
+            previewSpaceScope: .currentSpace
         )
         
         do {
@@ -88,9 +90,32 @@ final class AppSettingsTests: XCTestCase {
             XCTAssertEqual(decodedSettings.workspaces, [workspace])
             XCTAssertEqual(decodedSettings.defaultWorkspaceMissingAppDisplayMode, .placeholder)
             XCTAssertEqual(decodedSettings.defaultWorkspaceWindowSortStrategy, .titleAscending)
+            XCTAssertEqual(decodedSettings.previewSpaceScope, .currentSpace)
         } catch {
             XCTFail("Encoding/Decoding failed: \(error)")
         }
+    }
+
+    // MARK: Desktop range
+
+    func testMissingPreviewSpaceScopeFallsBackToAllSpaces() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "previewSpaceScope")
+        XCTAssertNil(object["previewSpaceScope"])
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: stripped)
+        XCTAssertEqual(decoded.previewSpaceScope, .allSpaces)
+    }
+
+    func testPreviewSpaceScopeRoundTrip() throws {
+        var settings = AppSettings.default
+        settings.previewSpaceScope = .currentSpace
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertEqual(decoded.previewSpaceScope, .currentSpace)
     }
 
     // MARK: Usage statistics

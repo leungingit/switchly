@@ -10,6 +10,29 @@ import CoreGraphics
 @testable import Switchly
 
 final class WindowInfoTests: XCTestCase {
+    func testOffSpaceWindowIsNotMinimizedAndStateSurvivesCoding() throws {
+        let window = WindowInfo(id: 12, ownerPID: 34, ownerName: "App", windowTitle: "Other desktop",
+                                bounds: .zero, isOnCurrentSpace: false, windowNumber: 12,
+                                isMinimized: false, isHidden: true, isOnOtherSpace: true)
+        let decoded = try JSONDecoder().decode(WindowInfo.self, from: JSONEncoder().encode(window))
+        XCTAssertFalse(decoded.isMinimized)
+        XCTAssertFalse(decoded.canPerformWindowActions)
+        XCTAssertEqual(decoded.statusLocalizationKey, "Window is hidden")
+        XCTAssertTrue(decoded.isHidden)
+        XCTAssertTrue(decoded.isOnOtherSpace)
+        XCTAssertFalse(decoded.isOnCurrentSpace)
+    }
+
+    func testLegacyOffscreenWindowDecodesWithPreviousMinimizedMeaning() throws {
+        let window = WindowInfo(id: 12, ownerPID: 34, ownerName: "App", windowTitle: "Legacy",
+                                bounds: .zero, isOnCurrentSpace: false, windowNumber: 12)
+        var data = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(window)) as? [String: Any])
+        for key in ["isMinimized", "isHidden", "isOnOtherSpace"] { data.removeValue(forKey: key) }
+        let decoded = try JSONDecoder().decode(WindowInfo.self, from: JSONSerialization.data(withJSONObject: data))
+        XCTAssertTrue(decoded.isMinimized)
+        XCTAssertFalse(decoded.isOnOtherSpace)
+    }
+
     func testWindowInfoInitialization() {
         let windowID: CGWindowID = 123
         let ownerPID: pid_t = 456

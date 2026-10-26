@@ -13,6 +13,8 @@ protocol WindowMonitorServiceProtocol {
     func startMonitoring()
     func stopMonitoring()
     func getAllWindows() -> [WindowInfo]
+    var isEnumeratingWindows: Bool { get }
+    var isWindowDiscoveryLimited: Bool { get }
     /// On-screen windows only — the fast path without the per-app
     /// Accessibility enumeration (see the concrete `getOnScreenWindows`).
     func getOnScreenWindows() -> [WindowInfo]
@@ -27,6 +29,8 @@ protocol WindowMonitorServiceProtocol {
 }
 
 extension WindowMonitorServiceProtocol {
+    var isEnumeratingWindows: Bool { false }
+    var isWindowDiscoveryLimited: Bool { false }
     /// 在同一份窗口快照中匹配应用，避免每个应用都重新枚举系统窗口。
     func filterWindows(_ windows: [WindowInfo], for bundleIdentifier: String, appName: String?) -> [WindowInfo] {
         let normalizedName = appName?.lowercased()
@@ -55,11 +59,13 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     /// compared against it (see `restartMonitoringIfFrequencyChanged`).
     private var monitorInterval: TimeInterval = 0
 
-    /// Cache of the AX-minimized-window enumeration so the main thread is not
-    /// blocked re-querying every app's accessibility hierarchy on each window
-    /// refresh (which caused delayed preview dismissal when switching apps).
-    private var minimizedWindowsCache: (date: Date, windows: [WindowInfo])?
-    
+    private let enumerationQueue = DispatchQueue(label: "com.switchly.windowEnumeration", qos: .userInitiated)
+    private var accessibilityWindowsCache: (date: Date, windows: [WindowInfo])?
+    private(set) var isEnumeratingWindows = false
+    var isWindowDiscoveryLimited: Bool { !AXIsProcessTrusted() }
+    private var enumerationProgress: Progress?
+    private var enumerationRevision = 0
+
     static let shared = WindowMonitorService()
     
     init(
@@ -101,6 +107,11 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     }
     
     func stopMonitoring() {
+        enumerationProgress?.cancel()
+        enumerationProgress = nil
+        isEnumeratingWindows = false
+        accessibilityWindowsCache = nil
+        enumerationRevision += 1
         monitorTimer?.invalidate()
         monitorTimer = nil
         for observer in workspaceObservers {
@@ -113,13 +124,13 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     func getAllWindows() -> [WindowInfo] {
         var windows = getOnScreenWindows()
 
-        let minimizedWindows = getMinimizedAccessibilityWindowsCached(excluding: Set(windows.map(\.id)))
-        windows.append(contentsOf: minimizedWindows)
+        let accessibilityWindows = getAccessibilityWindowsCached(excluding: Set(windows.map(\.id)))
+        windows.append(contentsOf: accessibilityWindows)
 
         windows = removeOverlayTwins(from: windows)
 
-        AppLogger.verbose("Loaded all windows. rawCount=\(windows.count), minimizedCount=\(minimizedWindows.count)")
-        return windows
+        AppLogger.verbose("Loaded all windows. rawCount=\(windows.count), accessibilityCount=\(accessibilityWindows.count)")
+        return windows.filter { $0.isOnCurrentSpace } + windows.filter { !$0.isOnCurrentSpace }
     }
 
     /// Fast path used by the monitor hot-loop. Returns only on-screen windows
@@ -166,36 +177,48 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         return windows
     }
 
-    private func getMinimizedAccessibilityWindowsCached(excluding existingWindowIDs: Set<CGWindowID>) -> [WindowInfo] {
-        if let cache = minimizedWindowsCache,
-           Date().timeIntervalSince(cache.date) < 2.0 {
-            return cache.windows.filter { !existingWindowIDs.contains($0.id) }
+    private func getAccessibilityWindowsCached(excluding existingWindowIDs: Set<CGWindowID>) -> [WindowInfo] {
+        // AX 逐应用枚举可能超时，放到专用串行队列；不以全局时间预算静默漏掉后面的应用。
+        guard !isWindowDiscoveryLimited else { return [] }
+        if !isEnumeratingWindows,
+           accessibilityWindowsCache.map({ Date().timeIntervalSince($0.date) >= 2 }) ?? true {
+            isEnumeratingWindows = true
+            let progress = Progress(totalUnitCount: 1)
+            enumerationProgress = progress
+            let revision = enumerationRevision
+            enumerationQueue.async { [weak self] in
+                guard let self, !progress.isCancelled else { return }
+                let windows = self.getAccessibilityWindows(excluding: [], progress: progress)
+                DispatchQueue.main.async {
+                    guard !progress.isCancelled else { return }
+                    if revision == self.enumerationRevision {
+                        self.accessibilityWindowsCache = (Date(), windows)
+                    }
+                    self.isEnumeratingWindows = false
+                    self.enumerationProgress = nil
+                    self.refreshWindowList()
+                }
+            }
         }
-
-        let windows = getMinimizedAccessibilityWindows(excluding: existingWindowIDs)
-        minimizedWindowsCache = (Date(), windows)
-        return windows
+        let cgWindows = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        let existingIDs = Set(cgWindows.compactMap { $0[kCGWindowNumber as String] as? CGWindowID })
+        return (accessibilityWindowsCache?.windows ?? []).filter {
+            !existingWindowIDs.contains($0.id) && (existingIDs.contains($0.id) || $0.isMinimized || $0.id & 0x8000_0000 != 0)
+        }
     }
 
-    private func getMinimizedAccessibilityWindows(excluding existingWindowIDs: Set<CGWindowID>) -> [WindowInfo] {
+    private func getAccessibilityWindows(excluding existingWindowIDs: Set<CGWindowID>, progress: Progress) -> [WindowInfo] {
         guard AXIsProcessTrusted() else {
             return []
         }
 
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        let start = Date()
         var result: [WindowInfo] = []
+        var seen = existingWindowIDs
+        let spaces = WindowSpaceSnapshot()
 
         for app in NSWorkspace.shared.runningApplications {
-            // Bound the total time spent on Accessibility so a slow/hung app
-            // cannot block the main thread (and delay panel dismissal). The
-            // budget needs to cover several apps; too tight a budget means
-            // minimized windows from later apps are never discovered and the
-            // workspace bar shows "no windows" when an app is minimized.
-            if Date().timeIntervalSince(start) > 0.6 {
-                AppLogger.debug("Minimized AX window enumeration hit time budget")
-                break
-            }
+            guard !progress.isCancelled else { return [] }
             guard app.activationPolicy == .regular,
                   app.processIdentifier != ownPID,
                   let ownerName = app.localizedName else {
@@ -215,28 +238,52 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             }
 
             for axWindow in axWindows {
-                if let info = minimizedWindowInfo(
+                guard !progress.isCancelled else { return [] }
+                AXUIElementSetMessagingTimeout(axWindow, 0.3)
+                if let info = accessibilityWindowInfo(
                     for: axWindow,
                     ownerPID: app.processIdentifier,
                     ownerName: ownerName,
-                    excluding: existingWindowIDs
+                    excluding: seen,
+                    isHidden: app.isHidden,
+                    spaces: spaces
                 ) {
                     result.append(info)
+                    seen.insert(info.id)
                 }
             }
         }
 
+        // CG 全量列表只能补充有明确其他桌面归属的用户窗口，避免把离屏辅助面和残留 surface 当窗口。
+        let all = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        for entry in all {
+            guard !progress.isCancelled else { return [] }
+            guard let id = entry[kCGWindowNumber as String] as? CGWindowID, !seen.contains(id),
+                  let pid = entry[kCGWindowOwnerPID as String] as? pid_t, pid != ownPID,
+                  let app = NSRunningApplication(processIdentifier: pid), app.activationPolicy == .regular,
+                  (entry[kCGWindowLayer as String] as? Int) == 0,
+                  let boundsDict = entry[kCGWindowBounds as String] as? [String: Any],
+                  spaces.isOnCurrentSpace(id) == false else { continue }
+            let bounds = extractCGRect(from: boundsDict)
+            guard bounds.width >= 80, bounds.height >= 60 else { continue }
+            result.append(WindowInfo(id: id, ownerPID: pid, ownerName: app.localizedName ?? "",
+                                     windowTitle: entry[kCGWindowName as String] as? String ?? "",
+                                     bounds: bounds, isOnCurrentSpace: false, windowNumber: Int(id),
+                                     isHidden: app.isHidden, isOnOtherSpace: true))
+            seen.insert(id)
+        }
         return result
     }
 
-    private func minimizedWindowInfo(
+    private func accessibilityWindowInfo(
         for axWindow: AXUIElement,
         ownerPID: pid_t,
         ownerName: String,
-        excluding existingWindowIDs: Set<CGWindowID>
+        excluding existingWindowIDs: Set<CGWindowID>,
+        isHidden: Bool,
+        spaces: WindowSpaceSnapshot
     ) -> WindowInfo? {
         guard axWindowSubrole(axWindow) == kAXStandardWindowSubrole as String,
-              axWindowIsMinimized(axWindow),
               let bounds = axWindowFrame(axWindow),
               bounds.width >= 80,
               bounds.height >= 60 else {
@@ -251,11 +298,16 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         // matched by title/bounds when switching, so minimized windows are
         // still listed in the workspace bar instead of disappearing.
         let windowID: CGWindowID
-        if let number = axWindowNumber(axWindow), !existingWindowIDs.contains(number) {
+        let minimized = axWindowIsMinimized(axWindow)
+        if let number = WindowSystemIdentity.windowID(axWindow) {
+            guard !existingWindowIDs.contains(number) else { return nil }
             windowID = number
         } else {
+            // 无真实 ID 的普通窗口不能安全截图或确认聚焦。
+            guard minimized else { return nil }
             windowID = synthesizedWindowID(ownerPID: ownerPID, title: title, bounds: bounds)
         }
+        let membership = spaces.isOnCurrentSpace(windowID)
 
         return WindowInfo(
             id: windowID,
@@ -263,8 +315,11 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             ownerName: ownerName,
             windowTitle: title,
             bounds: bounds,
-            isOnCurrentSpace: false,
-            windowNumber: Int(windowID)
+            isOnCurrentSpace: membership == true,
+            windowNumber: Int(windowID),
+            isMinimized: minimized,
+            isHidden: isHidden,
+            isOnOtherSpace: membership == false
         )
     }
 
@@ -279,15 +334,6 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             hash &*= 16777619
         }
         return hash | 0x8000_0000
-    }
-
-    private func axWindowNumber(_ window: AXUIElement) -> CGWindowID? {
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(window, "AXWindowNumber" as CFString, &value) == .success,
-              let number = value as? NSNumber else {
-            return nil
-        }
-        return CGWindowID(number.uint32Value)
     }
 
     private func axWindowIsMinimized(_ window: AXUIElement) -> Bool {
@@ -405,7 +451,7 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         var byNumber = Set<CGWindowID>()
         var allHaveNumbers = true
         for axWindow in standardWindows {
-            if let number = axWindowNumber(axWindow) {
+            if let number = WindowSystemIdentity.windowID(axWindow) {
                 byNumber.insert(number)
             } else {
                 allHaveNumbers = false
@@ -650,6 +696,8 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
                 return
             }
+            self?.accessibilityWindowsCache = nil
+            self?.enumerationRevision += 1
             self?.activeBundleIdentifier = app.bundleIdentifier
             self?.processWindowChanges(reason: "activated:\(app.bundleIdentifier ?? "unknown")")
         }
@@ -662,6 +710,8 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
                 return
             }
+            self?.accessibilityWindowsCache = nil
+            self?.enumerationRevision += 1
             self?.processWindowChanges(reason: "launched:\(app.bundleIdentifier ?? "unknown")")
         }
 
@@ -673,10 +723,19 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
                 return
             }
+            self?.accessibilityWindowsCache = nil
+            self?.enumerationRevision += 1
             self?.processWindowChanges(reason: "terminated:\(app.bundleIdentifier ?? "unknown")")
         }
 
-        workspaceObservers = [activatedObserver, launchedObserver, terminatedObserver]
+        let spaceObserver = notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.accessibilityWindowsCache = nil
+            self?.enumerationRevision += 1
+            self?.refreshWindowList()
+        }
+        workspaceObservers = [activatedObserver, launchedObserver, terminatedObserver, spaceObserver]
         AppLogger.debug("Workspace observers registered")
     }
 

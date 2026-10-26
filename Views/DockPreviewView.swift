@@ -60,7 +60,8 @@ struct DockPreviewView: View {
                 Text(viewModel.appName)
                     .font(.headline)
                     .lineLimit(1)
-                Text(String(format: t("%d windows"), viewModel.windows.count))
+                Text(viewModel.isWindowDiscoveryLimited ? t("Window list is limited") :
+                     viewModel.isEnumeratingWindows ? t("Finding windows…") : String(format: t("%d windows"), viewModel.windows.count))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -220,6 +221,19 @@ struct DockWindowCard: View {
             ZStack(alignment: .topLeading) {
                 thumbnailContainer
                     .frame(width: cardThumbnailWidth, height: cardThumbnailHeight)
+
+                if let status = window.statusLocalizationKey {
+                    VStack {
+                        Spacer()
+                        Text(settings.language.localizedString(status))
+                            .font(.caption2)
+                            .padding(4)
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.chip))
+                    }
+                    .frame(width: cardThumbnailWidth, height: cardThumbnailHeight)
+                    .allowsHitTesting(false)
+                }
 
                 // macOS standard traffic light buttons (close / minimize / zoom)
                 // visible on hover or when selected.

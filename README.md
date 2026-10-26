@@ -38,6 +38,8 @@ Bring up thumbnails of your open windows with a global shortcut. Search window t
 
 Want a closer look? Use Window replica mode to preview the highlighted window at its original size and position. Prefer a compact overview? Keep Highlight only mode. Close, minimize, and zoom windows from the preview controls.
 
+全局预览新增「全部桌面／当前桌面」范围，默认全部桌面；应用专属预览与 Dock 预览保持全量。其他桌面、最小化和隐藏状态分别标记，无法截图时保留图标与标题。跨桌面实现仍待实机验收，验证边界见 [验证记录](docs/reviews/all-spaces-window-preview.md)。
+
 ### Give your Dock a window view
 
 Hover a Dock icon to see that app’s window thumbnails. Go straight to the document you recognize without opening the full preview panel. Prefer pointer gestures? Enable a screen-edge hotspot or shake-to-open in Preferences.
