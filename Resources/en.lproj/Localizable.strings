@@ -67,6 +67,10 @@
 "Enable dock preview" = "Enable dock preview";
 "Hover to show" = "Hover to show";
 "Hover delay" = "Hover delay";
+"Card layout" = "Card layout";
+"Layout Horizontal" = "Horizontal";
+"Layout Vertical" = "Vertical";
+"Layout Grid" = "Grid";
 "Card size" = "Card size";
 
 /* DockPreviewView */
