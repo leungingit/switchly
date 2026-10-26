@@ -7,8 +7,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-26
+
 ### Added
 
+- 九宫格拖放重排：在总览中把一个桌面拖到另一个桌面上即可互换位置（支持三指拖移与鼠标拖动），拖动时源卡片变淡、目标卡片显示虚线框。排布按显示器分别保存（设置字段 `gridLayouts`，旧设置读取为默认顺序），重启后保持。格子上的 ⌃N 标签和点击切换仍对应真实桌面编号，方向键与 Tab 按屏幕位置移动。
+- 四指滑动与手势 HUD 跟随新排布：按格子位置取相邻桌面，HUD 小九宫格按同一排布显示；排布不是默认顺序时，切换完成后 HUD 多停留约 0.9 秒显示「桌面 X → Y」。设置页在排布被调整后提示：系统滑动动画按真实桌面顺序播放，开启系统「减少动态效果」可变为淡入淡出。
+- 四指静置约 1 秒显示桌面小图并高亮当前桌面，不切换桌面，抬起手指即消失；单桌面的显示器保持安静。可在「偏好设置 → 九宫格」中通过「四指静置时显示桌面小图」关闭（默认开启）。
 - 九宫格桌面：偏好设置新增「九宫格」标签页（启用开关、总览样式 C/B 与小预览、米白/纯白背景、前置条件状态），并新增独立的「前置条件引导」窗口。前置条件（辅助功能、屏幕录制、至少两个桌面、⌃1–9 系统快捷键、触控板手势采集）只读检测，每项可直接打开对应的系统设置面板，应用不写入任何系统偏好。总览与 HUD 支持 VoiceOver 朗读、Tab/方向键焦点路径、按目标屏幕 `visibleFrame` 定位，并在隐藏时停止截图与刷新。九宫格默认关闭，关闭时菜单入口置灰。
 - 九宫格手势：四指滑动切换相邻桌面（默认自然滑动方向，可在设置中反向）；五指下滑打开总览，三指保留给拖动窗口。九宫格开启时默认接管系统四指手势，系统不再同时响应，五指上滑改为打开调度中心以便新建桌面；该能力依赖未公开的系统行为，可在设置中关闭「接管系统四指手势」恢复系统手势。
 - 预览网格、Dock 预览和工作区栏的单个窗口卡片底色可在「外观 → 窗口卡片」中选择。默认继续跟随系统表面色，升级后观感不变；内容本身是白色的窗口可以另选一层底色，与卡片分开。自定义底色会按亮度自动切换卡片文字的深浅配色。
@@ -20,6 +25,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- 打开九宫格总览时关闭 apps 预览面板，点击总览时关闭 apps 面板并将总览置顶，避免两者同时出现、apps 面板始终压在上层。
 - 九宫格切换桌面：点击其他桌面时跳过在当前桌面也有窗口的应用（激活它们不会换桌面），无可用应用时改用「切换到桌面 N」系统快捷键；未配置的快捷键不再当作默认启用，而是提示未配置。接管系统四指手势时只拦截横滑和竖滑，四指捏合（App/启动台）和张开（显示桌面）恢复为系统响应。
 - 消除 Release / `make dist` 构建中桌面空间枚举桥接的 Sendable 警告。桌面枚举仍只在同一条串行队列上运行，行为不变。
 - 窗口监控的缩略图预热只补缺失的缓存：窗口已有内存或磁盘缓存截图时不再预热，避免未打开预览时仍反复抓取前台及受监控窗口；没有缓存的窗口仍会预热，首次打开预览不必等待现拍。保留打开面板时的按需截图与可见面板的定时刷新。
@@ -406,7 +412,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - English and Simplified Chinese localizations.
 - MIT license and privacy policy.
 
-[Unreleased]: https://github.com/leungingit/switchly/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/leungingit/switchly/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/leungingit/switchly/releases/tag/v1.3.0
 [1.2.1]: https://github.com/leungingit/switchly/releases/tag/v1.2.1
 [1.2.0]: https://github.com/leungingit/switchly/releases/tag/v1.2.0
 [1.1.2]: https://github.com/leungingit/switchly/releases/tag/v1.1.2
