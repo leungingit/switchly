@@ -84,6 +84,7 @@
 		89C446418268E0251BB7C0F3 /* GridCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B3EA034319D24B8E19DFCC /* GridCellView.swift */; };
 		89C5AF0478503B5D4703D6FD /* ThumbnailSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46EE486121EF5CD8A2635C /* ThumbnailSize.swift */; };
 		8C57511E578886B778AB1A88 /* ThumbnailServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D554167CE0F0AE8B040A45CD /* ThumbnailServiceTests.swift */; };
+		8E8A3F0C723C6F16B4741C1D /* SystemGestureInterceptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1FBC046B3B164BC5604AF1 /* SystemGestureInterceptorTests.swift */; };
 		8F13B62CA83D5DB7659B0DBB /* NativeCrystalContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71DD962701C1A4451D4506CE /* NativeCrystalContainer.swift */; };
 		90B9F9CC1ADB75648FDE5E1C /* MotionTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AA59073B11D0CDFB620270 /* MotionTokens.swift */; };
 		91E69686F8833EB4F628E203 /* SwipeDirectionClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */; };
@@ -282,6 +283,7 @@
 		D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPalette.swift; sourceTree = "<group>"; };
 		DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsTests.swift; sourceTree = "<group>"; };
 		DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridOnboardingView.swift; sourceTree = "<group>"; };
+		DF1FBC046B3B164BC5604AF1 /* SystemGestureInterceptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemGestureInterceptorTests.swift; sourceTree = "<group>"; };
 		DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMonitorService.swift; sourceTree = "<group>"; };
 		DFA270BA7907E1777FD01E21 /* GridStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridStyle.swift; sourceTree = "<group>"; };
 		DFA8089BA53B1D1CCC78BEC2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -384,6 +386,7 @@
 				A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */,
 				90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */,
 				F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */,
+				DF1FBC046B3B164BC5604AF1 /* SystemGestureInterceptorTests.swift */,
 				1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */,
 				D554167CE0F0AE8B040A45CD /* ThumbnailServiceTests.swift */,
 				3D43D871338D3C1938D8ABD7 /* TrackpadGestureServiceTests.swift */,
@@ -736,6 +739,7 @@
 				D06DD1F8E4497FA98D2D1C24 /* SettingsServiceTests.swift in Sources */,
 				5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */,
 				9E2F6C9478E07EB44021ED67 /* SwipeDirectionClassifierTests.swift in Sources */,
+				8E8A3F0C723C6F16B4741C1D /* SystemGestureInterceptorTests.swift in Sources */,
 				6E4E83CA9748AD21074F4735 /* ThumbnailDiskCacheTests.swift in Sources */,
 				8C57511E578886B778AB1A88 /* ThumbnailServiceTests.swift in Sources */,
 				83D916AA58F0659AEEE10FEA /* TrackpadGestureServiceTests.swift in Sources */,

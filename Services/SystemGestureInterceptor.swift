@@ -12,6 +12,10 @@
 //  release the tap may see nothing and both responders fire again.
 //  Removing the tap restores the system gesture at once.
 //
+//  Field 123 tells the gestures apart (probe, 2026-10-26): 1 = horizontal
+//  swipe, 2 = vertical swipe, 3 = pinch / spread (Launchpad, Show Desktop).
+//  Only the swipes compete with the grid, so pinch / spread pass through.
+//
 
 import Foundation
 import CoreGraphics
@@ -29,6 +33,15 @@ final class SystemGestureInterceptor: SystemGestureIntercepting {
 
     /// Undocumented CGEventType carrying the Dock's swipe gestures.
     static let dockGestureEventType: UInt32 = 30
+    /// Field carrying the gesture category of a type 30 event.
+    static let gestureKindField: UInt32 = 123
+    /// Categories the grid replaces: horizontal and vertical swipes.
+    static let swipeGestureKinds: ClosedRange<Int64> = 1...2
+
+    /// Whether a Dock gesture of this category must be swallowed.
+    static func shouldSuppress(gestureKind: Int64) -> Bool {
+        swipeGestureKinds.contains(gestureKind)
+    }
 
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
@@ -55,9 +68,14 @@ final class SystemGestureInterceptor: SystemGestureIntercepting {
                     }
                     return Unmanaged.passUnretained(event)
                 }
-                return type.rawValue == SystemGestureInterceptor.dockGestureEventType
-                    ? nil
-                    : Unmanaged.passUnretained(event)
+                guard type.rawValue == SystemGestureInterceptor.dockGestureEventType,
+                      let kindField = CGEventField(rawValue: SystemGestureInterceptor.gestureKindField),
+                      SystemGestureInterceptor.shouldSuppress(
+                          gestureKind: event.getIntegerValueField(kindField)
+                      ) else {
+                    return Unmanaged.passUnretained(event)
+                }
+                return nil
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
