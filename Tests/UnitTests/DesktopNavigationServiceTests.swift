@@ -124,6 +124,32 @@ final class DesktopNavigationServiceTests: XCTestCase {
         XCTAssertEqual(result, .switched(number: 2, path: .applicationActivation, confirmed: true))
     }
 
+    func testAppAlsoOnTheCurrentDesktopIsSkippedWhenActivating() async {
+        let switcher = FakeSwitcher()
+        let service = makeService(switcher: switcher)
+        let initial = snapshot(desktops: [(1, 10, true, [555]), (2, 20, false, [555, 666])])
+
+        _ = await service.navigate(to: 2, snapshot: initial)
+
+        XCTAssertEqual(switcher.activatedPIDs, [666])
+    }
+
+    func testOnlySharedAppsOnTargetFallBackToTheHotKey() async {
+        let switcher = FakeSwitcher()
+        let hotKeys = FakeHotKeyReader()
+        hotKeys.bindings = DesktopHotKeyBindings(bindings: [2: DesktopHotKeyBinding(keyCode: 19, modifiers: 262144)])
+        let order = FakeOrderReader()
+        order.order = [10, 20]
+        let service = makeService(switcher: switcher, hotKeys: hotKeys, order: order)
+        let initial = snapshot(desktops: [(1, 10, true, [555]), (2, 20, false, [555])])
+
+        let result = await service.navigate(to: 2, snapshot: initial)
+
+        XCTAssertTrue(switcher.activatedPIDs.isEmpty)
+        XCTAssertEqual(switcher.postedBindings.count, 1)
+        XCTAssertEqual(result, .switched(number: 2, path: .systemHotKey, confirmed: true))
+    }
+
     func testEmptyDesktopUsesTheSystemHotKeyWithTheLiveBinding() async {
         let switcher = FakeSwitcher()
         let hotKeys = FakeHotKeyReader()
@@ -387,12 +413,8 @@ final class DesktopNavigationServiceTests: XCTestCase {
 }
 
 final class SystemDesktopHotKeyReaderTests: XCTestCase {
-    func testAbsentEntriesFallBackToSystemDefaultControlDigit() {
-        let bindings = SystemDesktopHotKeyReader.bindings(from: [:])
-
-        XCTAssertTrue(bindings.isAvailable)
-        XCTAssertEqual(bindings[1], DesktopHotKeyBinding(keyCode: 18, modifiers: 262144))
-        XCTAssertEqual(bindings[9], DesktopHotKeyBinding(keyCode: 25, modifiers: 262144))
+    func testAbsentEntriesCountAsDisabled() {
+        XCTAssertFalse(SystemDesktopHotKeyReader.bindings(from: [:]).isAvailable)
     }
 
     func testExplicitlyDisabledEntryStaysDisabled() {

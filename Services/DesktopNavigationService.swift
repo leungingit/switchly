@@ -113,11 +113,6 @@ final class SystemDesktopHotKeyReader: DesktopHotKeyReading {
     static let firstHotKeyID = 118
     static let lastHotKeyID = 126
 
-    /// ANSI key codes for 1…9 and the control modifier, i.e. the system's
-    /// default "Switch to Desktop N" binding (⌃N).
-    static let defaultKeyCodes: [UInt16] = [18, 19, 20, 21, 23, 22, 26, 28, 25]
-    static let controlModifier: UInt32 = 262144
-
     func readBindings() -> DesktopHotKeyBindings {
         let stored = CFPreferencesCopyAppValue(
             "AppleSymbolicHotKeys" as CFString,
@@ -126,23 +121,17 @@ final class SystemDesktopHotKeyReader: DesktopHotKeyReading {
         return Self.bindings(from: stored ?? [:])
     }
 
-    /// macOS only writes an entry after the user edits it; an absent entry
-    /// means the system default ⌃N, which System Settings shows as enabled
-    /// (measured on macOS 27: 118–121 absent while "Switch to Desktop 1–4"
-    /// were on). An entry that exists but is disabled stays disabled. The
-    /// switch confirmer still verifies every jump, so a wrong default can
-    /// only fail a switch, not report a false success.
+    /// An absent entry means the shortcut was never enabled: the evaluation
+    /// (§10.4) found all of 118–126 unconfigured and had to enable them to
+    /// test, and a real run (2026-10-26) posted ⌃N with no effect until the
+    /// user ticked "Switch to Desktop N". Absent therefore counts as disabled,
+    /// so the caller reports `hotkey_not_configured` instead of posting a key
+    /// that does nothing.
     static func bindings(from stored: [String: Any]) -> DesktopHotKeyBindings {
         var bindings: [Int: DesktopHotKeyBinding] = [:]
         for number in 1...9 {
             let key = String(firstHotKeyID + number - 1)
-            guard let entry = stored[key] as? [String: Any] else {
-                bindings[number] = DesktopHotKeyBinding(
-                    keyCode: defaultKeyCodes[number - 1],
-                    modifiers: controlModifier
-                )
-                continue
-            }
+            guard let entry = stored[key] as? [String: Any] else { continue }
             guard (entry["enabled"] as? Bool) == true,
                   let value = entry["value"] as? [String: Any],
                   let parameters = value["parameters"] as? [Any],
@@ -276,7 +265,12 @@ final class DesktopNavigationService: DesktopNavigationServiceProtocol {
 
         let path: DesktopSwitchPath
         var activatedPID: pid_t?
-        if let window = desktop.windows.first {
+        // Activating an app only changes Space when it has no window here: an
+        // app that also owns a window on the current desktop just raises that
+        // one (seen with VS Code spanning desktops). Such apps are skipped; if
+        // none is left the desktop is reached by the system hotkey instead.
+        let currentPIDs = Set(snapshot.desktops.filter(\.isCurrent).flatMap { $0.windows.map(\.ownerPID) })
+        if let window = desktop.windows.first(where: { !currentPIDs.contains($0.ownerPID) }) {
             activatedPID = window.ownerPID
             path = .applicationActivation
             do {
