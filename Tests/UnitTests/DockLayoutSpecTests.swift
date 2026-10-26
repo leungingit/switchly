@@ -25,7 +25,8 @@ final class DockLayoutSpecTests: XCTestCase {
         let spec = DockPreviewLayout.vertical.spec
         let few = DockPanelMetrics.panelSize(spec: spec, count: 2, cardWidth: 120, visibleSize: screen)
         XCTAssertEqual(few.width, 132 + 24)
-        XCTAssertEqual(few.height, 40 + 2 * 113 + 10 + 20)
+        let fewHeight: CGFloat = 40 + 2 * 113 + 10 + 20
+        XCTAssertEqual(few.height, fewHeight)
         let many = DockPanelMetrics.panelSize(spec: spec, count: 40, cardWidth: 120, visibleSize: screen)
         XCTAssertEqual(many.height, screen.height - DockPanelMetrics.screenMargin)
     }
@@ -35,8 +36,10 @@ final class DockLayoutSpecTests: XCTestCase {
         XCTAssertEqual(spec.columns(for: 2), 2)
         XCTAssertEqual(spec.columns(for: 7), DockLayoutSpec.gridColumns)
         let size = DockPanelMetrics.panelSize(spec: spec, count: 7, cardWidth: 120, visibleSize: screen)
-        XCTAssertEqual(size.width, 3 * 132 + 2 * 10 + 24)
-        XCTAssertEqual(size.height, 40 + 3 * 113 + 2 * 10 + 20)
+        let gridWidth: CGFloat = 3 * 132 + 2 * 10 + 24
+        let gridHeight: CGFloat = 40 + 3 * 113 + 2 * 10 + 20
+        XCTAssertEqual(size.width, gridWidth)
+        XCTAssertEqual(size.height, gridHeight)
     }
 
     func testEmptyUsesFixedWidth() {
