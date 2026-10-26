@@ -133,7 +133,7 @@ struct GridHUDView: View {
             ForEach(0..<3, id: \.self) { row in
                 HStack(spacing: DesignTokens.Grid.HUD.miniGap) {
                     ForEach(0..<3, id: \.self) { column in
-                        miniCell(number: row * 3 + column + 1)
+                        miniCell(number: viewModel.layout[row * 3 + column])
                     }
                 }
             }

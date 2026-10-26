@@ -27,7 +27,8 @@ final class GridHUDPanel: NSPanel {
             language: settings.language,
             material: settings.crystalMaterial,
             enableGlass: settings.enableBackgroundBlur,
-            glassOpacity: settings.backgroundBlurOpacity
+            glassOpacity: settings.backgroundBlurOpacity,
+            layouts: settings.gridLayouts
         )
 
         super.init(

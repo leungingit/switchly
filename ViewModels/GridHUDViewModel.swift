@@ -57,6 +57,9 @@ final class GridHUDViewModel: ObservableObject {
     @Published private(set) var currentNumber: Int?
     @Published private(set) var createdNumbers: Set<Int> = []
     @Published private(set) var isVisible = false
+    /// Grid position → real desktop number for the display being navigated,
+    /// so swipes and the mini map follow the user's arrangement.
+    @Published private(set) var layout: [Int] = DesktopGridLayout.identity
     @Published private(set) var language: AppLanguage
     @Published private(set) var material: CrystalMaterial
     /// Mirrors `AppSettings.enableBackgroundBlur`, so the HUD follows the same
@@ -71,18 +74,21 @@ final class GridHUDViewModel: ObservableObject {
 
     private let accessibilityStatus: () -> Bool
     private var lastSnapshot: DesktopSpaceSnapshot = .empty
+    private var layouts: [String: [Int]]
 
     init(
         language: AppLanguage = .english,
         material: CrystalMaterial = .legacyDefault,
         enableGlass: Bool = true,
         glassOpacity: Double = 0.30,
+        layouts: [String: [Int]] = [:],
         accessibilityStatus: @escaping () -> Bool = { AXIsProcessTrusted() }
     ) {
         self.language = language
         self.material = material
         self.enableGlass = enableGlass
         self.glassOpacity = glassOpacity
+        self.layouts = layouts
         self.accessibilityStatus = accessibilityStatus
     }
 
@@ -93,11 +99,13 @@ final class GridHUDViewModel: ObservableObject {
         material = settings.crystalMaterial
         enableGlass = settings.enableBackgroundBlur
         glassOpacity = settings.backgroundBlurOpacity
+        layouts = settings.gridLayouts
     }
 
     /// Feeds a recognised swipe. Returns the navigation the panel should run.
     func handle(swipe: TrackpadSwipeEvent, snapshot: DesktopSpaceSnapshot) -> GridHUDAction {
         lastSnapshot = snapshot
+        layout = DesktopGridLayout.sanitized(layouts[DesktopGridLayout.key(for: snapshot.displayID)] ?? [])
         currentNumber = snapshot.currentDesktop?.number
         createdNumbers = Set(snapshot.desktops.map(\.number))
         direction = swipe.gesture.direction
@@ -115,7 +123,7 @@ final class GridHUDViewModel: ObservableObject {
             return .none
         }
 
-        guard let target = Self.target(from: current, direction: swipe.gesture.direction) else {
+        guard let target = Self.target(from: current, direction: swipe.gesture.direction, layout: layout) else {
             targetNumber = nil
             phase = .edge
             isVisible = true
@@ -171,13 +179,19 @@ final class GridHUDViewModel: ObservableObject {
 
     // MARK: - Mapping
 
-    /// Neighbouring cell for a swipe, or nil at the grid edge.
-    static func target(from current: Int, direction: SwipeDirection) -> Int? {
-        guard (1...9).contains(current) else { return nil }
-        let column = (current - 1) % 3 + direction.columnDelta
-        let row = (current - 1) / 3 + direction.rowDelta
+    /// Neighbouring desktop for a swipe, or nil at the grid edge. Neighbours
+    /// are taken from grid positions, so a rearranged grid swipes as shown.
+    static func target(
+        from current: Int,
+        direction: SwipeDirection,
+        layout: [Int] = DesktopGridLayout.identity
+    ) -> Int? {
+        let layout = DesktopGridLayout.sanitized(layout)
+        guard let position = layout.firstIndex(of: current) else { return nil }
+        let column = position % 3 + direction.columnDelta
+        let row = position / 3 + direction.rowDelta
         guard (0..<3).contains(column), (0..<3).contains(row) else { return nil }
-        return row * 3 + column + 1
+        return layout[row * 3 + column]
     }
 
     // MARK: - Copy
