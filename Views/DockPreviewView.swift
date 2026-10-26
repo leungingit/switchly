@@ -205,10 +205,7 @@ struct DockWindowCard: View {
         self.window = window
         self.isSelected = isSelected
         self.settings = settings
-        // Render the cached thumbnail immediately so the dock card never shows
-        // a loading spinner for a window that was already captured (the common
-        // case, since the monitor preheats high-value windows on every window-
-        // list change).
+        // 复用先前按需截图的缓存，避免重复显示加载状态。
         let initial: ThumbnailLoadState
         if let cached = ThumbnailService.shared.getCachedThumbnail(for: window) {
             initial = .loaded(cached)

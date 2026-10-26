@@ -14,6 +14,8 @@ protocol ThumbnailServiceProtocol {
     func captureThumbnail(for window: WindowInfo, size: CGSize, tier: ThumbnailTier) async throws -> NSImage
     func getCachedThumbnail(for window: WindowInfo, tier: ThumbnailTier) -> NSImage?
     func preheatThumbnails(for windows: [WindowInfo], size: CGSize, tier: ThumbnailTier, reason: String)
+    /// 只为内存与磁盘都没有缓存截图的窗口预热；已有缓存的窗口不再截图。
+    func preheatUncachedThumbnails(for windows: [WindowInfo], size: CGSize, reason: String)
     /// Publishes the window IDs one interested surface (panel) is showing for
     /// one tier. Registrations are owner-scoped and merged, so two visible
     /// panels never overwrite each other's interest. Pass an empty set to
@@ -485,6 +487,26 @@ class ThumbnailService: ThumbnailServiceProtocol {
                     reason: reason
                 )
             }
+        }
+    }
+
+    /// 监控驱动的预热入口：先看内存缓存，再尝试磁盘旧图恢复，仍然没有才截图。
+    /// 有缓存的窗口由打开面板时的按需路径和可见面板的定时刷新维护，这里不重复抓取。
+    func preheatUncachedThumbnails(for windows: [WindowInfo], size: CGSize, reason: String) {
+        let missing = windows.filter {
+            getCachedThumbnail(for: $0, tier: .grid) == nil && !failedRecently(for: $0, tier: .grid)
+        }
+        guard !missing.isEmpty else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            var toCapture: [WindowInfo] = []
+            for window in missing {
+                if await self.restoreCachedThumbnail(for: window) == nil {
+                    toCapture.append(window)
+                }
+            }
+            guard !Task.isCancelled, !toCapture.isEmpty else { return }
+            self.preheatThumbnails(for: toCapture, size: size, tier: .grid, reason: reason)
         }
     }
 
