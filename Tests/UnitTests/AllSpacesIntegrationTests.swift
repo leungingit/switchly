@@ -11,7 +11,7 @@ final class AllSpacesIntegrationTests: XCTestCase {
             throw XCTSkip("需显式开启 Dock 面板实机点击验收")
         }
         guard AXIsProcessTrusted() else { throw XCTSkip("测试宿主没有辅助功能权限") }
-        let app = try XCTUnwrap(NSRunningApplication.runningApplications(withBundleIdentifier: "com.switchly.spacesfixture").first)
+        let app = try runningFixture()
         let monitor = WindowMonitorService.shared
         let discoveryDeadline = Date().addingTimeInterval(15)
         var windows = monitor.getAllWindows()
@@ -58,7 +58,7 @@ final class AllSpacesIntegrationTests: XCTestCase {
             throw XCTSkip("需显式开启受控跨桌面实机验证")
         }
         guard AXIsProcessTrusted() else { throw XCTSkip("测试宿主没有辅助功能权限") }
-        let app = try XCTUnwrap(NSRunningApplication.runningApplications(withBundleIdentifier: "com.switchly.spacesfixture").first)
+        let app = try runningFixture()
         let service = WindowMonitorService.shared
         let deadline = Date().addingTimeInterval(15)
         var windows = service.getAllWindows()
@@ -73,4 +73,14 @@ final class AllSpacesIntegrationTests: XCTestCase {
         XCTAssertTrue(fixtures.contains { $0.isOnCurrentSpace })
         XCTAssertTrue(fixtures.contains { $0.isOnOtherSpace && !$0.isMinimized })
     }
+    private func runningFixture() throws -> NSRunningApplication {
+        let app = try XCTUnwrap(NSRunningApplication.runningApplications(withBundleIdentifier: "com.switchly.spacesfixture").first)
+        let bundleURL = try XCTUnwrap(app.bundleURL)
+        guard FileManager.default.fileExists(atPath: bundleURL.path) else {
+            XCTFail("运行中的夹具 App 目录已被删除；必须重新构建并启动，测试结束后才能清理")
+            throw CocoaError(.fileNoSuchFile)
+        }
+        return app
+    }
+
 }

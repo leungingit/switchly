@@ -332,8 +332,18 @@ class AccessibilityService: AccessibilityServiceProtocol {
     func resolveAndFocus(_ window: WindowInfo) -> Bool {
         // 跨桌面目标只提升精确身份，禁止失败后探测同应用的其他窗口。
         if window.isOnOtherSpace {
-            guard let exact = windowCandidates(for: window).first?.element else { return false }
-            return focus(candidate: WindowFocusCandidate(element: exact, reason: "exactOtherSpace", needsUnminimize: window.isMinimized), window: window)
+            guard let exact = windowCandidates(for: window).first?.element
+                    ?? WindowSystemIdentity.remoteAXWindow(pid: window.ownerPID, windowID: window.id) else {
+                AppLogger.error("Other-space target has no exact AX element. windowID=\(window.id)")
+                return false
+            }
+            guard WindowSystemIdentity.requestFront(window) else {
+                AppLogger.error("Other-space front request failed. windowID=\(window.id), pid=\(window.ownerPID)")
+                return false
+            }
+            if focus(candidate: WindowFocusCandidate(element: exact, reason: "exactOtherSpace", needsUnminimize: window.isMinimized), window: window) { return true }
+            WindowSystemIdentity.forgetRemoteAXWindow(pid: window.ownerPID, windowID: window.id)
+            return false
         }
         let candidates = windowCandidates(for: window)
         AppLogger.info("Resolved focus candidates. windowID=\(window.id), count=\(candidates.count), order=\(candidates.map { $0.reason }.joined(separator: ","))")

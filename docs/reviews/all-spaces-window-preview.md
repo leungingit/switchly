@@ -86,3 +86,24 @@
 - 因此，D07 的失败不再能仅归因于 XCTest 宿主。进程报告授权不等于 AX 查询实际可用，签名配置继承也不能替代实际 AX 调用证据。未放宽精确窗口验证，未把应用激活记为目标聚焦成功。
 - 用户已刷新现有 Switchly 辅助功能授权，随后重启同一分发产物。将窗口 2 放入独立全屏 Space 后，用户再次实际悬停；关闭残留提示后，原生面板截图确认窗口 1 和窗口 2 同时显示，窗口 2 的真实缩略图及「窗口位于其他桌面」标记正确。真实悬停入口的跨桌面全量展示验收通过。
 - 点击窗口 2 后仍出现失败提示；23:11:28 的日志记录目标 windowID=257，AX 查询连续返回 `-25211`。因此刷新授权未修复定位失败，根因尚未定位，不再要求用户重复切换授权。跨桌面点击与输入焦点仍为未通过，PR 保持草稿。
+
+## D09：夹具完整性与跨 Space 定位补充
+
+日期：2026-10-23。本条覆盖 D08 中「AX 失败原因尚未区分」的阶段性判断。
+
+- 用户物理鼠标点击也复现失败，排除仅自动化输入上下文造成的问题。同一分发进程主线程只读查询 Dock／Finder 的 AX 均返回 0，旧夹具返回 -25211；随后发现旧夹具 App 临时目录已不存在。重新构建并保留 App 目录后，新夹具 AX 查询返回 0。此前验收未核对运行夹具的磁盘完整性，不应据此反复要求用户刷新 Switchly 授权。
+- 新夹具的点击实验仍未通过，但不再出现 AX API 禁用；查询有 AX 窗口而未取得其他 Space 的精确目标。现有直接查候选再 raise 的路径不足以完成此场景。
+- 【被 D10 取代】增补可选的精确窗口前置请求：按 PID 取得 ProcessSerialNumber，以目标 CGWindowID 请求系统前置，再在有界时间内重新查询精确 AX 候选。接口不可用或前置失败均返回失败，不猜其他候选，不将前置调用返回值当成聚焦成功，最终仍要求 CG 可见与 AX 精确焦点一致。
+- 技术参考为 AltTab 的 Window.swift 与 SkyLight.framework.swift 中同用途调用，仅参考系统接口签名和行为；不引入其合成鼠标事件或整套切窗实现。来源：https://github.com/lwouis/alt-tab-macos/blob/master/src/switcher/state/Window.swift 。当前为待验证实现，实际结果另行追加。
+
+## D10：其他 Space 窗口聚焦的实测根因与修复
+
+日期：2026-10-26。覆盖 D09 中「前置后重新查询精确 AX 候选」的方案。
+
+- 复现：Dock 预览点击 VS Code 其他 Space 的窗口 895／975 仍报「Unable to focus window」。补充诊断日志后得到 `Other-space target has no exact AX candidate. axWindows=1`：前置请求返回成功，但 1.5 秒内应用只暴露当前 Space 的窗口 896。
+- 实测（/tmp 临时脚本，已清理）：窗口 895／975 位于第二块屏幕的 Space 6／4，当前为 19。`kAXWindows` 不含其他 Space 窗口；仅 `_SLPSSetFrontProcessWithOptions` 返回 0 但不切换 Space；仅对枚举到的元素 AXRaise 也不切换；前置 + key window 事件记录 + AXRaise 组合后目标上屏、Space 切换成功。
+- 修复：`WindowSystemIdentity.remoteAXWindow` 按远程令牌枚举应用 AX 元素，只接受窗口 ID 精确相等者；`requestFront` 增加 key window 事件记录；随后沿用 `focus` 的 AXRaise 与 CG／AX 校验。找不到精确元素或前置失败即返回失败，不猜其他窗口。
+- 性能：枚举上限 1000，实测全量扫描 VS Code 约 87 ms、飞书约 37 ms，在串行 `focusQueue` 上执行。按 (pid, windowID) 缓存元素，命中时校验元素仍指向同一窗口 ID，聚焦失败时清除，容量上限 64，加锁。
+- 体感：切换前后未出现中间 Space，系统切换动画约 400–480 ms；用户反馈有轻微卡顿，原因未定位（疑为其他因素），暂不处理。
+- 已知限制：依赖私有接口（`_AXUIElementCreateWithRemoteToken`、SkyLight 前置与事件记录），系统更新后可能失效，失效时报失败而非误聚焦；元素 ID 超过扫描上限的应用会找不到目标。
+- 验证：`make build`、`make test-unit`（278 项，7 跳过，0 失败）通过；用户实机确认 VS Code 跨桌面点击功能正常。新逻辑依赖真实多桌面环境，未补单元测试；其他应用类型未逐一验证。
