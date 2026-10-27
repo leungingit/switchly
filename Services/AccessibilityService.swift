@@ -334,7 +334,8 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// really does raise the window we pointed at, just not the one the user
     /// clicked. Predicting the mapping cannot fix that; checking the result can.
     /// A wrong guess now costs one bounded attempt instead of failing the switch.
-    func resolveAndFocus(_ window: WindowInfo) -> Bool {
+    func resolveAndFocus(_ target: WindowInfo) -> Bool {
+        let window = withFreshSpaceMembership(target)
         // 跨桌面目标只提升精确身份，禁止失败后探测同应用的其他窗口。
         if window.isOnOtherSpace {
             guard let exact = windowCandidates(for: window).first?.element
@@ -348,6 +349,18 @@ class AccessibilityService: AccessibilityServiceProtocol {
             }
             if focus(candidate: WindowFocusCandidate(element: exact, reason: "exactOtherSpace", needsUnminimize: window.isMinimized), window: window) { return true }
             if awaitLateFront(window) { return true }
+            // The switch service skips app activation for other-desktop targets
+            // to avoid flashing the app's last-active desktop. When the bare
+            // front request did not take, fall back once to activating the app.
+            // Re-sending the request alone comes first: activation jumps to the
+            // app's last-active desktop, which is the flash this path avoids.
+            for (reason, activate) in [("exactOtherSpaceRetry", false), ("exactOtherSpaceActivated", true)] {
+                AppLogger.info("Other-space front request did not take; retrying. windowID=\(window.id), activate=\(activate), frontmostApp=\(NSWorkspace.shared.frontmostApplication?.localizedName ?? "nil")")
+                if activate { ensureApplicationFrontmost(pid: window.ownerPID) }
+                if WindowSystemIdentity.requestFront(window),
+                   focus(candidate: WindowFocusCandidate(element: exact, reason: reason, needsUnminimize: window.isMinimized), window: window) { return true }
+                if awaitLateFront(window) { return true }
+            }
             WindowSystemIdentity.forgetRemoteAXWindow(pid: window.ownerPID, windowID: window.id)
             return false
         }
@@ -397,6 +410,26 @@ class AccessibilityService: AccessibilityServiceProtocol {
         let frontmostApp = NSWorkspace.shared.frontmostApplication
         AppLogger.error("Failed to focus window after all attempts. windowID=\(window.id), owner=\(window.ownerName), title=\"\(window.windowTitle)\", attempts=\(attempts), frontmostApp=\(frontmostApp?.localizedName ?? "nil")")
         return false
+    }
+
+    /// The preview's window list is a snapshot taken at hover time (or up to
+    /// 2 s older, from the AX cache), and desktops are switched in between. A
+    /// stale "current desktop" flag sends the window down the same-desktop path,
+    /// which only raises it and never switches desktops, so the switch fails
+    /// and every later click repeats it. Membership is therefore re-read at
+    /// click time; unknown membership keeps the snapshot's answer.
+    private func withFreshSpaceMembership(_ window: WindowInfo) -> WindowInfo {
+        guard !window.isMinimized, window.id & 0x8000_0000 == 0,
+              let onCurrent = WindowSpaceSnapshot().isOnCurrentSpace(window.id),
+              onCurrent == window.isOnOtherSpace else { return window }
+        AppLogger.info("Window desktop changed since snapshot. windowID=\(window.id), wasOnOtherSpace=\(window.isOnOtherSpace), nowOnOtherSpace=\(!onCurrent)")
+        return WindowInfo(
+            id: window.id, ownerPID: window.ownerPID, ownerName: window.ownerName,
+            windowTitle: window.windowTitle, bounds: window.bounds,
+            isOnCurrentSpace: onCurrent, windowNumber: window.windowNumber,
+            isMinimized: window.isMinimized, isHidden: window.isHidden,
+            isOnOtherSpace: !onCurrent
+        )
     }
 
     /// Re-checks a window whose verification already timed out. Succeeds only if
@@ -523,7 +556,19 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// in front. Windows smaller than the monitor's threshold are skipped so
     /// invisible 1×1 helper surfaces cannot masquerade as the front window.
     func isFrontmostOnScreen(_ window: WindowInfo) -> Bool {
-        guard let frontmost = frontmostComparableWindow(to: window) else { return false }
+        guard var frontmost = frontmostComparableWindow(to: window) else { return false }
+
+        // Electron apps (Feishu/Lark) stack a transparent overlay of the same app
+        // and bounds above the real window (see `removeOverlayTwins`). It sits in
+        // front of the raised target without being another window, so look through
+        // such twins instead of reading them as a failed raise.
+        if frontmost.id != window.id, frontmost.pid == window.ownerPID,
+           let target = comparableWindows(to: window).first(where: { $0.id == window.id }),
+           comparableWindows(to: window).prefix(while: { $0.id != window.id }).allSatisfy({
+               $0.pid == window.ownerPID && $0.bounds == target.bounds
+           }) {
+            frontmost = target
+        }
 
         if frontmost.pid == window.ownerPID && frontmost.id == window.id {
             if window.isOnOtherSpace {
@@ -556,9 +601,13 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// comparison while still detecting a *real* window of another app sitting
     /// in front (which is much closer to the target in size).
     private func frontmostComparableWindow(to window: WindowInfo) -> CGWindowEntry? {
+        comparableWindows(to: window).first
+    }
+
+    private func comparableWindows(to window: WindowInfo) -> [CGWindowEntry] {
         let minWidth = max(Self.minimumWindowWidth, window.bounds.width * 0.5)
         let minHeight = max(Self.minimumWindowHeight, window.bounds.height * 0.5)
-        return onScreenWindows().first { entry in
+        return onScreenWindows().filter { entry in
             entry.bounds.width >= minWidth && entry.bounds.height >= minHeight
         }
     }

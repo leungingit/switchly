@@ -66,9 +66,10 @@ endif
 
 build: version ## Build the project (Debug)
 	@echo "${YELLOW}🔨 Building ${PROJECT_NAME} (Debug)...${NC}"
-	@xcodebuild -project $(PROJECT_NAME).xcodeproj \
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
 		-configuration Debug \
+		-destination 'generic/platform=macOS' \
 		-derivedDataPath $(DERIVED_DATA) \
 		$(SIGN_FLAG) \
 		-quiet \
@@ -79,9 +80,10 @@ build: version ## Build the project (Debug)
 
 build-release: version ## Build the project (Release)
 	@echo "${YELLOW}🔨 Building ${PROJECT_NAME} (Release)...${NC}"
-	@xcodebuild -project $(PROJECT_NAME).xcodeproj \
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
 		-configuration Release \
+		-destination 'generic/platform=macOS' \
 		-derivedDataPath $(DERIVED_DATA) \
 		$(SIGN_FLAG) \
 		-quiet \
