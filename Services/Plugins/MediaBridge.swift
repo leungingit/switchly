@@ -44,7 +44,7 @@ enum MediaBridgeError: Error, Equatable {
     case scriptFailed(Int)
 }
 
-protocol MediaBridging: AnyObject {
+protocol MediaBridging: AnyObject, Sendable {
     /// Serial queue every call must run on.
     var queue: DispatchQueue { get }
     func supports(bundleID: String) -> Bool

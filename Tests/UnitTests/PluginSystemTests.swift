@@ -206,7 +206,7 @@ final class PluginSystemTests: XCTestCase {
 
 // MARK: - Media bridge, registry origins, built-in plugin
 
-private final class FakeMediaBridge: MediaBridging {
+private final class FakeMediaBridge: MediaBridging, @unchecked Sendable {
     let queue = DispatchQueue(label: "test.media")
     var current: NowPlaying? = NowPlaying(isPlaying: true, title: "Song", artist: "Artist", album: "Album",
                                           position: 30, duration: 120, liked: false, canLike: true)

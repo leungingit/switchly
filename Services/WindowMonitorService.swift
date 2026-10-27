@@ -202,8 +202,23 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
         }
         let cgWindows = CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
         let existingIDs = Set(cgWindows.compactMap { $0[kCGWindowNumber as String] as? CGWindowID })
+        // The cache can be up to 2 s old, and a desktop switch inside that window
+        // moves its windows off screen while the cached flags still say "current
+        // desktop". Re-read membership now so a window that just left is not
+        // presented as being on the current desktop (it would then be raised
+        // without switching desktops and fail verification).
+        let spaces = WindowSpaceSnapshot()
         return (accessibilityWindowsCache?.windows ?? []).filter {
             !existingWindowIDs.contains($0.id) && (existingIDs.contains($0.id) || $0.isMinimized || $0.id & 0x8000_0000 != 0)
+        }.map { window in
+            guard let membership = spaces.isOnCurrentSpace(window.id) else { return window }
+            return WindowInfo(
+                id: window.id, ownerPID: window.ownerPID, ownerName: window.ownerName,
+                windowTitle: window.windowTitle, bounds: window.bounds,
+                isOnCurrentSpace: membership, windowNumber: window.windowNumber,
+                isMinimized: window.isMinimized, isHidden: window.isHidden,
+                isOnOtherSpace: !membership
+            )
         }
     }
 
@@ -401,7 +416,11 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
     /// the app's Accessibility hierarchy and keep only the "standard" window.
     private func removeOverlayTwins(from windows: [WindowInfo]) -> [WindowInfo] {
         var excluded: Set<CGWindowID> = []
-        let groups = Dictionary(grouping: windows) { overlayTwinKey($0) }
+        // Overlays share the real window's desktop. Windows on another desktop are
+        // not in kAXWindows, so they can never match the AX "standard" set and
+        // would be dropped as twins — e.g. two maximized windows of one app on
+        // different desktops have identical bounds but are both real.
+        let groups = Dictionary(grouping: windows.filter { !$0.isOnOtherSpace }) { overlayTwinKey($0) }
 
         for (_, group) in groups where group.count > 1 {
             guard let pid = group.first?.ownerPID,

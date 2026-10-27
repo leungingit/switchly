@@ -36,7 +36,14 @@ class WindowSwitchService: WindowSwitchServiceProtocol {
 
     func switchToWindow(_ window: WindowInfo) async throws {
         AppLogger.info("Switching to window. windowID=\(window.id), owner=\(window.ownerName), title=\"\(window.windowTitle)\", bounds=\(window.bounds)")
-        try await switchToApplication(pid: window.ownerPID)
+        // Activating the app first makes macOS jump to the desktop of its most
+        // recently active window, so a target on another desktop would flash
+        // that desktop before the window is brought forward. The other-space
+        // path fronts the exact window itself and needs no prior activation;
+        // the same-desktop path re-asserts activation per attempt.
+        if !window.isOnOtherSpace || window.isMinimized {
+            try await switchToApplication(pid: window.ownerPID)
+        }
         try await focusWindow(window)
     }
 
