@@ -109,6 +109,11 @@ class AccessibilityService: AccessibilityServiceProtocol {
     private static let frontmostSampleCount = 5
     private static let otherSpaceSampleCount = 25
     private static let frontmostSampleInterval: TimeInterval = 0.06
+    /// Extra wait after a failed verification: a desktop switch (animation plus
+    /// a slow app) can complete after `otherSpaceSampleCount` samples have run
+    /// out, and reporting that as a failure shows an error for a switch that
+    /// actually happened.
+    private static let lateFrontGraceSampleCount = 20
 
     /// Score of an exact title match combined with matching size and position:
     /// the strongest evidence available, and the point above which scoring is
@@ -342,6 +347,7 @@ class AccessibilityService: AccessibilityServiceProtocol {
                 return false
             }
             if focus(candidate: WindowFocusCandidate(element: exact, reason: "exactOtherSpace", needsUnminimize: window.isMinimized), window: window) { return true }
+            if awaitLateFront(window) { return true }
             WindowSystemIdentity.forgetRemoteAXWindow(pid: window.ownerPID, windowID: window.id)
             return false
         }
@@ -386,8 +392,23 @@ class AccessibilityService: AccessibilityServiceProtocol {
             }
         }
 
+        if awaitLateFront(window) { return true }
+
         let frontmostApp = NSWorkspace.shared.frontmostApplication
         AppLogger.error("Failed to focus window after all attempts. windowID=\(window.id), owner=\(window.ownerName), title=\"\(window.windowTitle)\", attempts=\(attempts), frontmostApp=\(frontmostApp?.localizedName ?? "nil")")
+        return false
+    }
+
+    /// Re-checks a window whose verification already timed out. Succeeds only if
+    /// the target itself reached the front, so a genuine failure is still reported.
+    private func awaitLateFront(_ window: WindowInfo) -> Bool {
+        for _ in 0..<Self.lateFrontGraceSampleCount {
+            Thread.sleep(forTimeInterval: Self.frontmostSampleInterval)
+            if isFrontmostOnScreen(window) {
+                AppLogger.info("Focused window verified after grace wait. windowID=\(window.id)")
+                return true
+            }
+        }
         return false
     }
 
