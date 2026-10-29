@@ -23,7 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var gridEnabledAtLaunch = false
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        AppLogger.configure()
+        AppLogger.isFileLoggingEnabled = SettingsService.shared.loadSettings().fileLoggingEnabled
         AppLogger.info("Application did finish launching. pid=\(ProcessInfo.processInfo.processIdentifier), bundleID=\(Bundle.main.bundleIdentifier ?? "nil"), appPath=\(Bundle.main.bundlePath)")
         setupApplication()
         setupServices()

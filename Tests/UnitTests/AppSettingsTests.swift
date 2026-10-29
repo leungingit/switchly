@@ -120,6 +120,20 @@ final class AppSettingsTests: XCTestCase {
 
     // MARK: Usage statistics
 
+    /// Older settings have no logging key: file logging stays off until the user opts in.
+    func testMissingFileLoggingKeyDefaultsToOff() throws {
+        let data = try JSONEncoder().encode(AppSettings.default)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "fileLoggingEnabled")
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONSerialization.data(withJSONObject: object))
+        XCTAssertFalse(decoded.fileLoggingEnabled)
+
+        var enabled = AppSettings.default
+        enabled.fileLoggingEnabled = true
+        let roundTrip = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(enabled))
+        XCTAssertTrue(roundTrip.fileLoggingEnabled)
+    }
+
     /// Settings written before the statistics panel existed have none of the
     /// new keys: statistics stay on and the baseline falls back to the
     /// recommended preset instead of failing the whole decode.

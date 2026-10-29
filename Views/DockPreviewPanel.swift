@@ -266,7 +266,7 @@ class DockPreviewPanel: NSPanel {
             let success = await self.viewModel.switchToWindowAndHide(window)
             await MainActor.run {
                 self.isSwitching = false
-                if !success { WindowSwitchFeedback.presentFailure(language: self.viewModel.settings.language) }
+                if !success { WindowSwitchFeedback.logFailure(source: "dockClick", window: window) }
             }
         }
     }
@@ -307,7 +307,7 @@ class DockPreviewPanel: NSPanel {
             Task {
                 let success = await viewModel.switchToSelectedWindow()
                 if !success {
-                    WindowSwitchFeedback.presentFailure(language: viewModel.settings.language)
+                    WindowSwitchFeedback.logFailure(source: "dockKeyboard")
                 }
             }
             return true

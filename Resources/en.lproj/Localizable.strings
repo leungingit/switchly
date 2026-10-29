@@ -61,6 +61,7 @@
 "System" = "System";
 "Launch at login" = "Launch at login";
 "Hide main window on launch" = "Hide main window on launch";
+"Write log file" = "Write log file";
 
 /* PreferencesView - Dock Preview */
 "Dock Preview" = "Dock Preview";
@@ -436,8 +437,6 @@
 
 "Window desktop is unknown" = "Window desktop is unknown";
 
-"Unable to focus this window" = "Unable to focus this window";
-"The window may have closed, or macOS did not switch to its desktop. You can try selecting it in Mission Control." = "The window may have closed, or macOS did not switch to its desktop. You can try selecting it in Mission Control.";
 
 "Switch to this window before using window controls." = "Switch to this window before using window controls.";
 

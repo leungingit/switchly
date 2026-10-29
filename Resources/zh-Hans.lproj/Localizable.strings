@@ -61,6 +61,7 @@
 "System" = "系统";
 "Launch at login" = "登录时启动";
 "Hide main window on launch" = "启动时隐藏主窗口";
+"Write log file" = "写入本地日志文件";
 
 /* PreferencesView - Dock Preview */
 "Dock Preview" = "Dock 预览";
@@ -436,8 +437,6 @@
 
 "Window desktop is unknown" = "暂无法确定窗口所在桌面";
 
-"Unable to focus this window" = "无法聚焦此窗口";
-"The window may have closed, or macOS did not switch to its desktop. You can try selecting it in Mission Control." = "窗口可能已关闭，或 macOS 未切换到它所在的桌面。可以尝试在调度中心选择该窗口。";
 
 "Switch to this window before using window controls." = "请先切换到此窗口，再使用窗口操作。";
 

@@ -290,6 +290,7 @@ struct PreferencesView: View {
 
                     toggleRow(t("Launch at login"), systemImage: "power", isOn: launchAtLoginBinding)
                     toggleRow(t("Hide main window on launch"), systemImage: "eye.slash", isOn: hideMainWindowBinding)
+                    toggleRow(t("Write log file"), systemImage: "doc.text", isOn: fileLoggingBinding)
                 }
 
                 settingsGroup(t("Usage statistics")) {
@@ -1041,6 +1042,16 @@ struct PreferencesView: View {
             get: { viewModel.settings.launchAtLogin },
             set: { newValue in
                 viewModel.updateSettings { $0.launchAtLogin = newValue }
+            }
+        )
+    }
+
+    private var fileLoggingBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.settings.fileLoggingEnabled },
+            set: { newValue in
+                viewModel.updateSettings { $0.fileLoggingEnabled = newValue }
+                AppLogger.isFileLoggingEnabled = newValue
             }
         )
     }
