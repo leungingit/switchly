@@ -103,7 +103,8 @@ class DockPreviewViewModel: ObservableObject {
         AppLogger.info("Refreshing dock preview windows. appName=\(appName), bundleURL=\(bundleURL?.path ?? "nil"), resolvedPID=\(runningApp.processIdentifier), matchedCount=\(matched.count)")
 
         self.windows = matched
-        isEnumeratingWindows = windowMonitorService.isEnumeratingWindows
+        // 监控器每约 2s 会后台重扫 AX 窗口；已有窗口时的刷新不应让标题栏闪出“正在查找”。
+        isEnumeratingWindows = windowMonitorService.isEnumeratingWindows && matched.isEmpty
         isWindowDiscoveryLimited = windowMonitorService.isWindowDiscoveryLimited
         selectedWindow = matched.first { $0.id == selectedWindow?.id } ?? matched.first
         updatePanelWidth()
