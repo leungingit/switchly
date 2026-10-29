@@ -11,7 +11,9 @@
 <p align="center">
   <a href="https://github.com/leungingit/switchly/releases/latest"><strong>Download for macOS →</strong></a> ·
   <a href="#get-started">Get started</a> ·
-  <a href="#build-from-source">Build from source</a>
+  <a href="#build-from-source">Build from source</a> ·
+  <a href="https://leungingit.github.io/switchly/">Website</a> ·
+  <a href="https://leungingit.github.io/switchly/plugins.html">Plugin API</a>
 </p>
 <p align="center">
   <a href="https://github.com/leungingit/switchly/releases/latest"><img src="https://img.shields.io/github/v/release/leungingit/switchly?sort=semver" alt="Latest release"></a>
@@ -51,6 +53,16 @@ Hovering Apple Music also shows play / pause, previous, next and Love controls, 
 Group apps into named workspaces—for example, **Build**, **Write**, and **Plan**. Give each workspace a shortcut and choose its window ordering, then access it from a centered workspace bar.
 
 Workspaces organize app groups and access to their windows; they do not create macOS Spaces or save and restore desktop layouts.
+
+## Dock preview plugins
+
+![Built-in Music plugin on the Dock preview: cover, track, playback and Love controls](site/images/shots/music.png)
+
+*Rendered from the current source with sample content, not a live screenshot.*
+
+Plugins add controls to the window cards shown on Dock hover. They are written in JavaScript, run in an embedded JavaScriptCore sandbox, and only return a declarative UI tree that Switchly draws natively—so they match your theme and glass settings, and have no network, file or process access. The built-in **Music Controls** plugin is the reference implementation; it offers cover art, a scrolling title, playback and Love buttons, an optional click-wheel layout, and a **hide window previews** option.
+
+Plugins declare permissions in `manifest.json` (for example `media.nowPlaying`, `media.control`). Built-in plugins run unless you turn them off; plugins you install yourself stay off until you review and confirm their permissions in **Preferences → Permissions → Plugins**. The npm SDK and CLI are not released yet—plugins are plain JavaScript for now. See the [plugin API reference](https://leungingit.github.io/switchly/plugins.html) and the [design notes](docs/dock-preview-plugins-design.md).
 
 ## Desktop Grid: all your desktops, one glance away
 
@@ -186,7 +198,7 @@ Release automation uses Developer ID signing and notarization when the required 
 
 Found a window that will not focus, or have an idea for a smoother workflow? [Open an issue](https://github.com/leungingit/switchly/issues) with your macOS version, chip, affected app, and reproduction steps. Please follow [SECURITY.md](SECURITY.md) for private security reports.
 
-Contributors can start with [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and the MVVM directories: `App/`, `Models/`, `ViewModels/`, `Views/`, `Services/`, and `Utilities/`. Before publishing, `./verify.sh` checks toolchain, versions, tracked artifacts, and privacy hygiene. Release procedures live in [docs/RELEASING.md](docs/RELEASING.md); changes live in [CHANGELOG.md](CHANGELOG.md).
+The website and plugin API pages live in `site/`; preview them with `mise run pages:serve`. Contributors can start with [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and the MVVM directories: `App/`, `Models/`, `ViewModels/`, `Views/`, `Services/`, and `Utilities/`. Before publishing, `./verify.sh` checks toolchain, versions, tracked artifacts, and privacy hygiene. Release procedures live in [docs/RELEASING.md](docs/RELEASING.md); changes live in [CHANGELOG.md](CHANGELOG.md).
 
 [MIT licensed](LICENSE).
 

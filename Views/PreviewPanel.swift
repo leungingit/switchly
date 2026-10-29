@@ -317,7 +317,7 @@ class PreviewPanel: NSPanel {
             await MainActor.run {
                 self.isSwitching = false
                 if !success {
-                    WindowSwitchFeedback.presentFailure(language: SettingsService.shared.loadSettings().language)
+                    WindowSwitchFeedback.logFailure(source: "previewPanel", window: window)
                 }
             }
         }

@@ -80,7 +80,7 @@ Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具，�
 - 签名私有配置留在忽略的 `Config/Local.xcconfig`，不提交证书、Team ID、密钥或用户机器配置；默认配置沿用 `Config/Base.xcconfig`。
 - 使用 `AppLogger` 记录关键流程，保留已有诊断能力，采用 `key=value` 字段；避免记录不必要的窗口标题、用户路径或其他敏感内容，分享日志前脱敏。
 - AX / 切窗异常先确认正在运行的 bundle 路径、签名和最终 entitlements，再对照日志中的 PID、windowID、AX 返回码与 focused window。不要混测 `build/`、`DerivedData/` 和 `/Applications` 的不同副本。
-- 日志位置以 `AppLogger.logFileURL` 为准；普通非 sandbox 构建为 `~/Library/Logs/Switchly/Switchly.log`。重建签名变化也可能影响系统权限识别。
+- 日志位置以 `AppLogger.logFileURL` 为准；普通非 sandbox 构建为 `~/Library/Logs/Switchly/Switchly.log`。文件日志默认关闭，需在「偏好设置 → 常规 → 写入本地日志文件」开启后才会写入。重建签名变化也可能影响系统权限识别。
 
 ## 7. 常用命令与验证
 

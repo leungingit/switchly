@@ -13,6 +13,8 @@
 //  - `info` / `warning` / `error`: durable, rotated to file. These carry the
 //    switch pipeline's decision trail and are what a diagnosis reads.
 //  - `debug`: durable, rotated to file. For low-frequency diagnostics.
+//  Writing to the file is opt-in (Preferences → General → Write log file); while
+//  off, every level still prints to stdout but nothing touches the disk.
 //  - `verbose`: stdout only, never written to disk. For per-tick / per-capture
 //    chatter that would otherwise dominate the file.
 //
@@ -37,6 +39,21 @@ enum AppLogger {
     /// Rotation bounds: the live file plus `maxRotatedFileCount` archives.
     static let maxLogFileSize: UInt64 = 5 * 1024 * 1024
     static let maxRotatedFileCount = 3
+
+    private static var fileLoggingEnabled = false
+
+    /// Turns file output on or off at runtime; enabling creates the log file.
+    static var isFileLoggingEnabled: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return fileLoggingEnabled }
+        set {
+            lock.lock()
+            let changed = fileLoggingEnabled != newValue
+            fileLoggingEnabled = newValue
+            lock.unlock()
+            guard changed else { return }
+            if newValue { configure() } else { print("[Switchly] File logging disabled") }
+        }
+    }
 
     private static var writesSinceSizeCheck = 0
     private static let sizeCheckInterval = 200
@@ -144,7 +161,7 @@ enum AppLogger {
         lock.lock()
         defer { lock.unlock() }
 
-        guard let data = entry.data(using: .utf8) else {
+        guard fileLoggingEnabled, let data = entry.data(using: .utf8) else {
             return
         }
 

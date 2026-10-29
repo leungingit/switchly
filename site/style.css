@@ -1,0 +1,43 @@
+:root{--bg:#fafaf7;--fg:#1d1d1f;--mut:#6e6e73;--card:#fff;--line:#e4e4df;--acc:#0a6cff;--code:#f3f3ee}
+@media(prefers-color-scheme:dark){:root{--bg:#161618;--fg:#f2f2f4;--mut:#9a9aa2;--card:#1f1f22;--line:#2f2f34;--acc:#5aa2ff;--code:#26262a}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+header.nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav div{max-width:960px;margin:auto;padding:12px 20px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.nav b{margin-right:auto;font-size:18px}.nav a{color:var(--fg);font-size:14px}
+main{max-width:960px;margin:auto;padding:0 20px 80px}
+.hero{text-align:center;padding:64px 0 24px}.hero img.icon{width:88px}
+.hero h1{font-size:44px;margin:12px 0 4px;letter-spacing:-.02em}.hero p{color:var(--mut);font-size:18px;margin:6px 0}
+.btn{display:inline-block;margin:14px 6px 0;padding:10px 22px;border-radius:999px;background:var(--acc);color:#fff!important;font-weight:600}
+.btn.alt{background:transparent;border:1px solid var(--line);color:var(--fg)!important}
+img.wide{width:100%;height:auto;border-radius:16px;border:1px solid var(--line);margin:20px 0}
+h2{font-size:28px;margin:56px 0 8px;letter-spacing:-.01em}h3{font-size:19px;margin:28px 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;margin:20px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}.card h3{margin-top:0}.card p{margin:6px 0;color:var(--mut);font-size:15px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}th{background:var(--code)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font:13.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto;line-height:1.5}pre code{background:none;padding:0}
+.note{border-left:4px solid var(--acc);background:var(--card);padding:10px 16px;border-radius:0 10px 10px 0;margin:16px 0;color:var(--mut);font-size:15px}
+.warn{border-left-color:#d97706}
+footer{border-top:1px solid var(--line);text-align:center;color:var(--mut);padding:28px 20px;font-size:14px}
+@media(max-width:600px){.hero h1{font-size:34px}}
+/* 角色选择式功能展示：下方 4 个斜切头像，悬停即在上方舞台放大对应截图 */
+.roster{margin:8px 0 0}
+.stage{position:relative;aspect-ratio:16/10;border-radius:20px;overflow:hidden;background:#0d1117;border:1px solid var(--line);box-shadow:0 24px 60px -24px rgba(0,0,0,.5)}
+.shot{position:absolute;inset:0;margin:0;opacity:0;transform:scale(1.04);transition:opacity .35s ease,transform .5s ease;pointer-events:none}
+.shot.on{opacity:1;transform:none}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.shot figcaption{position:absolute;left:0;right:0;top:0;padding:18px 24px 48px;color:#fff;font-size:15px;background:linear-gradient(rgba(0,0,0,.72),transparent)}
+.shot figcaption b{display:block;font-size:22px;margin-bottom:2px}
+.picks{display:flex;justify-content:center;margin:-34px 14px 0;position:relative;z-index:2}
+.pick{all:unset;cursor:pointer;position:relative;flex:1 1 0;max-width:230px;aspect-ratio:4/3;margin:0 -10px;overflow:hidden;
+  clip-path:polygon(14% 0,100% 0,86% 100%,0 100%);background:#0d1117;transition:transform .25s ease,filter .25s ease;filter:brightness(.55) saturate(.8)}
+.pick img{width:100%;height:100%;object-fit:cover;display:block}
+.pick span{position:absolute;left:0;right:0;bottom:0;padding:18px 0 8px;text-align:center;color:#fff;font-size:13px;font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.pick:hover,.pick.on{transform:translateY(-14px) scale(1.08);filter:none;z-index:3}
+.pick:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
+.cap{text-align:center;color:var(--mut);font-size:13px;margin:12px 0 0}
+@media(prefers-reduced-motion:reduce){.shot,.pick{transition:none}}
+@media(max-width:600px){.pick span{font-size:11px}.shot figcaption b{font-size:17px}.shot figcaption{font-size:13px;padding:10px 14px 30px}}

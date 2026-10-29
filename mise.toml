@@ -1,0 +1,54 @@
+# GitHub Pages 静态站（site/）的构建与发布任务。
+# 发布走 .github/workflows/pages.yml；本地只负责构建、预览与触发。
+
+[tasks."pages:build"]
+description = "组装 _site/（site/ 页面与截图 + docs/images 的九宫格示意图 + 应用图标）"
+run = """
+set -euo pipefail
+rm -rf _site
+mkdir -p _site
+cp site/*.html site/style.css _site/
+cp -R site/images _site/images
+cp docs/images/desktop-grid-zh.svg _site/images/
+cp Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-128.png _site/images/app-icon.png
+touch _site/.nojekyll
+echo "built _site: $(find _site -type f | wc -l | tr -d ' ') files"
+"""
+
+[tasks."pages:check"]
+description = "检查 _site/ 内 HTML 的本地 href/src 是否都存在"
+depends = ["pages:build"]
+run = """
+set -euo pipefail
+cd _site
+bad=0
+for f in *.html; do
+  for ref in $(grep -oE '(href|src)="[^"#:]+"' "$f" | sed -E 's/^[a-z]+="//; s/"$//'); do
+    [ -e "$ref" ] || { echo "missing: $f -> $ref"; bad=1; }
+  done
+done
+[ "$bad" = 0 ] && echo "links ok"
+exit "$bad"
+"""
+
+[tasks."pages:serve"]
+description = "本地预览 http://localhost:8000"
+depends = ["pages:build"]
+run = "python3 -m http.server 8000 --directory _site"
+
+[tasks."pages:enable"]
+description = "一次性：把仓库 Pages 来源设为 GitHub Actions（需 gh 登录且有仓库管理权限）"
+run = """
+gh api -X POST repos/{owner}/{repo}/pages -f build_type=workflow 2>/dev/null \
+  || gh api -X PUT repos/{owner}/{repo}/pages -f build_type=workflow
+"""
+
+[tasks."pages:deploy"]
+description = "触发 Pages 工作流并等待结果（先把 site/ 等改动推到 main）"
+run = """
+set -euo pipefail
+gh workflow run pages.yml --ref main
+sleep 5
+gh run watch "$(gh run list --workflow pages.yml --limit 1 --json databaseId -q '.[0].databaseId')" --exit-status
+gh api repos/{owner}/{repo}/pages -q .html_url
+"""

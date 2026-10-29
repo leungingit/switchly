@@ -91,6 +91,8 @@ struct AppSettings: Codable, Equatable {
     /// Local usage counters. Defaults to on (the panel can be cleared and the
     /// switch turned off; recorded data is never deleted behind the user's back).
     var usageStatisticsEnabled: Bool
+    /// 是否把日志写入本地文件（~/Library/Logs/Switchly）；默认关闭。
+    var fileLoggingEnabled: Bool
     /// Which duration preset the efficiency estimate uses, plus the optional
     /// custom values. See docs/plan/2026-09-29-statistics-panel.md section 8.5.
     var efficiencyBaselinePreset: EfficiencyBaselinePreset
@@ -168,6 +170,7 @@ struct AppSettings: Codable, Equatable {
         previewHotspotEdge: PreviewHotspotEdge = .left,
         previewShakeEnabled: Bool = false,
         usageStatisticsEnabled: Bool = true,
+        fileLoggingEnabled: Bool = false,
         efficiencyBaselinePreset: EfficiencyBaselinePreset = .standard,
         efficiencyBaselineCustom: EfficiencyBaselineValues? = nil,
         crystalMaterial: CrystalMaterial = .legacyDefault,
@@ -223,6 +226,7 @@ struct AppSettings: Codable, Equatable {
         self.previewHotspotEdge = previewHotspotEdge
         self.previewShakeEnabled = previewShakeEnabled
         self.usageStatisticsEnabled = usageStatisticsEnabled
+        self.fileLoggingEnabled = fileLoggingEnabled
         self.efficiencyBaselinePreset = efficiencyBaselinePreset
         self.efficiencyBaselineCustom = efficiencyBaselineCustom
         self.crystalMaterial = crystalMaterial
@@ -280,6 +284,7 @@ struct AppSettings: Codable, Equatable {
         case previewHotspotEdge
         case previewShakeEnabled
         case usageStatisticsEnabled
+        case fileLoggingEnabled
         case efficiencyBaselinePreset
         case efficiencyBaselineCustom
         case crystalMaterial
@@ -391,6 +396,7 @@ struct AppSettings: Codable, Equatable {
         // statistics default to on, and the baseline falls back to the
         // recommended preset (EfficiencyBaseline.resolved does the clamping).
         self.usageStatisticsEnabled = try container.decodeIfPresent(Bool.self, forKey: .usageStatisticsEnabled) ?? true
+        self.fileLoggingEnabled = try container.decodeIfPresent(Bool.self, forKey: .fileLoggingEnabled) ?? false
         self.efficiencyBaselinePreset = try container.decodeIfPresent(EfficiencyBaselinePreset.self, forKey: .efficiencyBaselinePreset) ?? .standard
         self.efficiencyBaselineCustom = try container.decodeIfPresent(EfficiencyBaselineValues.self, forKey: .efficiencyBaselineCustom)
         // The material used to be one of three presets. Each preset is now

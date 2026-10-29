@@ -7,6 +7,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- 官网与插件 API 文档（`site/`）：功能介绍、四张功能截图的悬停展示区、插件 API 参考；新增 `mise.toml` 的 `pages:*` 任务与 `.github/workflows/pages.yml`，用于构建并发布到 GitHub Pages。中英文 README 同步新增「Dock 预览插件」一节与官网链接。
+- 偏好设置 → 常规新增「写入本地日志文件」开关，默认关闭；开启后恢复原有的文件日志与轮转。旧设置读取为关闭。
+
+### Changed
+
+- 窗口聚焦失败时不再弹出模态提示，保持无反应，并写入一条醒目的 `WINDOW FOCUS FAILED` 错误日志（需开启文件日志才会落盘）。
+
 ## [1.3.0] - 2026-10-26
 
 ### Added

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>插件 API（apiVersion 1）— Switchly</title>
+<meta name="description" content="Switchly Dock 预览插件系统：manifest、运行时、ctx 对象、声明式 UI 组件与权限模型。">
+<link rel="icon" href="images/app-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav"><div>
+  <b><a href="index.html" style="color:inherit">Switchly</a> / 插件 API</b>
+  <a href="#manifest">manifest</a><a href="#runtime">运行时</a><a href="#ctx">ctx</a><a href="#ui">UI 组件</a><a href="#permissions">权限</a><a href="#example">示例</a>
+  <a href="https://github.com/leungingit/switchly">GitHub</a>
+</div></header>
+<main>
+<h1 style="font-size:38px;margin:48px 0 8px">Dock 预览插件 API</h1>
+<p>插件为 Dock 预览中的应用卡片叠加自定义控件，例如悬停 Apple Music 时显示的播放控制。插件用 JavaScript 编写，运行在内嵌的 JavaScriptCore 中，只返回一棵<b>声明式 UI 树</b>，由 Switchly 用 SwiftUI 绘制——插件拿不到绘图上下文，也没有网络与文件能力。</p>
+<div class="note"><b>当前状态（apiVersion 1）。</b>本页描述的是已实现并有单元测试覆盖的接口。npm SDK（<code>@switchly/plugin-sdk</code>）、脚手架与 CLI 尚未发布，目前直接手写 JS 即可；内置 Music 插件是参考实现（<code>Resources/Plugins/com.switchly.music-controls/</code>）。设计背景见仓库 <a href="https://github.com/leungingit/switchly/blob/main/docs/dock-preview-plugins-design.md">dock-preview-plugins-design.md</a>。</div>
+
+<img class="wide" src="images/shots/music.png" alt="内置 Music 插件在 Dock 预览中的效果">
+<p class="cap">内置 Music 插件（<code>com.switchly.music-controls</code>）在 Dock 预览中的实际效果。</p>
+
+<h2>概览</h2>
+<pre><code>Dock 预览 ── PluginOverlayView（渲染 UI 树，处理点击）
+                │
+        PluginRuntime（每插件一个 JSVirtualMachine，私有串行队列）
+                │  仅注入已授权的能力
+        MediaBridge（Apple Music，固定 AppleScript）
+
+插件目录
+  内置：Switchly.app/Contents/Resources/Plugins/&lt;id&gt;/
+  用户：~/Library/Application Support/Switchly/Plugins/&lt;id&gt;/
+        ├── manifest.json
+        ├── main.js            # 单文件 bundle
+        └── locales/en.json, zh-Hans.json   # 可选，供 ctx.t()</code></pre>
+<p>加载顺序为内置优先；同 id 的用户插件不会覆盖内置插件，防止伪装内置插件骗取已授予的权限。重复 id、manifest 错误、入口越界或超过 2 MB 的插件会被拒绝并在「设置 → 权限 → 插件」显示原因。</p>
+
+<h2 id="manifest">manifest.json</h2>
+<pre><code>{
+  "id": "com.example.music-controls",
+  "name": { "en": "Music Controls", "zh-Hans": "音乐控制" },
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "matches": ["com.apple.Music"],
+  "permissions": ["media.nowPlaying", "media.control"],
+  "entry": "main.js",
+  "refreshInterval": 1,
+  "settings": [
+    { "key": "showCover", "default": true,
+      "title": { "en": "Show album cover", "zh-Hans": "显示专辑封面" } }
+  ]
+}</code></pre>
+<table>
+<tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+<tr><td><code>id</code></td><td>string</td><td>是</td><td>反向域名，匹配 <code>^[A-Za-z0-9]+(\.[A-Za-z0-9-]+)+$</code>，全局唯一。</td></tr>
+<tr><td><code>name</code></td><td>{语言: 文本}</td><td>是</td><td>按 <code>en</code>、<code>zh-Hans</code> 等键本地化，设置页展示。</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>是</td><td>插件自身版本。</td></tr>
+<tr><td><code>apiVersion</code></td><td>int</td><td>是</td><td>宿主当前仅支持 <code>1</code>；范围外拒绝加载。</td></tr>
+<tr><td><code>matches</code></td><td>[bundleID]</td><td>是</td><td>目标应用 bundle ID，不能为空；悬停这些应用的 Dock 图标时才会运行。</td></tr>
+<tr><td><code>permissions</code></td><td>[string]</td><td>是</td><td>请求的能力，见<a href="#permissions">权限</a>；未知字符串导致 manifest 解码失败。</td></tr>
+<tr><td><code>entry</code></td><td>string</td><td>是</td><td>入口相对路径；不能为空、以 <code>/</code> 开头或含 <code>..</code>。</td></tr>
+<tr><td><code>refreshInterval</code></td><td>秒</td><td>否</td><td>预览可见时的宿主重绘间隔，下限 1 秒；不可见时零调用。</td></tr>
+<tr><td><code>settings</code></td><td>[对象]</td><td>否</td><td>布尔选项，显示在插件设置卡片，值通过 <code>ctx.settings</code> 传入。字段：<code>key</code>、<code>title</code>（本地化）、<code>default</code>、可选 <code>effect</code>。</td></tr>
+</table>
+<p><code>effect</code> 目前只有 <code>"hideWindowPreviews"</code>：该选项打开时，宿主隐藏窗口缩略图，只显示插件组件。</p>
+
+<h2 id="runtime">运行时约定</h2>
+<p>插件 bundle 必须把入口注册到全局：</p>
+<pre><code>globalThis.__switchlyPlugin = {
+  async render(ctx)            { return [ /* { slot, node } */ ]; },   // 返回 null / [] 表示无叠层
+  async onAction(ctx, id, value) { /* 用户操作 */ },                    // 可选
+};</code></pre>
+<p>两个函数可同步、<code>async</code> 或抛异常；返回值经 <code>JSON.stringify</code> 传回宿主。未来 SDK 的 <code>definePlugin()</code> 将产出同样形态。</p>
+<table>
+<tr><th>项目</th><th>行为</th></tr>
+<tr><td>隔离</td><td>每插件独立 <code>JSVirtualMachine</code> + <code>JSContext</code>，在私有串行队列执行。</td></tr>
+<tr><td>可用全局</td><td><code>console.log/info/debug/warn/error</code>（写入日志，带 <code>plugin=&lt;id&gt;</code>，单条截断 500 字符并限速）、<code>setTimeout</code>/<code>clearTimeout</code>（每插件最多 32 个，卸载时清除）、原生 <code>Promise</code>。</td></tr>
+<tr><td>不存在</td><td><code>fetch</code>、<code>XMLHttpRequest</code>、文件系统、子进程。</td></tr>
+<tr><td>超时</td><td>单次 <code>render</code>/<code>onAction</code> 软超时 200 ms：JSC 无法中断运行中的脚本，迟到结果被丢弃；连续 3 次超时自动停用该插件。</td></tr>
+<tr><td>异常</td><td>脚本错误或非法输出记入日志，该卡片回落为无叠层。</td></tr>
+<tr><td>生命周期</td><td>Dock 预览出现时挂载；面板关闭或切换应用时卸载并清除定时器；下次渲染重建 JS 环境。授权变化也会重建。</td></tr>
+</table>
+
+<h2 id="ctx">ctx 对象</h2>
+<p>每次调用传入的只读快照：</p>
+<table>
+<tr><th>成员</th><th>说明</th><th>权限</th></tr>
+<tr><td><code>ctx.app</code></td><td><code>{ bundleID, pid, name }</code></td><td>无</td></tr>
+<tr><td><code>ctx.window</code></td><td><code>{ windowID, title }</code>。<code>title</code> 已截断到约 40 字符，完整标题不会交给插件；该应用无窗口时 <code>windowID</code> 为 0。</td><td>无</td></tr>
+<tr><td><code>ctx.locale</code></td><td>首选语言标识，如 <code>"zh-Hans-CN"</code>。</td><td>无</td></tr>
+<tr><td><code>ctx.settings</code></td><td><code>{ [key]: boolean }</code>：manifest 默认值被用户保存的值覆盖，且只含已声明的 key。</td><td>无</td></tr>
+<tr><td><code>ctx.t(key)</code></td><td>从 <code>locales/&lt;语言&gt;.json</code> 取文案，回退 <code>en</code>，再回退 key 本身。</td><td>无</td></tr>
+<tr><td><code>ctx.invalidate()</code></td><td>请求宿主尽快重新 <code>render</code>。</td><td>无</td></tr>
+<tr><td><code>ctx.media.nowPlaying()</code></td><td>返回 <code>Promise&lt;NowPlaying | null&gt;</code>：<code>playing</code>、<code>title</code>、<code>artist</code>、<code>album</code>、<code>position</code>、<code>duration</code>、<code>progress</code>(0–1)、<code>liked</code>、<code>canLike</code>。应用未运行、无当前曲目或尚未授权自动化时为 <code>null</code>，且不会拉起目标应用。</td><td><code>media.nowPlaying</code></td></tr>
+<tr><td><code>ctx.media.togglePlayPause()</code> / <code>next()</code> / <code>previous()</code></td><td>播放控制，返回 Promise。</td><td><code>media.control</code></td></tr>
+<tr><td><code>ctx.media.setLiked(on)</code></td><td>喜欢／取消喜欢（Music 的 <code>favorited</code>）。</td><td><code>media.control</code></td></tr>
+</table>
+<p>未授权的 <code>ctx.media</code> 方法<b>根本不存在</b>（而非调用时报错）。专辑封面不经 JS 传递：由宿主按需读取并绘制，仅当 UI 树包含 <code>image</code> 的 <code>{artwork:true}</code> 且插件有 <code>media.nowPlaying</code> 授权。</p>
+
+<h3>onAction(ctx, id, value)</h3>
+<p>点击 <code>button</code> 时 <code>value</code> 为 <code>null</code>；<code>toggle</code> 为 <code>1</code>（开）或 <code>0</code>（关）；<code>slider</code> 为 0–1 的数值。按钮的悬停、按下、焦点状态由宿主本地绘制，不往返 JS；点击按钮不会触发切窗。</p>
+
+<h2 id="ui">声明式 UI</h2>
+<p><code>render</code> 返回 <code>null</code>、<code>[]</code> 或 <code>[{ slot, node }, …]</code>。解码即校验：未知类型、未知枚举值、必填字段缺失都会使整次输出被拒绝。尺寸、圆角、间距、材质均取宿主设计令牌，<b>插件不能传颜色值或像素尺寸</b>。</p>
+
+<h3>渲染限制</h3>
+<table>
+<tr><th>限制</th><th>值</th></tr>
+<tr><td>树深度</td><td>≤ 8</td></tr>
+<tr><td>节点总数（所有 slot 合计）</td><td>≤ 64</td></tr>
+<tr><td>每个 slot</td><td>最多一个，重复则拒绝</td></tr>
+<tr><td>可交互控件 <code>id</code></td><td>整个输出内唯一</td></tr>
+</table>
+
+<h3>Slot</h3>
+<table>
+<tr><th>slot</th><th>位置</th><th>典型用途</th></tr>
+<tr><td><code>bottomBar</code></td><td>缩略图底部浮层，高度上限为缩略图的 45%</td><td>紧凑控制条</td></tr>
+<tr><td><code>center</code></td><td>缩略图区域中央（内置 Music 插件使用）</td><td>播放卡片</td></tr>
+<tr><td><code>topTrailing</code></td><td>右上角</td><td>状态角标</td></tr>
+<tr><td><code>titleAccessory</code></td><td>标题行右侧</td><td>小图标、计数</td></tr>
+</table>
+
+<h3>组件（<code>type</code>）</h3>
+<table>
+<tr><th>类别</th><th>type</th><th>属性（默认值）</th></tr>
+<tr><td rowspan="5">布局</td><td><code>hstack</code> / <code>vstack</code></td><td><code>children</code>、<code>spacing</code>: <code>xs|s|m</code>、<code>align</code>: <code>leading|center|trailing</code></td></tr>
+<tr><td><code>zstack</code></td><td><code>children</code></td></tr>
+<tr><td><code>spacer</code></td><td>弹性占位</td></tr>
+<tr><td><code>surface</code></td><td><code>children</code>、<code>material</code>: <code>glass</code>(默认)<code>|plain</code> — 宿主材质背景</td></tr>
+<tr><td><code>screen</code></td><td><code>children</code> — 内嵌显示屏样式容器</td></tr>
+<tr><td rowspan="3">交互</td><td><code>button</code></td><td><code>id</code>*、<code>symbol</code>*（SF Symbol 名）、<code>label</code>*（VoiceOver）、<code>size</code>: <code>s|m(默认)|l</code>、<code>variant</code>: <code>plain(默认)|prominent</code>、<code>enabled</code>(true)、<code>selected</code>(false)</td></tr>
+<tr><td><code>toggle</code></td><td><code>id</code>*、<code>symbolOn</code>*、<code>symbolOff</code>*、<code>label</code>*、<code>isOn</code>(false)</td></tr>
+<tr><td><code>slider</code></td><td><code>id</code>*、<code>label</code>*、<code>value</code>* 0–1（超界截断）、<code>step</code> ∈ (0,1]；拖动结束才回调</td></tr>
+<tr><td rowspan="6">展示</td><td><code>text</code></td><td><code>value</code>*、<code>style</code>: <code>title|body(默认)|caption</code>、<code>lines</code>: 1–3</td></tr>
+<tr><td><code>progress</code></td><td><code>value</code>* 0–1、<code>style</code>: <code>linear(默认)|circular</code>、<code>rate</code>（每秒增量，预留）</td></tr>
+<tr><td><code>image</code></td><td><code>source</code>*：<code>{symbol}</code> | <code>{pluginAsset}</code>（插件内相对路径，不得越界）| <code>{artwork:true}</code>；<code>size</code>、<code>corner</code>: <code>s|m</code></td></tr>
+<tr><td><code>badge</code></td><td><code>value</code>*、<code>tone</code>: <code>neutral(默认)|accent|warning</code></td></tr>
+<tr><td><code>marquee</code></td><td><code>value</code>* — 长文本滚动；减少动态效果时退化为截断</td></tr>
+<tr><td><code>wheel</code></td><td>点按转盘。<code>children</code> 必须恰好 5 个，依次为上、左、右、下、中；空位用 <code>spacer</code></td></tr>
+</table>
+<p>标 * 为必填；<code>id</code>、<code>symbol</code>、<code>label</code> 等不得为空字符串。</p>
+
+<h2 id="permissions">权限模型</h2>
+<table>
+<tr><th>权限字符串</th><th>作用</th><th>状态</th></tr>
+<tr><td><code>media.nowPlaying</code></td><td>注入 <code>ctx.media.nowPlaying()</code>，允许宿主为 <code>image{artwork}</code> 读取封面</td><td>可用（仅 Apple Music）</td></tr>
+<tr><td><code>media.control</code></td><td>注入播放控制与 <code>setLiked</code></td><td>可用（仅 Apple Music）</td></tr>
+<tr><td><code>window.focus</code></td><td>聚焦窗口</td><td>已可声明，尚无对应 API</td></tr>
+<tr><td><code>appleScript:&lt;bundleID&gt;</code></td><td>调用宿主预置脚本模板（不接受任意脚本）</td><td>已可声明，尚无对应 API（二期）</td></tr>
+</table>
+<ul>
+  <li><b>内置插件</b>：按声明的权限默认启用，用户可关闭。</li>
+  <li><b>用户插件</b>：默认关闭；用户在「设置 → 权限 → 插件」查看权限清单并确认后才启用。运行时只获得「声明 ∩ 已确认」的权限。</li>
+  <li><b>更新新增权限</b>：保持“尚未允许”且不注入，直到用户再次确认；授权变化会重建 JS 环境。</li>
+  <li><b>系统授权</b>：Music 的 Apple Events 自动化权限由宿主申请，首次使用时 macOS 弹窗；未授权前不渲染叠层。插件只能选择命令，从不提供脚本。</li>
+  <li><b>隐私边界</b>：没有网络、文件、子进程与截图像素；窗口标题仅给截断形式。</li>
+</ul>
+
+<h2 id="example">最小示例：Music 控制条</h2>
+<p>放入 <code>~/Library/Application Support/Switchly/Plugins/com.example.demo/</code>，重新加载后在设置中确认权限并启用。</p>
+<pre><code>// manifest.json
+{ "id": "com.example.demo", "name": { "en": "Demo" }, "version": "0.1.0",
+  "apiVersion": 1, "matches": ["com.apple.Music"],
+  "permissions": ["media.nowPlaying", "media.control"],
+  "entry": "main.js", "refreshInterval": 1 }
+
+// main.js
+globalThis.__switchlyPlugin = {
+  async render(ctx) {
+    const np = await ctx.media.nowPlaying();
+    if (!np) return [];
+    return [{ slot: "center", node: { type: "surface", material: "glass", children: [
+      { type: "vstack", spacing: "xs", align: "center", children: [
+        { type: "marquee", value: np.title },
+        { type: "text", value: np.artist, style: "caption" },
+        { type: "hstack", spacing: "m", children: [
+          { type: "button", id: "prev",   symbol: "backward.fill", label: ctx.t("Previous") },
+          { type: "button", id: "toggle", symbol: np.playing ? "pause.fill" : "play.fill",
+            label: ctx.t(np.playing ? "Pause" : "Play"), size: "l" },
+          { type: "button", id: "next",   symbol: "forward.fill",  label: ctx.t("Next") },
+          { type: "toggle", id: "love", symbolOn: "heart.fill", symbolOff: "heart",
+            isOn: !!np.liked, label: ctx.t("Love") },
+        ] },
+      ] },
+    ] } }];
+  },
+
+  async onAction(ctx, id, value) {
+    if (id === "toggle")        await ctx.media.togglePlayPause();
+    else if (id === "next")     await ctx.media.next();
+    else if (id === "prev")     await ctx.media.previous();
+    else if (id === "love")     await ctx.media.setLiked(value === 1);
+    ctx.invalidate();
+  },
+};</code></pre>
+<p>调试：先在「偏好设置 → 常规」开启「写入本地日志文件」（默认关闭），日志位于 <code>~/Library/Logs/Switchly/Switchly.log</code>，按 <code>plugin=&lt;id&gt;</code> 过滤。常见失败：<code>Plugin render output rejected</code>（UI 树违反 schema 或限制）、<code>Plugin call timed out</code>（超过 200 ms）、<code>Plugin did not register</code>（未设置 <code>__switchlyPlugin</code>）。</p>
+
+<h2>路线图（尚未实现）</h2>
+<ul>
+  <li>npm 包 <code>@switchly/plugin-sdk</code>（<code>definePlugin</code>、<code>ui</code> 构建器、类型定义）、<code>create-switchly-plugin</code> 脚手架与 <code>@switchly/plugin-cli</code>（build / validate / link）。</li>
+  <li><code>ctx.storage</code>（私有 KV）、<code>ctx.app.activate()</code> / <code>ctx.window.focus()</code>、<code>appleScript</code> 模板调用、Spotify 支持。</li>
+  <li>从 GitHub 固定 commit 安装插件：涉及联网，与“完全本地”承诺冲突，需先修订隐私政策并由用户显式确认，默认关闭。</li>
+</ul>
+</main>
+<footer><a href="index.html">← 返回首页</a> · MIT License · <a href="https://github.com/leungingit/switchly">GitHub</a></footer>
+</body>
+</html>

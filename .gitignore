@@ -111,3 +111,6 @@ docs/plan/
 
 # Local temporary investigation and process files
 /work/
+
+# GitHub Pages build output (mise run pages:build)
+/_site/
