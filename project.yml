@@ -55,6 +55,10 @@ targets:
       - path: Resources/Plugins
         type: folder
         buildPhase: resources
+      # Remotion-rendered gacha burst sprite sheets (Contents/Resources/Gacha).
+      - path: Resources/Gacha
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.switchly.app

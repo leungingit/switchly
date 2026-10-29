@@ -18,6 +18,7 @@ struct DockPreviewView: View {
     /// Content size of the window strip, measured so the edge fade only
     /// appears when the strip actually overflows.
     @State private var stripContentSize: CGSize = .zero
+    @StateObject private var gacha = GachaViewModel()
 
     init(viewModel: DockPreviewViewModel = DockPreviewViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -31,13 +32,19 @@ struct DockPreviewView: View {
             } else if viewModel.windows.isEmpty {
                 // Apps like Music are often used with no window open; their
                 // plugin card (below) replaces the empty state.
-                if !viewModel.pluginOverlay.hasCenter { emptyState }
+                if !viewModel.pluginOverlay.hasCenter && !viewModel.showsGacha { emptyState }
             } else {
                 windowStrip
             }
             // Plugin card sits below the previews, never over them.
-            DockPluginSlotView(overlay: viewModel.pluginOverlay, slots: [.center],
-                               settings: settings, fallback: nil)
+            // Plugin cards by id, then the built-in gacha card (see showsGacha).
+            VStack(spacing: DesignTokens.Spacing.xs) {
+                DockPluginSlotView(overlay: viewModel.pluginOverlay, slots: [.center],
+                                   settings: settings, fallback: nil)
+                if viewModel.showsGacha {
+                    GachaView(model: gacha, language: settings.language)
+                }
+            }
                 // Ideal height, so a too-small panel can't squeeze the card
                 // and have that squeezed height measured back.
                 .fixedSize(horizontal: false, vertical: true)

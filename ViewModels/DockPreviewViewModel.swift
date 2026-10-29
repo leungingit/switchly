@@ -24,6 +24,9 @@ class DockPreviewViewModel: ObservableObject {
     @Published private(set) var hidesWindowStrip = false
     /// A plugin card (`center` slot) sits below the window strip.
     private var hasPluginCard = false
+    /// The built-in weather gacha card (id com.switchly.weather-gacha) sits below
+    /// the plugin cards for Music, so it sorts after com.switchly.music-controls.
+    @Published private(set) var showsGacha = false
     /// Natural height of the plugin card as laid out (0 until measured).
     private var measuredPluginCardHeight: CGFloat = 0
     /// Plugin overlays for the hovered app (docs/dock-preview-plugins-design.md).
@@ -74,12 +77,14 @@ class DockPreviewViewModel: ObservableObject {
               let bundleID = runningApp.bundleIdentifier else {
             AppLogger.warning("Dock preview: could not find running app. appName=\(appName), bundleURL=\(bundleURL?.path ?? "nil")")
             self.windows = []
+            showsGacha = false
             pluginOverlay.stop()
             updatePanelWidth()
             return
         }
 
         currentBundleID = bundleID
+        showsGacha = bundleID == MusicAppleScriptBridge.musicBundleID
 
         // When the Dock icon exposes a bundle URL, attribute windows to the
         // whole *product* rather than to one process: apps span many processes
@@ -238,9 +243,10 @@ class DockPreviewViewModel: ObservableObject {
             cardWidth: settings.dockPreviewCardWidth,
             visibleSize: visible
         )
+        let hasCard = hasPluginCard || showsGacha
         let hideStrip = hasPluginCard && pluginOverlay.hidesWindowPreviews(in: settings)
         if hidesWindowStrip != hideStrip { hidesWindowStrip = hideStrip }
-        guard hasPluginCard else {
+        guard hasCard else {
             panelHeight = size.height
             panelWidth = size.width
             return

@@ -535,6 +535,21 @@ struct PreferencesView: View {
                     onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } },
                     group: { title, content in AnyView(settingsGroup(title) { content }) }
                 )
+                settingsGroup(t("Weather Gacha")) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(t("Draw three cards from the weather and play a song from your Music library. Shown in the Dock preview of Music."))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        GachaWeatherControls(
+                            preferences: Binding(
+                                get: { viewModel.settings.gachaPreferences },
+                                set: { new in viewModel.updateSettings { $0.gachaPreferences = new } }
+                            ),
+                            language: viewModel.settings.language
+                        )
+                    }
+                    .padding(14)
+                }
             }
             .padding(24)
         }
