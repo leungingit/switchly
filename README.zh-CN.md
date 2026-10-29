@@ -11,7 +11,9 @@
 <p align="center">
   <a href="https://github.com/leungingit/switchly/releases/latest"><strong>下载 macOS 版 →</strong></a> ·
   <a href="#开始体验">开始体验</a> ·
-  <a href="#从源码构建">从源码构建</a>
+  <a href="#从源码构建">从源码构建</a> ·
+  <a href="https://leungingit.github.io/switchly/">官网</a> ·
+  <a href="https://leungingit.github.io/switchly/plugins.html">插件 API</a>
 </p>
 <p align="center">
   <a href="https://github.com/leungingit/switchly/releases/latest"><img src="https://img.shields.io/github/v/release/leungingit/switchly?sort=semver" alt="最新发布版本"></a>
@@ -51,6 +53,16 @@
 把应用分成「开发」「写作」「计划」等命名工作区，为每组配置快捷键和窗口排序，再从居中的工作区栏进入。
 
 工作区用于组织应用分组与窗口入口，不会创建 macOS 空间，也不负责保存和恢复桌面窗口布局。
+
+## Dock 预览插件
+
+![Dock 预览中的内置音乐插件：封面、曲目、播放与喜欢控制](site/images/shots/music.png)
+
+*图为使用示例内容由当前源码渲染，非实机截图。*
+
+插件为 Dock 悬停时的窗口卡片叠加自定义控件。插件用 JavaScript 编写，运行在内嵌的 JavaScriptCore 沙箱中，只返回一棵声明式界面树，由 Switchly 用原生控件绘制——因此自动适配主题与玻璃设置，且没有网络、文件和进程访问能力。内置的**音乐控制**插件是参考实现：封面、滚动曲名、播放与喜欢按钮，另有点按转盘布局和「不显示窗口预览，只显示组件」选项。
+
+插件在 `manifest.json` 中声明权限（如 `media.nowPlaying`、`media.control`）。内置插件默认启用、可关闭；自行安装的插件默认关闭，需在「偏好设置 → 权限 → 插件」确认权限清单后才会启用。npm SDK 与命令行工具尚未发布，目前直接编写 JavaScript 即可。详见[插件 API 文档](https://leungingit.github.io/switchly/plugins.html)与[设计说明](docs/dock-preview-plugins-design.md)。
 
 ## 九宫格桌面：所有桌面，一眼看全
 
@@ -186,7 +198,7 @@ make dist SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 
 遇到无法聚焦的窗口，或想到更顺畅的操作方式？欢迎[提交 Issue](https://github.com/leungingit/switchly/issues)，附上 macOS 版本、芯片、受影响应用与复现步骤。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
 
-参与开发可先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md)，以及 MVVM 目录 `App/`、`Models/`、`ViewModels/`、`Views/`、`Services/` 和 `Utilities/`。发布前执行 `./verify.sh` 检查工具链、版本、跟踪产物与隐私卫生。发布步骤见 [docs/RELEASING.md](docs/RELEASING.md)，历史变更见 [CHANGELOG.md](CHANGELOG.md)。
+官网与插件 API 页面位于 `site/`，可用 `mise run pages:serve` 本地预览。参与开发可先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md)，以及 MVVM 目录 `App/`、`Models/`、`ViewModels/`、`Views/`、`Services/` 和 `Utilities/`。发布前执行 `./verify.sh` 检查工具链、版本、跟踪产物与隐私卫生。发布步骤见 [docs/RELEASING.md](docs/RELEASING.md)，历史变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 采用 [MIT 开源协议](LICENSE)。
 

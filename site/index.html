@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Switchly — 看得见的窗口切换 · macOS 菜单栏工具</title>
+<meta name="description" content="Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具：全局预览、Dock 悬停预览、工作区、九宫格桌面与 Dock 预览插件系统。">
+<link rel="icon" href="images/app-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav"><div>
+  <b>Switchly</b>
+  <a href="#features">功能</a><a href="#grid">九宫格桌面</a><a href="#start">快速开始</a><a href="#privacy">隐私</a>
+  <a href="plugins.html">插件 API</a>
+  <a href="https://github.com/leungingit/switchly">GitHub</a>
+</div></header>
+<main>
+
+<section class="hero">
+  <img class="icon" src="images/app-icon.png" alt="Switchly 图标">
+  <h1>Switchly</h1>
+  <p><strong>Your next window, already in sight.</strong></p>
+  <p>原生 macOS 菜单栏应用——先看见窗口，再切换过去。</p>
+  <a class="btn" href="https://github.com/leungingit/switchly/releases/latest">下载 macOS 版</a>
+  <a class="btn alt" href="plugins.html">插件开发文档</a>
+  <p style="font-size:14px">macOS 12+ · MIT 开源 · 无账号、无网络请求、不上传窗口内容</p>
+</section>
+
+<section class="roster" aria-label="主要功能截图">
+  <div class="stage" id="stage">
+    <figure class="shot on" data-k="dock"><img src="images/shots/dock.png" alt="Dock 悬停预览截图"><figcaption><b>Dock 预览</b>悬停 Dock 图标，直接看到该应用的所有窗口</figcaption></figure>
+    <figure class="shot" data-k="workspace"><img src="images/shots/workspace.png" alt="工作区栏截图" loading="lazy"><figcaption><b>工作区预览</b>按任务编组应用，一键进入 Build / Write / Plan</figcaption></figure>
+    <figure class="shot" data-k="grid"><img src="images/shots/grid.png" alt="九宫格桌面总览截图" loading="lazy"><figcaption><b>九宫格桌面</b>3×3 总览所有桌面，手势八方向直达</figcaption></figure>
+    <figure class="shot" data-k="music"><img src="images/shots/music.png" alt="音乐插件截图" loading="lazy"><figcaption><b>音乐插件</b>悬停 Apple Music 即可控制播放，窗口关闭也能用</figcaption></figure>
+  </div>
+  <div class="picks" role="tablist">
+    <button class="pick on" role="tab" data-k="dock"><img src="images/shots/dock.png" alt=""><span>Dock 预览</span></button>
+    <button class="pick" role="tab" data-k="workspace"><img src="images/shots/workspace.png" alt=""><span>工作区预览</span></button>
+    <button class="pick" role="tab" data-k="grid"><img src="images/shots/grid.png" alt=""><span>九宫格桌面</span></button>
+    <button class="pick" role="tab" data-k="music"><img src="images/shots/music.png" alt=""><span>音乐插件</span></button>
+  </div>
+  <p class="cap">界面截图使用虚构演示内容，由当前源码渲染。</p>
+</section>
+<script>
+(function(){
+  var picks=document.querySelectorAll('.pick'),shots=document.querySelectorAll('.shot');
+  function show(k){
+    picks.forEach(function(b){var on=b.dataset.k===k;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+    shots.forEach(function(f){f.classList.toggle('on',f.dataset.k===k)});
+  }
+  picks.forEach(function(b){
+    b.addEventListener('mouseenter',function(){show(b.dataset.k)});
+    b.addEventListener('focus',function(){show(b.dataset.k)});
+    b.addEventListener('click',function(){show(b.dataset.k)});
+  });
+})();
+</script>
+
+
+<h2 id="features">功能详解</h2>
+<p>你知道要找哪个窗口：浏览器后面的文档、另一个编辑器窗口、刚打开的参考资料。Switchly 把窗口预览摆在眼前，让你按“看到的”来选，而不是按标题去猜。</p>
+
+<div class="grid">
+  <div class="card"><h3>全局窗口预览</h3>
+    <p>全局快捷键（默认 <code>⌘ ⌥ P</code>）呼出所有打开窗口的缩略图，支持标题搜索；同一应用的多个窗口也能一眼区分。</p>
+    <p><b>窗口来源</b>：「预览全部窗口」或默认的「仅已配置应用」。</p>
+    <p><b>预览模式</b>：「窗口复刻」在原位置与原尺寸预览高亮窗口；「仅高亮」保持紧凑。可在预览上直接关闭、最小化、缩放窗口。</p>
+    <p><b>桌面范围</b>：「全部桌面／当前桌面」，其他桌面、最小化、隐藏状态分别标记；无法截图时保留图标与标题。</p></div>
+  <div class="card"><h3>Dock 悬停预览</h3>
+    <p>鼠标悬停 Dock 图标，即显示该应用所有窗口缩略图，直达需要的文档，无需打开完整面板。</p>
+    <p>也可启用<b>屏幕边缘热区</b>或<b>摇动鼠标</b>触发；卡片布局可选横向、纵向或网格，窗口过多时滚动并受目标屏幕 <code>visibleFrame</code> 约束。</p>
+    <p>悬停 Apple Music 还会通过<a href="plugins.html">插件系统</a>显示封面、曲名与播放控制。</p></div>
+  <div class="card"><h3>工作区（Workspace）</h3>
+    <p>把应用编组为命名工作区，如 <b>Build</b>、<b>Write</b>、<b>Plan</b>；为每个工作区设置快捷键与窗口排序，通过屏幕居中的工作区栏访问。</p>
+    <p>工作区只组织应用分组与窗口入口，不创建 macOS 桌面，也不保存／还原桌面布局。</p></div>
+  <div class="card"><h3>音乐插件（Dock 预览）</h3>
+    <p>内置插件：悬停 Apple Music 显示封面、曲名、播放 / 暂停、上一首、下一首与喜欢；Music 窗口关闭时也可使用。可选“只显示组件”或点按转盘布局。</p>
+    <p>首次使用需允许 Switchly 控制「音乐」。插件由 JavaScript 编写、声明式界面、按权限授权，详见<a href="plugins.html">插件 API</a>。</p></div>
+  <div class="card"><h3>应用专属快捷键</h3>
+    <p>为常用应用分配专属快捷键，多个应用可共用同一快捷键。</p>
+    <p>目标应用只有一个窗口时，可开启<b>自动直达</b>跳过选择。</p></div>
+  <div class="card"><h3>外观与主题</h3>
+    <p>浅色、深色或跟随系统；透明玻璃、磨砂或关闭玻璃，共享密度与染色。macOS 26+ 使用原生 <code>NSGlassEffectView</code>，旧系统自动降级，并可「清除玻璃叠层」。</p>
+    <p>「窗口卡片」可单独设置预览网格、Dock 预览与工作区栏的卡片衬底色。动画遵循系统「减少动态效果」。</p></div>
+  <div class="card"><h3>使用统计</h3>
+    <p>仅在本地记录键鼠次数与估算节省时间，估算不代表真实生产力提升；可随时清除，永不上传。</p>
+    <p>界面内置英文与简体中文；可选开机启动、仅菜单栏（无 Dock 图标）。</p></div>
+</div>
+
+<h2 id="grid">九宫格桌面：所有桌面一眼看全</h2>
+<img class="wide" src="images/desktop-grid-zh.svg" alt="九宫格桌面 3×3 总览与手势">
+<ul>
+  <li><b>八方向切换</b>：四指滑动切到相邻桌面（含斜向），HUD 显示目标位置，方向默认跟随系统自然滑动，可反向。</li>
+  <li><b>五指下滑看全局</b>：打开总览，点击、方向键或 <code>Return</code> 切换；<code>⌃1</code>–<code>⌃9</code> 随处直达。</li>
+  <li><b>手势不打架</b>：开启后接管系统四指滑动，避免双重切换；五指上滑仍打开调度中心，三指拖移不受影响。</li>
+  <li><b>自定义排布</b>：把一个桌面拖到另一个上互换位置，按显示器分别保存、重启保持；<code>⌃N</code> 与卡片编号仍对应真实桌面。</li>
+  <li><b>迷路时</b>：四指静置约 1 秒，HUD 高亮当前桌面，不切换。</li>
+  <li><b>一分钟配置</b>：「偏好设置 → 九宫格」检测辅助功能、屏幕录制、至少两个桌面与系统「切换到桌面」快捷键，缺项一键打开对应设置面板。</li>
+</ul>
+<div class="note warn">默认关闭。接管四指滑动依赖未公开的系统行为；若未来系统变更，关闭「接管系统四指手势」即可恢复。系统滑动动画按真实桌面顺序播放，排布被调整后可能与手指方向相反，开启系统「减少动态效果」可变为淡入淡出。</div>
+
+<h2 id="start">快速开始</h2>
+<ol>
+  <li>从 <a href="https://github.com/leungingit/switchly/releases/latest">Releases</a> 下载 <code>Switchly-&lt;version&gt;.zip</code>，解压后将 <code>Switchly.app</code> 移到「应用程序」。</li>
+  <li>打开后授予<b>辅助功能</b>（查找并聚焦窗口）与<b>屏幕录制</b>（显示缩略图），位于「系统设置 → 隐私与安全性」。</li>
+  <li>在菜单栏偏好设置的「常规 → 窗口来源」选择<b>预览全部窗口</b>，或在「应用」标签添加应用。</li>
+  <li>按 <code>⌘ ⌥ P</code> 呼出预览，点击窗口即可切换。冲突时可在偏好设置中修改快捷键。</li>
+</ol>
+<p>不需要 Xcode。发布包面向 Apple Silicon 与 Intel 通用，目前仅在 Apple Silicon 上测试。</p>
+<div class="note">默认构建为 ad-hoc 签名且未公证：请确认来自本仓库 Releases，再用 macOS「仍要打开」。可用 <code>shasum -a 256 -c Switchly-&lt;version&gt;.zip.sha256</code> 校验完整性。没有缩略图时请检查屏幕录制权限；没有任何窗口时检查窗口来源设置。</div>
+
+<h3>从源码构建</h3>
+<pre><code>brew install xcodegen      # 需要 Xcode 26+、Swift 5.9
+git clone https://github.com/leungingit/switchly.git &amp;&amp; cd switchly
+make bootstrap &amp;&amp; make build &amp;&amp; make test-unit &amp;&amp; make run</code></pre>
+
+<h2 id="privacy">窗口内容留在你的 Mac 上</h2>
+<ul>
+  <li>完全本地处理：无账号、无在线授权、无遥测 SDK、无网络请求。</li>
+  <li><b>缩略图缓存</b>：仅保存压缩小图，自截取起最长 24 小时、磁盘上限 64 MB；放大预览原图不落盘。复用需系统启动会话、目标进程与窗口身份一致。</li>
+  <li><b>清除</b>：删除 <code>~/Library/Caches/Switchly/Thumbnails/</code> 即可；过期文件读取时拒绝并删除。</li>
+  <li>缓存图像可能含窗口内容，未额外加密。详见仓库中的 <a href="https://github.com/leungingit/switchly/blob/main/PRIVACY_POLICY.md">隐私政策</a>。</li>
+</ul>
+
+<h2>参与</h2>
+<p>遇到无法聚焦的窗口或有新想法？<a href="https://github.com/leungingit/switchly/issues">提交 Issue</a>（附 macOS 版本、芯片、相关应用与复现步骤）。贡献请阅读 <a href="https://github.com/leungingit/switchly/blob/main/CONTRIBUTING.md">CONTRIBUTING</a>，安全问题见 <a href="https://github.com/leungingit/switchly/blob/main/SECURITY.md">SECURITY</a>。</p>
+</main>
+<footer>MIT License · <a href="https://github.com/leungingit/switchly">github.com/leungingit/switchly</a> · <a href="https://github.com/leungingit/switchly/blob/main/CHANGELOG.md">更新日志</a></footer>
+</body>
+</html>
