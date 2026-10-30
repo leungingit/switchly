@@ -458,6 +458,7 @@
 "Control playback" = "控制播放";
 "Pick and play songs from your library" = "从资料库挑选并播放歌曲";
 "Focus windows" = "聚焦窗口";
+"Read a folder (read-only)" = "读取文件夹（只读）";
 "Run Switchly's built-in scripts for %@" = "为 %@ 运行 Switchly 内置脚本";
 
 "Extra controls shown in the Dock preview" = "在 Dock 预览中显示的附加控件";

@@ -458,6 +458,7 @@
 "Control playback" = "Control playback";
 "Pick and play songs from your library" = "Pick and play songs from your library";
 "Focus windows" = "Focus windows";
+"Read a folder (read-only)" = "Read a folder (read-only)";
 "Run Switchly's built-in scripts for %@" = "Run Switchly's built-in scripts for %@";
 
 "Extra controls shown in the Dock preview" = "Extra controls shown in the Dock preview";

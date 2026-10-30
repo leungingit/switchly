@@ -24,6 +24,8 @@ struct PluginRenderContext: Equatable {
     let windowID: UInt32
     /// Already truncated by the caller; full titles never reach plugins.
     let titleSummary: String
+    /// Seconds since 1970 when the app was last frontmost; nil while unknown.
+    var lastActiveAt: TimeInterval? = nil
 
     static func summarize(title: String, limit: Int = 40) -> String {
         title.count <= limit ? title : String(title.prefix(limit)) + "…"
@@ -71,6 +73,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private let mediaBridge: MediaBridging?
     /// Only kept when `media.library` is authorized.
     private let libraryBridge: MusicLibraryPlaying?
+    /// Only kept when `fs.read` is authorized.
+    private let fileReader: PluginFileReader?
     private let settingsProvider: () -> [String: Bool]
     /// Host-held weather snapshot for `ctx.weather.current()`; nil when the
     /// permission is not granted. Never triggers a request from JS.
@@ -100,6 +104,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          mediaBridge: MediaBridging? = nil,
          permissions: Set<PluginCapability>? = nil,
          libraryBridge: MusicLibraryPlaying? = nil,
+         fileReader: PluginFileReader? = nil,
          settings: @escaping () -> [String: Bool] = { [:] },
          values: @escaping () -> [String: PluginSettingValue] = { [:] },
          weather: (() -> [String: Any]?)? = nil,
@@ -116,6 +121,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         self.permissions = permissions
         self.mediaBridge = permissions.isDisjoint(with: [.mediaNowPlaying, .mediaControl]) ? nil : mediaBridge
         self.libraryBridge = permissions.contains(.mediaLibrary) ? libraryBridge : nil
+        self.fileReader = permissions.contains(.fsRead) ? fileReader : nil
         self.weatherProvider = permissions.contains(.weatherCurrent) ? weather : nil
         self.queue = DispatchQueue(label: "com.switchly.plugin.\(package.manifest.id)")
     }
@@ -157,6 +163,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                 guard let js = self.context ?? loadContext() else {
                     return continuation.resume(returning: .failure(.notLoaded))
                 }
+                fileReader?.resetCalls()
                 let callID = nextCallID
                 nextCallID += 1
                 let started = DispatchTime.now()
@@ -228,6 +235,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         installTimers(in: js)
         installMedia(in: js)
         installLibrary(in: js)
+        installFS(in: js)
         js.evaluateScript(Self.invokeHelper)
         strings = loadStrings()
 
@@ -338,6 +346,53 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         """)
     }
 
+    /// ctx.fs: read-only list / stat / readText inside the manifest's folders. The reader
+    /// resolves paths and enforces the quotas; only a root id and a relative path come from JS.
+    private func installFS(in js: JSContext) {
+        guard let reader = fileReader else { return }
+        let pluginID = manifest.id
+        let call: @convention(block) (String, String, String, JSValue, JSValue, JSValue) -> Void = { [weak self, weak js] op, root, path, option, resolve, reject in
+            guard let self else { return }
+            let maxBytes = option.isNumber ? Int(option.toInt32()) : nil
+            let scanOptions = option.isObject ? option.toDictionary() as? [String: Any] : nil
+            DispatchQueue.global(qos: .utility).async {
+                let outcome: Result<Any, PluginFSError> = Result {
+                    switch op {
+                    case "list": return try reader.list(root: root, path: path).map(\.jsObject)
+                    case "stat": return try reader.stat(root: root, path: path).jsObject
+                    case "readText": return try reader.readText(root: root, path: path, maxBytes: maxBytes)
+                    case "isLocked": return try reader.isLocked(root: root, path: path)
+                    case "scan":
+                        return try reader.scan(root: root, path: path, depth: (scanOptions?["depth"] as? Int) ?? 1,
+                                               suffix: scanOptions?["suffix"] as? String,
+                                               modifiedWithin: scanOptions?["modifiedWithin"] as? Double).map(\.jsObject)
+                    default: throw PluginFSError.denied
+                    }
+                }.mapError { $0 as? PluginFSError ?? .denied }
+                if case .failure(let error) = outcome {
+                    AppLogger.debug("Plugin fs. plugin=\(pluginID) root=\(root) op=\(op) result=\(error)")
+                }
+                self.queue.async {
+                    guard let js, self.context === js else { return }
+                    switch outcome {
+                    case .success(let value): resolve.call(withArguments: [value])
+                    case .failure(let error): reject.call(withArguments: ["\(error)"])
+                    }
+                }
+            }
+        }
+        js.setObject(call, forKeyedSubscript: "__switchlyFSCall" as NSString)
+        js.evaluateScript("""
+        globalThis.__switchlyFS = Object.freeze({
+          list: function (root, path) { return new Promise(function (res, rej) { __switchlyFSCall("list", String(root), String(path || ""), null, res, rej); }); },
+          stat: function (root, path) { return new Promise(function (res, rej) { __switchlyFSCall("stat", String(root), String(path || ""), null, res, rej); }); },
+          isLocked: function (root, path) { return new Promise(function (res, rej) { __switchlyFSCall("isLocked", String(root), String(path || ""), null, res, rej); }); },
+          scan: function (root, path, opts) { return new Promise(function (res, rej) { __switchlyFSCall("scan", String(root), String(path || ""), opts || {}, res, rej); }); },
+          readText: function (root, path, opts) { return new Promise(function (res, rej) { __switchlyFSCall("readText", String(root), String(path || ""), opts && opts.maxBytes, res, rej); }); },
+        });
+        """)
+    }
+
     private func installMedia(in js: JSContext) {
         guard let bridge = mediaBridge else { return }
         let canRead = permissions.contains(.mediaNowPlaying)
@@ -394,7 +449,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             settingValues[key] = saved.jsValue
         }
         let value = JSValue(object: [
-            "app": ["bundleID": ctx.bundleID, "pid": ctx.pid, "name": ctx.appName],
+            "app": ["bundleID": ctx.bundleID, "pid": ctx.pid, "name": ctx.appName,
+                    // When the app was last in front (now, if it is); null if Switchly has not seen it yet.
+                    "lastActiveAt": ctx.lastActiveAt.map { $0 as Any } ?? NSNull()],
             "window": ["windowID": ctx.windowID, "title": ctx.titleSummary],
             "locale": preferredLanguages.first ?? "en",
             "settings": settingValues,
@@ -416,6 +473,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             let media = JSValue(newObjectIn: js)
             media?.setObject(library, forKeyedSubscript: "library" as NSString)
             value?.setObject(media, forKeyedSubscript: "media" as NSString)
+        }
+        if let fs = js.objectForKeyedSubscript("__switchlyFS"), fs.isObject {
+            value?.setObject(fs, forKeyedSubscript: "fs" as NSString)
         }
         return value
     }

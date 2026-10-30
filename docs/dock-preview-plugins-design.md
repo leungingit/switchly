@@ -284,16 +284,145 @@ render: async (ctx) => {
 | D07 | 2026-10-23 | `bottomBar` 高度上限由约 30% 调整为缩略图高度 45%（`DesignTokens.Plugin.bottomBarMaxHeightFraction`）；默认 120pt 卡片仅放一行紧凑按钮，无窗口时在空状态区域显示曲目与进度 | 120×75 卡片 30% 仅 22pt，放不下带内边距的按钮行；Music 常在无窗口时使用 |
 | D08 | 2026-10-23 | 授权规则：内置插件默认按声明启用、可关闭；用户插件默认关闭，确认权限清单后启用；插件更新新增的权限保持“尚未允许”且不注入，直到再次确认。运行时只拿到「声明 ∩ 已确认」的权限，授权变化时重建 JS 环境 | §3.6；`PluginAuthorizationTests` |
 | D09 | 2026-10-23 | 封面由宿主经媒体桥按曲目 persistent ID 缓存读取，只在插件树含 `image{artwork}` 且有已授权 `media.nowPlaying` 的插件时请求；曲名滚动速度、停顿放 `MotionTokens`，减少动态效果时退化为截断 | §3.5.2、§4.1 |
+| D10 | 2026-10-29 | **待确认**：宿主不内置任何具体角色或会话逻辑；动画由插件自带资产与时间线，通过通用 `scene` 组件交给宿主按预算播放。D03 中“不开放自由绘制”调整为“不开放逐帧 JS 绘制，开放声明式场景” | §8；用户要求宿主只提供 SDK / API，不耦合角色或会话 |
+| D11 | 2026-10-29 | **待确认**：外部状态通过「用户一次性授权的目录只读」（`fs.read`，`ctx.fs.readText/list/watch`）获取，不要求外部程序配合；对 D02 新增受限例外。原 inbox 方案因需外部配合被用户否决 | §8.4 |
 | D12 | 2026-10-30 | 动画由插件声明、宿主本地播放：新增通用 `scene` 组件（apiVersion 2）。D03 调整为「不开放逐帧 JS 绘制，开放声明式场景」。宿主不含任何抽卡专有代码；原生 `Gacha*` 视图 / ViewModel / 引擎已删除，改由内置 JS 插件 `com.switchly.weather-gacha` 实现 | §9；用户要求「迁移成真正的 JS 插件，注意功能对齐和性能」。与 `feat/plugin-scene-api` 分支的 §8 提案（D10 / D11，待确认）并行，合并前需对齐 |
 | D13 | 2026-10-30 | 新增权限 `media.library`（`ctx.media.library.pickRandom / play / pause`）；AppleScript 仍由宿主生成，插件只传曲风关键词与曲目 ID | §9.4；`WeatherGachaPluginTests.testPluginWithoutLibraryPermissionCannotReachTheLibrary` |
 | D15 | 2026-10-30 | 经用户裁决，新增**唯一联网例外**：可选在线天气（默认关；数据源为 Open-Meteo，免费、无需密钥；宿主 `OnlineWeatherService` 先按城市查一次坐标再取天气，15 分钟一次、缓存 30 分钟、日志不记城市与坐标）；插件侧新增 `weather.current` 权限只读宿主快照，插件本身仍无网络。需同步 `PRIVACY_POLICY.md` §1 与 `AGENTS.md` §6 | §9.4；`OnlineWeatherTests` |
 | D16 | 2026-10-30 | 同一槽位允许多个插件叠放（每槽位 ≤3，按注册顺序），取代「先到的插件独占槽位」。原因：音乐控制与天气抽卡都要 `center`，独占导致抽卡被挤掉 | `DockPluginOverlayModel.maxEntriesPerSlot`；`PROBE center=[music-controls, weather-gacha]` |
 | D14 | 2026-10-30 | 插件设置新增 `select` / `number`；值存 `AppSettings.pluginValues`（旧设置缺该字段读为空），toggle 仍在 `pluginSettings`。`gachaPreferences` 因从未发布，直接移除而不迁移 | §9.5；`PluginSceneTests.testSettingsWithoutPluginValuesStillDecode` |
 | D17 | 2026-10-30 | 设置页只给一个插件目录入口（用户目录 `~/Library/Application Support/Switchly/Plugins`），不再单独打开应用包内的内置插件目录；内置插件由卡片上的「内置」徽标识别，页面下方一行说明两类位置。理由：内置目录是 `Contents/Resources/Plugins`，Debug 构建时位于仓库内的 `DerivedData`，两个目录并存既无安装意义，也容易被当成「插件装错了地方」 | 用户反馈；D06 的打包位置不变 |
+| D18 | 2026-10-30 | scene 新增 `image` 图层（插件目录内静态图片，减少动态效果下仍显示）；纹理预算落地：单张边长 ≤2048、累计解码 ≤32 MiB，超限拒绝并留空。内置插件 `com.switchly.whale`（鲸娘）基于它实现；D10 / D11 仍待裁决，`fs.read` 未实现，会话数暂由设置项 `running` / `unread` 演示 | `WhalePluginTests`（含路径逃逸、纹理预算、横幅跟手几何）；`make test-unit` 0 失败 |
+| D19 | 2026-10-30 | **用户批准 D11 的方案 A（授权目录只读）并要求设计授权规则**；鲸娘的目标宿主应用为 DeepSeek Harness 桌面版（`com.deepseek.dsh`，取自 `/Applications/DeepSeek Harness.app` 的 `CFBundleIdentifier`），`matches` 由终端改为该 ID。规则见 §8.6；本条只批准设计，实现与读取真实目录须按 §8.6 的步骤逐步进行 | 用户答复「deepseek harness desktop；批准，设计授权等规则」；`defaults read` 取得 bundle ID |
+
+## 8. Scene API 与外部状态读取提案（草案，待裁决）
+
+> 状态：仅提案，尚未实现。触发需求：插件需要播放带动作的卡通角色，并展示外部程序（如某 agent harness）的会话计数。分支：`feat/plugin-scene-api`。
+
+### 8.1 原则
+
+1. 宿主只提供通用、受预算约束的能力，不出现具体角色名、会话、harness 相关代码或常量。
+2. 插件自带资产、时间线与文案；宿主负责播放、合成与回收。
+3. 任何插件都不能因动画拖慢主体功能：渲染与 JS 执行解耦，超预算自动降级。
+
+### 8.2 `scene` 组件（apiVersion 2 草案）
+
+不开放逐帧 Canvas：每帧跨 JSC 桥会阻塞插件队列并增加 CPU。改为插件**声明**场景，宿主在 Core Animation 合成线程本地播放，JS 仅在状态变化时被调用（思路同 Lottie / Rive 的“数据驱动”）。
+
+| 概念 | 内容 |
+|---|---|
+| `assets` | 插件包内 PNG / WebP，经 `pluginAsset` 引用 |
+| `layers` | `id`、`asset` 或 `text`、`anchor`、`pivot`、`parent`、`z`；`text` 层只接受文本与预定义样式枚举，由宿主绘制，保证主题与本地化一致 |
+| `clips` | 每个 clip 为若干属性轨道（`x`、`y`、`rotation`、`scale`、`opacity`）的关键帧：`t`、`value`、`easing`（`linear` / `easeInOut` / `spring{stiffness,damping}`） |
+| `play` | `render` 返回 `{ clip, loop, hold, at }`；`at` 为开始时间戳，避免每次重渲染重头播放 |
+| 事件 | 可选 `onClipEnd`，经 `onAction` 回调 |
+
+要点：横幅文字作为 `text` 层挂在横幅图层的子层上，随横幅变换，从而支持动态计数；计数变化只改 `text.value`，不重启 clip。
+
+### 8.3 预算与隔离（硬约束，需写成单测）
+
+| 项 | 草案上限 | 超限处理 |
+|---|---|---|
+| 图层数 / 单插件 | ≤ 32 | 拒绝该 scene，日志 `plugin=<id> reason=layerBudget` |
+| 单张纹理 | ≤ 2048px，解码后总计 ≤ 32 MB | 拒绝并降级为无叠层 |
+| 帧率 | 默认 30，上限 60 | 宿主限制 |
+| 同时活动 scene | ≤ 3 | 后到者不渲染 |
+| 可见性 | 预览不可见、窗口被遮挡时暂停 | 零调用 |
+| 减少动态效果 | 只显示静帧（clip 末帧） | 遵循系统设置 |
+| 资产解码 | 后台队列，LRU 缓存，面板关闭释放 | 不阻塞主线程 |
+| 异常 | 连续帧超时或 render 软超时 3 次 | 自动停用插件（沿用 D04） |
+
+以上数值待原型实测后修订。
+
+### 8.4 外部状态读取：是否要开放文件系统
+
+不需要开放通用文件系统。候选：
+
+| 方案 | 做法 | 优点 | 风险 | 结论 |
+|---|---|---|---|---|
+| **A 授权目录只读** | 权限 `fs.read`，插件在 manifest 声明目录（如 `~/.dsh`），用户在设置页**一次性确认**；宿主只读、限大小、监听变更，插件经 `ctx.fs.readText / list / watch` 访问 | 无需外部程序配合；插件自行解析已有状态文件，宿主零适配 | 触碰 D02：需路径沙箱、符号链接防护、禁止访问授权目录之外 | **采用（修订）** |
+| B 插件 inbox | 外部程序写 JSON 到插件目录 | 最小权限 | 需要外部程序配合，操作路径长 | 用户否决（2026-10-29） |
+| C 本地 socket / URL scheme | 外部程序推送 | 实时 | 新增监听端口，攻击面大 | 不采用 |
+
+方案 A 约束：
+- 仅只读；路径一律规范化（`realpath`）后必须位于已授权目录内，拒绝 `..` 与指向目录外的符号链接。
+- 单次读取 ≤ 256 KB，`list` 单目录 ≤ 500 项，`watch` 由宿主以 FSEvents 监听并合并去抖（≥ 500 ms），无授权目录或预览不可见时不监听。
+- 目录授权按插件持久化（沿用 D08：声明 ∩ 已确认），设置页展示目录并可撤销；日志不记录文件内容与完整路径。
+- 默认拒绝敏感位置（如 `~/.ssh`、钥匙串、浏览器数据目录）；声明这些目录的插件不予加载。
+- harness 的会话状态文件位置与格式**待查**，由插件自行解析，宿主不适配。
+
+### 8.5 阶段与验证
+
+| 阶段 | 内容 | 验证 |
+|---|---|---|
+| S0 | 本节 API 经用户裁决（D10 / D11），必要时修订 D03 | 台账更新 |
+| S1 | 独立动画小样：脱离 Switchly 的最小 Swift 工程，验证“拉横幅”动作在 CALayer 声明式播放下的流畅度、CPU / 内存 | 录屏或逐帧截图 + `top` 采样 |
+| S2 | 小样可用则实现 `scene` 组件与预算（含单测）、`fs.read` 桥 | `make build`、`make test-unit` |
+| S3 | 编写鲸娘插件与 harness 写入端 | 真机 Dock 悬停，浅色 / 深色 / 玻璃截图 |
+
+角色形象：用户指定的“鲸娘”为蓝发、鲸鱼鳍耳、女仆装的 Q 版动漫角色（参考图在用户本机 `Pictures\tmp`，不入库），不是 DeepSeek 图标。参考图为上半身且双手在胸前，拉横幅需补全双臂与躯干的立绘。
+
+资产制作路径（不属宿主）：参考图扩展立绘 → see-through 拆层（仅分层，不含绑定）→ 人工合并部件 → 插件内 JSON 时间线。形象涉及第三方商标，公开发布前需原创化。
+
+### 8.6 `fs.read` 授权与会话计数规则（D19，设计，未实现）
+
+**manifest 声明**：`permissions` 含 `fs.read`；新增 `fsRoots: [{ "id": "sessions", "hint": "<展示用目录说明>" }]`。manifest 只声明“要一个只读目录”，**不写死绝对路径**，宿主不含任何 harness 路径或解析规则。
+
+**授权流程**
+1. 用户在设置页插件卡点「选择目录」，经系统 `NSOpenPanel` 选取；宿主保存 security-scoped bookmark，不接受插件自报路径。
+2. 选择后展示完整路径、只读说明与「撤销」；未选择或撤销后 `ctx.fs` 的所有调用返回 `denied`，插件按 0 / 0 渲染并在卡内提示「未授权」。
+3. 授权按插件 ID + root ID 持久化，沿用 D08（声明 ∩ 已确认）；插件升级后新增 root 需重新确认。
+4. 命中敏感位置（`~/.ssh`、`~/.aws`、`~/.gnupg`、钥匙串、浏览器数据目录，及含 `auth.json`、`.env` 的目录）一律拒绝授权，并提示改选其子目录。
+
+**读取接口（插件侧）**：`ctx.fs.list(root, rel)` 返回 `{ name, isDir, size, mtime }`；`ctx.fs.stat`；`ctx.fs.readText(root, rel, { maxBytes })`。`watch` 首版不做，沿用 `refreshInterval` 轮询（预览可见时才调用）。
+
+**宿主硬约束（均需单测）**
+| 项 | 规则 |
+|---|---|
+| 路径 | `rel` 拒绝绝对路径、`..`、空段；`realpath` 后必须仍在授权目录内，符号链接指向目录外则拒绝 |
+| 只读 | 不提供写、删、移动；不跟随硬链接之外的目录逃逸 |
+| 配额 | 单次读取 ≤ 256 KB，`list` ≤ 500 项，每次 render 最多 50 次 fs 调用 |
+| 内容 | 日志不记录文件内容与完整路径，只记 `plugin=<id> root=<id> op=<op> result=<ok|denied|tooLarge>` |
+| 生命周期 | 面板不可见、插件停用、撤销授权后立即停止访问并释放 bookmark |
+
+**会话计数（插件内，宿主不适配）**
+- 数据源：用户授权的 DeepSeek Harness 会话目录，由插件自行解析。
+- 判定：`running` = 状态文件标记进行中的会话数；`unread` = 已完成且完成时间晚于“用户上次查看”的会话数。“上次查看”由插件在自己的 `settings` 里记录（如悬停鲸娘或在 harness 前台时更新），不修改 harness 的任何文件。
+- 容错：目录不存在、格式未知或解析失败 → 0 / 0 且卡内提示「无法读取」，不抛错、不重试风暴。
+
+**实施步骤（逐步放行）**
+| 步 | 内容 | 放行条件 |
+|---|---|---|
+| F0 | 本节经用户确认 | 已批准设计（D19）；下列细节仍待确认 |
+| F1 | 宿主实现 `fs.read`：沙箱、配额、授权与单测，**不接真实目录**（用临时目录夹具验证）。**已实现（2026-10-30，D20）**：`PluginFileReader`、`fs.read` 权限（内置插件也须显式授权）、`fsRoots` / `defaultEnabled` 清单字段、设置页文件夹权限行；因插件预设路径、应用未沙盒化，改用“预设路径 + 用户开关授权”，不使用 security-scoped bookmark | `PluginFileReaderTests` 12 项通过；`make test-unit SIGN_IDENTITY=-` 535 项 0 失败。设置页权限行尚未在真机查看（鲸娘 manifest 暂未声明 `fs.read`，F4 一并接入） |
+| F2 | 结构勘察：由用户在设置页授权后，仅读取**文件名、层级与修改时间**，不读文件内容，确认状态文件位置与字段 | 用户在设置页完成授权 |
+| F3 | 如需读文件内容才能判定运行中 / 未读，列出具体文件与字段，经用户再次确认后才读取 | 用户逐项确认 |
+| F4 | 插件解析实现 + 真机 Dock 悬停验收（浅 / 深色、玻璃） | 截图核验 |
+
+**用户裁决（2026-10-30，D20）**：① 会话目录由**插件在 manifest 预设**（`fsRoots[].path`，仍须经用户确认才生效，不能绕过上述授权流程）；② 插件**默认关闭**；设置页权限区显示该目录与用途说明，开启权限后读取真实数据驱动动作，未开启则固定播放“无会话”的待机动画；③ “未读”不自拟口径，先调研 DeepSeek Harness 自带的“已完成未读”状态如何获取。
+
+**F2 结构勘察（2026-10-30，D21；只看目录名、文件名、大小、修改时间与 `lsof` 打开状态，未读任何文件内容）**
+- `~/.dsh` 顶层含 `.env`、`.credentials.yaml`，因此**不能把 `~/.dsh` 作为授权目录**（读取器会按规则拒绝）；改为只授权 `~/.dsh/sessions`，`.credentials.yaml` 并入凭证文件名清单。
+- 结构：`sessions/<工作区目录名>/session-<uuid>/`（部分为无前缀 `<uuid>/`），内含 `session.lock`（0 字节）与 `session.v4.jsonl.zstd`（旧版 `.v3` / 无版本号）。数据文件是 **zstd 压缩**，插件无法解析内容，也不应读取。
+- `session.lock` 是进程持有的锁：`lsof` 显示 DeepSeek Harness 进程正打开两个 lock 文件；会话退出后 lock 文件仍留在磁盘（共 303 个，全部 0 字节），所以**文件存在不代表在运行**，修改时间也只是创建时间。
+- 因此纯文件系统可得的信号只有：数据文件修改时间（会话最近一次写入）。“持有 lock”需要宿主新增通用的“文件是否被其他进程锁定”探测；“进行中 ≠ 已打开”，打开的会话可能空闲。
+- 已有的 `completionUnread` 为内存状态，不落盘（见下）。
+
+**F4 实施（2026-10-30，D22）与实测依据**
+- 写入节奏实测（采样器每秒记录会话数据文件的大小与修改时间，不读内容；两个会话共 87 个间隔）：中位数 6 s，p90 16 s，p95 27 s，最大 120 s；超过 30 s 的有 3 次，超过 60 s 的有 2 次。窗口取 **60 s**：运行中会话约 2% 的间隔会被短暂误判为已结束，完成后最多晚 60 s 才计入未读。这是近似，不是 Harness 的真实状态。
+- 新增宿主通用能力（均受 `fs.read` 授权、沙箱与每次渲染 50 次调用上限约束）：`ctx.fs.scan(root, path, {depth, suffix, modifiedWithin})`（一次返回最近修改的文件，最多 200 项、深度 ≤3、不跟随链接）、`ctx.fs.isLocked(root, path)`（`flock` 非阻塞探测，不读写内容）、`ctx.app.lastActiveAt`（该应用最后在前台的时间，由 `AppActivationTracker` 监听前台切换，自 Switchly 启动起记录，未知为 null）。
+- 鲸娘规则：进行中 = 数据文件最近 60 s 内有写入；未读 = 已停止写入、会话仍被锁（仍在 Harness 中打开）、且完成时间晚于 Harness 最后在前台的时间；未授权文件夹访问或 `lastActiveAt` 未知时按 0 处理。演示用的 `running` / `unread` 设置项已移除。
+- 私有存储接口（用户已批准）本次未实现：未读规则不需要持久化，需要时再加。
+
+**调研结论（只读取应用包内代码，未读取任何会话数据与用户目录内容）**
+- 该状态在 Harness 内叫 `completionUnread`，位于渲染进程 `UiSession` 的**内存 Set**，经 `publishStatus()` 发布为 `{ running, pendingInteraction, completionUnread }`。
+- 产生规则：会话 `running` 由真变假且该会话**不是当前主视图**时加入；重新运行或在主视图打开时移除。
+- 未发现落盘、Dock 角标（无 `app.setBadgeCount`）、URL scheme 或其他对外接口导出该状态。结论：**文件读取拿不到“未读”**。
+- 获取路径（待裁决）：A 插件自行推断——读会话目录得到运行中与最近完成时间，由插件在自己的设置里记录“已看到的完成时间”，会与 Harness 内部状态有偏差；B 由 Harness 导出该状态（需其配合，此前 inbox 方案被否决）；C 经辅助功能读取 Harness 窗口里的未读标记（权限更重且依赖其界面）。
 
 ## 9. Scene 引擎（已实现，D12）
 
-> §8 的「Scene API 提案」目前只在另一分支 `feat/plugin-scene-api`（D10 / D11，均待确认），本分支实现了它；两边的字段命名、预算与未实现项差异见 [scene-api-alignment.md](scene-api-alignment.md)，合并那条分支后再统一。
+> §8 的「Scene API 提案」（D10 / D11，均待确认）与本节的实现已于 2026-10-30 合入同一分支；两边的字段命名、预算与未实现项差异见 [scene-api-alignment.md](scene-api-alignment.md)，统一前以 §9 的实际实现为准。
 >
 > 实现：`Models/Plugins/PluginScene.swift`（解码即校验）、`SceneEvaluator.swift`（纯函数求值）、`Views/PluginSceneDrawing.swift`（Canvas 绘制）、`PluginSceneView.swift`（时间线、悬停与点击）。
 

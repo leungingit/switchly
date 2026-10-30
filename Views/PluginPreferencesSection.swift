@@ -77,6 +77,12 @@ struct PluginPreferencesSection: View {
         let options = plugin.package.manifest.settings ?? []
         return VStack(spacing: 0) {
             header(plugin)
+            if plugin.package.manifest.permissions.contains(.fsRead) {
+                Divider().padding(.leading, 14)
+                folderAccessRow(plugin)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+            }
             ForEach(options, id: \.key) { spec in
                 Divider().padding(.leading, 14)
                 settingControl(spec, plugin: plugin)
@@ -174,20 +180,27 @@ struct PluginPreferencesSection: View {
         if let summary = plugin.package.manifest.localizedSummary(preferredLanguages: [language.rawValue]) {
             lines.append(summary)
         }
-        lines.append(plugin.package.manifest.permissions.map { permissionText($0) }.joined(separator: " · "))
+        lines.append(listedPermissions(plugin).map { permissionText($0) }.joined(separator: " · "))
         return lines.joined(separator: "\n")
     }
 
     private func permissionList(_ plugin: InstalledPlugin) -> some View {
         let auth = plugin.authorization
         return VStack(alignment: .leading, spacing: 4) {
-            ForEach(plugin.package.manifest.permissions, id: \.rawValue) { permission in
+            ForEach(listedPermissions(plugin), id: \.rawValue) { permission in
                 let pending = auth.pendingPermissions.contains(permission)
                 Label(permissionText(permission), systemImage: permission.systemImageName)
                     .font(.caption)
                     .foregroundColor(pending ? Color(nsColor: .systemOrange) : .secondary)
             }
         }
+    }
+
+    /// `fs.read` is left out: its own row on the card names the folder and
+    /// carries the switch that allows it, so listing it here would repeat it
+    /// without the thing the user needs to decide.
+    private func listedPermissions(_ plugin: InstalledPlugin) -> [PluginCapability] {
+        plugin.package.manifest.permissions.filter { $0 != .fsRead }
     }
 
     private enum BadgeTone { case neutral, warning }
@@ -307,6 +320,39 @@ struct PluginPreferencesSection: View {
     }
 
     // MARK: - Actions
+
+    /// `fs.read`: the folder, why the plugin wants it, and the switch that allows it.
+    /// Without it the plugin runs but cannot see the folder.
+    private func folderAccessRow(_ plugin: InstalledPlugin) -> some View {
+        let allowed = plugin.authorization.permissions.contains(.fsRead)
+        return HStack(alignment: .top, spacing: 12) {
+            Image(systemName: PluginCapability.fsRead.systemImageName)
+                .foregroundColor(.secondary)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                Text(t(PluginCapability.fsRead.displayKey)).font(.callout)
+                ForEach(plugin.package.manifest.fsRoots ?? [], id: \.id) { root in
+                    Text(root.path).font(.caption.monospaced()).foregroundColor(.secondary).textSelection(.enabled)
+                    Text(PluginSettingSpec.localized(root.summary, fallback: "", preferredLanguages: [language.rawValue]))
+                        .font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 16)
+            Toggle("", isOn: Binding(get: { allowed }, set: { setFolderAccess(plugin, allowed: $0) }))
+                .labelsHidden()
+                .accessibilityLabel(Text(t(PluginCapability.fsRead.displayKey)))
+        }
+    }
+
+    private func setFolderAccess(_ plugin: InstalledPlugin, allowed: Bool) {
+        var updated = settings
+        let id = plugin.id
+        var confirmed = Set(settings.pluginGrants[id]?.permissions ?? plugin.authorization.permissions.map(\.rawValue))
+        if allowed { confirmed.insert(PluginCapability.fsRead.rawValue) } else { confirmed.remove(PluginCapability.fsRead.rawValue) }
+        updated.pluginGrants[id] = PluginGrant(isEnabled: plugin.authorization.isEnabled, permissions: confirmed.sorted())
+        AppLogger.info("Plugin folder access changed. plugin=\(id) allowed=\(allowed)")
+        onSettingsChange(updated)
+    }
 
     private func setGrant(_ plugin: InstalledPlugin, enabled: Bool, confirmAll: Bool) {
         var updated = settings

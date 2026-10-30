@@ -22,7 +22,14 @@ struct PluginSceneView: View {
     @State private var hoverChangedAt = Date.distantPast
     @State private var settled = false
     @State private var settleTask: Task<Void, Never>?
-    @State private var assets = SceneAssets(directory: nil)
+    @State private var assets: SceneAssets
+
+    init(scene: PluginScene, assetDirectory: URL?, onAction: @escaping (String, Double?) -> Void) {
+        self.scene = scene
+        self.assetDirectory = assetDirectory
+        self.onAction = onAction
+        _assets = State(initialValue: SceneAssets(directory: assetDirectory))
+    }
 
     private static let hoverFade = 0.15
 
@@ -58,10 +65,8 @@ struct PluginSceneView: View {
         .aspectRatio(scene.fit == .width ? CGFloat(scene.width / scene.height) : nil, contentMode: .fit)
         .frame(maxWidth: scene.fit == .width ? CGFloat(scene.width) * 1.3 : .infinity)
         .allowsHitTesting(scene.fit == .width && !scene.hits.isEmpty)
-        .onAppear {
-            assets = SceneAssets(directory: assetDirectory)
-            armSettleTimer()
-        }
+        .onAppear { armSettleTimer() }
+        .onChange(of: assetDirectory) { assets = SceneAssets(directory: $0) }
         .onChange(of: scene) { _ in armSettleTimer() }
         .onDisappear { settleTask?.cancel() }
     }

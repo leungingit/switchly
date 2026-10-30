@@ -27,16 +27,42 @@ final class SceneAssets {
     private var sheets: [String: CGImage] = [:]
     private var frames: [String: CGImage] = [:]
 
+    /// Texture budget (design §8.3): per-image edge and total decoded bytes across sheets and pictures.
+    static let maxEdge = 2048
+    static let maxDecodedBytes = 32 * 1024 * 1024
+    private(set) var decodedBytes = 0
+    private var pictures: [String: CGImage] = [:]
+    private var refused: Set<String> = []
+
     init(directory: URL?) { self.directory = directory }
+
+    /// Decodes `name` once. Over-budget or unreadable files are refused once and stay blank.
+    private func decode(_ name: String) -> CGImage? {
+        guard let directory, !refused.contains(name) else { return nil }
+        let url = directory.appendingPathComponent(name)
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
+              image.width <= Self.maxEdge, image.height <= Self.maxEdge,
+              decodedBytes + image.width * image.height * 4 <= Self.maxDecodedBytes else {
+            refused.insert(name)
+            return nil
+        }
+        decodedBytes += image.width * image.height * 4
+        return image
+    }
+
+    func image(_ name: String) -> CGImage? {
+        if let cached = pictures[name] { return cached }
+        guard let image = decode(name) else { return nil }
+        pictures[name] = image
+        return image
+    }
 
     func frame(_ sprite: SceneSprite, index: Int) -> CGImage? {
         let name = "\(sprite.asset)#\(index)"
         if let cached = frames[name] { return cached }
-        guard let directory else { return nil }
         if sheets[sprite.asset] == nil {
-            let url = directory.appendingPathComponent(sprite.asset)
-            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-                  let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+            guard let image = decode(sprite.asset) else { return nil }
             sheets[sprite.asset] = image
         }
         guard let sheet = sheets[sprite.asset] else { return nil }
@@ -127,6 +153,9 @@ struct SceneDrawing {
             drawWave(layer, in: ctx)
         case .emitter:
             if !still { drawParticles(layer, in: ctx, siblings: siblings) }
+        case .image:
+            guard let name = layer.image, let picture = assets.image(name) else { return }
+            ctx.draw(Image(decorative: picture, scale: 1).resizable().interpolation(.high), in: rect)
         case .sprite:
             guard let sprite = layer.sprite, !still else { return }
             let index = Int((t - sprite.t0) * sprite.fps)

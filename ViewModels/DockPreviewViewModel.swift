@@ -32,6 +32,7 @@ class DockPreviewViewModel: ObservableObject {
     private let windowMonitorService: WindowMonitorServiceProtocol
     private let windowSwitchService: WindowSwitchServiceProtocol
     private let settingsService: SettingsServiceProtocol
+    private let activationTracker: AppActivationTracking
     private var cancellables = Set<AnyCancellable>()
     private var currentBundleID: String?
     private var currentBundleURL: URL?
@@ -40,9 +41,11 @@ class DockPreviewViewModel: ObservableObject {
         windowMonitorService: WindowMonitorServiceProtocol = WindowMonitorService.shared,
         windowSwitchService: WindowSwitchServiceProtocol = WindowSwitchService.shared,
         settingsService: SettingsServiceProtocol = SettingsService.shared,
-        pluginOverlay: DockPluginOverlayModel = DockPluginOverlayModel()
+        pluginOverlay: DockPluginOverlayModel = DockPluginOverlayModel(),
+        activationTracker: AppActivationTracking = AppActivationTracker.shared
     ) {
         self.pluginOverlay = pluginOverlay
+        self.activationTracker = activationTracker
         self.windowMonitorService = windowMonitorService
         self.windowSwitchService = windowSwitchService
         self.settingsService = settingsService
@@ -130,7 +133,8 @@ class DockPreviewViewModel: ObservableObject {
             pid: app.processIdentifier,
             appName: app.localizedName ?? appName,
             windowID: window.map { UInt32($0.id) } ?? 0,
-            titleSummary: PluginRenderContext.summarize(title: window?.windowTitle ?? "")
+            titleSummary: PluginRenderContext.summarize(title: window?.windowTitle ?? ""),
+            lastActiveAt: activationTracker.lastActiveAt(bundleID: bundleID)?.timeIntervalSince1970
         ))
     }
 
