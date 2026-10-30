@@ -40,7 +40,6 @@ struct PluginPreferencesSection: View {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
                 HStack(spacing: DesignTokens.Spacing.sm) {
                     Button { openFolder() } label: { Label(t("Open Plugins Folder"), systemImage: "folder") }
-                    Button { openBuiltinFolder() } label: { Label(t("Show Built-in Plugins"), systemImage: "shippingbox") }
                     Button {
                         host.reload()
                         refresh()
@@ -49,7 +48,10 @@ struct PluginPreferencesSection: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                Text(t("Built-in plugins ship inside Switchly; the folder above is only for plugins you install yourself, so it stays empty until then."))
+                // One folder, not two: built-ins ship inside the app bundle,
+                // which is not a place users install to (and a Debug build's
+                // bundle sits inside DerivedData, i.e. this repository).
+                Text(t("Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -337,12 +339,6 @@ struct PluginPreferencesSection: View {
         let dir = PluginRegistry.defaultDirectory
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         NSWorkspace.shared.open(dir)
-    }
-
-    /// The built-ins live in the app bundle, which the user folder above never shows.
-    private func openBuiltinFolder() {
-        guard let url = Bundle.main.resourceURL?.appendingPathComponent("Plugins") else { return }
-        NSWorkspace.shared.open(url)
     }
 
     private func permissionText(_ permission: PluginCapability) -> String {

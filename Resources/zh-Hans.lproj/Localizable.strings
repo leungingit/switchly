@@ -480,8 +480,7 @@
 "Not fetched yet" = "尚未获取";
 "Last updated: %@" = "更新于：%@";
 "Read the current weather" = "读取当前天气";
-"Show Built-in Plugins" = "显示内置插件";
-"Built-in plugins ship inside Switchly; the folder above is only for plugins you install yourself, so it stays empty until then." = "内置插件随 Switchly 打包，不在上面的目录里；那个目录只放你自己安装的插件，所以现在为空。";
+"Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then." = "内置插件随 Switchly 打包，上方卡片会标出「内置」；这个目录只放你自己安装的插件，所以现在为空。";
 "No such city — check the spelling." = "没有找到这个城市，请检查拼写。";
 "The weather service refused the request. Try again later." = "天气服务拒绝了这次请求，请稍后再试。";
 "Unexpected reply from the weather service." = "天气服务返回了无法识别的数据。";

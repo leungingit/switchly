@@ -50,7 +50,10 @@ struct PluginSceneView: View {
                     accessibilityRegions(origin: origin, k: k)
                 }
             }
-            .clipped()
+            // A cover scene is the plugin card's backdrop: clip it to the
+            // card's corner radius so its colour wash ends in the card's
+            // shape instead of a square.
+            .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.control, style: .continuous))
         }
         .aspectRatio(scene.fit == .width ? CGFloat(scene.width / scene.height) : nil, contentMode: .fit)
         .frame(maxWidth: scene.fit == .width ? CGFloat(scene.width) * 1.3 : .infinity)

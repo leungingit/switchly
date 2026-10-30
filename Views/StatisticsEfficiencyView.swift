@@ -196,30 +196,41 @@ struct BaselinePicker: View {
         }
     }
 
-    /// Settings: title and links on one line, the preset picker on its own,
-    /// so long translations never overflow.
+    /// Settings: the group's usual label-left / control-right row, with the two
+    /// secondary actions on their own line under the label. The preset picker
+    /// takes its intrinsic width, so English labels neither clip the last
+    /// segment nor leave the control pinned to the left edge.
     private var compactLayout: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            HStack(spacing: DesignTokens.Spacing.md) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 22)
                 Text(language.localizedString("Efficiency baseline"))
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.secondary)
+                    .font(.body)
                 Image(systemName: "questionmark.circle")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .help(assumptionSummary)
-                Spacer(minLength: DesignTokens.Spacing.sm)
+                Spacer(minLength: DesignTokens.Spacing.md)
+                Picker("", selection: presetBinding) {
+                    ForEach(EfficiencyBaselinePreset.allCases, id: \.self) { preset in
+                        Text(EfficiencyText.preset(preset, language: language)).tag(preset)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                // Its own intrinsic width: squeezing it clips the last
+                // segment, and stretching it would dwarf the label.
+                .fixedSize()
+            }
+            HStack(spacing: DesignTokens.Spacing.md) {
                 adjustButton
                 restoreButton
+                Spacer(minLength: DesignTokens.Spacing.md)
             }
-            Picker("", selection: presetBinding) {
-                ForEach(EfficiencyBaselinePreset.allCases, id: \.self) { preset in
-                    Text(EfficiencyText.preset(preset, language: language)).tag(preset)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 340)
+            .padding(.leading, 34)
             if isExpanded { adjustments }
         }
     }

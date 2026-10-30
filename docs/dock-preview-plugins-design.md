@@ -289,6 +289,7 @@ render: async (ctx) => {
 | D15 | 2026-10-30 | 经用户裁决，新增**唯一联网例外**：可选在线天气（默认关；数据源为 Open-Meteo，免费、无需密钥；宿主 `OnlineWeatherService` 先按城市查一次坐标再取天气，15 分钟一次、缓存 30 分钟、日志不记城市与坐标）；插件侧新增 `weather.current` 权限只读宿主快照，插件本身仍无网络。需同步 `PRIVACY_POLICY.md` §1 与 `AGENTS.md` §6 | §9.4；`OnlineWeatherTests` |
 | D16 | 2026-10-30 | 同一槽位允许多个插件叠放（每槽位 ≤3，按注册顺序），取代「先到的插件独占槽位」。原因：音乐控制与天气抽卡都要 `center`，独占导致抽卡被挤掉 | `DockPluginOverlayModel.maxEntriesPerSlot`；`PROBE center=[music-controls, weather-gacha]` |
 | D14 | 2026-10-30 | 插件设置新增 `select` / `number`；值存 `AppSettings.pluginValues`（旧设置缺该字段读为空），toggle 仍在 `pluginSettings`。`gachaPreferences` 因从未发布，直接移除而不迁移 | §9.5；`PluginSceneTests.testSettingsWithoutPluginValuesStillDecode` |
+| D17 | 2026-10-30 | 设置页只给一个插件目录入口（用户目录 `~/Library/Application Support/Switchly/Plugins`），不再单独打开应用包内的内置插件目录；内置插件由卡片上的「内置」徽标识别，页面下方一行说明两类位置。理由：内置目录是 `Contents/Resources/Plugins`，Debug 构建时位于仓库内的 `DerivedData`，两个目录并存既无安装意义，也容易被当成「插件装错了地方」 | 用户反馈；D06 的打包位置不变 |
 
 ## 9. Scene 引擎（已实现，D12）
 
@@ -305,6 +306,7 @@ JS 每次调用有软超时，逐帧过 JSC 桥会占满插件队列。插件改
 `{ type: "scene", key, epoch, width, height, fit, fps, restAt, layers }`
 
 - `width` × `height` 是设计尺寸（pt）；`fit: "width"` 等比缩放到可用宽度（最大 1.3 倍），`"cover"` 铺满并裁切，用作 `zstack` 的背景（不撑大布局）。
+- 宿主把整段场景裁到插件卡片的圆角（`DesignTokens.Radius.control`）里：`cover` 背景的颜色洗只在卡片形状内结束，不会在四角露出直角；插件不需要自己画边框圆角。
 - `epoch`：场景时间 0 对应的 Unix 秒（JS 用 `Date.now()/1000`）。`fps` 10–60，默认 30。
 - 图层坐标原点在**自身锚点**（`anchor`，默认居中），子层坐标相对父层锚点。`kind`：`group`（可 `clip`、`shatter`）、`rect`（`radius`）、`ellipse`、`text`、`symbol`（SF Symbol）、`wave`（可拨动的线）、`emitter`（粒子）、`sprite`（精灵图，`pluginAsset` 路径）。
 - 填充：`"#RRGGBB[AA]"`、`{linear}`、`{angular}`；文字色另有 `"$label"` / `"$secondaryLabel"`，由宿主按浅色 / 深色解析。
