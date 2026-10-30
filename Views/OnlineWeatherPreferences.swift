@@ -15,9 +15,17 @@ struct OnlineWeatherPreferences: View {
     let value: OnlineWeatherSettings
     let language: AppLanguage
     let onChange: (OnlineWeatherSettings) -> Void
+    /// Called after a successful fetch so the host can mirror it into the
+    /// plugin's own weather options.
+    var onReading: (WeatherReading) -> Void = { _ in }
     var service: OnlineWeatherService = .shared
+    /// Shown as if a fetch had failed; used by previews and tests.
+    var injectedError: String? = nil
 
     @State private var isRefreshing = false
+    @State private var cityError: String?
+
+    private var shownError: String? { cityError ?? injectedError }
 
     private var isOn: Binding<Bool> {
         Binding(get: { value.enabled }, set: { on in update { $0.enabled = on } })
@@ -71,6 +79,7 @@ struct OnlineWeatherPreferences: View {
     }
 
     private var placeRow: some View {
+        VStack(spacing: 0) {
         HStack(spacing: DesignTokens.Spacing.sm) {
             Text(t("City"))
                 .font(.callout)
@@ -80,14 +89,27 @@ struct OnlineWeatherPreferences: View {
                 get: { value.place },
                 set: { new in
                     guard new != value.place else { return }
+                    cityError = nil
                     update { $0.place = new }
                 }))
             .textFieldStyle(.roundedBorder)
             .frame(width: 200)
-            .onSubmit { service.forceRefresh() }
+            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .strokeBorder(Color(nsColor: .systemRed), lineWidth: shownError == nil ? 0 : 1.5))
+            .onSubmit { refresh() }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
+        if let shownError {
+            Text(shownError)
+                .font(.caption)
+                .foregroundColor(Color(nsColor: .systemRed))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 9)
+        }
+        }
     }
 
     private var statusRow: some View {
@@ -97,12 +119,7 @@ struct OnlineWeatherPreferences: View {
                 .foregroundColor(.secondary)
             Spacer(minLength: DesignTokens.Spacing.md)
             Button {
-                isRefreshing = true
-                service.forceRefresh()
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 1_500_000_000)
-                    isRefreshing = false
-                }
+                refresh()
             } label: {
                 if isRefreshing { ProgressView().controlSize(.small) } else { Text(t("Refresh now")) }
             }
@@ -120,11 +137,39 @@ struct OnlineWeatherPreferences: View {
         return String(format: t("Last updated: %@"), time)
     }
 
+    /// Fetches now and reports the failure in place, so a typo in the city is
+    /// visible next to the field instead of only in the log.
+    private func refresh() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        cityError = nil
+        Task { @MainActor in
+            let result = await service.refreshNow()
+            isRefreshing = false
+            switch result {
+            case .success(let reading):
+                cityError = nil
+                onReading(reading)
+            case .failure(let error):
+                cityError = message(for: error)
+            }
+        }
+    }
+
+    private func message(for error: Error) -> String {
+        switch error as? OnlineWeatherError {
+        case .placeNotFound: return t("No such city — check the spelling.")
+        case .badResponse: return t("The weather service refused the request. Try again later.")
+        case .malformed: return t("Unexpected reply from the weather service.")
+        case .notConfigured: return t("Enter a city first.")
+        case nil: return t("Couldn't reach Open-Meteo. Check your connection.")
+        }
+    }
+
     private func update(_ change: (inout OnlineWeatherSettings) -> Void) {
         var updated = value
         change(&updated)
         onChange(updated)
-        if updated.isReady { service.forceRefresh() }
     }
 
     private func t(_ key: String) -> String { language.localizedString(key) }

@@ -480,3 +480,10 @@
 "Not fetched yet" = "Not fetched yet";
 "Last updated: %@" = "Last updated: %@";
 "Read the current weather" = "Read the current weather";
+"Show Built-in Plugins" = "Show Built-in Plugins";
+"Built-in plugins ship inside Switchly; the folder above is only for plugins you install yourself, so it stays empty until then." = "Built-in plugins ship inside Switchly; the folder above is only for plugins you install yourself, so it stays empty until then.";
+"No such city — check the spelling." = "No such city — check the spelling.";
+"The weather service refused the request. Try again later." = "The weather service refused the request. Try again later.";
+"Unexpected reply from the weather service." = "Unexpected reply from the weather service.";
+"Enter a city first." = "Enter a city first.";
+"Couldn't reach Open-Meteo. Check your connection." = "Couldn't reach Open-Meteo. Check your connection.";

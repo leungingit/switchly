@@ -327,7 +327,7 @@ JS 每次调用有软超时，逐帧过 JSC 桥会占满插件队列。插件改
 
 ### 9.4.1 `weather.current`
 
-`ctx.weather.current()` 同步返回宿主已获取的天气快照 `{condition, temperature, wind, source:"online"}`，未启用、未配置、过期或无权限时为 `null`。宿主在面板显示时与设置变更时按 15 分钟下限刷新；插件不得触发请求，也拿不到密钥与原始响应。未获得该权限时，`ctx.weather` 对象不存在（而非返回 null）。
+`ctx.weather.current()` 同步返回宿主已获取的天气快照 `{condition, temperature, wind, source:"online"}`，未启用、未配置、过期或无权限时为 `null`。宿主在面板显示时与设置变更时按 15 分钟下限刷新；插件不得触发请求，也拿不到密钥与原始响应。设置页的「立即刷新」会等待结果：失败时城市输入框标红并说明原因（查无此城 / 服务拒绝 / 无法连接），成功时同时把天气、温度、风速写回该插件的手动天气选项。未获得该权限时，`ctx.weather` 对象不存在（而非返回 null）。
 
 ### 9.5 设置类型
 

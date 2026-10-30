@@ -193,6 +193,28 @@ final class OnlineWeatherService: @unchecked Sendable {
         refreshIfNeeded(settings())
     }
 
+    /// Settings-page refresh: awaits the outcome so the UI can show why a city
+    /// or the service failed. Never throws to the caller.
+    func refreshNow() async -> Result<WeatherReading, Error> {
+        let snapshot = settings()
+        guard snapshot.isReady else { return .failure(OnlineWeatherError.notConfigured) }
+        markAttempt()
+        do {
+            let reading = try await fetcher.fetch(snapshot)
+            finishRefresh(with: reading)
+            NotificationCenter.default.post(name: .onlineWeatherDidChange, object: nil)
+            return .success(reading)
+        } catch {
+            finishRefresh(with: nil)
+            AppLogger.warning("Online weather unavailable. error=\(error)")
+            return .failure(error)
+        }
+    }
+
+    private func markAttempt() {
+        lock.lock(); lastAttempt = Date(); lock.unlock()
+    }
+
     private func refreshIfNeeded(_ snapshot: OnlineWeatherSettings) {
         guard snapshot.isReady, beginRefresh() else { return }
         Task { [weak self] in

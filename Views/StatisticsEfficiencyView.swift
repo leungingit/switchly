@@ -183,11 +183,81 @@ struct EfficiencyDetailTable: View {
 /// reflects whatever is chosen here.
 struct BaselinePicker: View {
     @ObservedObject var model: StatisticsViewModel
+    /// Narrow layouts (the settings panel) stack the controls instead of
+    /// letting English labels fight for one row.
+    var isCompact = false
     @State private var isExpanded = false
 
     private var language: AppLanguage { model.language }
 
     var body: some View {
+        Group {
+            if isCompact { compactLayout } else { wideLayout }
+        }
+    }
+
+    /// Settings: title and links on one line, the preset picker on its own,
+    /// so long translations never overflow.
+    private var compactLayout: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            HStack(spacing: 6) {
+                Text(language.localizedString("Efficiency baseline"))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.secondary)
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .help(assumptionSummary)
+                Spacer(minLength: DesignTokens.Spacing.sm)
+                adjustButton
+                restoreButton
+            }
+            Picker("", selection: presetBinding) {
+                ForEach(EfficiencyBaselinePreset.allCases, id: \.self) { preset in
+                    Text(EfficiencyText.preset(preset, language: language)).tag(preset)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 340)
+            if isExpanded { adjustments }
+        }
+    }
+
+    private var adjustButton: some View {
+        Button(language.localizedString("Adjust baseline")) { isExpanded.toggle() }
+            .buttonStyle(.plain)
+            .font(.system(size: 11))
+            .foregroundColor(.accentColor)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    private var restoreButton: some View {
+        Button(language.localizedString("Restore recommended defaults")) {
+            model.restoreRecommendedBaseline()
+        }
+        .buttonStyle(.plain)
+        .font(.system(size: 11))
+        .foregroundColor(.accentColor)
+        .lineLimit(1)
+        .fixedSize()
+    }
+
+    private var adjustments: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            adjustmentRow(.preview)
+            adjustmentRow(.quickSwitch)
+            adjustmentRow(.workspace)
+            Text(language.localizedString("Savings are estimates based on your baseline"))
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+        }
+        .padding(DesignTokens.Spacing.md)
+        .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45))
+    }
+
+    private var wideLayout: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: DesignTokens.Spacing.md) {
                 Text(language.localizedString("Efficiency baseline"))
@@ -223,18 +293,7 @@ struct BaselinePicker: View {
                 .foregroundColor(.accentColor)
             }
 
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 6) {
-                    adjustmentRow(.preview)
-                    adjustmentRow(.quickSwitch)
-                    adjustmentRow(.workspace)
-                    Text(language.localizedString("Savings are estimates based on your baseline"))
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                }
-                .padding(DesignTokens.Spacing.md)
-                .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.45))
-            }
+            if isExpanded { adjustments }
         }
     }
 

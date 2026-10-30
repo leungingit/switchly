@@ -37,16 +37,23 @@ struct PluginPreferencesSection: View {
             ForEach(plugins) { plugin in
                 pluginCard(plugin)
             }
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Button { openFolder() } label: { Label(t("Open Plugins Folder"), systemImage: "folder") }
-                Button {
-                    host.reload()
-                    refresh()
-                } label: { Label(t("Reload Plugins"), systemImage: "arrow.clockwise") }
-                Spacer()
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                HStack(spacing: DesignTokens.Spacing.sm) {
+                    Button { openFolder() } label: { Label(t("Open Plugins Folder"), systemImage: "folder") }
+                    Button { openBuiltinFolder() } label: { Label(t("Show Built-in Plugins"), systemImage: "shippingbox") }
+                    Button {
+                        host.reload()
+                        refresh()
+                    } label: { Label(t("Reload Plugins"), systemImage: "arrow.clockwise") }
+                    Spacer()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                Text(t("Built-in plugins ship inside Switchly; the folder above is only for plugins you install yourself, so it stays empty until then."))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
             .padding(.top, DesignTokens.Spacing.xs)
         }
         .onAppear(perform: refresh)
@@ -77,7 +84,8 @@ struct PluginPreferencesSection: View {
             if plugin.id == Self.onlineWeatherPluginID {
                 OnlineWeatherPreferences(value: settings.onlineWeather,
                                          language: settings.language,
-                                         onChange: onOnlineWeatherChange)
+                                         onChange: onOnlineWeatherChange,
+                                         onReading: { reading in apply(reading, to: plugin.id) })
             }
         }
         .cardSurface(
@@ -309,6 +317,18 @@ struct PluginPreferencesSection: View {
         onSettingsChange(updated)
     }
 
+    /// Mirrors a fetched reading into the plugin's manual weather options, so
+    /// the fields above the switch show what the gacha is actually drawing on.
+    private func apply(_ reading: WeatherReading, to pluginID: String) {
+        var updated = settings
+        var values = updated.pluginValues[pluginID] ?? [:]
+        values["condition"] = .string(reading.condition)
+        values["temperature"] = .number(reading.temperatureCelsius.rounded())
+        values["windSpeed"] = .number((reading.windSpeedKmh / 5).rounded() * 5)
+        updated.pluginValues[pluginID] = values
+        onSettingsChange(updated)
+    }
+
     private func refresh() {
         plugins = host.installedPlugins()
     }
@@ -317,6 +337,12 @@ struct PluginPreferencesSection: View {
         let dir = PluginRegistry.defaultDirectory
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         NSWorkspace.shared.open(dir)
+    }
+
+    /// The built-ins live in the app bundle, which the user folder above never shows.
+    private func openBuiltinFolder() {
+        guard let url = Bundle.main.resourceURL?.appendingPathComponent("Plugins") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private func permissionText(_ permission: PluginCapability) -> String {
