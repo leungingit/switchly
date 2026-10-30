@@ -471,8 +471,7 @@
 
 /* Online weather */
 "Online weather" = "在线天气";
-"Open-Meteo · free, no API key · off by default" = "Open-Meteo · 免费、无需密钥 · 默认关闭";
-"Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "这是 Switchly 唯一的联网功能，使用 Open-Meteo（免费、无需密钥）：每 15 分钟一次地名解析和一次天气请求。关闭后全部本地运行。";
+"Switchly's only network feature, off by default. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "这是 Switchly 唯一的联网功能，默认关闭。使用 Open-Meteo（免费、无需密钥）：每 15 分钟一次地名解析和一次天气请求。关闭后全部本地运行。";
 "City" = "城市";
 "City name" = "城市名";
 "Refresh now" = "立即刷新";

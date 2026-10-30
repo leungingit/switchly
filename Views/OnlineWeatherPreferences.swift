@@ -55,17 +55,12 @@ struct OnlineWeatherPreferences: View {
 
     private var header: some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 5) {
-                    Text(t("Online weather")).font(.callout.weight(.medium))
-                    Image(systemName: "questionmark.circle")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .help(t("Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local."))
-                }
-                Text(t("Open-Meteo · free, no API key · off by default"))
-                    .font(.caption)
+            HStack(spacing: 5) {
+                Text(t("Online weather")).font(.callout.weight(.medium))
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
+                    .help(t("Switchly's only network feature, off by default. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local."))
             }
             Spacer(minLength: DesignTokens.Spacing.md)
             Toggle("", isOn: isOn)
