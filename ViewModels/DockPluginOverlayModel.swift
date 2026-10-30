@@ -13,6 +13,8 @@ final class DockPluginOverlayModel: ObservableObject {
     @Published private(set) var slots: [PluginSlot: PluginUINode] = [:]
     /// Cover for `image(source: {artwork})`, drawn by the host only.
     @Published private(set) var artwork: NSImage?
+    /// Plugin directory per slot, for scene sprite assets.
+    @Published private(set) var assetDirectories: [PluginSlot: URL] = [:]
     private var artworkData: Data?
     var hasCenter: Bool { slots[.center] != nil }
 
@@ -78,6 +80,7 @@ final class DockPluginOverlayModel: ObservableObject {
         actionOwners = [:]
         context = nil
         if !slots.isEmpty { slots = [:] }
+        if !assetDirectories.isEmpty { assetDirectories = [:] }
         artwork = nil
         artworkData = nil
         host.unmountAll()
@@ -105,6 +108,7 @@ final class DockPluginOverlayModel: ObservableObject {
         guard generation == self.generation, let context else { return }
         var merged: [PluginSlot: PluginUINode] = [:]
         var owners: [String: PluginRuntimeProtocol] = [:]
+        var directories: [PluginSlot: URL] = [:]
         for runtime in runtimes {
             // A failing plugin only loses its own overlay.
             guard case .success(let contents) = await runtime.render(context: context) else { continue }
@@ -112,12 +116,14 @@ final class DockPluginOverlayModel: ObservableObject {
             // Earlier plugins keep a contested slot.
             for content in contents where merged[content.slot] == nil {
                 merged[content.slot] = content.node
+                directories[content.slot] = runtime.assetDirectory
                 content.node.actionIDs.forEach { owners[$0] = runtime }
             }
         }
         guard generation == self.generation else { return }
         actionOwners = owners
         if merged != slots { slots = merged }
+        if directories != assetDirectories { assetDirectories = directories }
         guard merged.values.contains(where: \.usesArtwork) else { return }
         let data = await host.artwork(for: context.bundleID)
         guard generation == self.generation, data != artworkData else { return }

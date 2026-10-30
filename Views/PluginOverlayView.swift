@@ -18,6 +18,8 @@ struct PluginOverlayView: View {
     let isGlassActive: Bool
     /// Host-fetched cover for `image(source: {artwork})`.
     var artwork: NSImage? = nil
+    /// Where `scene` sprite assets live (the owning plugin's directory).
+    var assetDirectory: URL? = nil
     let onAction: (String, Double?) -> Void
 
     var body: some View {
@@ -35,9 +37,17 @@ struct PluginOverlayView: View {
                 ForEach(Array(children.enumerated()), id: \.offset) { render($0.element) }
             })
         case .zstack(let children):
+            // Cover scenes are backdrops: behind the rest, never sizing it.
+            let backdrops = children.filter { if case .scene(let s) = $0, s.fit == .cover { return true } else { return false } }
+            let content = children.filter { child in !backdrops.contains(child) }
             return AnyView(ZStack {
-                ForEach(Array(children.enumerated()), id: \.offset) { render($0.element) }
-            })
+                ForEach(Array(content.enumerated()), id: \.offset) { render($0.element) }
+            }
+            .background(ZStack {
+                ForEach(Array(backdrops.enumerated()), id: \.offset) { render($0.element) }
+            }))
+        case .scene(let scene):
+            return AnyView(PluginSceneView(scene: scene, assetDirectory: assetDirectory) { onAction($0, $1) })
         case .spacer:
             return AnyView(Spacer(minLength: 0))
         case .surface(let children, let surfaceMaterial):

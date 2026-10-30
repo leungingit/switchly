@@ -1,0 +1,26 @@
+{
+  "id": "com.switchly.weather-gacha",
+  "name": { "en": "Weather Gacha", "zh-Hans": "天气抽卡" },
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "matches": ["com.apple.Music"],
+  "permissions": ["media.nowPlaying", "media.library"],
+  "entry": "main.js",
+  "refreshInterval": 1,
+  "settings": [
+    { "key": "condition", "type": "select", "title": { "en": "Weather", "zh-Hans": "天气" }, "default": "clear",
+      "options": [
+        { "value": "clear", "title": { "en": "Clear", "zh-Hans": "晴" } },
+        { "value": "cloudy", "title": { "en": "Cloudy", "zh-Hans": "多云" } },
+        { "value": "rain", "title": { "en": "Rain", "zh-Hans": "雨" } },
+        { "value": "snow", "title": { "en": "Snow", "zh-Hans": "雪" } },
+        { "value": "fog", "title": { "en": "Fog", "zh-Hans": "雾" } },
+        { "value": "storm", "title": { "en": "Storm", "zh-Hans": "雷暴" } }
+      ] },
+    { "key": "temperature", "type": "number", "title": { "en": "Temperature (°C)", "zh-Hans": "温度（°C）" },
+      "default": 20, "min": -40, "max": 50, "step": 1 },
+    { "key": "windSpeed", "type": "number", "title": { "en": "Wind speed (km/h)", "zh-Hans": "风速（km/h）" },
+      "default": 10, "min": 0, "max": 150, "step": 5 },
+    { "key": "southernHemisphere", "title": { "en": "Southern hemisphere seasons", "zh-Hans": "按南半球季节计算" }, "default": false }
+  ]
+}

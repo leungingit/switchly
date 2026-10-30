@@ -9,6 +9,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- 天气抽卡（Music 的 Dock 预览）：设置天气后倒计时抽三张卡，选一张揭晓并播放资料库里的一首歌。它是内置 JS 插件 `com.switchly.weather-gacha`，不是宿主里的原生功能：五线谱音符倒计时、卡片流光与碎裂、跳动音符、背景涟漪全部由插件声明、宿主本地播放。
+- 插件 API 2：新增 `scene` 组件（图层、关键帧轨道、振荡器、粒子发射器、拨弦线、碎裂退场、命中区域，带层数 / 粒子 / 命中预算，减少动态效果时静帧）、`media.library` 权限（`ctx.media.library.pickRandom / play / pause`）、`ctx.reduceMotion`，以及设置项的 `select` / `number` 类型（保存于 `AppSettings.pluginValues`，旧设置读取为空）。
+
 - 官网与插件 API 文档（`site/`）：功能介绍、四张功能截图的悬停展示区、插件 API 参考；新增 `mise.toml` 的 `pages:*` 任务与 `.github/workflows/pages.yml`，用于构建并发布到 GitHub Pages。中英文 README 同步新增「Dock 预览插件」一节与官网链接。
 - 偏好设置 → 常规新增「写入本地日志文件」开关，默认关闭；开启后恢复原有的文件日志与轮转。旧设置读取为关闭。
 

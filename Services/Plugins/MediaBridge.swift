@@ -53,10 +53,14 @@ struct PickedTrack: Equatable {
     let bpm: Double
     /// False when no track matched the keywords and a random one was picked instead.
     let matchedGenre: Bool
+
+    var jsObject: [String: Any] {
+        ["persistentID": persistentID, "title": title, "artist": artist, "bpm": bpm, "matchedGenre": matchedGenre]
+    }
 }
 
-/// Picks and plays library tracks for the weather gacha. Host-only: not
-/// reachable from plugin JS.
+/// Picks and plays library tracks; behind `ctx.media.library` for plugins
+/// holding the `media.library` permission.
 protocol MusicLibraryPlaying: AnyObject, Sendable {
     /// Serial queue every call must run on.
     var queue: DispatchQueue { get }

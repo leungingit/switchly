@@ -61,15 +61,56 @@ struct PluginPreferencesSection: View {
             pluginRow(plugin)
             ForEach(plugin.package.manifest.settings ?? [], id: \.key) { spec in
                 Divider().padding(.leading, 14)
-                Toggle(spec.displayTitle(preferredLanguages: [language.rawValue]), isOn: Binding(
-                    get: { settings.pluginSettings[plugin.id]?[spec.key] ?? spec.default },
-                    set: { value in
-                        var updated = settings
-                        updated.pluginSettings[plugin.id, default: [:]][spec.key] = value
-                        onSettingsChange(updated)
-                    }))
+                settingControl(spec, plugin: plugin)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func settingControl(_ spec: PluginSettingSpec, plugin: InstalledPlugin) -> some View {
+        let title = spec.displayTitle(preferredLanguages: [language.rawValue])
+        switch spec.kind {
+        case .toggle:
+            Toggle(title, isOn: Binding(
+                get: { settings.pluginSettings[plugin.id]?[spec.key] ?? spec.default },
+                set: { value in
+                    var updated = settings
+                    updated.pluginSettings[plugin.id, default: [:]][spec.key] = value
+                    onSettingsChange(updated)
+                }))
+        case .select:
+            let selected = Binding<String>(
+                get: {
+                    if case .string(let s)? = settings.pluginValues[plugin.id]?[spec.key], spec.options.contains(where: { $0.value == s }) { return s }
+                    if case .string(let s) = spec.defaultValue { return s }
+                    return spec.options.first?.value ?? ""
+                },
+                set: { value in
+                    var updated = settings
+                    updated.pluginValues[plugin.id, default: [:]][spec.key] = .string(value)
+                    onSettingsChange(updated)
+                })
+            Picker(title, selection: selected) {
+                ForEach(spec.options, id: \.value) { option in
+                    Text(PluginSettingSpec.localized(option.title, fallback: option.value, preferredLanguages: [language.rawValue])).tag(option.value)
+                }
+            }
+        case .number:
+            let value = Binding<Double>(
+                get: {
+                    if case .number(let n)? = settings.pluginValues[plugin.id]?[spec.key] { return n }
+                    if case .number(let n) = spec.defaultValue { return n }
+                    return 0
+                },
+                set: { number in
+                    var updated = settings
+                    updated.pluginValues[plugin.id, default: [:]][spec.key] = .number(number)
+                    onSettingsChange(updated)
+                })
+            Stepper(value: value, in: (spec.min ?? -1_000_000)...(spec.max ?? 1_000_000), step: spec.step ?? 1) {
+                Text("\(title): \(Int(value.wrappedValue))")
             }
         }
     }

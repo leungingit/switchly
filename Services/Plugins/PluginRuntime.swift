@@ -12,6 +12,7 @@
 //  a late result is discarded and repeated timeouts disable the plugin.
 //
 
+import AppKit
 import Foundation
 import JavaScriptCore
 
@@ -40,13 +41,20 @@ enum PluginRuntimeError: Error, Equatable {
 protocol PluginRuntimeProtocol: AnyObject {
     var manifest: PluginManifest { get }
     var onInvalidate: (() -> Void)? { get set }
+    /// The plugin's own directory, for assets named by `scene` sprites.
+    var assetDirectory: URL? { get }
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError>
     func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError>
     func unmount()
 }
 
+extension PluginRuntimeProtocol {
+    var assetDirectory: URL? { nil }
+}
+
 final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     let manifest: PluginManifest
+    var assetDirectory: URL? { package.directory }
     /// Called on the plugin queue; consumers hop to the main actor themselves.
     var onInvalidate: (() -> Void)? {
         get { queue.sync { invalidateHandler } }
@@ -61,7 +69,11 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     let permissions: Set<PluginCapability>
     /// Only kept when a media permission is authorized.
     private let mediaBridge: MediaBridging?
+    /// Only kept when `media.library` is authorized.
+    private let libraryBridge: MusicLibraryPlaying?
     private let settingsProvider: () -> [String: Bool]
+    private let valuesProvider: () -> [String: PluginSettingValue]
+    private let reduceMotion: () -> Bool
     private let queue: DispatchQueue
 
     // Everything below is confined to `queue`.
@@ -84,8 +96,13 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          preferredLanguages: [String] = Locale.preferredLanguages,
          mediaBridge: MediaBridging? = nil,
          permissions: Set<PluginCapability>? = nil,
-         settings: @escaping () -> [String: Bool] = { [:] }) {
+         libraryBridge: MusicLibraryPlaying? = nil,
+         settings: @escaping () -> [String: Bool] = { [:] },
+         values: @escaping () -> [String: PluginSettingValue] = { [:] },
+         reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }) {
+        self.reduceMotion = reduceMotion
         self.settingsProvider = settings
+        self.valuesProvider = values
         self.package = package
         self.manifest = package.manifest
         self.timeout = timeout
@@ -94,6 +111,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         let permissions = permissions.map { $0.intersection(package.manifest.permissions) } ?? Set(package.manifest.permissions)
         self.permissions = permissions
         self.mediaBridge = permissions.isDisjoint(with: [.mediaNowPlaying, .mediaControl]) ? nil : mediaBridge
+        self.libraryBridge = permissions.contains(.mediaLibrary) ? libraryBridge : nil
         self.queue = DispatchQueue(label: "com.switchly.plugin.\(package.manifest.id)")
     }
 
@@ -204,6 +222,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         installConsole(in: js)
         installTimers(in: js)
         installMedia(in: js)
+        installLibrary(in: js)
         js.evaluateScript(Self.invokeHelper)
         strings = loadStrings()
 
@@ -278,6 +297,42 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     /// ctx.media exposes only the methods the manifest's permissions cover;
     /// undeclared ones do not exist on the object.
+    /// ctx.media.library: pick, play and pause tracks. The bridge builds the
+    /// AppleScript itself; the plugin only supplies genre keywords and a track id.
+    private func installLibrary(in js: JSContext) {
+        guard let bridge = libraryBridge else { return }
+        let call: @convention(block) (String, JSValue, JSValue, JSValue) -> Void = { [weak self, weak js] method, argument, resolve, reject in
+            guard let self else { return }
+            let text = argument.isString ? argument.toString() ?? "" : ""
+            let words = (argument.toArray() as? [String]) ?? []
+            bridge.queue.async {
+                let outcome: Result<Any, Error> = Result {
+                    switch method {
+                    case "pickRandom": return try bridge.pickRandomTrack(genreKeywords: Array(words.prefix(16)))?.jsObject ?? NSNull()
+                    case "play": try bridge.play(persistentID: text); return NSNull()
+                    case "pause": try bridge.pausePlayback(); return NSNull()
+                    default: throw MediaBridgeError.unsupportedApp
+                    }
+                }
+                self.queue.async {
+                    guard let js, self.context === js else { return }
+                    switch outcome {
+                    case .success(let value): resolve.call(withArguments: [value])
+                    case .failure(let error): reject.call(withArguments: [String(describing: error)])
+                    }
+                }
+            }
+        }
+        js.setObject(call, forKeyedSubscript: "__switchlyLibraryCall" as NSString)
+        js.evaluateScript("""
+        globalThis.__switchlyLibrary = Object.freeze({
+          pickRandom: function (keywords) { return new Promise(function (res, rej) { __switchlyLibraryCall("pickRandom", keywords || [], res, rej); }); },
+          play: function (id) { return new Promise(function (res, rej) { __switchlyLibraryCall("play", String(id), res, rej); }); },
+          pause: function () { return new Promise(function (res, rej) { __switchlyLibraryCall("pause", null, res, rej); }); },
+        });
+        """)
+    }
+
     private func installMedia(in js: JSContext) {
         guard let bridge = mediaBridge else { return }
         let canRead = permissions.contains(.mediaNowPlaying)
@@ -318,6 +373,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
           const media = {};
           [\(list)].forEach(function (m) { media[m] = call(m); });
           \(canControl ? "media.setLiked = function (on) { return call(on ? \"like\" : \"unlike\")(); };" : "")
+          if (globalThis.__switchlyLibrary) media.library = globalThis.__switchlyLibrary;
           return Object.freeze(media);
         };
         """)
@@ -325,13 +381,19 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private func makeContextValue(_ ctx: PluginRenderContext, in js: JSContext) -> JSValue? {
         // Manifest defaults, overridden by the user's saved values.
-        var settingValues = Dictionary(uniqueKeysWithValues: (manifest.settings ?? []).map { ($0.key, $0.default) })
-        settingValues.merge(settingsProvider().filter { settingValues[$0.key] != nil }) { $1 }
+        var settingValues = Dictionary(uniqueKeysWithValues: (manifest.settings ?? []).map { ($0.key, $0.defaultValue.jsValue) })
+        for (key, flag) in settingsProvider() where settingValues[key] != nil { settingValues[key] = flag }
+        for (key, saved) in valuesProvider() {
+            // Saved select / number values only count for options the manifest declares.
+            guard let spec = manifest.settings?.first(where: { $0.key == key }), spec.kind != .toggle else { continue }
+            settingValues[key] = saved.jsValue
+        }
         let value = JSValue(object: [
             "app": ["bundleID": ctx.bundleID, "pid": ctx.pid, "name": ctx.appName],
             "window": ["windowID": ctx.windowID, "title": ctx.titleSummary],
             "locale": preferredLanguages.first ?? "en",
             "settings": settingValues,
+            "reduceMotion": reduceMotion(),
         ] as [String: Any], in: js)
         let strings = self.strings
         let t: @convention(block) (String) -> String = { key in strings[key] ?? key }
@@ -340,6 +402,11 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         value?.setObject(invalidate, forKeyedSubscript: "invalidate" as NSString)
         if let makeMedia = js.objectForKeyedSubscript("__switchlyMakeMedia"), !makeMedia.isUndefined {
             value?.setObject(makeMedia.call(withArguments: [ctx.bundleID]), forKeyedSubscript: "media" as NSString)
+        } else if let library = js.objectForKeyedSubscript("__switchlyLibrary"), library.isObject {
+            // Library without nowPlaying / control: ctx.media exists with just `library`.
+            let media = JSValue(newObjectIn: js)
+            media?.setObject(library, forKeyedSubscript: "library" as NSString)
+            value?.setObject(media, forKeyedSubscript: "media" as NSString)
         }
         return value
     }

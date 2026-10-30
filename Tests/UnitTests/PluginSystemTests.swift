@@ -59,9 +59,9 @@ final class PluginSystemTests: XCTestCase {
     }
 
     func testManifestValidationRejectsUnsupportedVersionAndEscapingEntry() throws {
-        let future = try JSONDecoder().decode(PluginManifest.self, from: Data(manifestJSON(apiVersion: 2).utf8))
+        let future = try JSONDecoder().decode(PluginManifest.self, from: Data(manifestJSON(apiVersion: 3).utf8))
         XCTAssertThrowsError(try future.validate()) {
-            XCTAssertEqual($0 as? PluginManifest.ValidationError, .unsupportedAPIVersion(2))
+            XCTAssertEqual($0 as? PluginManifest.ValidationError, .unsupportedAPIVersion(3))
         }
         let escaping = try JSONDecoder().decode(PluginManifest.self, from: Data(manifestJSON(entry: "../x.js").utf8))
         XCTAssertThrowsError(try escaping.validate())
@@ -332,7 +332,9 @@ final class PluginMediaTests: XCTestCase {
             PluginSearchPath(directory: builtin.directory.deletingLastPathComponent(), origin: .builtin),
             PluginSearchPath(directory: root, origin: .user),
         ]).reload()
-        XCTAssertEqual(result.plugins.map(\.origin), [.builtin])
+        // Every built-in plugin loads once; the user copy of Music Controls is rejected as a duplicate.
+        XCTAssertEqual(result.plugins.filter { $0.manifest.id == "com.switchly.music-controls" }.map(\.origin), [.builtin])
+        XCTAssertEqual(result.plugins.map(\.origin), Array(repeating: .builtin, count: result.plugins.count))
         XCTAssertEqual(result.failures.count, 1)
     }
 }
