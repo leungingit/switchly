@@ -41,7 +41,36 @@ enum MediaCommand: String {
 enum MediaBridgeError: Error, Equatable {
     case unsupportedApp
     case notAuthorized
+    case notRunning
     case scriptFailed(Int)
+}
+
+struct PickedTrack: Equatable {
+    let persistentID: String
+    let title: String
+    let artist: String
+    /// Beats per minute from the library; 0 when unknown.
+    let bpm: Double
+    /// False when no track matched the keywords and a random one was picked instead.
+    let matchedGenre: Bool
+
+    var jsObject: [String: Any] {
+        ["persistentID": persistentID, "title": title, "artist": artist, "bpm": bpm, "matchedGenre": matchedGenre]
+    }
+}
+
+/// Picks and plays library tracks; behind `ctx.media.library` for plugins
+/// holding the `media.library` permission.
+protocol MusicLibraryPlaying: AnyObject, Sendable {
+    /// Serial queue every call must run on.
+    var queue: DispatchQueue { get }
+    /// A random track whose genre contains one of `genreKeywords`, else any
+    /// random library track. nil when the library has no tracks. Does not play.
+    func pickRandomTrack(genreKeywords: [String]) throws -> PickedTrack?
+    func play(persistentID: String) throws
+    func pausePlayback() throws
+    /// nil when nothing is loaded (stopped) or Music is not running.
+    func currentTrack() throws -> NowPlaying?
 }
 
 protocol MediaBridging: AnyObject, Sendable {
@@ -59,7 +88,7 @@ protocol MediaBridging: AnyObject, Sendable {
 
 /// Apple Music via NSAppleScript. NSAppleScript is not thread-safe, so every
 /// script runs on `queue`; callers use the async wrappers.
-final class MusicAppleScriptBridge: MediaBridging, @unchecked Sendable {
+final class MusicAppleScriptBridge: MediaBridging, MusicLibraryPlaying, @unchecked Sendable {
     static let musicBundleID = "com.apple.Music"
 
     let queue = DispatchQueue(label: "com.switchly.plugin.media")
@@ -148,7 +177,64 @@ final class MusicAppleScriptBridge: MediaBridging, @unchecked Sendable {
         return data
     }
 
+    func pickRandomTrack(genreKeywords: [String]) throws -> PickedTrack? {
+        let bundleID = try requireMusic()
+        // Keywords come from the fixed card pool; strip anything that could
+        // break out of the AppleScript string literal anyway.
+        let keywords = genreKeywords
+            .map { $0.filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" } }
+            .filter { !$0.isEmpty }
+        let list = keywords.map { "\"\($0)\"" }.joined(separator: ", ")
+        // `matched` is an AppleScript terminology word in Music, so the flag
+        // is named didMatch.
+        let script = """
+        tell application id "\(bundleID)"
+          set pool to {}
+          repeat with kw in {\(list)}
+            try
+              set pool to pool & (every track of library playlist 1 whose genre contains (kw as text))
+            end try
+          end repeat
+          set didMatch to ((count of pool) > 0)
+          if not didMatch then
+            if (count of tracks of library playlist 1) is 0 then return {}
+            set pool to {some track of library playlist 1}
+          end if
+          set t to some item of pool
+          return {persistent ID of t, name of t, artist of t, bpm of t, didMatch}
+        end tell
+        """
+        guard let result = try run(script), result.numberOfItems == 5 else { return nil }
+        return PickedTrack(persistentID: result.atIndex(1)?.stringValue ?? "",
+                           title: result.atIndex(2)?.stringValue ?? "",
+                           artist: result.atIndex(3)?.stringValue ?? "",
+                           bpm: result.atIndex(4).flatMap(Self.double) ?? 0,
+                           matchedGenre: result.atIndex(5)?.booleanValue ?? false)
+    }
+
+    func play(persistentID: String) throws {
+        let bundleID = try requireMusic()
+        let id = persistentID.filter { $0.isLetter || $0.isNumber }
+        _ = try run("tell application id \"\(bundleID)\" to play (first track of library playlist 1 whose persistent ID is \"\(id)\")")
+    }
+
+    func pausePlayback() throws {
+        let bundleID = try requireMusic()
+        _ = try run("tell application id \"\(bundleID)\" to pause")
+    }
+
+    func currentTrack() throws -> NowPlaying? {
+        try nowPlaying(bundleID: Self.musicBundleID)
+    }
+
     // MARK: - Private
+
+    private func requireMusic() throws -> String {
+        let bundleID = Self.musicBundleID
+        guard isRunning(bundleID) else { throw MediaBridgeError.notRunning }
+        guard ensureConsent(bundleID: bundleID) else { throw MediaBridgeError.notAuthorized }
+        return bundleID
+    }
 
     /// Automation consent without blocking the caller on the system prompt:
     /// when undetermined, ask once in the background and report "not yet".

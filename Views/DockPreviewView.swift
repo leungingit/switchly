@@ -516,17 +516,18 @@ struct DockPluginSlotView: View {
     let fallback: AnyView?
 
     var body: some View {
-        let nodes = slots.compactMap { overlay.slots[$0] }
-        if nodes.isEmpty {
+        let entries = slots.flatMap { overlay.slots[$0] ?? [] }
+        if entries.isEmpty {
             fallback
         } else {
             VStack(spacing: DesignTokens.Spacing.xs) {
-                ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
+                ForEach(entries) { entry in
                     PluginOverlayView(
-                        node: node,
+                        node: entry.node,
                         material: settings.crystalMaterial,
                         isGlassActive: settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque,
                         artwork: overlay.artwork,
+                        assetDirectory: entry.directory,
                         onAction: { overlay.perform(actionID: $0, value: $1) }
                     )
                 }

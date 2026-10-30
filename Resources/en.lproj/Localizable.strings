@@ -456,6 +456,7 @@
 "Not allowed yet" = "Not allowed yet";
 "Read what's playing" = "Read what's playing";
 "Control playback" = "Control playback";
+"Pick and play songs from your library" = "Pick and play songs from your library";
 "Focus windows" = "Focus windows";
 "Run Switchly's built-in scripts for %@" = "Run Switchly's built-in scripts for %@";
 
@@ -466,3 +467,22 @@
 "Show desktop map when four fingers rest" = "Show desktop map when four fingers rest";
 "Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches." = "Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches.";
 "The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade." = "The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade.";
+
+/* Online weather */
+"Online weather" = "Online weather";
+"Open-Meteo · free, no API key · off by default" = "Open-Meteo · free, no API key · off by default";
+"Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local.";
+"City" = "City";
+"City name" = "City name";
+"Refresh now" = "Refresh now";
+"Fetches once; the result is reused for 15 minutes." = "Fetches once; the result is reused for 15 minutes.";
+"Enter a city to use online weather; until then the gacha keeps the manual weather above." = "Enter a city to use online weather; until then the gacha keeps the manual weather above.";
+"Not fetched yet" = "Not fetched yet";
+"Last updated: %@" = "Last updated: %@";
+"Read the current weather" = "Read the current weather";
+"Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then." = "Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then.";
+"No such city — check the spelling." = "No such city — check the spelling.";
+"The weather service refused the request. Try again later." = "The weather service refused the request. Try again later.";
+"Unexpected reply from the weather service." = "Unexpected reply from the weather service.";
+"Enter a city first." = "Enter a city first.";
+"Couldn't reach Open-Meteo. Check your connection." = "Couldn't reach Open-Meteo. Check your connection.";

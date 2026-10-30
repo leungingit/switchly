@@ -37,7 +37,7 @@ struct UsageStatisticsPreferencesSection: View {
             }
 
             row {
-                BaselinePicker(model: model)
+                BaselinePicker(model: model, isCompact: true)
             }
 
             row {
@@ -47,10 +47,13 @@ struct UsageStatisticsPreferencesSection: View {
                     .frame(width: 22)
                 Text(t("Clear Statistics..."))
                     .font(.body)
+                    .lineLimit(1)
                 Spacer(minLength: 16)
-                Button(t("Clear Statistics...")) {
+                Button(t("Clear")) {
                     showClearConfirmation = true
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .alert(isPresented: $showClearConfirmation) {
                     Alert(title: Text(t("Clear Statistics...")),
                           message: Text(t("This permanently deletes all locally recorded counts.")),

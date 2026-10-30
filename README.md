@@ -28,7 +28,7 @@
 
 You know the window you want. It’s the document behind the browser, the other editor window, the reference you opened a moment ago. **Switchly brings window previews into view so you can choose by what you see.** Open the panel, search a title if you need to, and click the window to return to your work.
 
-**Lives in your menu bar. Works on your Mac. No account, no network requests, no uploaded window content.**
+**Lives in your menu bar. Works on your Mac. No account, no uploaded window content, and no network requests unless you turn on the optional online weather.**
 
 ## Three ways back to your work
 
@@ -60,7 +60,7 @@ Workspaces organize app groups and access to their windows; they do not create m
 
 *Rendered from the current source with sample content, not a live screenshot.*
 
-Plugins add controls to the window cards shown on Dock hover. They are written in JavaScript, run in an embedded JavaScriptCore sandbox, and only return a declarative UI tree that Switchly draws natively—so they match your theme and glass settings, and have no network, file or process access. The built-in **Music Controls** plugin is the reference implementation; it offers cover art, a scrolling title, playback and Love buttons, an optional click-wheel layout, and a **hide window previews** option.
+Plugins add controls to the window cards shown on Dock hover. They are written in JavaScript, run in an embedded JavaScriptCore sandbox, and only return a declarative UI tree that Switchly draws natively—so they match your theme and glass settings, and have no network, file or process access of their own. Two plugins are built in: **Music Controls** (the reference implementation) and **Weather Gacha** (set the weather, draw three cards, play a song from your Music library; its animation is a host-played `scene`). Music Controls offers cover art, a scrolling title, playback and Love buttons, an optional click-wheel layout, and a **hide window previews** option.
 
 Plugins declare permissions in `manifest.json` (for example `media.nowPlaying`, `media.control`). Built-in plugins run unless you turn them off; plugins you install yourself stay off until you review and confirm their permissions in **Preferences → Permissions → Plugins**. The npm SDK and CLI are not released yet—plugins are plain JavaScript for now. See the [plugin API reference](https://leungingit.github.io/switchly/plugins.html) and the [design notes](docs/dock-preview-plugins-design.md).
 

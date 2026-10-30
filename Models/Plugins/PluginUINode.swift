@@ -80,6 +80,8 @@ indirect enum PluginUINode: Equatable, Decodable {
     /// Click-wheel dial. Exactly five children placed top, leading, trailing,
     /// bottom and centre; use `spacer` for an empty position.
     case wheel(children: [PluginUINode])
+    /// Host-played animation (design doc §8). Its hits route to onAction.
+    case scene(PluginScene)
 
     private enum CodingKeys: String, CodingKey {
         case type, children, spacing, align, material, id, symbol, label, size, variant, enabled, selected
@@ -157,6 +159,8 @@ indirect enum PluginUINode: Equatable, Decodable {
                 throw DecodingError.dataCorruptedError(forKey: .children, in: c, debugDescription: "wheel needs 5 children")
             }
             self = .wheel(children: items)
+        case "scene":
+            self = .scene(try PluginScene(from: decoder))
         default:
             throw DecodingError.dataCorruptedError(forKey: .type, in: c, debugDescription: "Unknown node type \(type)")
         }
@@ -173,6 +177,7 @@ indirect enum PluginUINode: Equatable, Decodable {
     var actionIDs: [String] {
         switch self {
         case .button(let id, _, _, _, _, _, _), .toggle(let id, _, _, _, _), .slider(let id, _, _, _): return [id]
+        case .scene(let scene): return scene.hits.map(\.id)
         default: return children.flatMap(\.actionIDs)
         }
     }

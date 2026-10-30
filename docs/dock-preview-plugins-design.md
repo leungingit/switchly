@@ -64,12 +64,14 @@ com.example.music-controls/
 └── icon.png         # 可选，设置页展示
 ```
 
-`manifest.json`：
+`summary` 可选，用于设置页插件名后「?」的悬浮说明；缺省时只列权限。`manifest.json`：
 
 ```json
 {
   "id": "com.example.music-controls",
   "name": { "en": "Music Controls", "zh-Hans": "音乐控制" },
+  "summary": { "en": "Playback, Love and click-wheel controls for Apple Music.",
+               "zh-Hans": "Apple Music 的播放、喜欢与点按转盘控件。" },
   "version": "0.1.0",
   "apiVersion": 1,
   "matches": ["com.apple.Music", "com.spotify.client"],
@@ -282,3 +284,65 @@ render: async (ctx) => {
 | D07 | 2026-10-23 | `bottomBar` 高度上限由约 30% 调整为缩略图高度 45%（`DesignTokens.Plugin.bottomBarMaxHeightFraction`）；默认 120pt 卡片仅放一行紧凑按钮，无窗口时在空状态区域显示曲目与进度 | 120×75 卡片 30% 仅 22pt，放不下带内边距的按钮行；Music 常在无窗口时使用 |
 | D08 | 2026-10-23 | 授权规则：内置插件默认按声明启用、可关闭；用户插件默认关闭，确认权限清单后启用；插件更新新增的权限保持“尚未允许”且不注入，直到再次确认。运行时只拿到「声明 ∩ 已确认」的权限，授权变化时重建 JS 环境 | §3.6；`PluginAuthorizationTests` |
 | D09 | 2026-10-23 | 封面由宿主经媒体桥按曲目 persistent ID 缓存读取，只在插件树含 `image{artwork}` 且有已授权 `media.nowPlaying` 的插件时请求；曲名滚动速度、停顿放 `MotionTokens`，减少动态效果时退化为截断 | §3.5.2、§4.1 |
+| D12 | 2026-10-30 | 动画由插件声明、宿主本地播放：新增通用 `scene` 组件（apiVersion 2）。D03 调整为「不开放逐帧 JS 绘制，开放声明式场景」。宿主不含任何抽卡专有代码；原生 `Gacha*` 视图 / ViewModel / 引擎已删除，改由内置 JS 插件 `com.switchly.weather-gacha` 实现 | §9；用户要求「迁移成真正的 JS 插件，注意功能对齐和性能」。与 `feat/plugin-scene-api` 分支的 §8 提案（D10 / D11，待确认）并行，合并前需对齐 |
+| D13 | 2026-10-30 | 新增权限 `media.library`（`ctx.media.library.pickRandom / play / pause`）；AppleScript 仍由宿主生成，插件只传曲风关键词与曲目 ID | §9.4；`WeatherGachaPluginTests.testPluginWithoutLibraryPermissionCannotReachTheLibrary` |
+| D15 | 2026-10-30 | 经用户裁决，新增**唯一联网例外**：可选在线天气（默认关；数据源为 Open-Meteo，免费、无需密钥；宿主 `OnlineWeatherService` 先按城市查一次坐标再取天气，15 分钟一次、缓存 30 分钟、日志不记城市与坐标）；插件侧新增 `weather.current` 权限只读宿主快照，插件本身仍无网络。需同步 `PRIVACY_POLICY.md` §1 与 `AGENTS.md` §6 | §9.4；`OnlineWeatherTests` |
+| D16 | 2026-10-30 | 同一槽位允许多个插件叠放（每槽位 ≤3，按注册顺序），取代「先到的插件独占槽位」。原因：音乐控制与天气抽卡都要 `center`，独占导致抽卡被挤掉 | `DockPluginOverlayModel.maxEntriesPerSlot`；`PROBE center=[music-controls, weather-gacha]` |
+| D14 | 2026-10-30 | 插件设置新增 `select` / `number`；值存 `AppSettings.pluginValues`（旧设置缺该字段读为空），toggle 仍在 `pluginSettings`。`gachaPreferences` 因从未发布，直接移除而不迁移 | §9.5；`PluginSceneTests.testSettingsWithoutPluginValuesStillDecode` |
+| D17 | 2026-10-30 | 设置页只给一个插件目录入口（用户目录 `~/Library/Application Support/Switchly/Plugins`），不再单独打开应用包内的内置插件目录；内置插件由卡片上的「内置」徽标识别，页面下方一行说明两类位置。理由：内置目录是 `Contents/Resources/Plugins`，Debug 构建时位于仓库内的 `DerivedData`，两个目录并存既无安装意义，也容易被当成「插件装错了地方」 | 用户反馈；D06 的打包位置不变 |
+
+## 9. Scene 引擎（已实现，D12）
+
+> §8 的「Scene API 提案」目前只在另一分支 `feat/plugin-scene-api`（D10 / D11，均待确认），本分支实现了它；两边的字段命名、预算与未实现项差异见 [scene-api-alignment.md](scene-api-alignment.md)，合并那条分支后再统一。
+>
+> 实现：`Models/Plugins/PluginScene.swift`（解码即校验）、`SceneEvaluator.swift`（纯函数求值）、`Views/PluginSceneDrawing.swift`（Canvas 绘制）、`PluginSceneView.swift`（时间线、悬停与点击）。
+
+### 9.1 为什么不是逐帧 JS
+
+JS 每次调用有软超时，逐帧过 JSC 桥会占满插件队列。插件改为**声明一次**：图层 + 随时间变化的规则；宿主按墙钟 `t = now - epoch` 本地求值并绘制。JS 只在状态变化（选牌、揭晓、播放、播完）或宿主 1 秒轮询时运行。同一个 `key` + `epoch` 的重复输出是同一段动画，不会重头播放。
+
+### 9.2 节点
+
+`{ type: "scene", key, epoch, width, height, fit, fps, restAt, layers }`
+
+- `width` × `height` 是设计尺寸（pt）；`fit: "width"` 等比缩放到可用宽度（最大 1.3 倍），`"cover"` 铺满并裁切，用作 `zstack` 的背景（不撑大布局）。
+- 宿主把整段场景裁到插件卡片的圆角（`DesignTokens.Radius.control`）里：`cover` 背景的颜色洗只在卡片形状内结束，不会在四角露出直角；插件不需要自己画边框圆角。
+- `epoch`：场景时间 0 对应的 Unix 秒（JS 用 `Date.now()/1000`）。`fps` 10–60，默认 30。
+- 图层坐标原点在**自身锚点**（`anchor`，默认居中），子层坐标相对父层锚点。`kind`：`group`（可 `clip`、`shatter`）、`rect`（`radius`）、`ellipse`、`text`、`symbol`（SF Symbol）、`wave`（可拨动的线）、`emitter`（粒子）、`sprite`（精灵图，`pluginAsset` 路径）。
+- 填充：`"#RRGGBB[AA]"`、`{linear}`、`{angular}`；文字色另有 `"$label"` / `"$secondaryLabel"`，由宿主按浅色 / 深色解析。
+- 属性随时间变化：`tracks`（关键帧 `{t, v, e}`，`e` ∈ linear / in / out / inOut / hold，`loop` 周期循环）覆盖基础值；`osc`（振荡叠加：`amp`、`freq`、`phase`、`start`、`end`、`decay`、`wave` ∈ sin / pulse / abs）累加。可动属性：x、y、w、h、rotation、scale、scaleX、scaleY、opacity、blur、angle。
+- `hit: {id, label, hoverScale}`：该层成为可点击区域（命中框按当前时刻的位置与缩放算出）；点击以 `hit.id` 触发 `onAction`，悬停缩放与 `showOnHover`（让另一层随悬停淡入）由宿主本地处理。`label` 供 VoiceOver。
+
+### 9.3 预算、静帧与停表
+
+| 项 | 上限 / 行为 |
+|---|---|
+| 图层 / 深度 / 粒子 / 命中区域 | ≤ 160 / ≤ 6 / ≤ 400（单发射器 ≤ 120）/ ≤ 12，超限整段 scene 解码失败，该次渲染被拒 |
+| 关键帧 | 每条轨道 ≤ 160 个 |
+| 减少动态效果 | 取 `restAt`（缺省为 `settledAt`）一帧；振荡、循环、粒子、拨弦、碎裂动画不播放；`ctx.reduceMotion` 同步告知插件 |
+| 停表 | `settledAt`（所有轨道、振荡、发射器、碎裂、精灵播完的时刻）后约 0.3 秒停止时间线，悬停时短暂恢复；含循环或不衰减振荡的 scene 视为永不停止 |
+| 不可见 | Dock 面板关闭即移除视图，时间线随之销毁；VM 同时被卸载 |
+
+### 9.4 `media.library`
+
+`ctx.media.library.pickRandom(keywords)` → `{persistentID, title, artist, bpm, matchedGenre} | null`；`play(id)`；`pause()`。与 `media.nowPlaying` 共用同一条 AppleScript 串行队列；关键词会过滤为字母、数字、空格、连字符，ID 只保留字母数字。
+
+### 9.4.1 `weather.current`
+
+`ctx.weather.current()` 同步返回宿主已获取的天气快照 `{condition, temperature, wind, source:"online"}`，未启用、未配置、过期或无权限时为 `null`。宿主在面板显示时与设置变更时按 15 分钟下限刷新；插件不得触发请求，也拿不到密钥与原始响应。设置页的「立即刷新」会等待结果：失败时城市输入框标红并说明原因（查无此城 / 服务拒绝 / 无法连接），成功时同时把天气、温度、风速写回该插件的手动天气选项。未获得该权限时，`ctx.weather` 对象不存在（而非返回 null）。
+
+### 9.5 设置类型
+
+`manifest.settings[]` 的 `type`：缺省 `toggle`；`select` 需 `options: [{value, title}]` 且默认值是其中之一；`number` 可带 `min` / `max` / `step`，默认值须在范围内。不匹配则 manifest 解码失败。设置页按类型渲染开关、下拉或步进器。
+
+### 9.6 天气抽卡插件对照
+
+| 原生实现 | 插件里的对应 |
+|---|---|
+| `GachaEngine` / `GachaCardPool` / 保底 | `main.js` 的 `POOL` / `draw()`（`__test` 暴露给单测） |
+| `GachaViewModel` 状态机与定时 | `state` + `setTimeout` + `ctx.invalidate()`，选歌与播放走 `media.library`，播放监控用 `nowPlaying` 轮询 0.5 秒 |
+| `GachaStaffCountdown`（Canvas 物理） | `countdownLayers()`：按原公式每 0.03 秒采样音符位姿成关键帧；谱线 `wave`（拨弦 + 收拢），金粉 `emitter`（跟随音符 / 顶部先散） |
+| `GachaCardView`、`ShatterView`、`MagicPlayButton`、`DancingNotes`、`GachaBackdrop`、天气图标 | `cardLayer()`（含流光、边框、脉冲光晕、碎裂）、`playButton()`、背景 `backdropScene()`、`headerLayers()` |
+| 偏好设置里的天气控件 | manifest 的 `select` / `number` / `toggle` 设置 |
+
+已知差异：面板隐藏保留插件 VM，回合在重开面板后继续（实测期望行为，`DockPluginOverlayModel.unload()` 才是硬重置）；Again 按钮与卡片没有原生键盘焦点（`⏎` 默认键），改由 VoiceOver 的 hit 动作触达；选歌文案过长时缩小至 70% 后截断由插件负责。

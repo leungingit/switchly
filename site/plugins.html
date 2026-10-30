@@ -56,8 +56,9 @@
 <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
 <tr><td><code>id</code></td><td>string</td><td>是</td><td>反向域名，匹配 <code>^[A-Za-z0-9]+(\.[A-Za-z0-9-]+)+$</code>，全局唯一。</td></tr>
 <tr><td><code>name</code></td><td>{语言: 文本}</td><td>是</td><td>按 <code>en</code>、<code>zh-Hans</code> 等键本地化，设置页展示。</td></tr>
+<tr><td><code>summary</code></td><td>{语言: 文本}</td><td>否</td><td>一句话说明，显示在设置页插件名后的「?」悬浮提示中；缺省时只列权限。</td></tr>
 <tr><td><code>version</code></td><td>string</td><td>是</td><td>插件自身版本。</td></tr>
-<tr><td><code>apiVersion</code></td><td>int</td><td>是</td><td>宿主当前仅支持 <code>1</code>；范围外拒绝加载。</td></tr>
+<tr><td><code>apiVersion</code></td><td>int</td><td>是</td><td>宿主支持 <code>1</code>–<code>2</code>；范围外拒绝加载。<code>2</code> 起可返回 <code>scene</code> 节点、声明 <code>select</code> / <code>number</code> 设置。</td></tr>
 <tr><td><code>matches</code></td><td>[bundleID]</td><td>是</td><td>目标应用 bundle ID，不能为空；悬停这些应用的 Dock 图标时才会运行。</td></tr>
 <tr><td><code>permissions</code></td><td>[string]</td><td>是</td><td>请求的能力，见<a href="#permissions">权限</a>；未知字符串导致 manifest 解码失败。</td></tr>
 <tr><td><code>entry</code></td><td>string</td><td>是</td><td>入口相对路径；不能为空、以 <code>/</code> 开头或含 <code>..</code>。</td></tr>
@@ -90,12 +91,16 @@
 <tr><td><code>ctx.app</code></td><td><code>{ bundleID, pid, name }</code></td><td>无</td></tr>
 <tr><td><code>ctx.window</code></td><td><code>{ windowID, title }</code>。<code>title</code> 已截断到约 40 字符，完整标题不会交给插件；该应用无窗口时 <code>windowID</code> 为 0。</td><td>无</td></tr>
 <tr><td><code>ctx.locale</code></td><td>首选语言标识，如 <code>"zh-Hans-CN"</code>。</td><td>无</td></tr>
-<tr><td><code>ctx.settings</code></td><td><code>{ [key]: boolean }</code>：manifest 默认值被用户保存的值覆盖，且只含已声明的 key。</td><td>无</td></tr>
+<tr><td><code>ctx.settings</code></td><td><code>{ [key]: boolean | string | number }</code>：manifest 默认值被用户保存的值覆盖，且只含已声明的 key。设置项可声明 <code>"type": "select"</code>（<code>options: [{ value, title }]</code>，值为字符串）或 <code>"type": "number"</code>（<code>min</code>、<code>max</code>、<code>step</code>），默认开关为 boolean。</td><td>无</td></tr>
+<tr><td><code>ctx.reduceMotion</code></td><td>系统「减少动态效果」是否开启。<code>scene</code> 会由宿主自动静帧；插件可据此跳过动画阶段。</td><td>无</td></tr>
 <tr><td><code>ctx.t(key)</code></td><td>从 <code>locales/&lt;语言&gt;.json</code> 取文案，回退 <code>en</code>，再回退 key 本身。</td><td>无</td></tr>
 <tr><td><code>ctx.invalidate()</code></td><td>请求宿主尽快重新 <code>render</code>。</td><td>无</td></tr>
 <tr><td><code>ctx.media.nowPlaying()</code></td><td>返回 <code>Promise&lt;NowPlaying | null&gt;</code>：<code>playing</code>、<code>title</code>、<code>artist</code>、<code>album</code>、<code>position</code>、<code>duration</code>、<code>progress</code>(0–1)、<code>liked</code>、<code>canLike</code>。应用未运行、无当前曲目或尚未授权自动化时为 <code>null</code>，且不会拉起目标应用。</td><td><code>media.nowPlaying</code></td></tr>
 <tr><td><code>ctx.media.togglePlayPause()</code> / <code>next()</code> / <code>previous()</code></td><td>播放控制，返回 Promise。</td><td><code>media.control</code></td></tr>
 <tr><td><code>ctx.media.setLiked(on)</code></td><td>喜欢／取消喜欢（Music 的 <code>favorited</code>）。</td><td><code>media.control</code></td></tr>
+<tr><td><code>ctx.media.library.pickRandom(keywords)</code></td><td>在资料库里按曲风关键词随机挑一首（无匹配则任意一首），返回 <code>Promise&lt;{ persistentID, title, artist, bpm, matchedGenre } | null&gt;</code>，不播放。</td><td><code>media.library</code></td></tr>
+<tr><td><code>ctx.media.library.play(persistentID)</code> / <code>pause()</code></td><td>播放指定曲目／暂停。脚本由宿主生成，插件只给出关键词与曲目 ID。</td><td><code>media.library</code></td></tr>
+<tr><td><code>ctx.weather.current()</code></td><td>同步返回宿主已获取的天气 <code>{ condition, temperature, wind, source }</code>；未启用在线天气或结果过期时为 <code>null</code>。插件不会因此联网，也拿不到密钥。</td><td><code>weather.current</code></td></tr>
 </table>
 <p>未授权的 <code>ctx.media</code> 方法<b>根本不存在</b>（而非调用时报错）。专辑封面不经 JS 传递：由宿主按需读取并绘制，仅当 UI 树包含 <code>image</code> 的 <code>{artwork:true}</code> 且插件有 <code>media.nowPlaying</code> 授权。</p>
 
@@ -140,6 +145,7 @@
 <tr><td><code>badge</code></td><td><code>value</code>*、<code>tone</code>: <code>neutral(默认)|accent|warning</code></td></tr>
 <tr><td><code>marquee</code></td><td><code>value</code>* — 长文本滚动；减少动态效果时退化为截断</td></tr>
 <tr><td><code>wheel</code></td><td>点按转盘。<code>children</code> 必须恰好 5 个，依次为上、左、右、下、中；空位用 <code>spacer</code></td></tr>
+<tr><td><code>scene</code></td><td>声明式动画场景（apiVersion 2），由宿主本地播放，JS 不逐帧参与。<code>key</code>*、<code>epoch</code>*（场景时间 0 对应的 Unix 秒）、<code>width</code>*、<code>height</code>*、<code>fit</code>(width|cover)、<code>fps</code>(10–60)、<code>restAt</code>、<code>layers</code>*。图层 <code>kind</code>：group / rect / ellipse / text / symbol / wave / emitter / sprite；属性可用 <code>tracks</code>（关键帧，<code>loop</code> 循环）与 <code>osc</code>（振荡叠加）驱动；<code>hit</code> 使图层可点击，点击以 <code>hit.id</code> 触发 <code>onAction</code>。预算：≤ 160 层、≤ 400 粒子、≤ 12 个 hit。完整说明见设计文档 §9。</td></tr>
 </table>
 <p>标 * 为必填；<code>id</code>、<code>symbol</code>、<code>label</code> 等不得为空字符串。</p>
 
@@ -148,6 +154,8 @@
 <tr><th>权限字符串</th><th>作用</th><th>状态</th></tr>
 <tr><td><code>media.nowPlaying</code></td><td>注入 <code>ctx.media.nowPlaying()</code>，允许宿主为 <code>image{artwork}</code> 读取封面</td><td>可用（仅 Apple Music）</td></tr>
 <tr><td><code>media.control</code></td><td>注入播放控制与 <code>setLiked</code></td><td>可用（仅 Apple Music）</td></tr>
+<tr><td><code>media.library</code></td><td>注入 <code>ctx.media.library</code>（挑选／播放／暂停资料库曲目）</td><td>可用（仅 Apple Music）</td></tr>
+<tr><td><code>weather.current</code></td><td>注入 <code>ctx.weather.current()</code>，读取宿主已获取的天气快照（Open-Meteo，无需密钥）</td><td>可用（需用户在插件设置中开启在线天气，默认关闭）</td></tr>
 <tr><td><code>window.focus</code></td><td>聚焦窗口</td><td>已可声明，尚无对应 API</td></tr>
 <tr><td><code>appleScript:&lt;bundleID&gt;</code></td><td>调用宿主预置脚本模板（不接受任意脚本）</td><td>已可声明，尚无对应 API（二期）</td></tr>
 </table>

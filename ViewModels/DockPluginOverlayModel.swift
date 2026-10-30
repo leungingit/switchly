@@ -3,18 +3,33 @@
 //  Switchly
 //
 //  Plugin render state for the Dock preview. Renders only while the panel is
-//  visible: start() on show / target change, stop() on hide, which cancels
-//  the refresh loop and unmounts every plugin VM. Main thread only.
+//  visible: start() on show / target change, stop() on hide, which cancels the
+//  refresh loop and detaches invalidations but keeps the plugin VMs, so a round
+//  in progress (a dealt hand, a revealed song) continues when the panel reopens.
+//  unload() is the hard reset that also frees the VMs. Main thread only.
 //
 
 import AppKit
 
+/// One plugin's content for a slot. Several plugins may share a slot (the
+/// Music card and the weather gacha both ask for `center`), so slots hold a
+/// stack instead of a single winner.
+struct PluginSlotEntry: Identifiable, Equatable {
+    let id: String
+    let node: PluginUINode
+    /// The plugin's directory, for `scene` sprite assets.
+    let directory: URL?
+}
+
 final class DockPluginOverlayModel: ObservableObject {
-    @Published private(set) var slots: [PluginSlot: PluginUINode] = [:]
+    @Published private(set) var slots: [PluginSlot: [PluginSlotEntry]] = [:]
     /// Cover for `image(source: {artwork})`, drawn by the host only.
     @Published private(set) var artwork: NSImage?
     private var artworkData: Data?
-    var hasCenter: Bool { slots[.center] != nil }
+    var hasCenter: Bool { !(slots[.center] ?? []).isEmpty }
+
+    /// Upper bound per slot, so one misbehaving plugin cannot push the panel down.
+    static let maxEntriesPerSlot = 3
 
     /// True when an active plugin's own option asks to drop the window thumbnails.
     func hidesWindowPreviews(in settings: AppSettings) -> Bool {
@@ -41,9 +56,6 @@ final class DockPluginOverlayModel: ObservableObject {
         self.host = host
     }
 
-    deinit {
-        loopTask?.cancel()
-    }
 
     func start(context: PluginRenderContext) {
         dispatchPrecondition(condition: .onQueue(.main))
@@ -80,6 +92,15 @@ final class DockPluginOverlayModel: ObservableObject {
         if !slots.isEmpty { slots = [:] }
         artwork = nil
         artworkData = nil
+    }
+
+    /// Hard reset: frees every plugin VM, so a plugin's own state starts over.
+    func unload() {
+        stop()
+        host.unmountAll()
+    }
+
+    deinit {
         host.unmountAll()
     }
 
@@ -103,22 +124,25 @@ final class DockPluginOverlayModel: ObservableObject {
     @MainActor
     private func render(generation: Int) async {
         guard generation == self.generation, let context else { return }
-        var merged: [PluginSlot: PluginUINode] = [:]
+        var merged: [PluginSlot: [PluginSlotEntry]] = [:]
         var owners: [String: PluginRuntimeProtocol] = [:]
         for runtime in runtimes {
             // A failing plugin only loses its own overlay.
             guard case .success(let contents) = await runtime.render(context: context) else { continue }
             guard generation == self.generation else { return }
-            // Earlier plugins keep a contested slot.
-            for content in contents where merged[content.slot] == nil {
-                merged[content.slot] = content.node
+            // Plugins render in registry order and stack inside a slot, capped.
+            for content in contents {
+                guard (merged[content.slot]?.count ?? 0) < Self.maxEntriesPerSlot else { continue }
+                merged[content.slot, default: []].append(PluginSlotEntry(id: runtime.manifest.id,
+                                                                       node: content.node,
+                                                                       directory: runtime.assetDirectory))
                 content.node.actionIDs.forEach { owners[$0] = runtime }
             }
         }
         guard generation == self.generation else { return }
         actionOwners = owners
         if merged != slots { slots = merged }
-        guard merged.values.contains(where: \.usesArtwork) else { return }
+        guard merged.values.contains(where: { $0.contains { $0.node.usesArtwork } }) else { return }
         let data = await host.artwork(for: context.bundleID)
         guard generation == self.generation, data != artworkData else { return }
         artworkData = data

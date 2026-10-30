@@ -41,6 +41,7 @@ final class PluginHost: PluginHosting {
     init(registry: PluginRegistryProtocol = PluginRegistry(),
          grants: @escaping () -> [String: PluginGrant] = { SettingsService.shared.loadSettings().pluginGrants },
          mediaBridge: MediaBridging = MusicAppleScriptBridge(),
+         weather: @escaping () -> [String: Any]? = { OnlineWeatherService.shared.current()?.jsObject },
          makeRuntime: ((PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol)? = nil) {
         self.registry = registry
         self.grants = grants
@@ -49,7 +50,10 @@ final class PluginHost: PluginHosting {
             // Media calls are Apple Event round trips; 1 s leaves room for a
             // busy target app without letting a stuck plugin linger.
             PluginRuntime(package: package, timeout: 1, mediaBridge: mediaBridge, permissions: permissions,
-                          settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] })
+                          libraryBridge: mediaBridge as? MusicLibraryPlaying,
+                          settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
+                          values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
+                          weather: weather)
         }
     }
 

@@ -456,6 +456,7 @@
 "Not allowed yet" = "尚未允许";
 "Read what's playing" = "读取正在播放的内容";
 "Control playback" = "控制播放";
+"Pick and play songs from your library" = "从资料库挑选并播放歌曲";
 "Focus windows" = "聚焦窗口";
 "Run Switchly's built-in scripts for %@" = "为 %@ 运行 Switchly 内置脚本";
 
@@ -466,3 +467,22 @@
 "Show desktop map when four fingers rest" = "四指静置时显示桌面小图";
 "Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches." = "四指在触控板上静置约 1 秒，显示当前所在桌面，不会切换桌面。";
 "The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade." = "系统的滑动动画按真实桌面顺序播放，可能与你的排列方向不一致。在系统设置中开启“减少动态效果”可将其变为淡入淡出。";
+
+/* Online weather */
+"Online weather" = "在线天气";
+"Open-Meteo · free, no API key · off by default" = "Open-Meteo · 免费、无需密钥 · 默认关闭";
+"Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "这是 Switchly 唯一的联网功能，使用 Open-Meteo（免费、无需密钥）：每 15 分钟一次地名解析和一次天气请求。关闭后全部本地运行。";
+"City" = "城市";
+"City name" = "城市名";
+"Refresh now" = "立即刷新";
+"Fetches once; the result is reused for 15 minutes." = "只请求一次，结果复用 15 分钟。";
+"Enter a city to use online weather; until then the gacha keeps the manual weather above." = "填写城市后才会使用在线天气；在此之前抽卡仍按上面的手动天气。";
+"Not fetched yet" = "尚未获取";
+"Last updated: %@" = "更新于：%@";
+"Read the current weather" = "读取当前天气";
+"Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then." = "内置插件随 Switchly 打包，上方卡片会标出「内置」；这个目录只放你自己安装的插件，所以现在为空。";
+"No such city — check the spelling." = "没有找到这个城市，请检查拼写。";
+"The weather service refused the request. Try again later." = "天气服务拒绝了这次请求，请稍后再试。";
+"Unexpected reply from the weather service." = "天气服务返回了无法识别的数据。";
+"Enter a city first." = "请先填写城市。";
+"Couldn't reach Open-Meteo. Check your connection." = "无法连接 Open-Meteo，请检查网络。";

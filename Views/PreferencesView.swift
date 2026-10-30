@@ -529,11 +529,11 @@ struct PreferencesView: View {
     private var pluginsSettingsTab: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header(t("Plugins"), subtitle: t("Extra controls shown in the Dock preview"))
+                header(t("Plugins"), accessory: AnyView(infoHint(t("Extra controls shown in the Dock preview"))))
                 PluginPreferencesSection(
                     settings: viewModel.settings,
                     onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } },
-                    group: { title, content in AnyView(settingsGroup(title) { content }) }
+                    onOnlineWeatherChange: { new in viewModel.updateSettings { $0.onlineWeather = new } }
                 )
             }
             .padding(24)
@@ -1157,14 +1157,28 @@ struct PreferencesView: View {
         )
     }
 
-    private func header(_ title: String, subtitle: String) -> some View {
+    private func header(_ title: String, subtitle: String? = nil, accessory: AnyView? = nil) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.title2.weight(.semibold))
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.title2.weight(.semibold))
+                accessory
+            }
+            if let subtitle {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
         }
+    }
+
+    /// Small “?” that explains a section on hover instead of a permanent subtitle line.
+    private func infoHint(_ text: String) -> some View {
+        Image(systemName: "questionmark.circle")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.secondary)
+            .help(text)
+            .accessibilityLabel(Text(text))
     }
 
     private func settingsGroup<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
