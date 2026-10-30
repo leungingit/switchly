@@ -532,13 +532,8 @@ struct PreferencesView: View {
                 header(t("Plugins"), accessory: AnyView(infoHint(t("Extra controls shown in the Dock preview"))))
                 PluginPreferencesSection(
                     settings: viewModel.settings,
-                    onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } }
-                )
-                OnlineWeatherPreferences(
-                    value: viewModel.settings.onlineWeather,
-                    language: viewModel.settings.language,
-                    onChange: { new in viewModel.updateSettings { $0.onlineWeather = new } },
-                    material: viewModel.settings.crystalMaterial
+                    onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } },
+                    onOnlineWeatherChange: { new in viewModel.updateSettings { $0.onlineWeather = new } }
                 )
             }
             .padding(24)

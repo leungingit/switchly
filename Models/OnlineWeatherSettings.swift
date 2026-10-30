@@ -3,52 +3,36 @@
 //  Switchly
 //
 //  Optional online weather for the gacha. Switchly promises to run fully
-//  locally (PRIVACY_POLICY §1); this is the single, opt-in exception: one HTTPS
-//  GET to the weather service the user configures, only while the source is
-//  set to online, at most once every 15 minutes. Plugins never make requests
-//  themselves — they read the snapshot the host already fetched.
+//  locally (PRIVACY_POLICY §1); this is the single, opt-in exception: Open-Meteo
+//  (free, no API key) answers two HTTPS GETs — one geocoding lookup per place,
+//  one forecast — and only while the switch is on, at most every 15 minutes.
+//  Plugins never make requests; they read the snapshot the host fetched.
 //
 
 import Foundation
 
-enum WeatherSourceMode: String, Codable {
-    case manual, online
-}
-
 struct OnlineWeatherSettings: Equatable, Codable {
-    /// Default endpoint speaks the OpenWeatherMap "current weather" shape.
-    static let defaultEndpoint = "https://api.openweathermap.org/data/2.5/weather"
-    /// Refresh floor; also the age after which a cached reading is dropped.
+    /// Free, no key required; the host owns the URLs so plugins cannot redirect them.
+    static let geocodingEndpoint = "https://geocoding-api.open-meteo.com/v1/search"
+    static let forecastEndpoint = "https://api.open-meteo.com/v1/forecast"
+    /// Refresh floor; readings older than `maximumAge` are ignored.
     static let refreshInterval: TimeInterval = 15 * 60
     static let maximumAge: TimeInterval = 30 * 60
 
-    var mode: WeatherSourceMode = .manual
-    var endpoint = OnlineWeatherSettings.defaultEndpoint
-    /// City name passed to the service ("q=" for OpenWeatherMap).
-    var city = ""
-    /// Stored with the rest of the settings; never written to logs.
-    var apiKey = ""
+    /// Off by default: the fully local manual weather applies until turned on.
+    var enabled = false
+    /// City name, e.g. "Shanghai" or "上海".
+    var place = ""
 
     init() {}
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        mode = (try? c.decodeIfPresent(WeatherSourceMode.self, forKey: .mode)) ?? .manual
-        endpoint = try c.decodeIfPresent(String.self, forKey: .endpoint) ?? Self.defaultEndpoint
-        city = try c.decodeIfPresent(String.self, forKey: .city) ?? ""
-        apiKey = try c.decodeIfPresent(String.self, forKey: .apiKey) ?? ""
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
+        place = try c.decodeIfPresent(String.self, forKey: .place) ?? ""
     }
 
-    /// HTTPS only, so a key never travels in clear text.
-    var requestURL: URL? {
-        let trimmed = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed), url.scheme?.lowercased() == "https", url.host?.isEmpty == false else { return nil }
-        return url
-    }
+    var trimmedPlace: String { place.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-    var isReady: Bool {
-        mode == .online && requestURL != nil
-            && !city.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+    var isReady: Bool { enabled && !trimmedPlace.isEmpty }
 }

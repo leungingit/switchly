@@ -2,9 +2,10 @@
 //  OnlineWeatherService.swift
 //  Switchly
 //
-//  The host-side half of the opt-in online weather: one HTTPS GET per refresh
-//  interval, a small in-memory cache, and a mapping from the service's payload
-//  to the four values the gacha needs. Plugins only ever read `current()`.
+//  Host half of the opt-in online weather, backed by Open-Meteo (free, no API
+//  key). Two requests at most per refresh: a geocoding lookup when the place
+//  changed, then the forecast. Results live in memory only; plugins read them
+//  through `ctx.weather` and never see the requests.
 //
 
 import Foundation
@@ -24,6 +25,7 @@ struct WeatherReading: Equatable {
 
 enum OnlineWeatherError: Error, Equatable {
     case notConfigured
+    case placeNotFound
     case badResponse(Int)
     case malformed
 }
@@ -32,25 +34,49 @@ protocol WeatherFetching: AnyObject, Sendable {
     func fetch(_ settings: OnlineWeatherSettings) async throws -> WeatherReading
 }
 
-/// OpenWeatherMap "current weather" (units=metric), also the shape any
-/// compatible service returns.
-final class URLSessionWeatherFetcher: WeatherFetching, @unchecked Sendable {
+final class OpenMeteoWeatherFetcher: WeatherFetching, @unchecked Sendable {
     private let session: URLSession
+    private let lock = NSLock()
+    /// Geocoding is cached per place, so the usual refresh is a single request.
+    private var resolved: (place: String, latitude: Double, longitude: Double)?
 
     init(session: URLSession = URLSession(configuration: .ephemeral)) {
         self.session = session
     }
 
     func fetch(_ settings: OnlineWeatherSettings) async throws -> WeatherReading {
-        guard let base = settings.requestURL else { throw OnlineWeatherError.notConfigured }
-        guard var components = URLComponents(url: base, resolvingAgainstBaseURL: false) else { throw OnlineWeatherError.notConfigured }
-        var items = components.queryItems ?? []
-        items.append(contentsOf: [
-            URLQueryItem(name: "q", value: settings.city.trimmingCharacters(in: .whitespacesAndNewlines)),
-            URLQueryItem(name: "appid", value: settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)),
-            URLQueryItem(name: "units", value: "metric"),
-        ])
-        components.queryItems = items
+        let place = settings.trimmedPlace
+        guard !place.isEmpty else { throw OnlineWeatherError.notConfigured }
+        let coordinates = try await coordinates(for: place)
+        var components = try components(for: OnlineWeatherSettings.forecastEndpoint)
+        components.queryItems = [
+            URLQueryItem(name: "latitude", value: String(format: "%.4f", coordinates.latitude)),
+            URLQueryItem(name: "longitude", value: String(format: "%.4f", coordinates.longitude)),
+            URLQueryItem(name: "current", value: "temperature_2m,weather_code,wind_speed_10m"),
+            URLQueryItem(name: "wind_speed_unit", value: "kmh"),
+            URLQueryItem(name: "timezone", value: "auto"),
+        ]
+        let data = try await get(components)
+        return try WeatherMapper.reading(fromForecast: data, at: Date())
+    }
+
+    private func coordinates(for place: String) async throws -> (latitude: Double, longitude: Double) {
+        if let cached = cachedCoordinates(for: place) { return cached }
+
+        var components = try components(for: OnlineWeatherSettings.geocodingEndpoint)
+        components.queryItems = [
+            URLQueryItem(name: "name", value: place),
+            URLQueryItem(name: "count", value: "1"),
+            URLQueryItem(name: "language", value: "zh"),
+            URLQueryItem(name: "format", value: "json"),
+        ]
+        let data = try await get(components)
+        let found = try WeatherMapper.coordinates(fromGeocoding: data)
+        storeCoordinates(place: place, latitude: found.latitude, longitude: found.longitude)
+        return found
+    }
+
+    private func get(_ components: URLComponents) async throws -> Data {
         guard let url = components.url else { throw OnlineWeatherError.notConfigured }
         var request = URLRequest(url: url)
         request.timeoutInterval = 10
@@ -59,37 +85,64 @@ final class URLSessionWeatherFetcher: WeatherFetching, @unchecked Sendable {
         let ms = Double(DispatchTime.now().uptimeNanoseconds - started.uptimeNanoseconds) / 1_000_000
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            // Host only: the URL carries the key.
-            AppLogger.warning("Online weather rejected. status=\(status) host=\(base.host ?? "?") ms=\(String(format: "%.0f", ms))")
+            // URL-safe logging: Open-Meteo takes no secret, but keep it to the host.
+            AppLogger.warning("Online weather rejected. status=\(status) host=\(url.host ?? "?") ms=\(String(format: "%.0f", ms))")
             throw OnlineWeatherError.badResponse(status)
         }
-        let reading = try WeatherMapper.reading(from: data, at: Date())
-        AppLogger.info("Online weather fetched. condition=\(reading.condition) ms=\(String(format: "%.0f", ms))")
-        return reading
+        AppLogger.info("Online weather request. host=\(url.host ?? "?") ms=\(String(format: "%.0f", ms))")
+        return data
+    }
+
+    private func cachedCoordinates(for place: String) -> (latitude: Double, longitude: Double)? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let resolved, resolved.place == place else { return nil }
+        return (resolved.latitude, resolved.longitude)
+    }
+
+    private func storeCoordinates(place: String, latitude: Double, longitude: Double) {
+        lock.lock(); resolved = (place, latitude, longitude); lock.unlock()
+    }
+
+    private func components(for string: String) throws -> URLComponents {
+        guard let components = URLComponents(string: string) else { throw OnlineWeatherError.notConfigured }
+        return components
     }
 }
 
 enum WeatherMapper {
-    /// Maps an OpenWeatherMap-style payload. Kept pure so it is unit-tested.
-    static func reading(from data: Data, at date: Date) throws -> WeatherReading {
+    /// Open-Meteo forecast: `{"current":{"temperature_2m":…,"weather_code":…,"wind_speed_10m":…}}`.
+    static func reading(fromForecast data: Data, at date: Date) throws -> WeatherReading {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let main = root["main"] as? [String: Any],
-              let temperature = main["temp"] as? Double else { throw OnlineWeatherError.malformed }
-        let code = ((root["weather"] as? [[String: Any]])?.first?["id"] as? Int) ?? 800
-        let wind = ((root["wind"] as? [String: Any])?["speed"] as? Double).map { $0 * 3.6 } ?? 0
-        return WeatherReading(condition: condition(forCode: code),
+              let current = root["current"] as? [String: Any],
+              let temperature = current["temperature_2m"] as? Double,
+              let code = current["weather_code"] as? Int else { throw OnlineWeatherError.malformed }
+        let wind = (current["wind_speed_10m"] as? Double) ?? 0
+        return WeatherReading(condition: condition(forWMOCode: code),
                               temperatureCelsius: temperature,
                               windSpeedKmh: wind,
                               fetchedAt: date)
     }
 
-    static func condition(forCode code: Int) -> String {
+    /// Open-Meteo geocoding: `{"results":[{"latitude":…,"longitude":…}]}`.
+    static func coordinates(fromGeocoding data: Data) throws -> (latitude: Double, longitude: Double) {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let results = root["results"] as? [[String: Any]],
+              let first = results.first,
+              let latitude = first["latitude"] as? Double,
+              let longitude = first["longitude"] as? Double else { throw OnlineWeatherError.placeNotFound }
+        return (latitude, longitude)
+    }
+
+    /// WMO 4677 weather codes, as Open-Meteo reports them.
+    static func condition(forWMOCode code: Int) -> String {
         switch code {
-        case 200..<300: return "storm"
-        case 300..<600: return "rain"
-        case 600..<700: return "snow"
-        case 700..<800: return "fog"
-        case 800: return "clear"
+        case 0: return "clear"
+        case 1, 2, 3: return "cloudy"
+        case 45, 48: return "fog"
+        case 51...57, 61...67, 80...82: return "rain"
+        case 71...77, 85, 86: return "snow"
+        case 95...99: return "storm"
         default: return "cloudy"
         }
     }
@@ -107,13 +160,13 @@ final class OnlineWeatherService: @unchecked Sendable {
     private var lastAttempt = Date.distantPast
     private var isRefreshing = false
 
-    init(fetcher: WeatherFetching = URLSessionWeatherFetcher(),
+    init(fetcher: WeatherFetching = OpenMeteoWeatherFetcher(),
          settings: @escaping () -> OnlineWeatherSettings = { SettingsService.shared.loadSettings().onlineWeather }) {
         self.fetcher = fetcher
         self.settings = settings
     }
 
-    /// Freshest reading, or nil when offline / unconfigured / stale.
+    /// Freshest reading, or nil when off / unconfigured / stale.
     func current() -> WeatherReading? {
         let snapshot = settings()
         guard snapshot.isReady else { return nil }
@@ -124,7 +177,7 @@ final class OnlineWeatherService: @unchecked Sendable {
         return cache
     }
 
-    /// Cached value without ever starting a request (tests, settings preview).
+    /// Cached value without ever starting a request (settings status line, tests).
     func cachedReading() -> WeatherReading? {
         lock.lock()
         defer { lock.unlock() }
@@ -134,8 +187,7 @@ final class OnlineWeatherService: @unchecked Sendable {
     /// Called on panel show and when the source changes.
     func refreshIfNeeded() { refreshIfNeeded(settings()) }
 
-    /// Ignores the refresh floor — for the settings page's explicit action and
-    /// for edits to the endpoint / city / key.
+    /// Ignores the refresh floor — explicit "refresh now", or edits to the place.
     func forceRefresh() {
         lock.lock(); lastAttempt = .distantPast; lock.unlock()
         refreshIfNeeded(settings())
@@ -156,8 +208,8 @@ final class OnlineWeatherService: @unchecked Sendable {
         }
     }
 
-    /// Locking lives in these two synchronous helpers: NSLock is unavailable
-    /// from async contexts under Swift 6.
+    /// Locking lives in these synchronous helpers: NSLock is unavailable from
+    /// async contexts under Swift 6.
     private func beginRefresh() -> Bool {
         lock.lock()
         defer { lock.unlock() }

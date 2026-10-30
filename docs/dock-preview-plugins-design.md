@@ -286,7 +286,8 @@ render: async (ctx) => {
 | D09 | 2026-10-23 | 封面由宿主经媒体桥按曲目 persistent ID 缓存读取，只在插件树含 `image{artwork}` 且有已授权 `media.nowPlaying` 的插件时请求；曲名滚动速度、停顿放 `MotionTokens`，减少动态效果时退化为截断 | §3.5.2、§4.1 |
 | D12 | 2026-10-30 | 动画由插件声明、宿主本地播放：新增通用 `scene` 组件（apiVersion 2）。D03 调整为「不开放逐帧 JS 绘制，开放声明式场景」。宿主不含任何抽卡专有代码；原生 `Gacha*` 视图 / ViewModel / 引擎已删除，改由内置 JS 插件 `com.switchly.weather-gacha` 实现 | §9；用户要求「迁移成真正的 JS 插件，注意功能对齐和性能」。与 `feat/plugin-scene-api` 分支的 §8 提案（D10 / D11，待确认）并行，合并前需对齐 |
 | D13 | 2026-10-30 | 新增权限 `media.library`（`ctx.media.library.pickRandom / play / pause`）；AppleScript 仍由宿主生成，插件只传曲风关键词与曲目 ID | §9.4；`WeatherGachaPluginTests.testPluginWithoutLibraryPermissionCannotReachTheLibrary` |
-| D15 | 2026-10-30 | 经用户裁决，新增**唯一联网例外**：可选在线天气（默认关；宿主 `OnlineWeatherService` 仅对用户配置的 HTTPS 地址发 GET，15 分钟一次、缓存 30 分钟、密钥不入日志）；插件侧新增 `weather.current` 权限只读宿主快照，插件本身仍无网络。需同步 `PRIVACY_POLICY.md` §1 与 `AGENTS.md` §6 | §9.4；`OnlineWeatherTests` |
+| D15 | 2026-10-30 | 经用户裁决，新增**唯一联网例外**：可选在线天气（默认关；数据源为 Open-Meteo，免费、无需密钥；宿主 `OnlineWeatherService` 先按城市查一次坐标再取天气，15 分钟一次、缓存 30 分钟、日志不记城市与坐标）；插件侧新增 `weather.current` 权限只读宿主快照，插件本身仍无网络。需同步 `PRIVACY_POLICY.md` §1 与 `AGENTS.md` §6 | §9.4；`OnlineWeatherTests` |
+| D16 | 2026-10-30 | 同一槽位允许多个插件叠放（每槽位 ≤3，按注册顺序），取代「先到的插件独占槽位」。原因：音乐控制与天气抽卡都要 `center`，独占导致抽卡被挤掉 | `DockPluginOverlayModel.maxEntriesPerSlot`；`PROBE center=[music-controls, weather-gacha]` |
 | D14 | 2026-10-30 | 插件设置新增 `select` / `number`；值存 `AppSettings.pluginValues`（旧设置缺该字段读为空），toggle 仍在 `pluginSettings`。`gachaPreferences` 因从未发布，直接移除而不迁移 | §9.5；`PluginSceneTests.testSettingsWithoutPluginValuesStillDecode` |
 
 ## 9. Scene 引擎（已实现，D12）

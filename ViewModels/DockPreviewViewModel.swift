@@ -69,7 +69,7 @@ class DockPreviewViewModel: ObservableObject {
     /// Refresh the opt-in online weather at most once per interval; manual
     /// weather never touches the network.
     func refreshOnlineWeatherIfNeeded() {
-        guard settings.onlineWeather.mode == .online else { return }
+        guard settings.onlineWeather.enabled else { return }
         OnlineWeatherService.shared.refreshIfNeeded()
     }
 

@@ -17,6 +17,8 @@ import SwiftUI
 struct PluginPreferencesSection: View {
     let settings: AppSettings
     let onSettingsChange: (AppSettings) -> Void
+    /// Host-level controls of the built-in gacha, shown inside its own card.
+    let onOnlineWeatherChange: (OnlineWeatherSettings) -> Void
     var host: PluginHosting = PluginHost.shared
 
     @State private var plugins: [InstalledPlugin] = []
@@ -24,6 +26,8 @@ struct PluginPreferencesSection: View {
     @State private var expandedInfo: String?
 
     private var language: AppLanguage { settings.language }
+    /// The only plugin with a host-provided data source today.
+    static let onlineWeatherPluginID = "com.switchly.weather-gacha"
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
@@ -69,6 +73,11 @@ struct PluginPreferencesSection: View {
                 settingControl(spec, plugin: plugin)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 9)
+            }
+            if plugin.id == Self.onlineWeatherPluginID {
+                OnlineWeatherPreferences(value: settings.onlineWeather,
+                                         language: settings.language,
+                                         onChange: onOnlineWeatherChange)
             }
         }
         .cardSurface(

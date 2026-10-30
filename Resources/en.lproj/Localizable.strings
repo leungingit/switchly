@@ -470,16 +470,13 @@
 
 /* Online weather */
 "Online weather" = "Online weather";
-"Used by the weather gacha. Off by default; manual weather applies when it is off." = "Used by the weather gacha. Off by default; manual weather applies when it is off.";
-"Switchly's only network feature. It fetches the weather from the service you configure here, at most once every 15 minutes; plugins only read the result. Everything else stays local." = "Switchly's only network feature. It fetches the weather from the service you configure here, at most once every 15 minutes; plugins only read the result. Everything else stays local.";
-"Service URL" = "Service URL";
-"Any service returning the OpenWeatherMap “current weather” shape over HTTPS." = "Any service returning the OpenWeatherMap “current weather” shape over HTTPS.";
+"Open-Meteo · free, no API key · off by default" = "Open-Meteo · free, no API key · off by default";
+"Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local.";
 "City" = "City";
 "City name" = "City name";
-"API key" = "API key";
 "Refresh now" = "Refresh now";
 "Fetches once; the result is reused for 15 minutes." = "Fetches once; the result is reused for 15 minutes.";
-"Fill in the URL, city and API key to use online weather; until then the gacha keeps using the manual weather above." = "Fill in the URL, city and API key to use online weather; until then the gacha keeps using the manual weather above.";
+"Enter a city to use online weather; until then the gacha keeps the manual weather above." = "Enter a city to use online weather; until then the gacha keeps the manual weather above.";
 "Not fetched yet" = "Not fetched yet";
 "Last updated: %@" = "Last updated: %@";
 "Read the current weather" = "Read the current weather";
