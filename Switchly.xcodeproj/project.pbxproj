@@ -41,6 +41,7 @@
 		42E090248740FFDC71FE92AE /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */; };
 		439324893176691BA6AF5D4C /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */; };
 		482D3D624B3DDC827D958FEE /* WindowInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A6A58BEAD9ACBF4698AC7 /* WindowInfo.swift */; };
+		4C018B8DF65064F72678C0BE /* OnlineWeatherPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 834F2190F7DEC17F777E1BC6 /* OnlineWeatherPreferences.swift */; };
 		4C6789C2DA56826ED31A0EEB /* PluginScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ACDD640F337FBD9F860BE1F /* PluginScene.swift */; };
 		4C8E285F29A903C506F74761 /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DC6D7B68AA6B89AFB14000 /* StatusBarView.swift */; };
 		4D945D85A7042393A06DDBF4 /* PreviewReplicaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E270A7C7525E09B303AE2508 /* PreviewReplicaPanel.swift */; };
@@ -102,6 +103,7 @@
 		9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */; };
 		A072D06E5B68A96A4DCADA1E /* StatisticsEfficiencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */; };
 		A174EF356A7E1CE551E0E288 /* DesktopGridCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */; };
+		A4696C2EA72C0B8B284CA098 /* OnlineWeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7869AA9506E03FE200959D38 /* OnlineWeatherService.swift */; };
 		A4C6BA68425E77517DCE454B /* DockGlassRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E257EBC8C0FB7879E7D63D /* DockGlassRenderingTests.swift */; };
 		A5105AB477196D0D6392696C /* PluginSceneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */; };
 		A52D55EC6F37CD0195757012 /* GridPrerequisiteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */; };
@@ -120,6 +122,7 @@
 		BF5217ACAFA0F8E24B46B4EB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA8089BA53B1D1CCC78BEC2 /* AppDelegate.swift */; };
 		C23BF8F8B71FBE85F7A8628B /* GridThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96510776297C69649DA4F443 /* GridThumbnailView.swift */; };
 		C60ECB9102AA8F46C302C7FF /* DockPluginOverlayModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D4E0170008B3E39DCAAC0B /* DockPluginOverlayModel.swift */; };
+		C894A4B29F55E63242E6207A /* OnlineWeatherSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */; };
 		CB93F748CFF9B95AB7007A75 /* WindowSwitchFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCE7362D3D2B1B5ED72BDE3 /* WindowSwitchFeedback.swift */; };
 		CC2F70B1D38D49A3904205C7 /* zh-Hans.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8C454449F43BF62BEDCE15AD /* zh-Hans.lproj */; };
 		CD3E7E5608B3CEB73C313AEE /* PreviewStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */; };
@@ -139,6 +142,7 @@
 		D94541C5038657087D57CAFC /* SystemGestureInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F20C0A8D857BAD965EEE6CD /* SystemGestureInterceptor.swift */; };
 		DA8CD524C8C7D059C6F4DAA7 /* TrackpadGestureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */; };
 		DC31DBC9E56F4460B2A36B9A /* AllSpacesRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F30365BE450846F0634ADC9 /* AllSpacesRenderingTests.swift */; };
+		DCC611909E026C6CCBED6F33 /* OnlineWeatherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */; };
 		DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34689921552D03B9A0939D3 /* ThumbnailService.swift */; };
 		DF5394C4EE47AE1D012EFAFC /* WeatherGachaPluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD9E5FE55FF12149B442202 /* WeatherGachaPluginTests.swift */; };
 		E0014664397567828FF3D23A /* PluginSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C9FFAA0E50CCA50D6D6F5A /* PluginSceneView.swift */; };
@@ -242,10 +246,12 @@
 		71DD962701C1A4451D4506CE /* NativeCrystalContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCrystalContainer.swift; sourceTree = "<group>"; };
 		755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStrategy.swift; sourceTree = "<group>"; };
 		782DDEA9B760B082A11AE14C /* Switchly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Switchly.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7869AA9506E03FE200959D38 /* OnlineWeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherService.swift; sourceTree = "<group>"; };
 		7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeApplier.swift; sourceTree = "<group>"; };
 		7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewModel.swift; sourceTree = "<group>"; };
 		7FCE7362D3D2B1B5ED72BDE3 /* WindowSwitchFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSwitchFeedback.swift; sourceTree = "<group>"; };
 		81E8B69F55E3915AA564A11E /* GridPrerequisiteViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteViewModelTests.swift; sourceTree = "<group>"; };
+		834F2190F7DEC17F777E1BC6 /* OnlineWeatherPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherPreferences.swift; sourceTree = "<group>"; };
 		8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockHoverMonitor.swift; sourceTree = "<group>"; };
 		852B7D72F7154C2512A91E39 /* MonitoredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoredApp.swift; sourceTree = "<group>"; };
 		86E6C2CE23A3834E6FEAA800 /* PreviewHotspotEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHotspotEdge.swift; sourceTree = "<group>"; };
@@ -261,6 +267,7 @@
 		96510776297C69649DA4F443 /* GridThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridThumbnailView.swift; sourceTree = "<group>"; };
 		96DD14FAEB036825353009EA /* MultitouchSupportBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultitouchSupportBridge.swift; sourceTree = "<group>"; };
 		98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationStrategy.swift; sourceTree = "<group>"; };
+		9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherTests.swift; sourceTree = "<group>"; };
 		9A938B3D72FC8AB1E6C161FA /* GridOverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModel.swift; sourceTree = "<group>"; };
 		9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCache.swift; sourceTree = "<group>"; };
 		9FDBD58543D26CB798059E1C /* PluginRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginRuntime.swift; sourceTree = "<group>"; };
@@ -288,6 +295,7 @@
 		C6B3EA034319D24B8E19DFCC /* GridCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridCellView.swift; sourceTree = "<group>"; };
 		C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsEfficiency.swift; sourceTree = "<group>"; };
 		C8BE468141F782C97C514E73 /* GridPrerequisiteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteTests.swift; sourceTree = "<group>"; };
+		CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherSettings.swift; sourceTree = "<group>"; };
 		CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTriggerMonitorTests.swift; sourceTree = "<group>"; };
 		CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarViewModel.swift; sourceTree = "<group>"; };
 		D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewView.swift; sourceTree = "<group>"; };
@@ -398,6 +406,7 @@
 				508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */,
 				6B863AF7408FCE0FFF4B8F61 /* MonitoredAppTests.swift */,
 				54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */,
+				9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */,
 				E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */,
 				2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */,
 				4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */,
@@ -444,6 +453,7 @@
 				D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */,
 				96510776297C69649DA4F443 /* GridThumbnailView.swift */,
 				1586F73A4F525E88C759A1C8 /* OnboardingView.swift */,
+				834F2190F7DEC17F777E1BC6 /* OnlineWeatherPreferences.swift */,
 				57C6D1F998B7FE20E7E9E79D /* PluginOverlayView.swift */,
 				429241B0962218A3BBA8A97F /* PluginPreferencesSection.swift */,
 				E5CE51AB1199542766F6B6CD /* PluginSceneDrawing.swift */,
@@ -547,6 +557,7 @@
 				8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */,
 				08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */,
 				AAF9AC54C2BA7BEEA61A8C65 /* InstalledAppsService.swift */,
+				7869AA9506E03FE200959D38 /* OnlineWeatherService.swift */,
 				687A3E6FE32AE24C7E961024 /* PreviewTriggerMonitor.swift */,
 				C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */,
 				0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */,
@@ -595,6 +606,7 @@
 				421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */,
 				4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */,
 				852B7D72F7154C2512A91E39 /* MonitoredApp.swift */,
+				CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */,
 				FEAB4ED3B6192B37D690238D /* UsageStatistics.swift */,
 				C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */,
 				605A6A58BEAD9ACBF4698AC7 /* WindowInfo.swift */,
@@ -760,6 +772,7 @@
 				151067BD1D6A695FE5F669AE /* InstalledAppsServiceTests.swift in Sources */,
 				7BD89AFAC9DE588F75A61327 /* MonitoredAppTests.swift in Sources */,
 				757EC4F4A1872830AA959C08 /* MotionTokensTests.swift in Sources */,
+				DCC611909E026C6CCBED6F33 /* OnlineWeatherTests.swift in Sources */,
 				A5105AB477196D0D6392696C /* PluginSceneTests.swift in Sources */,
 				1A3FB074DE69877640E4C4C3 /* PluginSystemTests.swift in Sources */,
 				CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */,
@@ -830,6 +843,9 @@
 				8F13B62CA83D5DB7659B0DBB /* NativeCrystalContainer.swift in Sources */,
 				4F319DCCBFF23D406715CD88 /* NotificationStrategy.swift in Sources */,
 				25BEA26A797B70D0A0ED19DE /* OnboardingView.swift in Sources */,
+				4C018B8DF65064F72678C0BE /* OnlineWeatherPreferences.swift in Sources */,
+				A4696C2EA72C0B8B284CA098 /* OnlineWeatherService.swift in Sources */,
+				C894A4B29F55E63242E6207A /* OnlineWeatherSettings.swift in Sources */,
 				B09D2790372896E8A13F7090 /* PluginGrant.swift in Sources */,
 				0D9330C204918BD9E1B1BCEA /* PluginHost.swift in Sources */,
 				D6F5633006C8795C401614BD /* PluginManifest.swift in Sources */,

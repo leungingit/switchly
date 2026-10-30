@@ -64,12 +64,14 @@ com.example.music-controls/
 └── icon.png         # 可选，设置页展示
 ```
 
-`manifest.json`：
+`summary` 可选，用于设置页插件名后「?」的悬浮说明；缺省时只列权限。`manifest.json`：
 
 ```json
 {
   "id": "com.example.music-controls",
   "name": { "en": "Music Controls", "zh-Hans": "音乐控制" },
+  "summary": { "en": "Playback, Love and click-wheel controls for Apple Music.",
+               "zh-Hans": "Apple Music 的播放、喜欢与点按转盘控件。" },
   "version": "0.1.0",
   "apiVersion": 1,
   "matches": ["com.apple.Music", "com.spotify.client"],
@@ -284,6 +286,7 @@ render: async (ctx) => {
 | D09 | 2026-10-23 | 封面由宿主经媒体桥按曲目 persistent ID 缓存读取，只在插件树含 `image{artwork}` 且有已授权 `media.nowPlaying` 的插件时请求；曲名滚动速度、停顿放 `MotionTokens`，减少动态效果时退化为截断 | §3.5.2、§4.1 |
 | D12 | 2026-10-30 | 动画由插件声明、宿主本地播放：新增通用 `scene` 组件（apiVersion 2）。D03 调整为「不开放逐帧 JS 绘制，开放声明式场景」。宿主不含任何抽卡专有代码；原生 `Gacha*` 视图 / ViewModel / 引擎已删除，改由内置 JS 插件 `com.switchly.weather-gacha` 实现 | §9；用户要求「迁移成真正的 JS 插件，注意功能对齐和性能」。与 `feat/plugin-scene-api` 分支的 §8 提案（D10 / D11，待确认）并行，合并前需对齐 |
 | D13 | 2026-10-30 | 新增权限 `media.library`（`ctx.media.library.pickRandom / play / pause`）；AppleScript 仍由宿主生成，插件只传曲风关键词与曲目 ID | §9.4；`WeatherGachaPluginTests.testPluginWithoutLibraryPermissionCannotReachTheLibrary` |
+| D15 | 2026-10-30 | 经用户裁决，新增**唯一联网例外**：可选在线天气（默认关；宿主 `OnlineWeatherService` 仅对用户配置的 HTTPS 地址发 GET，15 分钟一次、缓存 30 分钟、密钥不入日志）；插件侧新增 `weather.current` 权限只读宿主快照，插件本身仍无网络。需同步 `PRIVACY_POLICY.md` §1 与 `AGENTS.md` §6 | §9.4；`OnlineWeatherTests` |
 | D14 | 2026-10-30 | 插件设置新增 `select` / `number`；值存 `AppSettings.pluginValues`（旧设置缺该字段读为空），toggle 仍在 `pluginSettings`。`gachaPreferences` 因从未发布，直接移除而不迁移 | §9.5；`PluginSceneTests.testSettingsWithoutPluginValuesStillDecode` |
 
 ## 9. Scene 引擎（已实现，D12）
@@ -321,6 +324,10 @@ JS 每次调用有软超时，逐帧过 JSC 桥会占满插件队列。插件改
 
 `ctx.media.library.pickRandom(keywords)` → `{persistentID, title, artist, bpm, matchedGenre} | null`；`play(id)`；`pause()`。与 `media.nowPlaying` 共用同一条 AppleScript 串行队列；关键词会过滤为字母、数字、空格、连字符，ID 只保留字母数字。
 
+### 9.4.1 `weather.current`
+
+`ctx.weather.current()` 同步返回宿主已获取的天气快照 `{condition, temperature, wind, source:"online"}`，未启用、未配置、过期或无权限时为 `null`。宿主在面板显示时与设置变更时按 15 分钟下限刷新；插件不得触发请求，也拿不到密钥与原始响应。未获得该权限时，`ctx.weather` 对象不存在（而非返回 null）。
+
 ### 9.5 设置类型
 
 `manifest.settings[]` 的 `type`：缺省 `toggle`；`select` 需 `options: [{value, title}]` 且默认值是其中之一；`number` 可带 `min` / `max` / `step`，默认值须在范围内。不匹配则 manifest 解码失败。设置页按类型渲染开关、下拉或步进器。
@@ -335,4 +342,4 @@ JS 每次调用有软超时，逐帧过 JSC 桥会占满插件队列。插件改
 | `GachaCardView`、`ShatterView`、`MagicPlayButton`、`DancingNotes`、`GachaBackdrop`、天气图标 | `cardLayer()`（含流光、边框、脉冲光晕、碎裂）、`playButton()`、背景 `backdropScene()`、`headerLayers()` |
 | 偏好设置里的天气控件 | manifest 的 `select` / `number` / `toggle` 设置 |
 
-已知差异：面板关闭会卸载 JS 环境，重新打开时开始新一轮（音乐若仍在播放不受影响）；Again 按钮与卡片没有原生键盘焦点（`⏎` 默认键），改由 VoiceOver 的 hit 动作触达；选歌文案过长时缩小至 70% 后截断由插件负责。
+已知差异：面板隐藏保留插件 VM，回合在重开面板后继续（实测期望行为，`DockPluginOverlayModel.unload()` 才是硬重置）；Again 按钮与卡片没有原生键盘焦点（`⏎` 默认键），改由 VoiceOver 的 hit 动作触达；选歌文案过长时缩小至 70% 后截断由插件负责。

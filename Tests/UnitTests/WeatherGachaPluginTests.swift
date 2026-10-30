@@ -222,6 +222,27 @@ final class WeatherGachaPluginTests: XCTestCase {
         XCTAssertEqual(library.picked.count, 1)
     }
 
+    func testOnlineWeatherWinsAndPermissionGatesIt() async throws {
+        let pkg = try package
+        func headerLabels(_ runtime: PluginRuntime) async throws -> [String] {
+            let slots = try await runtime.render(context: context).get()
+            return try XCTUnwrap(scene(in: slots)).layers.compactMap(\.hit?.label)
+        }
+        let online: [String: Any] = ["condition": "rain", "temperature": 3.0, "wind": 20.0, "source": "online"]
+        let withWeather = PluginRuntime(package: pkg, timeout: 2, permissions: Set(pkg.manifest.permissions),
+                                        values: { ["condition": .string("clear"), "temperature": .number(25)] },
+                                        weather: { online }, reduceMotion: { true })
+        let labels = try await headerLabels(withWeather)
+        XCTAssertTrue(labels.contains("Rain"), "host snapshot wins over the manual setting: \(labels)")
+        XCTAssertTrue(labels.contains("3 °C"), "\(labels)")
+
+        let withoutWeather = PluginRuntime(package: pkg, timeout: 2, permissions: [.mediaNowPlaying],
+                                           values: { ["condition": .string("clear"), "temperature": .number(25)] },
+                                           weather: { online }, reduceMotion: { true })
+        let fallback = try await headerLabels(withoutWeather)
+        XCTAssertTrue(fallback.contains("Clear"), "no weather.current permission → manual settings: \(fallback)")
+    }
+
     func testPluginWithoutLibraryPermissionCannotReachTheLibrary() async throws {
         let pkg = try package
         let library = FakeLibrary()

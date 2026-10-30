@@ -14,6 +14,8 @@ enum PluginCapability: Hashable, Codable {
     case mediaControl
     /// Pick, play and pause tracks from the Music library (design doc §8).
     case mediaLibrary
+    /// Read the weather snapshot the host already has (no requests from JS).
+    case weatherCurrent
     case windowFocus
     /// Only host-provided script templates targeting this bundle ID (phase 2).
     case appleScript(bundleID: String)
@@ -23,6 +25,7 @@ enum PluginCapability: Hashable, Codable {
         case "media.nowPlaying": self = .mediaNowPlaying
         case "media.control": self = .mediaControl
         case "media.library": self = .mediaLibrary
+        case "weather.current": self = .weatherCurrent
         case "window.focus": self = .windowFocus
         default:
             let prefix = "appleScript:"
@@ -38,6 +41,7 @@ enum PluginCapability: Hashable, Codable {
         case .mediaNowPlaying: return "media.nowPlaying"
         case .mediaControl: return "media.control"
         case .mediaLibrary: return "media.library"
+        case .weatherCurrent: return "weather.current"
         case .windowFocus: return "window.focus"
         case .appleScript(let bundleID): return "appleScript:\(bundleID)"
         }
@@ -189,6 +193,8 @@ struct PluginManifest: Codable, Equatable {
     let name: [String: String]
     let version: String
     let apiVersion: Int
+    /// Optional one-line summary keyed by locale, shown as a tooltip in Preferences.
+    var summary: [String: String]? = nil
     /// Target bundle IDs.
     let matches: [String]
     let permissions: [PluginCapability]
@@ -220,6 +226,12 @@ struct PluginManifest: Codable, Equatable {
 
     var effectiveRefreshInterval: TimeInterval? {
         refreshInterval.map { max(1, $0) }
+    }
+
+    func localizedSummary(preferredLanguages: [String] = Locale.preferredLanguages) -> String? {
+        guard let summary else { return nil }
+        let text = PluginSettingSpec.localized(summary, fallback: id, preferredLanguages: preferredLanguages)
+        return text == id ? nil : text
     }
 
     func displayName(preferredLanguages: [String] = Locale.preferredLanguages) -> String {

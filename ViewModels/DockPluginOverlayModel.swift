@@ -3,8 +3,10 @@
 //  Switchly
 //
 //  Plugin render state for the Dock preview. Renders only while the panel is
-//  visible: start() on show / target change, stop() on hide, which cancels
-//  the refresh loop and unmounts every plugin VM. Main thread only.
+//  visible: start() on show / target change, stop() on hide, which cancels the
+//  refresh loop and detaches invalidations but keeps the plugin VMs, so a round
+//  in progress (a dealt hand, a revealed song) continues when the panel reopens.
+//  unload() is the hard reset that also frees the VMs. Main thread only.
 //
 
 import AppKit
@@ -43,9 +45,6 @@ final class DockPluginOverlayModel: ObservableObject {
         self.host = host
     }
 
-    deinit {
-        loopTask?.cancel()
-    }
 
     func start(context: PluginRenderContext) {
         dispatchPrecondition(condition: .onQueue(.main))
@@ -83,6 +82,15 @@ final class DockPluginOverlayModel: ObservableObject {
         if !assetDirectories.isEmpty { assetDirectories = [:] }
         artwork = nil
         artworkData = nil
+    }
+
+    /// Hard reset: frees every plugin VM, so a plugin's own state starts over.
+    func unload() {
+        stop()
+        host.unmountAll()
+    }
+
+    deinit {
         host.unmountAll()
     }
 

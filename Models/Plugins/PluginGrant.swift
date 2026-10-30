@@ -48,6 +48,7 @@ extension PluginCapability {
         case .mediaNowPlaying: return "Read what's playing"
         case .mediaControl: return "Control playback"
         case .mediaLibrary: return "Pick and play songs from your library"
+        case .weatherCurrent: return "Read the current weather"
         case .windowFocus: return "Focus windows"
         case .appleScript: return "Run Switchly's built-in scripts for %@"
         }
@@ -58,6 +59,7 @@ extension PluginCapability {
         case .mediaNowPlaying: return "music.note"
         case .mediaControl: return "playpause"
         case .mediaLibrary: return "music.note.list"
+        case .weatherCurrent: return "cloud.sun"
         case .windowFocus: return "macwindow"
         case .appleScript: return "applescript"
         }

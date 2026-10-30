@@ -38,9 +38,10 @@ struct AppSettings: Codable, Equatable {
     var pluginGrants: [String: PluginGrant]
     /// Per-plugin option values (PluginManifest.settings), keyed by plugin id then option key.
     var pluginSettings: [String: [String: Bool]]
-    /// Weather the gacha draws for (manual input; no network involved).
     /// Select / number options of plugins (toggles live in `pluginSettings`).
     var pluginValues: [String: [String: PluginSettingValue]]
+    /// Opt-in online weather for the gacha; manual unless the user turns it on.
+    var onlineWeather: OnlineWeatherSettings
     /// Glass wash strength for the floating panels (preview, Dock preview,
     /// workspace bar) — surfaces that appear over the user's work and vanish.
     var backgroundBlurOpacity: Double
@@ -146,6 +147,7 @@ struct AppSettings: Codable, Equatable {
         pluginGrants: [String: PluginGrant] = [:],
         pluginSettings: [String: [String: Bool]] = [:],
         pluginValues: [String: [String: PluginSettingValue]] = [:],
+        onlineWeather: OnlineWeatherSettings = OnlineWeatherSettings(),
         backgroundBlurOpacity: Double = 0.30,
         preferencesGlassOpacity: Double = 0.70,
         previewDisplayMode: PreviewDisplayMode,
@@ -203,6 +205,7 @@ struct AppSettings: Codable, Equatable {
         self.pluginGrants = pluginGrants
         self.pluginSettings = pluginSettings
         self.pluginValues = pluginValues
+        self.onlineWeather = onlineWeather
         self.backgroundBlurOpacity = backgroundBlurOpacity
         self.preferencesGlassOpacity = preferencesGlassOpacity
         self.previewDisplayMode = previewDisplayMode
@@ -262,6 +265,7 @@ struct AppSettings: Codable, Equatable {
         case pluginGrants
         case pluginSettings
         case pluginValues
+        case onlineWeather
         case backgroundBlurOpacity
         case preferencesGlassOpacity
         case previewDisplayMode
@@ -352,6 +356,8 @@ struct AppSettings: Codable, Equatable {
         self.pluginSettings = try container.decodeIfPresent([String: [String: Bool]].self, forKey: .pluginSettings) ?? [:]
         // Absent before plugins had select / number options.
         self.pluginValues = try container.decodeIfPresent([String: [String: PluginSettingValue]].self, forKey: .pluginValues) ?? [:]
+        // Absent before online weather existed: manual, the fully local default.
+        self.onlineWeather = (try? container.decodeIfPresent(OnlineWeatherSettings.self, forKey: .onlineWeather)) ?? OnlineWeatherSettings()
         self.backgroundBlurOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundBlurOpacity) ?? 0.30
         // Absent before the settings window got its own control: keep the
         // window opaque enough that text over a bright desktop stays readable,

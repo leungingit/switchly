@@ -72,6 +72,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     /// Only kept when `media.library` is authorized.
     private let libraryBridge: MusicLibraryPlaying?
     private let settingsProvider: () -> [String: Bool]
+    /// Host-held weather snapshot for `ctx.weather.current()`; nil when the
+    /// permission is not granted. Never triggers a request from JS.
+    private let weatherProvider: (() -> [String: Any]?)?
     private let valuesProvider: () -> [String: PluginSettingValue]
     private let reduceMotion: () -> Bool
     private let queue: DispatchQueue
@@ -99,6 +102,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          libraryBridge: MusicLibraryPlaying? = nil,
          settings: @escaping () -> [String: Bool] = { [:] },
          values: @escaping () -> [String: PluginSettingValue] = { [:] },
+         weather: (() -> [String: Any]?)? = nil,
          reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }) {
         self.reduceMotion = reduceMotion
         self.settingsProvider = settings
@@ -112,6 +116,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         self.permissions = permissions
         self.mediaBridge = permissions.isDisjoint(with: [.mediaNowPlaying, .mediaControl]) ? nil : mediaBridge
         self.libraryBridge = permissions.contains(.mediaLibrary) ? libraryBridge : nil
+        self.weatherProvider = permissions.contains(.weatherCurrent) ? weather : nil
         self.queue = DispatchQueue(label: "com.switchly.plugin.\(package.manifest.id)")
     }
 
@@ -398,6 +403,10 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         let strings = self.strings
         let t: @convention(block) (String) -> String = { key in strings[key] ?? key }
         let invalidate: @convention(block) () -> Void = { [weak self] in self?.invalidateHandler?() }
+        let currentWeather: @convention(block) () -> Any? = { [weak self] in self?.weatherProvider?() ?? NSNull() }
+        let weather = JSValue(newObjectIn: js)
+        weather?.setObject(currentWeather, forKeyedSubscript: "current" as NSString)
+        value?.setObject(weather, forKeyedSubscript: "weather" as NSString)
         value?.setObject(t, forKeyedSubscript: "t" as NSString)
         value?.setObject(invalidate, forKeyedSubscript: "invalidate" as NSString)
         if let makeMedia = js.objectForKeyedSubscript("__switchlyMakeMedia"), !makeMedia.isUndefined {

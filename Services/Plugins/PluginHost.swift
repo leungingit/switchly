@@ -41,6 +41,7 @@ final class PluginHost: PluginHosting {
     init(registry: PluginRegistryProtocol = PluginRegistry(),
          grants: @escaping () -> [String: PluginGrant] = { SettingsService.shared.loadSettings().pluginGrants },
          mediaBridge: MediaBridging = MusicAppleScriptBridge(),
+         weather: @escaping () -> [String: Any]? = { OnlineWeatherService.shared.current()?.jsObject },
          makeRuntime: ((PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol)? = nil) {
         self.registry = registry
         self.grants = grants
@@ -51,7 +52,8 @@ final class PluginHost: PluginHosting {
             PluginRuntime(package: package, timeout: 1, mediaBridge: mediaBridge, permissions: permissions,
                           libraryBridge: mediaBridge as? MusicLibraryPlaying,
                           settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
-                          values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] })
+                          values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
+                          weather: weather)
         }
     }
 

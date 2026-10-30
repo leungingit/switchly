@@ -467,3 +467,19 @@
 "Show desktop map when four fingers rest" = "四指静置时显示桌面小图";
 "Rest four fingers on the trackpad for a second to see which desktop you are on. Nothing switches." = "四指在触控板上静置约 1 秒，显示当前所在桌面，不会切换桌面。";
 "The system slide animation follows the real desktop order, so it can differ from your arrangement. Turn on Reduce Motion in System Settings to make it a fade." = "系统的滑动动画按真实桌面顺序播放，可能与你的排列方向不一致。在系统设置中开启“减少动态效果”可将其变为淡入淡出。";
+
+/* Online weather */
+"Online weather" = "在线天气";
+"Used by the weather gacha. Off by default; manual weather applies when it is off." = "供天气抽卡使用。默认关闭；关闭时按手动天气。";
+"Switchly's only network feature. It fetches the weather from the service you configure here, at most once every 15 minutes; plugins only read the result. Everything else stays local." = "这是 Switchly 唯一的联网功能：只向你在这里配置的天气服务请求，每 15 分钟最多一次；插件只读取结果。其余功能全部本地运行。";
+"Service URL" = "服务地址";
+"Any service returning the OpenWeatherMap “current weather” shape over HTTPS." = "任何通过 HTTPS 返回 OpenWeatherMap「当前天气」结构的服务。";
+"City" = "城市";
+"City name" = "城市名";
+"API key" = "API 密钥";
+"Refresh now" = "立即刷新";
+"Fetches once; the result is reused for 15 minutes." = "只请求一次，结果复用 15 分钟。";
+"Fill in the URL, city and API key to use online weather; until then the gacha keeps using the manual weather above." = "填好服务地址、城市与密钥后才会使用在线天气；在此之前抽卡仍按上面的手动天气。";
+"Not fetched yet" = "尚未获取";
+"Last updated: %@" = "更新于：%@";
+"Read the current weather" = "读取当前天气";

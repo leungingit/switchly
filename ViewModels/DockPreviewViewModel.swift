@@ -57,12 +57,20 @@ class DockPreviewViewModel: ObservableObject {
         self.appName = appName
         self.currentBundleURL = bundleURL
         isPanelVisible = true
+        refreshOnlineWeatherIfNeeded()
         refreshWindows(forApp: appName, bundleURL: bundleURL)
     }
 
     func hidePanel() {
         isPanelVisible = false
         pluginOverlay.stop()
+    }
+
+    /// Refresh the opt-in online weather at most once per interval; manual
+    /// weather never touches the network.
+    func refreshOnlineWeatherIfNeeded() {
+        guard settings.onlineWeather.mode == .online else { return }
+        OnlineWeatherService.shared.refreshIfNeeded()
     }
 
     func refreshWindows(forApp appName: String, bundleURL: URL? = nil) {

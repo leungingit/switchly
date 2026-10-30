@@ -525,8 +525,19 @@
   }
 
   // ---- render ------------------------------------------------------------------
+  // Online weather (opt-in, fetched by the host) wins over the manual settings.
+  function currentWeather(ctx) {
+    const settings = ctx.settings || {};
+    const online = ctx.weather ? ctx.weather.current() : null;
+    if (online && online.condition) {
+      return { condition: online.condition, temperature: Number(online.temperature),
+        wind: Number(online.wind), season: seasonOf(new Date(), settings.southernHemisphere === true) };
+    }
+    return weatherOf(settings);
+  }
+
   function view(ctx) {
-    const t = ctx.t, w = weatherOf(ctx.settings || {});
+    const t = ctx.t, w = currentWeather(ctx);
     const cards = state.cards.map(function (c) {
       return Object.assign({}, c, { tag: t("gacha.kind." + c.kind), name: t("gacha.card." + c.id), rarityName: t("gacha.rarity." + c.rarity) });
     });
