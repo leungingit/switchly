@@ -39,13 +39,15 @@ enum GachaPhase: Equatable {
 }
 
 struct GachaTiming {
-    var countdownStep: TimeInterval = 0.85
+    var countdownStep: TimeInterval = 0.9
+    /// Held on the last count so the staff note can bow before the cards appear.
+    var countdownBow: TimeInterval = 0.6
     var shatter: TimeInterval = 0.9
     var pollInterval: TimeInterval = 0.5
     /// Polls that may report "nothing playing" right after `play` is sent.
     var startGracePolls = 4
 
-    static let instant = GachaTiming(countdownStep: 0, shatter: 0, pollInterval: 0.01, startGracePolls: 2)
+    static let instant = GachaTiming(countdownStep: 0, countdownBow: 0, shatter: 0, pollInterval: 0.01, startGracePolls: 2)
 }
 
 @MainActor
@@ -62,7 +64,7 @@ final class GachaViewModel: ObservableObject {
     private let engine: GachaEngine
     private let settingsService: SettingsServiceProtocol
     private let player: MusicLibraryPlaying
-    private let timing: GachaTiming
+    let timing: GachaTiming
     private var rng = SystemRandomNumberGenerator()
 
     init(settingsService: SettingsServiceProtocol = SettingsService.shared, engine: GachaEngine = GachaEngine(),
@@ -106,6 +108,7 @@ final class GachaViewModel: ObservableObject {
                 self.phase = .countdown(n)
                 guard await self.sleep(self.timing.countdownStep) else { return }
             }
+            guard await self.sleep(self.timing.countdownBow) else { return }
             self.phase = .choosing
         }
     }

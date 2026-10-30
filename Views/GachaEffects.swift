@@ -3,7 +3,7 @@
 //  Switchly
 //
 //  Effects for the weather gacha: the Remotion-rendered burst sprite sheets,
-//  a shatter exit and the beat bars. All of them draw nothing or sit still
+//  a shatter exit and the play button. All of them draw nothing or sit still
 //  under Reduce Motion.
 //
 
@@ -105,35 +105,7 @@ private struct TileShape: Shape {
     }
 }
 
-/// Bars that bounce on the beat. `bpm` ≤ 0 falls back to a steady pulse.
-struct BeatBars: View {
-    let bpm: Double
-    let isActive: Bool
-    private static let defaultBPM = 100.0
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !isActive || MotionTokens.reduceMotion)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let beat = (bpm > 0 ? bpm : Self.defaultBPM) / 60
-            HStack(alignment: .center, spacing: 3) {
-                ForEach(0..<5, id: \.self) { i in
-                    Capsule()
-                        .fill(.white)
-                        .frame(width: 4, height: 8 + 18 * level(t, beat, i))
-                }
-            }
-        }
-    }
-
-    private func level(_ t: TimeInterval, _ beat: Double, _ i: Int) -> Double {
-        guard isActive, !MotionTokens.reduceMotion else { return 0.3 }
-        let pulse = pow(abs(sin(.pi * beat * t)), 3)
-        let wobble = 0.5 + 0.5 * sin(t * 6 + Double(i) * 1.7)
-        return min(1, 0.25 + 0.55 * pulse + 0.25 * wobble * pulse + 0.1 * wobble)
-    }
-}
-
-/// The glowing round button: play before the song starts, beat bars while it plays.
+/// The glowing round button: play before the song starts, dancing notes while it plays.
 struct MagicPlayButton: View {
     let isPlaying: Bool
     let isAudible: Bool
@@ -162,7 +134,7 @@ struct MagicPlayButton: View {
                 Circle().fill(LinearGradient(colors: [accent, accent.opacity(0.55)], startPoint: .top, endPoint: .bottom))
                     .padding(3)
                 if isPlaying {
-                    BeatBars(bpm: bpm, isActive: isAudible)
+                    DancingNotes(bpm: bpm, isActive: isAudible, accent: accent)
                 } else {
                     Image(systemName: "play.fill").font(.system(size: 18, weight: .bold)).foregroundColor(.white).offset(x: 1)
                 }

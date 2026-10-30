@@ -22,6 +22,7 @@
 		0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */; };
 		107C15C9C3A17DE414DBCDFC /* DesignTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */; };
 		1260AE175CC5B873AC780E0B /* FourFingerHoldDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */; };
+		12681B30BF53532BB68C57AC /* GachaStaffCountdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD61323D48F0FFB92FACCAE8 /* GachaStaffCountdown.swift */; };
 		13094F7DD7FEFB12C3F44885 /* GachaCardPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 097FC4A4A07B4EF7C2AEF657 /* GachaCardPool.swift */; };
 		137BC8984AC89E033BDC5621 /* SwitchlyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E029A87A20E2F1B6B9BC71AB /* SwitchlyUITests.swift */; };
 		139D992482CCDB0FB46C454E /* ThemeApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */; };
@@ -35,6 +36,7 @@
 		29FE3B26CE9FFFCDD9CF0442 /* GridBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8CD30C6683B78FF9301D38 /* GridBackground.swift */; };
 		2D181B5276716FF5B25B182F /* WindowTrafficLights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BADD79FCDF554B4529EDB4 /* WindowTrafficLights.swift */; };
 		2DD527A51A91C49F01542D1C /* GridPrerequisite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */; };
+		2F60859EDEFA61E6A215A97D /* GachaHeaderViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AF2EA00FA3E930C3603483A /* GachaHeaderViews.swift */; };
 		33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */; };
 		344EBA844E24A42AC5EE753F /* GachaEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6137060C84DF12523AD08134 /* GachaEffects.swift */; };
 		349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */; };
@@ -52,6 +54,7 @@
 		4F2CDC5321222012203BA669 /* DesktopSpaceServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAA37AFCB4B01F4F1AF1D53 /* DesktopSpaceServiceTests.swift */; };
 		4F319DCCBFF23D406715CD88 /* NotificationStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */; };
 		506E964357AEA05CBD1E2D30 /* DesktopGridOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */; };
+		50E6C15A8B5249C3384B56A3 /* GachaBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90EFAD0E4CCF379C6006136 /* GachaBackdrop.swift */; };
 		516DAFDA8F12E8738E11FEB1 /* GridOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */; };
 		5199B0E3B22217CBAEF9261E /* DesktopNavigationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D68B1BB3A196CF0B752C9B /* DesktopNavigationService.swift */; };
 		549DCC5C314E323C70534CF8 /* WorkspacesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB73E8A8C3255DFB68679B69 /* WorkspacesViewModelTests.swift */; };
@@ -117,6 +120,7 @@
 		A8787B16DE389140CF48D9AF /* UsageStatisticsPreferencesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */; };
 		AA7BEAF963CB36DDC1C4FA10 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337C977CD2AF7514192B081 /* DesignTokens.swift */; };
 		B09D2790372896E8A13F7090 /* PluginGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290E7694EDAC0E810F258F5E /* PluginGrant.swift */; };
+		B29B63C570060AA8181C889C /* GachaNotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227BBC332C00361C248682B0 /* GachaNotes.swift */; };
 		B57FC5CB9FDE33585A8B546E /* UsageStatistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEAB4ED3B6192B37D690238D /* UsageStatistics.swift */; };
 		B797563475DF0ABB346F56CA /* MonitoredApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852B7D72F7154C2512A91E39 /* MonitoredApp.swift */; };
 		B808FD16B01FD587EFB8DA70 /* InstalledAppsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF9AC54C2BA7BEEA61A8C65 /* InstalledAppsService.swift */; };
@@ -200,6 +204,7 @@
 		1F795794526AB4B760F1EE25 /* SwitchlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwitchlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSystemTests.swift; sourceTree = "<group>"; };
 		2174202D9B84698814E73039 /* GachaWeatherControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaWeatherControls.swift; sourceTree = "<group>"; };
+		227BBC332C00361C248682B0 /* GachaNotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaNotes.swift; sourceTree = "<group>"; };
 		241C233749CBA2C47224E65F /* PreviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewModel.swift; sourceTree = "<group>"; };
 		2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokensTests.swift; sourceTree = "<group>"; };
 		250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteServiceTests.swift; sourceTree = "<group>"; };
@@ -254,6 +259,7 @@
 		755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStrategy.swift; sourceTree = "<group>"; };
 		782DDEA9B760B082A11AE14C /* Switchly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Switchly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		79721763AEB2447CD133D1A4 /* GachaEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaEngineTests.swift; sourceTree = "<group>"; };
+		7AF2EA00FA3E930C3603483A /* GachaHeaderViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaHeaderViews.swift; sourceTree = "<group>"; };
 		7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeApplier.swift; sourceTree = "<group>"; };
 		7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewModel.swift; sourceTree = "<group>"; };
 		7FCE7362D3D2B1B5ED72BDE3 /* WindowSwitchFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSwitchFeedback.swift; sourceTree = "<group>"; };
@@ -312,6 +318,7 @@
 		D9CBF1CA722B3F626DECDBC0 /* GachaCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaCard.swift; sourceTree = "<group>"; };
 		DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsTests.swift; sourceTree = "<group>"; };
 		DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridOnboardingView.swift; sourceTree = "<group>"; };
+		DD61323D48F0FFB92FACCAE8 /* GachaStaffCountdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaStaffCountdown.swift; sourceTree = "<group>"; };
 		DF1FBC046B3B164BC5604AF1 /* SystemGestureInterceptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemGestureInterceptorTests.swift; sourceTree = "<group>"; };
 		DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMonitorService.swift; sourceTree = "<group>"; };
 		DFA270BA7907E1777FD01E21 /* GridStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridStyle.swift; sourceTree = "<group>"; };
@@ -330,6 +337,7 @@
 		F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsChartView.swift; sourceTree = "<group>"; };
 		F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifierTests.swift; sourceTree = "<group>"; };
 		F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacesView.swift; sourceTree = "<group>"; };
+		F90EFAD0E4CCF379C6006136 /* GachaBackdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GachaBackdrop.swift; sourceTree = "<group>"; };
 		F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchlyApp.swift; sourceTree = "<group>"; };
 		FC8CD30C6683B78FF9301D38 /* GridBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridBackground.swift; sourceTree = "<group>"; };
 		FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifier.swift; sourceTree = "<group>"; };
@@ -449,8 +457,12 @@
 				3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */,
 				183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */,
 				E4B7824198BBB99C36B66461 /* DockPreviewView.swift */,
+				F90EFAD0E4CCF379C6006136 /* GachaBackdrop.swift */,
 				1B65CDF95ED3AF4D4CC2A78D /* GachaCardView.swift */,
 				6137060C84DF12523AD08134 /* GachaEffects.swift */,
+				7AF2EA00FA3E930C3603483A /* GachaHeaderViews.swift */,
+				227BBC332C00361C248682B0 /* GachaNotes.swift */,
+				DD61323D48F0FFB92FACCAE8 /* GachaStaffCountdown.swift */,
 				09254EFD35A3D406FB49ACBA /* GachaView.swift */,
 				2174202D9B84698814E73039 /* GachaWeatherControls.swift */,
 				C6B3EA034319D24B8E19DFCC /* GridCellView.swift */,
@@ -832,12 +844,16 @@
 				5FA543B9C254D62E25D6E1D4 /* DockPreviewView.swift in Sources */,
 				0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */,
 				3872D32FFC7C541791332DF2 /* FourFingerHoldDetector.swift in Sources */,
+				50E6C15A8B5249C3384B56A3 /* GachaBackdrop.swift in Sources */,
 				03844CE8FC8D9C4139576751 /* GachaCard.swift in Sources */,
 				13094F7DD7FEFB12C3F44885 /* GachaCardPool.swift in Sources */,
 				75C3EF5531F1D30ADA2DB8B5 /* GachaCardView.swift in Sources */,
 				344EBA844E24A42AC5EE753F /* GachaEffects.swift in Sources */,
 				DA0D0BD2A835EDD51A975CE9 /* GachaEngine.swift in Sources */,
+				2F60859EDEFA61E6A215A97D /* GachaHeaderViews.swift in Sources */,
+				B29B63C570060AA8181C889C /* GachaNotes.swift in Sources */,
 				555FE2863F802154264ADC5A /* GachaPreferences.swift in Sources */,
+				12681B30BF53532BB68C57AC /* GachaStaffCountdown.swift in Sources */,
 				3ACCD620DAB6E5AFFC771B42 /* GachaView.swift in Sources */,
 				043FEF99BF0EBDF07A09153E /* GachaViewModel.swift in Sources */,
 				8D3D5D460DF026BBD8656339 /* GachaWeatherControls.swift in Sources */,

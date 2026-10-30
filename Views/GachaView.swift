@@ -5,7 +5,7 @@
 //  The weather gacha card in the Music Dock preview. The stage runs the
 //  phases of GachaViewModel: countdown, cards dealt, the other two shatter,
 //  the chosen card moves to the middle and reveals the song, then the play
-//  button turns into beat bars while it plays. Animations are skipped or
+//  button turns into dancing notes while it plays. Animations are skipped or
 //  reduced under Reduce Motion.
 //
 
@@ -17,6 +17,7 @@ struct GachaView: View {
     @State private var burstSheet = GachaRarity.common.burstSheet
     @State private var burstTrigger = 0
     @State private var hoveredID: String?
+    @State private var staffVisible = false
 
     private static let stageHeight: CGFloat = 244
     private static let cardSpacing: CGFloat = 10
@@ -28,32 +29,33 @@ struct GachaView: View {
         }
         .padding(DesignTokens.Spacing.md)
         .cardSurface(fill: Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        .onAppear { model.startIfIdle() }
-        .onChange(of: model.phase) { phase in burst(for: phase) }
+        .background(
+            GachaBackdrop(colors: backdropColors, bpm: model.track?.bpm ?? 0, isBeating: isPlayingAudibly)
+                .clipShape(RoundedRectangle(cornerRadius: DesignTokens.Radius.card, style: .continuous))
+        )
+        .onAppear {
+            model.startIfIdle()
+            updateStaff(for: model.phase)
+        }
+        .onChange(of: model.phase) { phase in
+            burst(for: phase)
+            updateStaff(for: phase)
+        }
     }
 
     // MARK: - Header
 
     private var header: some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
-            Image(systemName: model.weather.condition.symbol)
-            Text(summary).font(.caption).foregroundColor(.secondary).lineLimit(1)
+            WeatherGlyphBar(weather: model.weather, language: language)
             Spacer()
             if case .playing = model.phase {
-                Button { model.startRound() } label: {
-                    Label(t("Again"), systemImage: "arrow.counterclockwise")
-                }
-                .controlSize(.small)
-                .transition(.opacity)
+                GachaAgainButton(title: t("Again"), isCompact: true) { model.startRound() }
+                    .transition(.scale.combined(with: .opacity))
             }
         }
         .frame(height: 22)
         .animation(MotionTokens.animated(.easeOut(duration: MotionTokens.stateDuration)), value: model.phase.chosenID)
-    }
-
-    private var summary: String {
-        let w = model.weather
-        return "\(t(w.condition.titleKey)) · \(Int(w.temperatureCelsius)) °C · \(Int(w.windSpeedKmh)) km/h · \(t(w.season.titleKey))"
     }
 
     // MARK: - Stage
@@ -65,8 +67,10 @@ struct GachaView: View {
             let midX = geo.size.width / 2
             let cardY = cardH / 2 + 8
             ZStack {
-                if case .countdown(let n) = model.phase {
-                    countdown(n).position(x: midX, y: cardY)
+                if staffVisible {
+                    GachaStaffCountdown(n: countdownValue, step: model.timing.countdownStep, bow: model.timing.countdownBow)
+                        .frame(width: geo.size.width - 16)
+                        .position(x: midX, y: cardY)
                 }
                 BurstSprite(sheet: burstSheet, trigger: burstTrigger)
                     .frame(width: 220, height: 220)
@@ -108,22 +112,6 @@ struct GachaView: View {
         .accessibilityAction { if isChoosing { model.choose(card) } }
     }
 
-    private func countdown(_ n: Int) -> some View {
-        ZStack {
-            Circle()
-                .strokeBorder(LinearGradient(colors: GachaRarity.epic.palette, startPoint: .top, endPoint: .bottom), lineWidth: 3)
-                .frame(width: 96, height: 96)
-                .blur(radius: 1)
-            Text("\(n)")
-                .font(.system(size: 60, weight: .heavy, design: .rounded))
-                .foregroundStyle(LinearGradient(colors: GachaRarity.epic.palette, startPoint: .top, endPoint: .bottom))
-                .shadow(color: GachaRarity.epic.glow.opacity(0.8), radius: 12)
-        }
-        .id(n)
-        .transition(.asymmetric(insertion: .scale(scale: 1.9).combined(with: .opacity), removal: .scale(scale: 0.5).combined(with: .opacity)))
-        .animation(MotionTokens.animated(.spring(response: 0.4, dampingFraction: 0.6)), value: n)
-    }
-
     @ViewBuilder private func caption(width: CGFloat) -> some View {
         switch model.phase {
         case .choosing:
@@ -152,33 +140,36 @@ struct GachaView: View {
                             accent: rarity(of: id).glow, label: t("Play"), action: { model.play() })
                 .transition(.scale.combined(with: .opacity))
         case .finished, .failed:
-            againPill
+            GachaAgainButton(title: t("Again")) { model.startRound() }
+                .keyboardShortcut(.defaultAction)
+                .transition(.scale.combined(with: .opacity))
         default:
             EmptyView()
         }
     }
 
-    private var againPill: some View {
-        Button { model.startRound() } label: {
-            Label(t("Again"), systemImage: "arrow.counterclockwise")
-                .font(.callout.weight(.semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, DesignTokens.Spacing.lg)
-                .padding(.vertical, DesignTokens.Spacing.sm)
-                .background(Capsule().fill(LinearGradient(colors: GachaRarity.epic.palette, startPoint: .leading, endPoint: .trailing)))
-                .shadow(color: GachaRarity.epic.glow.opacity(0.6), radius: 8)
-        }
-        .buttonStyle(.plain)
-        .keyboardShortcut(.defaultAction)
-        .transition(.scale.combined(with: .opacity))
+    // MARK: - Helpers
+
+    private var countdownValue: Int? {
+        if case .countdown(let n) = model.phase { return n } else { return nil }
     }
 
-    // MARK: - Helpers
+    /// The staff stays up through the countdown and for the dust after it.
+    private func updateStaff(for phase: GachaPhase) {
+        switch phase {
+        case .countdown:
+            staffVisible = true
+        case .choosing:
+            DispatchQueue.main.asyncAfter(deadline: .now() + GachaStaffCountdown.dustDuration) {
+                if model.phase == .choosing { staffVisible = false }
+            }
+        default:
+            staffVisible = false
+        }
+    }
 
     private func burst(for phase: GachaPhase) {
         switch phase {
-        case .countdown(let n):
-            burstSheet = [GachaRarity.epic, .rare, .common][max(0, min(2, n - 1))].burstSheet
         case .choosing:
             burstSheet = (model.cards.map(\.rarity).max() ?? .common).burstSheet
         case .revealed(let id):
@@ -187,6 +178,18 @@ struct GachaView: View {
             return
         }
         burstTrigger += 1
+    }
+
+    private var isPlayingAudibly: Bool {
+        if case .playing = model.phase { return model.isAudible } else { return false }
+    }
+
+    /// Follows the chosen card once there is one, else the best rarity dealt.
+    private var backdropColors: [Color] {
+        if let id = model.phase.chosenID, let card = model.cards.first(where: { $0.id == id }) {
+            return card.palette
+        }
+        return (model.cards.map(\.rarity).max() ?? .epic).palette
     }
 
     private func rarity(of id: String) -> GachaRarity {

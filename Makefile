@@ -118,8 +118,14 @@ test-unit: ## Run unit tests only (what CI runs)
 dist: build-release ## Build and copy app to build/ directory
 	@echo "${YELLOW}📦 Preparing distribution build...${NC}"
 	@mkdir -p $(BUILD_DIR)
+	@# A running instance keeps the old binary in memory and `open` would only
+	@# re-activate it, so the fresh copy would look stale — quit it first.
+	@-pkill -x "$(APP_NAME)" 2>/dev/null || true
+	@sleep 1
+	@rm -rf "$(BUILD_DIR)/$(APP_NAME).app"
 	@cp -R "$(DERIVED_DATA)/Build/Products/Release/$(APP_NAME).app" $(BUILD_DIR)/
 	@echo "${GREEN}✅ App copied to $(BUILD_DIR)/$(APP_NAME).app${NC}"
+	@echo "   ${BLUE}→ 运行测试: open $(BUILD_DIR)/$(APP_NAME).app${NC}"
 
 package: zip ## Alias for `zip` — deterministic build/Switchly-<version>.zip
 

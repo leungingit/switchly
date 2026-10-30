@@ -40,6 +40,40 @@ extension GachaCardKind {
     var tagKey: String { "gacha.kind.\(rawValue)" }
 }
 
+extension GachaCard {
+    private static func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
+
+    /// Per-card look (colours + symbol); rarity only drives the effects on top.
+    private var theme: (colors: [Color], symbol: String)? {
+        let c = Self.rgb
+        switch id {
+        case "mood.calm": return ([c(0.45, 0.75, 0.85), c(0.30, 0.45, 0.75)], "moon.stars")
+        case "mood.cozy": return ([c(0.95, 0.62, 0.38), c(0.70, 0.35, 0.30)], "cup.and.saucer")
+        case "mood.bright": return ([c(1.0, 0.85, 0.30), c(1.0, 0.55, 0.25)], "sun.max")
+        case "mood.melancholy": return ([c(0.55, 0.60, 0.80), c(0.30, 0.30, 0.55)], "cloud.rain")
+        case "mood.euphoric": return ([c(1.0, 0.45, 0.75), c(0.65, 0.40, 1.0), c(0.30, 0.80, 1.0)], "sparkles")
+        case "mood.dramatic": return ([c(0.95, 0.30, 0.35), c(0.60, 0.30, 0.85), c(0.20, 0.15, 0.40)], "bolt.fill")
+        case "genre.lofi": return ([c(0.80, 0.60, 0.85), c(0.40, 0.40, 0.70)], "headphones")
+        case "genre.jazz": return ([c(0.85, 0.60, 0.30), c(0.30, 0.20, 0.40)], "music.mic")
+        case "genre.pop": return ([c(1.0, 0.55, 0.70), c(1.0, 0.75, 0.40)], "heart.fill")
+        case "genre.rock": return ([c(0.85, 0.25, 0.30), c(0.20, 0.20, 0.28)], "speaker.wave.3.fill")
+        case "genre.classical": return ([c(0.92, 0.84, 0.66), c(0.55, 0.45, 0.38)], "music.quarternote.3")
+        case "genre.electronic": return ([c(0.20, 0.90, 0.95), c(0.60, 0.30, 1.0), c(1.0, 0.30, 0.80)], "waveform")
+        case "scene.rainyWindow": return ([c(0.45, 0.65, 0.80), c(0.25, 0.35, 0.50)], "cloud.drizzle")
+        case "scene.morningWalk": return ([c(1.0, 0.78, 0.50), c(0.55, 0.80, 0.65)], "sunrise")
+        case "scene.beachDrive": return ([c(0.30, 0.80, 0.85), c(1.0, 0.70, 0.40)], "car")
+        case "scene.fireside": return ([c(1.0, 0.60, 0.25), c(0.55, 0.20, 0.20)], "flame")
+        case "scene.snowfall": return ([c(0.80, 0.92, 1.0), c(0.50, 0.65, 0.90), c(0.75, 0.70, 1.0)], "snowflake")
+        case "scene.windRider": return ([c(0.40, 0.85, 0.70), c(0.25, 0.45, 0.85), c(0.70, 0.55, 1.0)], "wind")
+        default: return nil
+        }
+    }
+
+    var palette: [Color] { theme?.colors ?? rarity.palette }
+    var glow: Color { palette[0] }
+    var symbol: String { theme?.symbol ?? kind.symbol }
+}
+
 struct GachaCardView: View {
     let card: GachaCard
     let language: AppLanguage
@@ -51,13 +85,13 @@ struct GachaCardView: View {
 
     var body: some View {
         shape
-            .fill(LinearGradient(colors: card.rarity.palette, startPoint: .topLeading, endPoint: .bottomTrailing))
+            .fill(LinearGradient(colors: card.palette, startPoint: .topLeading, endPoint: .bottomTrailing))
             .overlay(shape.fill(LinearGradient(colors: [.white.opacity(0.28), .clear, .black.opacity(0.22)],
                                                startPoint: .top, endPoint: .bottom)))
             .overlay(sheen)
             .overlay(content)
             .overlay(shape.strokeBorder(
-                AngularGradient(colors: [.white.opacity(0.9), card.rarity.glow.opacity(0.2), .white.opacity(0.7), card.rarity.glow.opacity(0.3), .white.opacity(0.9)],
+                AngularGradient(colors: [.white.opacity(0.9), card.glow.opacity(0.2), .white.opacity(0.7), card.glow.opacity(0.3), .white.opacity(0.9)],
                                 center: .center),
                 lineWidth: card.rarity == .common ? 1 : 1.5))
             .aspectRatio(0.72, contentMode: .fit)
@@ -75,7 +109,7 @@ struct GachaCardView: View {
                 .textCase(.uppercase)
                 .opacity(0.8)
             Spacer(minLength: 0)
-            Image(systemName: card.kind.symbol)
+            Image(systemName: card.symbol)
                 .font(.system(size: 26, weight: .semibold))
                 .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
             Text(language.localizedString("gacha.card.\(card.id)"))
@@ -114,7 +148,7 @@ struct GachaCardView: View {
             let pulse = card.rarity == .epic && !MotionTokens.reduceMotion
                 ? 0.5 + 0.5 * sin(context.date.timeIntervalSinceReferenceDate * 3) : 0.5
             shape
-                .fill(card.rarity.glow)
+                .fill(card.glow)
                 .blur(radius: 10 + CGFloat(card.rarity.rawValue) * 4 + CGFloat(pulse) * 4)
                 .opacity(0.25 + 0.18 * Double(card.rarity.rawValue) + 0.2 * pulse)
         }
