@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Runs before anything is generated, so the "working tree is clean" check
       # reflects the committed state rather than a freshly generated project.
@@ -38,7 +38,7 @@ jobs:
           swift --version
 
       - name: Cache Homebrew bottles
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Caches/Homebrew/downloads
           key: ${{ runner.os }}-brew-xcodegen-v1
@@ -52,7 +52,7 @@ jobs:
         run: command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
 
       - name: Cache Swift Package Manager checkouts
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             DerivedData/SourcePackages
