@@ -313,6 +313,13 @@ struct SceneHit: Equatable, Decodable {
     }
 }
 
+enum SceneAssetPath {
+    /// Asset paths are relative to the plugin directory; absolute paths and `..` are refused.
+    static func isInsidePlugin(_ path: String) -> Bool {
+        !path.isEmpty && !path.hasPrefix("/") && !path.split(separator: "/").contains("..")
+    }
+}
+
 struct SceneSprite: Equatable, Decodable {
     var asset: String
     var cols: Int
@@ -325,7 +332,7 @@ struct SceneSprite: Equatable, Decodable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         asset = try c.decode(String.self, forKey: .asset)
-        guard !asset.hasPrefix("/"), !asset.split(separator: "/").contains("..") else {
+        guard SceneAssetPath.isInsidePlugin(asset) else {
             throw DecodingError.dataCorruptedError(forKey: .asset, in: c, debugDescription: "Asset escapes plugin")
         }
         cols = min(max(try c.decode(Int.self, forKey: .cols), 1), 16)
@@ -335,7 +342,7 @@ struct SceneSprite: Equatable, Decodable {
     }
 }
 
-enum SceneKind: String, Decodable { case group, rect, ellipse, text, symbol, wave, emitter, sprite }
+enum SceneKind: String, Decodable { case group, rect, ellipse, text, symbol, wave, emitter, sprite, image }
 enum SceneDesign: String, Decodable { case `default`, serif, rounded, mono }
 enum SceneWeight: String, Decodable { case regular, medium, semibold, bold, heavy }
 
@@ -371,11 +378,13 @@ struct SceneLayer: Equatable, Decodable {
     var emitter: SceneEmitter?
     var wave: SceneWave?
     var sprite: SceneSprite?
+    /// Static picture inside the plugin directory, stretched over the layer box; stays visible under Reduce Motion.
+    var image: String?
 
     private enum Keys: String, CodingKey {
         case id, kind, x, y, w, h, anchor, rotation, scale, scaleX, scaleY, opacity, blur, angle, radius, fill, stroke, strokes
         case add, text, symbol, size, weight, design, italic, clip, from, until, showOnHover, tracks, osc, children
-        case shatter, hit, emitter, wave, sprite
+        case shatter, hit, emitter, wave, sprite, image
     }
 
     init(from decoder: Decoder) throws {
@@ -417,6 +426,10 @@ struct SceneLayer: Equatable, Decodable {
         emitter = try c.decodeIfPresent(SceneEmitter.self, forKey: .emitter)
         wave = try c.decodeIfPresent(SceneWave.self, forKey: .wave)
         sprite = try c.decodeIfPresent(SceneSprite.self, forKey: .sprite)
+        image = try c.decodeIfPresent(String.self, forKey: .image)
+        if let image, !SceneAssetPath.isInsidePlugin(image) {
+            throw DecodingError.dataCorruptedError(forKey: .image, in: c, debugDescription: "Asset escapes plugin")
+        }
         // Each kind needs its payload.
         let missing: Bool
         switch kind {
@@ -425,6 +438,7 @@ struct SceneLayer: Equatable, Decodable {
         case .wave: missing = wave == nil
         case .emitter: missing = emitter == nil
         case .sprite: missing = sprite == nil
+        case .image: missing = image == nil
         case .group, .rect, .ellipse: missing = false
         }
         if missing { throw DecodingError.dataCorruptedError(forKey: .kind, in: c, debugDescription: "\(kind) layer is missing its payload") }

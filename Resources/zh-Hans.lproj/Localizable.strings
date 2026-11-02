@@ -458,6 +458,7 @@
 "Control playback" = "控制播放";
 "Pick and play songs from your library" = "从资料库挑选并播放歌曲";
 "Focus windows" = "聚焦窗口";
+"Read a folder (read-only)" = "读取文件夹（只读）";
 "Run Switchly's built-in scripts for %@" = "为 %@ 运行 Switchly 内置脚本";
 
 "Extra controls shown in the Dock preview" = "在 Dock 预览中显示的附加控件";
@@ -470,8 +471,7 @@
 
 /* Online weather */
 "Online weather" = "在线天气";
-"Open-Meteo · free, no API key · off by default" = "Open-Meteo · 免费、无需密钥 · 默认关闭";
-"Switchly's only network feature, using Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "这是 Switchly 唯一的联网功能，使用 Open-Meteo（免费、无需密钥）：每 15 分钟一次地名解析和一次天气请求。关闭后全部本地运行。";
+"Switchly's only network feature, off by default. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "这是 Switchly 唯一的联网功能，默认关闭。使用 Open-Meteo（免费、无需密钥）：每 15 分钟一次地名解析和一次天气请求。关闭后全部本地运行。";
 "City" = "城市";
 "City name" = "城市名";
 "Refresh now" = "立即刷新";

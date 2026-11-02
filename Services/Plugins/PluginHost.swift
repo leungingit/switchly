@@ -51,6 +51,7 @@ final class PluginHost: PluginHosting {
             // busy target app without letting a stuck plugin linger.
             PluginRuntime(package: package, timeout: 1, mediaBridge: mediaBridge, permissions: permissions,
                           libraryBridge: mediaBridge as? MusicLibraryPlaying,
+                          fileReader: PluginFileReader(roots: package.manifest.fsRoots ?? []),
                           settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
                           values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
                           weather: weather)

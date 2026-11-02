@@ -31,7 +31,10 @@ struct PluginAuthorization: Equatable {
         let declared = manifest.permissions
         switch origin {
         case .builtin:
-            return PluginAuthorization(isEnabled: grant?.isEnabled ?? true, permissions: Set(declared), pendingPermissions: [])
+            // `fs.read` reaches the user's files, so even built-in plugins only get it once the user allowed it.
+            let allowed = declared.filter { $0 != .fsRead || grant?.permissions.contains($0.rawValue) == true }
+            return PluginAuthorization(isEnabled: grant?.isEnabled ?? manifest.defaultEnabled ?? true,
+                                       permissions: Set(allowed), pendingPermissions: [])
         case .user:
             let confirmed = Set(grant?.permissions ?? [])
             let granted = declared.filter { confirmed.contains($0.rawValue) }
@@ -50,6 +53,7 @@ extension PluginCapability {
         case .mediaLibrary: return "Pick and play songs from your library"
         case .weatherCurrent: return "Read the current weather"
         case .windowFocus: return "Focus windows"
+        case .fsRead: return "Read a folder (read-only)"
         case .appleScript: return "Run Switchly's built-in scripts for %@"
         }
     }
@@ -61,6 +65,7 @@ extension PluginCapability {
         case .mediaLibrary: return "music.note.list"
         case .weatherCurrent: return "cloud.sun"
         case .windowFocus: return "macwindow"
+        case .fsRead: return "folder"
         case .appleScript: return "applescript"
         }
     }

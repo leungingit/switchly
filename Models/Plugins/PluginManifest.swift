@@ -17,6 +17,9 @@ enum PluginCapability: Hashable, Codable {
     /// Read the weather snapshot the host already has (no requests from JS).
     case weatherCurrent
     case windowFocus
+    /// Read-only access to the folders named by the manifest's `fsRoots` (design doc §8.6).
+    /// Never implied: even built-in plugins need the user's explicit grant.
+    case fsRead
     /// Only host-provided script templates targeting this bundle ID (phase 2).
     case appleScript(bundleID: String)
 
@@ -27,6 +30,7 @@ enum PluginCapability: Hashable, Codable {
         case "media.library": self = .mediaLibrary
         case "weather.current": self = .weatherCurrent
         case "window.focus": self = .windowFocus
+        case "fs.read": self = .fsRead
         default:
             let prefix = "appleScript:"
             guard rawValue.hasPrefix(prefix) else { return nil }
@@ -43,6 +47,7 @@ enum PluginCapability: Hashable, Codable {
         case .mediaLibrary: return "media.library"
         case .weatherCurrent: return "weather.current"
         case .windowFocus: return "window.focus"
+        case .fsRead: return "fs.read"
         case .appleScript(let bundleID): return "appleScript:\(bundleID)"
         }
     }
@@ -184,6 +189,38 @@ struct PluginSettingSpec: Codable, Equatable {
     }
 }
 
+/// A read-only folder a plugin asks for with `fs.read`. The plugin presets the
+/// path; the user confirms it by allowing the permission in Preferences → Plugins.
+struct PluginFSRoot: Codable, Equatable {
+    let id: String
+    /// Absolute, or starting with "~/" (the user's home).
+    let path: String
+    /// Why the plugin wants the folder, keyed by locale identifier.
+    let summary: [String: String]
+
+    /// Home-relative folders that hold credentials or browser data; never grantable.
+    private static let sensitive = [".ssh", ".aws", ".gnupg", ".codex", ".kube", ".docker", ".config/gcloud",
+                                    "Library/Keychains", "Library/Cookies", "Library/Safari",
+                                    "Library/Application Support/Google/Chrome", "Library/Application Support/Firefox",
+                                    "Library/Application Support/BraveSoftware", "Library/Application Support/Microsoft Edge"]
+    /// Files that mark a folder as holding secrets.
+    static let secretFileNames: Set<String> = ["auth.json", ".env", ".credentials.yaml"]
+
+    /// The folder this root names, `~` expanded and normalised, against an injectable home.
+    func url(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
+        let expanded = path.hasPrefix("~/") ? home.path + String(path.dropFirst(1)) : path
+        return URL(fileURLWithPath: expanded).standardizedFileURL
+    }
+
+    /// Must sit strictly inside the home folder and outside the sensitive locations.
+    func isAcceptable(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> Bool {
+        guard path.hasPrefix("~/") || path.hasPrefix("/"), !path.split(separator: "/").contains("..") else { return false }
+        let root = url(home: home).path, base = home.standardizedFileURL.path
+        guard root.hasPrefix(base + "/") else { return false }
+        return !Self.sensitive.contains { root == base + "/" + $0 || root.hasPrefix(base + "/" + $0 + "/") }
+    }
+}
+
 struct PluginManifest: Codable, Equatable {
     /// API versions this host can run.
     static let supportedAPIVersions: ClosedRange<Int> = 1...2
@@ -203,12 +240,17 @@ struct PluginManifest: Codable, Equatable {
     let refreshInterval: TimeInterval?
     /// Options shown on the plugin's own settings card; values reach the plugin as `ctx.settings`.
     var settings: [PluginSettingSpec]? = nil
+    /// Folders readable through `ctx.fs` once `fs.read` is allowed.
+    var fsRoots: [PluginFSRoot]? = nil
+    /// Whether a built-in plugin runs before the user touches its toggle; true when absent.
+    var defaultEnabled: Bool? = nil
 
     enum ValidationError: Error, Equatable {
         case invalidID
         case unsupportedAPIVersion(Int)
         case emptyMatches
         case invalidEntry
+        case invalidFSRoot
     }
 
     func validate() throws {
@@ -221,6 +263,14 @@ struct PluginManifest: Codable, Equatable {
         // Entry must stay inside the plugin directory.
         guard !entry.isEmpty, !entry.hasPrefix("/"), !entry.split(separator: "/").contains("..") else {
             throw ValidationError.invalidEntry
+        }
+        // `fs.read` and `fsRoots` go together; every root must be usable and non-sensitive.
+        let roots = fsRoots ?? []
+        guard permissions.contains(.fsRead) == !roots.isEmpty,
+              Set(roots.map(\.id)).count == roots.count,
+              roots.allSatisfy({ $0.id.range(of: #"^[A-Za-z0-9_-]+$"#, options: .regularExpression) != nil
+                  && $0.isAcceptable() }) else {
+            throw ValidationError.invalidFSRoot
         }
     }
 

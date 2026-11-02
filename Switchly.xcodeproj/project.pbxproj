@@ -27,6 +27,7 @@
 		17970177CADBF3DF3FB0AA57 /* PreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */; };
 		1A3FB074DE69877640E4C4C3 /* PluginSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */; };
 		1B23DE9DD03F57C4DBBFF9A2 /* DesktopGridPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */; };
+		21CBE3B666C51E715AB41FE8 /* PluginFileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA27D10772371E9573FC8678 /* PluginFileReader.swift */; };
 		24D6AB2547DFFC675DC0152E /* WorkspaceBarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */; };
 		25BEA26A797B70D0A0ED19DE /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1586F73A4F525E88C759A1C8 /* OnboardingView.swift */; };
 		29FE3B26CE9FFFCDD9CF0442 /* GridBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8CD30C6683B78FF9301D38 /* GridBackground.swift */; };
@@ -38,6 +39,7 @@
 		3872D32FFC7C541791332DF2 /* FourFingerHoldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42493C0F49C6551919403DCB /* FourFingerHoldDetector.swift */; };
 		3BC8F841531D50863EF0599A /* PluginRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EBA602A293A20853A59E9F /* PluginRegistry.swift */; };
 		3F73C153038AA97997BC1FAD /* GridPrerequisiteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */; };
+		3FFAE120A11DC84A744DA82D /* AppActivationTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 627F924133A6E1643F00BEB0 /* AppActivationTracker.swift */; };
 		42E090248740FFDC71FE92AE /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */; };
 		439324893176691BA6AF5D4C /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */; };
 		482D3D624B3DDC827D958FEE /* WindowInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A6A58BEAD9ACBF4698AC7 /* WindowInfo.swift */; };
@@ -56,6 +58,7 @@
 		56515D6849D58FE6F491AA7F /* GridPanelLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */; };
 		5B9F757E94BC377A96C08E0E /* GridPrerequisiteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6893DEFCCFFFB529574170B /* GridPrerequisiteViewModel.swift */; };
 		5CFFD80558D38BC6FE92F240 /* UsageStatisticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */; };
+		5D16C6B621A7EA08B3FF11CB /* AppActivationTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5052EF0E08EDCF930ED33444 /* AppActivationTrackerTests.swift */; };
 		5D570ABDDF02D56C2DFE0625 /* DesktopGridPreferencesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */; };
 		5D7CC19CB2A8650CF28C160E /* PluginUINode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB40B59170D7184D10C4D3 /* PluginUINode.swift */; };
 		5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */; };
@@ -132,6 +135,8 @@
 		D06DD1F8E4497FA98D2D1C24 /* SettingsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */; };
 		D0B57E255B5AD9C3E6F9911A /* StatusBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */; };
 		D0E86F4A6963F3CED6099BCF /* SceneEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FF0001F6360C215F7DED5C /* SceneEvaluator.swift */; };
+		D0F1ABEF0ECDE0F189BFD561 /* WhalePluginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7893014F186597270D77118 /* WhalePluginTests.swift */; };
+		D1C7ABF697D98CC3F1650CAA /* PluginFileReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F7E1C4FAC9ABFF6829D870 /* PluginFileReaderTests.swift */; };
 		D1C8FA6C0521110E85CEE342 /* GridOverviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD5104F8699B3D346D80611 /* GridOverviewPanel.swift */; };
 		D1EBD23D19E96CAA0506A43C /* UsageStatisticsEfficiency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */; };
 		D43009C71AF54A0C4595BC12 /* PluginOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C6D1F998B7FE20E7E9E79D /* PluginOverlayView.swift */; };
@@ -224,6 +229,7 @@
 		4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewModel.swift; sourceTree = "<group>"; };
 		4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsPreferencesSection.swift; sourceTree = "<group>"; };
 		4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
+		5052EF0E08EDCF930ED33444 /* AppActivationTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivationTrackerTests.swift; sourceTree = "<group>"; };
 		508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledAppsServiceTests.swift; sourceTree = "<group>"; };
 		54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTokensTests.swift; sourceTree = "<group>"; };
 		5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsEfficiencyView.swift; sourceTree = "<group>"; };
@@ -236,6 +242,7 @@
 		5D3BA644980C96412DADE54F /* EnumsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumsTests.swift; sourceTree = "<group>"; };
 		605A6A58BEAD9ACBF4698AC7 /* WindowInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowInfo.swift; sourceTree = "<group>"; };
 		60D718DDF3DF82D909F59365 /* ShortcutPrefix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutPrefix.swift; sourceTree = "<group>"; };
+		627F924133A6E1643F00BEB0 /* AppActivationTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivationTracker.swift; sourceTree = "<group>"; };
 		6740DE703ADA5B5025E36CB0 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
 		687A3E6FE32AE24C7E961024 /* PreviewTriggerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTriggerMonitor.swift; sourceTree = "<group>"; };
 		68F713C8680F2216BAB1D055 /* WindowMonitorIdleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMonitorIdleTests.swift; sourceTree = "<group>"; };
@@ -271,6 +278,7 @@
 		9A938B3D72FC8AB1E6C161FA /* GridOverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModel.swift; sourceTree = "<group>"; };
 		9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCache.swift; sourceTree = "<group>"; };
 		9FDBD58543D26CB798059E1C /* PluginRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginRuntime.swift; sourceTree = "<group>"; };
+		A0F7E1C4FAC9ABFF6829D870 /* PluginFileReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFileReaderTests.swift; sourceTree = "<group>"; };
 		A1A3E053A9776181F04E2644 /* GridHUDPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDPanel.swift; sourceTree = "<group>"; };
 		A1CF970731577ECF8B051637 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBarPanel.swift; sourceTree = "<group>"; };
@@ -293,8 +301,10 @@
 		C4D313B3216BABB3D45A8959 /* WindowAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAttribution.swift; sourceTree = "<group>"; };
 		C4D4E0170008B3E39DCAAC0B /* DockPluginOverlayModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPluginOverlayModel.swift; sourceTree = "<group>"; };
 		C6B3EA034319D24B8E19DFCC /* GridCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridCellView.swift; sourceTree = "<group>"; };
+		C7893014F186597270D77118 /* WhalePluginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhalePluginTests.swift; sourceTree = "<group>"; };
 		C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsEfficiency.swift; sourceTree = "<group>"; };
 		C8BE468141F782C97C514E73 /* GridPrerequisiteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteTests.swift; sourceTree = "<group>"; };
+		CA27D10772371E9573FC8678 /* PluginFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFileReader.swift; sourceTree = "<group>"; };
 		CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherSettings.swift; sourceTree = "<group>"; };
 		CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTriggerMonitorTests.swift; sourceTree = "<group>"; };
 		CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarViewModel.swift; sourceTree = "<group>"; };
@@ -384,6 +394,7 @@
 			children = (
 				3C2BCB63C040B6B4271DD2AE /* AllSpacesIntegrationTests.swift */,
 				1F30365BE450846F0634ADC9 /* AllSpacesRenderingTests.swift */,
+				5052EF0E08EDCF930ED33444 /* AppActivationTrackerTests.swift */,
 				279A55BC2D30608EC032F116 /* AppSettingsTests.swift */,
 				2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */,
 				E053C29F12B5FFA9A9996CF4 /* DesktopGridCoordinatorTests.swift */,
@@ -407,6 +418,7 @@
 				6B863AF7408FCE0FFF4B8F61 /* MonitoredAppTests.swift */,
 				54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */,
 				9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */,
+				A0F7E1C4FAC9ABFF6829D870 /* PluginFileReaderTests.swift */,
 				E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */,
 				2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */,
 				4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */,
@@ -422,6 +434,7 @@
 				DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */,
 				8BD9E5FE55FF12149B442202 /* WeatherGachaPluginTests.swift */,
 				1822D90045E7063D2F2A8083 /* WeatherGachaSnapshotTests.swift */,
+				C7893014F186597270D77118 /* WhalePluginTests.swift */,
 				8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */,
 				57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */,
 				68F713C8680F2216BAB1D055 /* WindowMonitorIdleTests.swift */,
@@ -487,6 +500,7 @@
 			isa = PBXGroup;
 			children = (
 				385979B435CF361A00665A46 /* MediaBridge.swift */,
+				CA27D10772371E9573FC8678 /* PluginFileReader.swift */,
 				AA37ACF14FDF7DCCE220552E /* PluginHost.swift */,
 				46EBA602A293A20853A59E9F /* PluginRegistry.swift */,
 				9FDBD58543D26CB798059E1C /* PluginRuntime.swift */,
@@ -552,6 +566,7 @@
 			isa = PBXGroup;
 			children = (
 				E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */,
+				627F924133A6E1643F00BEB0 /* AppActivationTracker.swift */,
 				B5D68B1BB3A196CF0B752C9B /* DesktopNavigationService.swift */,
 				1A150EFC35E5F5EDD6F0524B /* DesktopSpaceService.swift */,
 				8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */,
@@ -750,6 +765,7 @@
 			files = (
 				7C69F2CE54DA3EA2C419C977 /* AllSpacesIntegrationTests.swift in Sources */,
 				DC31DBC9E56F4460B2A36B9A /* AllSpacesRenderingTests.swift in Sources */,
+				5D16C6B621A7EA08B3FF11CB /* AppActivationTrackerTests.swift in Sources */,
 				82677B99BB10457B6211615B /* AppSettingsTests.swift in Sources */,
 				107C15C9C3A17DE414DBCDFC /* DesignTokensTests.swift in Sources */,
 				75791B6119F99767ACC30751 /* DesktopGridCoordinatorTests.swift in Sources */,
@@ -773,6 +789,7 @@
 				7BD89AFAC9DE588F75A61327 /* MonitoredAppTests.swift in Sources */,
 				757EC4F4A1872830AA959C08 /* MotionTokensTests.swift in Sources */,
 				DCC611909E026C6CCBED6F33 /* OnlineWeatherTests.swift in Sources */,
+				D1C7ABF697D98CC3F1650CAA /* PluginFileReaderTests.swift in Sources */,
 				A5105AB477196D0D6392696C /* PluginSceneTests.swift in Sources */,
 				1A3FB074DE69877640E4C4C3 /* PluginSystemTests.swift in Sources */,
 				CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */,
@@ -788,6 +805,7 @@
 				5CFFD80558D38BC6FE92F240 /* UsageStatisticsTests.swift in Sources */,
 				DF5394C4EE47AE1D012EFAFC /* WeatherGachaPluginTests.swift in Sources */,
 				74F409317F780C1D2CF1B892 /* WeatherGachaSnapshotTests.swift in Sources */,
+				D0F1ABEF0ECDE0F189BFD561 /* WhalePluginTests.swift in Sources */,
 				9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */,
 				349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */,
 				9F828F9C5B96E35E83D48D9A /* WindowMonitorIdleTests.swift in Sources */,
@@ -800,6 +818,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				439324893176691BA6AF5D4C /* AccessibilityService.swift in Sources */,
+				3FFAE120A11DC84A744DA82D /* AppActivationTracker.swift in Sources */,
 				BF5217ACAFA0F8E24B46B4EB /* AppDelegate.swift in Sources */,
 				E261C9AD00EE827BE170FF1C /* AppIconCache.swift in Sources */,
 				020BFDAE3FB688562345AD6C /* AppLogger.swift in Sources */,
@@ -846,6 +865,7 @@
 				4C018B8DF65064F72678C0BE /* OnlineWeatherPreferences.swift in Sources */,
 				A4696C2EA72C0B8B284CA098 /* OnlineWeatherService.swift in Sources */,
 				C894A4B29F55E63242E6207A /* OnlineWeatherSettings.swift in Sources */,
+				21CBE3B666C51E715AB41FE8 /* PluginFileReader.swift in Sources */,
 				B09D2790372896E8A13F7090 /* PluginGrant.swift in Sources */,
 				0D9330C204918BD9E1B1BCEA /* PluginHost.swift in Sources */,
 				D6F5633006C8795C401614BD /* PluginManifest.swift in Sources */,

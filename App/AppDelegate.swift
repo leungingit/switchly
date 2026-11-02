@@ -111,6 +111,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         DockHoverMonitor.shared.updateSettings()
         PreviewTriggerMonitor.shared.updateSettings()
+        AppActivationTracker.shared.start()
         AppLogger.info("Dock preview initialized")
     }
     
