@@ -42,7 +42,7 @@ all: bootstrap build ## Bootstrap and build the project
 
 # --- Bootstrapping ---
 
-bootstrap: check-xcodegen ## Generate Xcode project
+bootstrap: check-xcodegen prepare-plugins ## Generate Xcode project
 	@echo "${YELLOW}📦 Bootstrapping ${PROJECT_NAME}...${NC}"
 	@xcodegen generate
 	@echo "${GREEN}✅ Project generated!${NC}"
@@ -50,7 +50,7 @@ bootstrap: check-xcodegen ## Generate Xcode project
 check-xcodegen:
 	@which xcodegen > /dev/null || (echo "${RED}❌ xcodegen not found!${NC} Please install: brew install xcodegen"; exit 1)
 
-generate: ## Regenerate Xcode project
+generate: prepare-plugins ## Regenerate Xcode project
 	@echo "${YELLOW}🔄 Generating Xcode project...${NC}"
 	@xcodegen generate
 	@echo "${GREEN}✅ Project regenerated!${NC}"
@@ -64,7 +64,7 @@ ifdef SIGN_IDENTITY
 SIGN_FLAG := CODE_SIGN_IDENTITY="$(SIGN_IDENTITY)"
 endif
 
-build: version ## Build the project (Debug)
+build: version prepare-plugins ## Build the project (Debug)
 	@echo "${YELLOW}🔨 Building ${PROJECT_NAME} (Debug)...${NC}"
 	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -78,7 +78,7 @@ build: version ## Build the project (Debug)
 	@echo "   ${BLUE}→ $(DERIVED_DATA)/Build/Products/Debug/$(APP_NAME).app${NC}"
 	@echo "   ${BLUE}   运行最新版: make run（会先退出旧实例）${NC}"
 
-build-release: version ## Build the project (Release)
+build-release: version prepare-plugins verify-plugin-release ## Build the project (Release)
 	@echo "${YELLOW}🔨 Building ${PROJECT_NAME} (Release)...${NC}"
 	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -94,7 +94,7 @@ build-release: version ## Build the project (Release)
 
 # --- Testing ---
 
-test: ## Run the full test suite (unit + UI)
+test: prepare-plugins ## Run the full test suite (unit + UI)
 	@echo "${YELLOW}🧪 Running tests...${NC}"
 	@xcodebuild -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -103,7 +103,7 @@ test: ## Run the full test suite (unit + UI)
 		test
 	@echo "${GREEN}✅ Tests complete!${NC}"
 
-test-unit: ## Run unit tests only (what CI runs)
+test-unit: prepare-plugins ## Run unit tests only (what CI runs)
 	@echo "${YELLOW}🧪 Running unit tests...${NC}"
 	@xcodebuild -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -215,3 +215,21 @@ release-major: ## Cut a major release: bump, CHANGELOG, commit, tag vX.Y.Z
 	@./Scripts/version.sh release major
 
 release-build: bump-build zip ## Bump build number & package (build numbers are not tagged)
+
+# 插件源码在独立仓库；此步骤只校验并复制本地固定制品，不联网。
+.PHONY: prepare-plugins
+prepare-plugins: ## Verify and stage external preinstalled plugin artifacts
+	@python3 Scripts/prepare-plugins.py $(PLUGIN_FLAGS)
+
+.PHONY: update-plugin-lock
+update-plugin-lock: ## Explicitly accept external plugin artifacts into the preinstall lock
+	@python3 Scripts/update-plugin-lock.py
+
+.PHONY: verify-plugin-release
+verify-plugin-release: ## Require an immutable external source revision before release builds
+	@python3 -c 'import json,re; d=json.load(open("distribution/bundled-plugins.lock.json")); assert re.fullmatch("[0-9a-f]{40}", d.get("sourceRevision") or ""), "发布前请先提交外仓，再执行 make update-plugin-lock 锁定来源提交"'
+
+.PHONY: plugin-verifier
+plugin-verifier: ## Build the standalone verifier using the real JSC runtime and decoders
+	@mkdir -p .build/tools
+	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Services/Plugins/PluginRuntime.swift Services/Plugins/PluginFileReader.swift Services/Plugins/PluginStorage.swift Services/Plugins/MediaBridge.swift Utilities/AppLogger.swift

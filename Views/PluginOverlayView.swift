@@ -21,9 +21,26 @@ struct PluginOverlayView: View {
     /// Where `scene` sprite assets live (the owning plugin's directory).
     var assetDirectory: URL? = nil
     let onAction: (String, Double?) -> Void
+    @State private var assets: SceneAssets
+
+    init(node: PluginUINode,
+         material: CrystalMaterial,
+         isGlassActive: Bool,
+         artwork: NSImage? = nil,
+         assetDirectory: URL? = nil,
+         onAction: @escaping (String, Double?) -> Void) {
+        self.node = node
+        self.material = material
+        self.isGlassActive = isGlassActive
+        self.artwork = artwork
+        self.assetDirectory = assetDirectory
+        self.onAction = onAction
+        _assets = State(initialValue: SceneAssets(directory: assetDirectory))
+    }
 
     var body: some View {
         render(node)
+            .onChange(of: assetDirectory) { assets = SceneAssets(directory: $0) }
     }
 
     private func render(_ node: PluginUINode) -> AnyView {
@@ -47,7 +64,7 @@ struct PluginOverlayView: View {
                 ForEach(Array(backdrops.enumerated()), id: \.offset) { render($0.element) }
             }))
         case .scene(let scene):
-            return AnyView(PluginSceneView(scene: scene, assetDirectory: assetDirectory) { onAction($0, $1) })
+            return AnyView(PluginSceneView(scene: scene, assetDirectory: assetDirectory) { emit($0, $1) })
         case .spacer:
             return AnyView(Spacer(minLength: 0))
         case .surface(let children, let surfaceMaterial):
@@ -76,15 +93,15 @@ struct PluginOverlayView: View {
         case .button(let id, let symbol, let label, let size, let variant, let enabled, let selected):
             return AnyView(PluginSymbolButton(symbol: symbol, label: label, size: size,
                                               prominent: variant == .prominent, selected: selected) {
-                onAction(id, nil)
+                emit(id, nil)
             }
             .disabled(!enabled))
         case .toggle(let id, let symbolOn, let symbolOff, let isOn, let label):
             return AnyView(PluginToggleButton(isOn: isOn, symbolOn: symbolOn, symbolOff: symbolOff, label: label) {
-                onAction(id, $0 ? 1 : 0)
+                emit(id, $0 ? 1 : 0)
             })
         case .slider(let id, let value, let label, let step):
-            return AnyView(PluginSlider(value: value, step: step, label: label) { onAction(id, $0) })
+            return AnyView(PluginSlider(value: value, step: step, label: label) { emit(id, $0) })
         case .text(let value, let style, let lines):
             return AnyView(Text(value)
                 .font(font(style))
@@ -100,7 +117,7 @@ struct PluginOverlayView: View {
             return AnyView(ProgressView(value: value).progressViewStyle(.linear).controlSize(.small)
                 .accessibilityValue(Text("\(Int(value * 100))%")))
         case .image(let source, let size, let corner):
-            return AnyView(PluginImage(source: source, size: size, corner: corner, artwork: artwork))
+            return AnyView(PluginImage(source: source, size: size, corner: corner, artwork: artwork, assets: assets))
         case .badge(let value, let tone):
             return AnyView(Text(value)
                 .font(.caption2.weight(.semibold))
@@ -109,6 +126,10 @@ struct PluginOverlayView: View {
                 .foregroundColor(tone == .neutral ? .primary : .white)
                 .background(Capsule().fill(badgeFill(tone))))
         }
+    }
+
+    private func emit(_ actionID: String, _ value: Double?) {
+        onAction(actionID, value)
     }
 
     private func points(_ spacing: PluginSpacing?) -> CGFloat {
@@ -256,6 +277,7 @@ private struct PluginImage: View {
     let size: PluginControlSize
     let corner: PluginCorner?
     let artwork: NSImage?
+    let assets: SceneAssets
 
     var body: some View {
         let side = PluginMetrics.image(size)
@@ -264,23 +286,37 @@ private struct PluginImage: View {
             switch source {
             case .symbol(let name):
                 Image(systemName: name).font(.system(size: side * 0.6))
-            case .artwork where artwork != nil:
-                Image(nsImage: artwork!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: side, height: side)
-                    .clipShape(RoundedRectangle(cornerRadius: radius))
-            case .artwork, .pluginAsset:
-                // No cover (or bundled assets, not wired yet): a neutral
-                // placeholder keeps the layout stable.
-                Image(systemName: "music.note").font(.system(size: side * 0.45, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .frame(width: side, height: side)
-                    .background(RoundedRectangle(cornerRadius: radius).fill(Color.primary.opacity(0.08)))
+            case .artwork:
+                if let artwork {
+                    Image(nsImage: artwork)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: side, height: side)
+                        .clipShape(RoundedRectangle(cornerRadius: radius))
+                } else {
+                    placeholder(side: side, radius: radius)
+                }
+            case .pluginAsset(let name):
+                if let image = assets.image(name) {
+                    Image(decorative: image, scale: 1)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: side, height: side)
+                        .clipShape(RoundedRectangle(cornerRadius: radius))
+                } else {
+                    placeholder(side: side, radius: radius)
+                }
             }
         }
         .frame(width: side, height: side)
         .accessibilityHidden(true)
+    }
+
+    private func placeholder(side: CGFloat, radius: CGFloat) -> some View {
+        Image(systemName: "music.note").font(.system(size: side * 0.45, weight: .semibold))
+            .foregroundColor(.secondary)
+            .frame(width: side, height: side)
+            .background(RoundedRectangle(cornerRadius: radius).fill(Color.primary.opacity(0.08)))
     }
 }
 

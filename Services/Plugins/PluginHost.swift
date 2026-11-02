@@ -4,7 +4,7 @@
 //
 //  Owns the installed plugins and one runtime per plugin. Packages are read
 //  lazily on first use; runtimes are created on demand and their JS VMs are
-//  unmounted whenever the Dock preview closes. Only enabled plugins run, and
+//  suspended when the Dock preview closes and unmounted on reload. Only enabled plugins run, and
 //  each runtime receives just its authorized permissions (PluginAuthorization).
 //
 
@@ -19,11 +19,16 @@ struct InstalledPlugin: Equatable, Identifiable {
 protocol PluginHosting: AnyObject {
     func runtimes(for bundleID: String) -> [PluginRuntimeProtocol]
     func installedPlugins() -> [InstalledPlugin]
+    func loadFailures() -> [PluginLoadFailure]
     /// Cover art for the target app; nil unless an enabled plugin matching it
     /// is authorized to read what's playing.
     func artwork(for bundleID: String) async -> Data?
     func unmountAll()
     func reload()
+}
+
+extension PluginHosting {
+    func loadFailures() -> [PluginLoadFailure] { [] }
 }
 
 final class PluginHost: PluginHosting {
@@ -34,6 +39,7 @@ final class PluginHost: PluginHosting {
     private let mediaBridge: MediaBridging
     private let makeRuntime: (PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol
     private let lock = NSLock()
+    private var failures: [PluginLoadFailure] = []
     private var packages: [PluginPackage]?
     /// Keyed by id; the permission set is kept so a grant change rebuilds the VM.
     private var runtimesByID: [String: (permissions: Set<PluginCapability>, runtime: PluginRuntimeProtocol)] = [:]
@@ -54,7 +60,7 @@ final class PluginHost: PluginHosting {
                           fileReader: PluginFileReader(roots: package.manifest.fsRoots ?? []),
                           settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
                           values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
-                          weather: weather)
+                          weather: weather, storage: PluginStorage(pluginID: package.manifest.id))
         }
     }
 
@@ -62,6 +68,13 @@ final class PluginHost: PluginHosting {
         lock.lock()
         defer { lock.unlock() }
         return loadedPackages().map(resolve)
+    }
+
+    func loadFailures() -> [PluginLoadFailure] {
+        lock.lock()
+        defer { lock.unlock() }
+        _ = loadedPackages()
+        return failures
     }
 
     func runtimes(for bundleID: String) -> [PluginRuntimeProtocol] {
@@ -120,7 +133,11 @@ final class PluginHost: PluginHosting {
 
     /// Caller holds `lock`.
     private func loadedPackages() -> [PluginPackage] {
-        if packages == nil { packages = registry.reload().plugins }
+        if packages == nil {
+            let snapshot = registry.reload()
+            packages = snapshot.plugins
+            failures = snapshot.failures
+        }
         return packages ?? []
     }
 

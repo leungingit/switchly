@@ -38,7 +38,7 @@ enum PluginImageSource: Equatable, Codable {
         if let symbol = try c.decodeIfPresent(String.self, forKey: .symbol) {
             self = .symbol(symbol)
         } else if let asset = try c.decodeIfPresent(String.self, forKey: .pluginAsset) {
-            guard !asset.hasPrefix("/"), !asset.split(separator: "/").contains("..") else {
+            guard !asset.isEmpty, !asset.hasPrefix("/"), !asset.split(separator: "/").contains("..") else {
                 throw DecodingError.dataCorruptedError(forKey: .pluginAsset, in: c, debugDescription: "Asset escapes plugin")
             }
             self = .pluginAsset(asset)

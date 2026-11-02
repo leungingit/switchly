@@ -26,7 +26,7 @@ By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md)
 | Tool | Version | Notes |
 |---|---|---|
 | macOS | 12.0+ | The deployment target; build on 13+ recommended |
-| Xcode | 15.0+ | Full Xcode, not just Command Line Tools |
+| Xcode | 26.0+ | Full Xcode, not just Command Line Tools |
 | XcodeGen | latest | `brew install xcodegen` — the `.xcodeproj` is generated |
 
 ### Bootstrap and build
@@ -37,6 +37,7 @@ cd Switchly
 
 brew install xcodegen
 
+(cd ../switchly-plugins && npm run build) # 外仓需克隆到相邻目录
 make bootstrap    # generate Switchly.xcodeproj from project.yml
 make build        # Debug build
 make test-unit    # unit tests only (fast, what CI runs)
@@ -255,3 +256,17 @@ for CI; it accepts a tag that `make release-*` has already created at `HEAD`.
 
 By contributing you agree that your contributions are licensed under the
 [MIT License](LICENSE).
+
+## 插件开发与跨仓验证
+
+插件源码和业务测试只放在相邻的 `switchly-plugins` 仓库，宿主的公开能力以 [API 参考](docs/plugin-api-reference.md) 为准。构建需要 Node.js 20+ 和 Python 3；运行 App 不需要 Node 或 Python。外仓执行 `npm test && npm run build`，宿主执行 `make prepare-plugins`，按 `distribution/bundled-plugins.lock.json` 校验每个文件的 SHA-256。自定义制品路径用 `SWITCHLY_PLUGIN_SOURCE`；构建不联网、不自动更新锁文件。
+
+变更预装版本或增添插件时，先审核外仓源码与资产，再构建并显式执行 `make update-plugin-lock`，审查 lock 差异；发布构建要求来源是已提交且干净的外仓提交。开发期可使用未提交的本地制品，但不能据此发布。`make build PLUGIN_FLAGS=--empty` 用于无预装独立构建验证，验证后执行正常 `make build` 恢复制品。
+
+本地 SDK：`npm --prefix packages/plugin-sdk test`；CLI：`npm --prefix packages/plugin-cli test`。使用 `node packages/plugin-cli/bin/switchly-plugin.js --help` 查看真实命令。CLI 的 `build` 校验后复制单入口 JS，不负责 TypeScript 转译。发布前的类型消费验证需要 TypeScript 编译器，包自身无运行依赖。
+
+`make plugin-verifier` 构建独立真实 JSC 验证工具；CLI 的 `verify <插件目录> --host <工具路径>` 在单独可终止进程内验证入口与 render，使用假系统能力，不读取真实授权目录。
+
+### 私有插件仓库的 CI 读取
+
+当前 `leungingit/switchly-plugins` 是私有仓库。宿主 Actions 的默认 `GITHUB_TOKEN` 不能跨仓读取，需在宿主仓库配置 Actions secret `SWITCHLY_PLUGINS_READ_TOKEN`，使用仅对插件仓库授予 Contents 只读权限的令牌。令牌值只通过 GitHub 的 secret 界面保存，不写入代码或日志；checkout 完成后不保留凭据。来自 fork 且拿不到 secret 的工作流会明确停止，不能改用有写权限的 `pull_request_target` 绕过。

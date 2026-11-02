@@ -60,9 +60,11 @@
 
 *图为使用示例内容由当前源码渲染，非实机截图。*
 
-插件为 Dock 悬停时的窗口卡片叠加自定义控件。插件用 JavaScript 编写，运行在内嵌的 JavaScriptCore 沙箱中，只返回一棵声明式界面树，由 Switchly 用原生控件绘制——因此自动适配主题与玻璃设置，且没有网络、文件和进程访问能力。内置两个插件：**音乐控制**（参考实现）提供封面、滚动曲名、播放与喜欢按钮，另有点按转盘布局和「不显示窗口预览，只显示组件」选项；**天气抽卡**按天气抽三张卡并从音乐资料库播放一首歌，动画由宿主本地播放的 `scene` 实现。
+插件为 Dock 预览卡片提供原生声明式控件与 Scene。音乐控制、天气抽卡、鲸娘的源码、素材和业务测试统一位于独立的 [switchly-plugins 仓库](https://github.com/leungingit/switchly-plugins)；App 只消费哈希锁定的预装制品，保留离线首次启动。插件没有直接网络和进程能力；目录只读需显式授权。
 
-插件在 `manifest.json` 中声明权限（如 `media.nowPlaying`、`media.control`）。内置插件默认启用、可关闭；自行安装的插件默认关闭，需在「偏好设置 → 权限 → 插件」确认权限清单后才会启用。npm SDK 与命令行工具尚未发布，目前直接编写 JavaScript 即可。详见[插件 API 文档](https://leungingit.github.io/switchly/plugins.html)与[设计说明](docs/dock-preview-plugins-design.md)。
+「偏好设置 → 插件」支持搜索、状态筛选、按需展开详情、本地文件夹安装、重新加载和用户插件卸载。用户插件默认关闭，更新后需要重新授权，预装同 ID 不可被用户包覆盖。天气设置是共享宿主数据源，不依赖某个插件 ID。
+
+本仓库提供本地 SDK/CLI（尚未发布 npm），含 TypeScript 类型、注册/UI 构建器、创建、校验和制品复制工具。完整契约见 [API 参考](docs/plugin-api-reference.md)，后续能力见 [发展路线](docs/plugin-api-roadmap.md)。
 
 ## 九宫格桌面：所有桌面，一眼看全
 
@@ -166,6 +168,8 @@ shasum -a 256 -c Switchly-<version>.zip.sha256
 git clone https://github.com/leungingit/switchly.git
 cd switchly
 brew install xcodegen
+# 先将 switchly-plugins 克隆到相邻目录，并构建制品
+(cd ../switchly-plugins && npm run build)
 make bootstrap
 make build
 make test-unit

@@ -9,6 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- 插件源码与算法测试迁往独立 `switchly-plugins` 仓库，预装包通过文件哈希和来源提交锁定；新增本地 SDK/CLI、完整 API 参考与机器能力清单（尚未发布 npm）。
+- 插件管理新增搜索、状态筛选、选中展开、本地目录安装、用户包替换/卸载与加载失败展示；更新用户包后重新授权并保留业务设置。
+- 插件 API 增加私有 Promise JSON 存储，普通插件图片复用通用资产预算；修复同名动作跨插件冲突，隐藏预览时暂停受控定时器。
+
 - 天气抽卡（Music 的 Dock 预览）：设置天气后倒计时抽三张卡，选一张揭晓并播放资料库里的一首歌。它是内置 JS 插件 `com.switchly.weather-gacha`，不是宿主里的原生功能：五线谱音符倒计时、卡片流光与碎裂、跳动音符、背景涟漪全部由插件声明、宿主本地播放。
 - 插件 API 2：新增 `scene` 组件（图层、关键帧轨道、振荡器、粒子发射器、拨弦线、碎裂退场、命中区域，带层数 / 粒子 / 命中预算，减少动态效果时静帧）、`media.library` 权限（`ctx.media.library.pickRandom / play / pause`）、`ctx.reduceMotion`，以及设置项的 `select` / `number` 类型（保存于 `AppSettings.pluginValues`，旧设置读取为空）。
 

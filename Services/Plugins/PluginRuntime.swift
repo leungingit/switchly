@@ -34,11 +34,23 @@ struct PluginRenderContext: Equatable {
 
 enum PluginRuntimeError: Error, Equatable {
     case notLoaded
+    case suspended
     case disabled
     case timedOut
     case script(String)
     case invalidOutput(String)
 }
+
+/// Implemented by the host's per-plugin JSON store. Calls stay on the plugin's
+/// serial queue so disk I/O cannot enter the main thread.
+protocol PluginStorageProviding: AnyObject {
+    func get(_ key: String) throws -> Any?
+    func set(_ key: String, value: Any) throws
+    func remove(_ key: String) throws
+    func clear() throws
+}
+
+extension PluginStorage: PluginStorageProviding {}
 
 protocol PluginRuntimeProtocol: AnyObject {
     var manifest: PluginManifest { get }
@@ -47,20 +59,42 @@ protocol PluginRuntimeProtocol: AnyObject {
     var assetDirectory: URL? { get }
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError>
     func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError>
+    func suspend()
+    func resume()
     func unmount()
 }
 
 extension PluginRuntimeProtocol {
     var assetDirectory: URL? { nil }
+    func suspend() {}
+    func resume() {}
 }
 
 final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     let manifest: PluginManifest
     var assetDirectory: URL? { package.directory }
     /// Called on the plugin queue; consumers hop to the main actor themselves.
+    /// This side-channel is lock-protected so changing it never waits behind a
+    /// long-running plugin script on the serial queue.
     var onInvalidate: (() -> Void)? {
-        get { queue.sync { invalidateHandler } }
-        set { queue.sync { invalidateHandler = newValue } }
+        get {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return invalidateHandler
+        }
+        set {
+            stateLock.lock()
+            invalidateHandler = newValue
+            stateLock.unlock()
+        }
+    }
+
+    private struct ControlledTimer {
+        let callback: JSValue
+        var remaining: TimeInterval
+        var scheduleID = 0
+        var startedAt: UInt64?
+        var workItem: DispatchWorkItem?
     }
 
     private let package: PluginPackage
@@ -79,19 +113,24 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     /// Host-held weather snapshot for `ctx.weather.current()`; nil when the
     /// permission is not granted. Never triggers a request from JS.
     private let weatherProvider: (() -> [String: Any]?)?
+    private let storage: PluginStorageProviding?
     private let valuesProvider: () -> [String: PluginSettingValue]
     private let reduceMotion: () -> Bool
     private let queue: DispatchQueue
+    private let stateLock = NSLock()
 
     // Everything below is confined to `queue`.
     private var context: JSContext?
     private var invalidateHandler: (() -> Void)?
-    private var timers: [Int: DispatchWorkItem] = [:]
+    private var timers: [Int: ControlledTimer] = [:]
+    private var callTimeouts: [Int: DispatchWorkItem] = [:]
     private var nextTimerID = 1
+    private var nextTimerScheduleID = 1
     private var nextCallID = 1
     private var pending: [Int: (Result<String, PluginRuntimeError>) -> Void] = [:]
     private var consecutiveTimeouts = 0
     private var disabled = false
+    private var suspended = false
     private var strings: [String: String] = [:]
 
     private static let maxTimers = 32
@@ -108,6 +147,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          settings: @escaping () -> [String: Bool] = { [:] },
          values: @escaping () -> [String: PluginSettingValue] = { [:] },
          weather: (() -> [String: Any]?)? = nil,
+         storage: PluginStorageProviding? = nil,
          reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }) {
         self.reduceMotion = reduceMotion
         self.settingsProvider = settings
@@ -123,15 +163,20 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         self.libraryBridge = permissions.contains(.mediaLibrary) ? libraryBridge : nil
         self.fileReader = permissions.contains(.fsRead) ? fileReader : nil
         self.weatherProvider = permissions.contains(.weatherCurrent) ? weather : nil
+        self.storage = storage
         self.queue = DispatchQueue(label: "com.switchly.plugin.\(package.manifest.id)")
     }
 
     deinit {
-        // Timers capture self weakly; cancel so nothing fires into a dead VM.
-        timers.values.forEach { $0.cancel() }
+        timers.values.forEach { $0.workItem?.cancel() }
+        callTimeouts.values.forEach { $0.cancel() }
     }
 
-    var isDisabled: Bool { queue.sync { disabled } }
+    var isDisabled: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return disabled
+    }
 
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> {
         let result = await invoke("render", context: context, extra: [])
@@ -149,9 +194,31 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         await invoke("onAction", context: context, extra: [id, value as Any? ?? NSNull()]).map { _ in () }
     }
 
+    /// Pauses JS timers and releases host waiters without discarding the JS VM.
+    /// A JS Promise may remain unresolved inside the preserved VM, but its host
+    /// continuation is completed and late callbacks are ignored.
+    func suspend() {
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.suspended = true
+            self.pauseTimers()
+            self.failPendingCalls(reason: .suspended)
+        }
+    }
+
+    func resume() {
+        queue.async { [weak self] in
+            guard let self, self.suspended else { return }
+            self.suspended = false
+            Array(self.timers.keys).forEach(self.scheduleTimer)
+        }
+    }
+
     /// Safe to call repeatedly; the next render re-creates the VM.
     func unmount() {
-        queue.sync { tearDown(reason: .notLoaded) }
+        queue.async { [weak self] in
+            self?.tearDown(reason: .notLoaded)
+        }
     }
 
     // MARK: - Invocation
@@ -159,7 +226,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private func invoke(_ method: String, context ctx: PluginRenderContext, extra: [Any]) async -> Result<String, PluginRuntimeError> {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
-                guard !disabled else { return continuation.resume(returning: .failure(.disabled)) }
+                guard !isDisabled else { return continuation.resume(returning: .failure(.disabled)) }
+                guard !suspended else { return continuation.resume(returning: .failure(.suspended)) }
                 guard let js = self.context ?? loadContext() else {
                     return continuation.resume(returning: .failure(.notLoaded))
                 }
@@ -172,9 +240,11 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                     AppLogger.verbose("Plugin call finished. plugin=\(self?.manifest.id ?? "?") phase=\(method) ms=\(String(format: "%.1f", ms))")
                     continuation.resume(returning: result)
                 }
-                queue.asyncAfter(deadline: .now() + timeout) { [weak self] in
+                let timeoutItem = DispatchWorkItem { [weak self] in
                     self?.handleTimeout(callID: callID, method: method)
                 }
+                callTimeouts[callID] = timeoutItem
+                queue.asyncAfter(deadline: .now() + timeout, execute: timeoutItem)
 
                 let ok: @convention(block) (String) -> Void = { [weak self] json in
                     self?.complete(callID: callID, .success(json))
@@ -195,6 +265,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private func complete(callID: Int, _ result: Result<String, PluginRuntimeError>) {
         dispatchPrecondition(condition: .onQueue(queue))
+        callTimeouts.removeValue(forKey: callID)?.cancel()
         guard let handler = pending.removeValue(forKey: callID) else { return }
         if result != .failure(.timedOut) { consecutiveTimeouts = 0 }
         handler(result)
@@ -202,24 +273,39 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private func handleTimeout(callID: Int, method: String) {
         guard pending[callID] != nil else { return }
+        callTimeouts.removeValue(forKey: callID)?.cancel()
         consecutiveTimeouts += 1
         AppLogger.warning("Plugin call timed out. plugin=\(manifest.id) phase=\(method) consecutive=\(consecutiveTimeouts)")
-        complete(callID: callID, .failure(.timedOut))
-        if consecutiveTimeouts >= maxConsecutiveTimeouts {
-            AppLogger.error("Plugin disabled after repeated timeouts. plugin=\(manifest.id)")
+        let shouldDisable = consecutiveTimeouts >= maxConsecutiveTimeouts
+        if shouldDisable {
+            stateLock.lock()
             disabled = true
+            stateLock.unlock()
+        }
+        // 先发布停用状态，再恢复等待方，避免第三次超时返回后读到旧状态。
+        complete(callID: callID, .failure(.timedOut))
+        if shouldDisable {
+            AppLogger.error("Plugin disabled after repeated timeouts. plugin=\(manifest.id)")
             tearDown(reason: .disabled)
         }
     }
 
     private func tearDown(reason: PluginRuntimeError) {
         dispatchPrecondition(condition: .onQueue(queue))
-        timers.values.forEach { $0.cancel() }
+        timers.values.forEach { $0.workItem?.cancel() }
         timers.removeAll()
+        failPendingCalls(reason: reason)
+        context = nil
+        suspended = false
+    }
+
+    private func failPendingCalls(reason: PluginRuntimeError) {
+        dispatchPrecondition(condition: .onQueue(queue))
+        callTimeouts.values.forEach { $0.cancel() }
+        callTimeouts.removeAll()
         let waiting = pending
         pending.removeAll()
         waiting.values.forEach { $0(.failure(reason)) }
-        context = nil
     }
 
     // MARK: - Context setup
@@ -236,13 +322,14 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         installMedia(in: js)
         installLibrary(in: js)
         installFS(in: js)
+        installStorage(in: js)
         js.evaluateScript(Self.invokeHelper)
         strings = loadStrings()
 
         js.evaluateScript(package.source, withSourceURL: package.directory.appendingPathComponent(manifest.entry))
         if js.exception != nil || js.objectForKeyedSubscript("__switchlyPlugin")?.isObject != true {
             AppLogger.warning("Plugin did not register. plugin=\(pluginID)")
-            timers.values.forEach { $0.cancel() }
+            timers.values.forEach { $0.workItem?.cancel() }
             timers.removeAll()
             return nil
         }
@@ -293,19 +380,50 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             guard let self, self.timers.count < Self.maxTimers else { return 0 }
             let id = self.nextTimerID
             self.nextTimerID += 1
-            let item = DispatchWorkItem { [weak self] in
-                guard let self, self.timers.removeValue(forKey: id) != nil else { return }
-                callback.call(withArguments: [])
-            }
-            self.timers[id] = item
-            self.queue.asyncAfter(deadline: .now() + max(0, ms.isFinite ? ms : 0) / 1000, execute: item)
+            let delay = max(0, ms.isFinite ? ms : 0) / 1000
+            self.timers[id] = ControlledTimer(callback: callback, remaining: delay)
+            self.scheduleTimer(id)
             return id
         }
         let clear: @convention(block) (Int) -> Void = { [weak self] id in
-            self?.timers.removeValue(forKey: id)?.cancel()
+            self?.timers.removeValue(forKey: id)?.workItem?.cancel()
         }
         js.setObject(set, forKeyedSubscript: "setTimeout" as NSString)
         js.setObject(clear, forKeyedSubscript: "clearTimeout" as NSString)
+    }
+
+    private func scheduleTimer(_ id: Int) {
+        dispatchPrecondition(condition: .onQueue(queue))
+        guard !suspended, var timer = timers[id] else { return }
+        let scheduleID = nextTimerScheduleID
+        nextTimerScheduleID += 1
+        timer.scheduleID = scheduleID
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, !self.suspended,
+                  self.timers[id]?.scheduleID == scheduleID,
+                  self.timers.removeValue(forKey: id) != nil else { return }
+            timer.callback.call(withArguments: [])
+        }
+        timer.startedAt = DispatchTime.now().uptimeNanoseconds
+        timer.workItem = item
+        timers[id] = timer
+        queue.asyncAfter(deadline: .now() + timer.remaining, execute: item)
+    }
+
+    private func pauseTimers() {
+        dispatchPrecondition(condition: .onQueue(queue))
+        let now = DispatchTime.now().uptimeNanoseconds
+        for id in Array(timers.keys) {
+            guard var timer = timers[id] else { continue }
+            timer.workItem?.cancel()
+            if let startedAt = timer.startedAt {
+                let elapsed = Double(now - startedAt) / 1_000_000_000
+                timer.remaining = max(0, timer.remaining - elapsed)
+            }
+            timer.startedAt = nil
+            timer.workItem = nil
+            timers[id] = timer
+        }
     }
 
     /// ctx.media exposes only the methods the manifest's permissions cover;
@@ -393,6 +511,50 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         """)
     }
 
+    private func installStorage(in js: JSContext) {
+        guard storage != nil else { return }
+        let call: @convention(block) (String, String, JSValue, JSValue, JSValue) -> Void = {
+            [weak self] method, key, value, resolve, reject in
+            guard let self, let storage = self.storage else { return }
+            do {
+                switch method {
+                case "get":
+                    resolve.call(withArguments: [try storage.get(key) ?? NSNull()])
+                case "set":
+                    try storage.set(key, value: value.toObject() ?? NSNull())
+                    resolve.call(withArguments: [NSNull()])
+                case "remove":
+                    try storage.remove(key)
+                    resolve.call(withArguments: [NSNull()])
+                case "clear":
+                    try storage.clear()
+                    resolve.call(withArguments: [NSNull()])
+                default:
+                    throw PluginRuntimeError.script("Unsupported storage operation")
+                }
+            } catch {
+                reject.call(withArguments: [String(describing: error)])
+            }
+        }
+        js.setObject(call, forKeyedSubscript: "__switchlyStorageCall" as NSString)
+        js.evaluateScript("""
+        globalThis.__switchlyStorage = Object.freeze({
+          get: function (key) {
+            return new Promise(function (res, rej) { __switchlyStorageCall("get", String(key), null, res, rej); });
+          },
+          set: function (key, value) {
+            return new Promise(function (res, rej) { __switchlyStorageCall("set", String(key), value, res, rej); });
+          },
+          remove: function (key) {
+            return new Promise(function (res, rej) { __switchlyStorageCall("remove", String(key), null, res, rej); });
+          },
+          clear: function () {
+            return new Promise(function (res, rej) { __switchlyStorageCall("clear", "", null, res, rej); });
+          },
+        });
+        """)
+    }
+
     private func installMedia(in js: JSContext) {
         guard let bridge = mediaBridge else { return }
         let canRead = permissions.contains(.mediaNowPlaying)
@@ -446,7 +608,13 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         for (key, saved) in valuesProvider() {
             // Saved select / number values only count for options the manifest declares.
             guard let spec = manifest.settings?.first(where: { $0.key == key }), spec.kind != .toggle else { continue }
-            settingValues[key] = saved.jsValue
+            switch (spec.kind, saved) {
+            case (.select, .string(let selected)) where spec.options.contains(where: { $0.value == selected }):
+                settingValues[key] = selected
+            case (.number, .number(let number)) where number.isFinite:
+                settingValues[key] = min(max(number, spec.min ?? -Double.greatestFiniteMagnitude), spec.max ?? Double.greatestFiniteMagnitude)
+            default: break
+            }
         }
         let value = JSValue(object: [
             "app": ["bundleID": ctx.bundleID, "pid": ctx.pid, "name": ctx.appName,
@@ -455,11 +623,12 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             "window": ["windowID": ctx.windowID, "title": ctx.titleSummary],
             "locale": preferredLanguages.first ?? "en",
             "settings": settingValues,
+            "capabilities": capabilitySnapshot(bundleID: ctx.bundleID),
             "reduceMotion": reduceMotion(),
         ] as [String: Any], in: js)
         let strings = self.strings
         let t: @convention(block) (String) -> String = { key in strings[key] ?? key }
-        let invalidate: @convention(block) () -> Void = { [weak self] in self?.invalidateHandler?() }
+        let invalidate: @convention(block) () -> Void = { [weak self] in self?.onInvalidate?() }
         let currentWeather: @convention(block) () -> Any? = { [weak self] in self?.weatherProvider?() ?? NSNull() }
         let weather = JSValue(newObjectIn: js)
         weather?.setObject(currentWeather, forKeyedSubscript: "current" as NSString)
@@ -477,7 +646,34 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         if let fs = js.objectForKeyedSubscript("__switchlyFS"), fs.isObject {
             value?.setObject(fs, forKeyedSubscript: "fs" as NSString)
         }
+        if let storage = js.objectForKeyedSubscript("__switchlyStorage"), storage.isObject {
+            value?.setObject(storage, forKeyedSubscript: "storage" as NSString)
+        }
         return value
+    }
+
+    /// supported / granted / available 分开，声明过权限也不能把未实现能力说成可调用。
+    private func capabilitySnapshot(bundleID: String) -> [String: [String: Bool]] {
+        var result: [String: [String: Bool]] = [:]
+        let capabilities: [PluginCapability] = [.mediaNowPlaying, .mediaControl, .mediaLibrary,
+                                                .weatherCurrent, .fsRead, .windowFocus]
+        for capability in Set(capabilities + manifest.permissions) {
+            let supported: Bool
+            let ready: Bool
+            switch capability {
+            case .mediaNowPlaying, .mediaControl:
+                supported = true; ready = mediaBridge?.supports(bundleID: bundleID) == true
+            case .mediaLibrary: supported = true; ready = libraryBridge != nil
+            case .weatherCurrent: supported = true; ready = weatherProvider?() != nil
+            case .fsRead: supported = true; ready = fileReader != nil
+            case .windowFocus, .appleScript: supported = false; ready = false
+            }
+            let granted = permissions.contains(capability)
+            result[capability.rawValue] = ["supported": supported, "granted": granted,
+                                           "available": supported && granted && ready]
+        }
+        result["storage"] = ["supported": true, "granted": true, "available": storage != nil]
+        return result
     }
 
     /// locales/<lang>.json, falling back to en.

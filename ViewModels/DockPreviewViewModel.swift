@@ -331,7 +331,10 @@ class DockPreviewViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.settings = self.settingsService.loadSettings()
+                let latest = self.settingsService.loadSettings()
+                let grantsChanged = self.settings.pluginGrants != latest.pluginGrants
+                self.settings = latest
+                if grantsChanged { self.pluginOverlay.reloadCurrentContext() }
                 self.updatePanelWidth()
             }
             .store(in: &cancellables)

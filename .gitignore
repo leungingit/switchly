@@ -52,6 +52,10 @@ coverage/
 .swiftpm/
 .build/
 Packages/
+# 小写 packages 为插件 SDK/CLI 源码，不能被 SwiftPM 目录规则忽略。
+!/packages/
+!/packages/**
+node_modules/
 Package.pins
 
 ## ── Carthage ─────────────────────────────────────────────────
@@ -114,3 +118,7 @@ docs/plan/
 
 # GitHub Pages build output (mise run pages:build)
 /_site/
+
+# SDK/CLI 本地打包生成物
+/packages/plugin-cli/contract/
+/packages/*/*.tgz

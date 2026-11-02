@@ -35,6 +35,9 @@ if [ ! -f "project.yml" ]; then
     exit 1
 fi
 
+# 外仓制品必须先锁定来源并校验，再进入任何清理/签名步骤。
+make verify-plugin-release prepare-plugins
+
 # 检查 xcodebuild
 if ! command -v xcodebuild &> /dev/null; then
     echo -e "${RED}❌ xcodebuild 未找到，请安装 Xcode${NC}"

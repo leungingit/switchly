@@ -52,7 +52,7 @@ targets:
         buildPhase: resources
       # Built-in Dock preview plugins, copied as a folder reference so the
       # bundle keeps Contents/Resources/Plugins/<id>/ intact.
-      - path: Resources/Plugins
+      - path: .build/Plugins
         type: folder
         buildPhase: resources
     settings:

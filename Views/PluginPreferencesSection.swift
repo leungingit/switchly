@@ -2,64 +2,123 @@
 //  PluginPreferencesSection.swift
 //  Switchly
 //
-//  Preferences → Plugins (design doc §3.6 / §3.7): one card per installed
-//  Dock preview plugin. The card keeps only what users act on — name, version,
-//  on/off and the plugin's own options; what it can do (its summary and the
-//  permissions it was granted) lives behind the “?” next to the name, so the
-//  list stays scannable. A user-installed plugin only runs after its permission
-//  list is confirmed here; an update that declares new permissions turns
-//  pending until confirmed again.
+//  Preferences → Plugins (design doc §3.6 / §3.7): a searchable list of
+//  installed Dock preview plugins. Only the selected card expands to show its
+//  options, folder grant and host-level data source, keeping the narrow
+//  Preferences window scannable. A user-installed plugin only runs after its
+//  permission list is confirmed here; an update that declares new permissions
+//  turns pending until confirmed again.
 //
 
 import AppKit
 import SwiftUI
 
+enum PluginStatusFilter: String, CaseIterable, Identifiable {
+    case all
+    case enabled
+    case disabled
+    case needsAttention
+
+    var id: Self { self }
+
+    var titleKey: String {
+        switch self {
+        case .all: return "All"
+        case .enabled: return "Enabled"
+        case .disabled: return "Disabled"
+        case .needsAttention: return "Needs attention"
+        }
+    }
+}
+
 struct PluginPreferencesSection: View {
     let settings: AppSettings
     let onSettingsChange: (AppSettings) -> Void
-    /// Host-level controls of the built-in gacha, shown inside its own card.
+    /// Host-level controls for every plugin authorized to read weather.
     let onOnlineWeatherChange: (OnlineWeatherSettings) -> Void
     var host: PluginHosting = PluginHost.shared
+    var installer: PluginInstalling = PluginInstaller()
 
-    @State private var plugins: [InstalledPlugin] = []
-    @State private var pendingConfirmation: InstalledPlugin?
-    @State private var expandedInfo: String?
+    @State var plugins: [InstalledPlugin] = []
+    @State var loadFailures: [PluginLoadFailure] = []
+    @State var pendingConfirmation: InstalledPlugin?
+    @State var expandedInfo: String?
+    @State var selectedPluginID: String?
+    @State var searchText = ""
+    @State var statusFilter: PluginStatusFilter = .all
+    @State var refreshGeneration = 0
+    @State var isInstalling = false
+    @State var uninstallingPluginID: String?
+    @FocusState var searchFocused: Bool
 
-    private var language: AppLanguage { settings.language }
-    /// The only plugin with a host-provided data source today.
-    static let onlineWeatherPluginID = "com.switchly.weather-gacha"
+    var language: AppLanguage { settings.language }
+    var isPluginOperationInProgress: Bool {
+        isInstalling || uninstallingPluginID != nil
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            if plugins.isEmpty {
-                emptyState
-            }
-            ForEach(plugins) { plugin in
-                pluginCard(plugin)
+            if !plugins.isEmpty {
+                managementControls
             }
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
                 HStack(spacing: DesignTokens.Spacing.sm) {
-                    Button { openFolder() } label: { Label(t("Open Plugins Folder"), systemImage: "folder") }
+                    Button {
+                        openFolder()
+                    } label: {
+                        Label(t("Open Plugins Folder"), systemImage: "folder")
+                    }
+                    .accessibilityLabel(Text(t("Open Plugins Folder")))
+                    Button {
+                        choosePluginFolder()
+                    } label: {
+                        if isInstalling {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Label(t("Install Plugin"), systemImage: "square.and.arrow.down")
+                        }
+                    }
+                    .disabled(isPluginOperationInProgress)
+                    .accessibilityLabel(Text(t("Install Plugin")))
                     Button {
                         host.reload()
                         refresh()
                     } label: { Label(t("Reload Plugins"), systemImage: "arrow.clockwise") }
+                    .disabled(isPluginOperationInProgress)
+                    .accessibilityLabel(Text(t("Reload Plugins")))
                     Spacer()
+                    Button {} label: { Image(systemName: "questionmark.circle") }
+                        .buttonStyle(.plain)
+                        .help(t("Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then."))
+                        .accessibilityLabel(Text(t("Plugin locations")))
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                // One folder, not two: built-ins ship inside the app bundle,
-                // which is not a place users install to (and a Debug build's
-                // bundle sits inside DerivedData, i.e. this repository).
-                Text(t("Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then."))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+
             }
             .padding(.top, DesignTokens.Spacing.xs)
+            if !pendingPlugins.isEmpty || !loadFailures.isEmpty {
+                attentionSection
+            }
+            if plugins.isEmpty {
+                emptyState
+            } else if filteredPlugins.isEmpty {
+                filteredEmptyState
+            } else {
+                LazyVStack(spacing: DesignTokens.Spacing.sm) {
+                    ForEach(filteredPlugins) { plugin in
+                        pluginCard(plugin, isSelected: plugin.id == selectedPluginID)
+                    }
+                }
+            }
         }
+        .background(Button(t("Search plugins")) { searchFocused = true }
+            .keyboardShortcut("f", modifiers: .command).hidden())
         .onAppear(perform: refresh)
         .onChange(of: settings.pluginGrants) { _ in refresh() }
+        .onChange(of: searchText) { _ in synchronizeSelection() }
+        .onChange(of: statusFilter) { _ in synchronizeSelection() }
         .alert(item: $pendingConfirmation) { plugin in
             Alert(
                 title: Text(String(format: t("Allow “%@”?"), plugin.package.manifest.displayName(preferredLanguages: [language.rawValue]))),
@@ -73,27 +132,34 @@ struct PluginPreferencesSection: View {
 
     // MARK: - Card
 
-    private func pluginCard(_ plugin: InstalledPlugin) -> some View {
+    private func pluginCard(_ plugin: InstalledPlugin, isSelected: Bool) -> some View {
         let options = plugin.package.manifest.settings ?? []
         return VStack(spacing: 0) {
-            header(plugin)
-            if plugin.package.manifest.permissions.contains(.fsRead) {
-                Divider().padding(.leading, 14)
-                folderAccessRow(plugin)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-            }
-            ForEach(options, id: \.key) { spec in
-                Divider().padding(.leading, 14)
-                settingControl(spec, plugin: plugin)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-            }
-            if plugin.id == Self.onlineWeatherPluginID {
-                OnlineWeatherPreferences(value: settings.onlineWeather,
-                                         language: settings.language,
-                                         onChange: onOnlineWeatherChange,
-                                         onReading: { reading in apply(reading, to: plugin.id) })
+            header(plugin, isSelected: isSelected)
+            if isSelected {
+                if plugin.package.manifest.permissions.contains(.fsRead) {
+                    Divider().padding(.leading, 14)
+                    folderAccessRow(plugin)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                }
+                ForEach(options, id: \.key) { spec in
+                    Divider().padding(.leading, 14)
+                    settingControl(spec, plugin: plugin)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                }
+                if plugin.package.manifest.permissions.contains(.weatherCurrent) {
+                    OnlineWeatherPreferences(value: settings.onlineWeather,
+                                             language: settings.language,
+                                             onChange: onOnlineWeatherChange)
+                }
+                if plugin.package.origin == .user {
+                    Divider().padding(.leading, 14)
+                    uninstallRow(plugin)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                }
             }
         }
         .cardSurface(
@@ -104,33 +170,43 @@ struct PluginPreferencesSection: View {
         )
     }
 
-    private func header(_ plugin: InstalledPlugin) -> some View {
+    private func header(_ plugin: InstalledPlugin, isSelected: Bool) -> some View {
         let manifest = plugin.package.manifest
         let auth = plugin.authorization
         return HStack(spacing: DesignTokens.Spacing.sm) {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.accentColor.opacity(0.14))
-                .frame(width: 30, height: 30)
-                .overlay(Image(systemName: "puzzlepiece.extension")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.accentColor))
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 5) {
-                    Text(manifest.displayName(preferredLanguages: [language.rawValue]))
-                        .font(.headline)
-                    infoButton(plugin)
-                }
-                HStack(spacing: 6) {
-                    Text("v" + manifest.version)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    badge(t(plugin.package.origin == .builtin ? "Built-in" : "Installed"), tone: .neutral)
-                    if !auth.pendingPermissions.isEmpty {
-                        badge(t("Not allowed yet"), tone: .warning)
+            Button {
+                selectPlugin(plugin.id)
+            } label: {
+                HStack(spacing: DesignTokens.Spacing.sm) {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.14))
+                        .frame(width: 30, height: 30)
+                        .overlay(Image(systemName: "puzzlepiece.extension")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.accentColor))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(manifest.displayName(preferredLanguages: [language.rawValue]))
+                            .font(.headline)
+                            .lineLimit(1)
+                        HStack(spacing: 6) {
+                            Text("v" + manifest.version)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            badge(t(plugin.package.origin == .builtin ? "Built-in" : "Installed"), tone: .neutral)
+                            if !auth.pendingPermissions.isEmpty {
+                                badge(t("Not allowed yet"), tone: .warning)
+                            }
+                        }
                     }
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(pluginAccessibilityLabel(plugin, isSelected: isSelected)))
+            .accessibilityHint(Text(isSelected ? t("Selected plugin") : t("Show plugin details")))
+
             Spacer(minLength: DesignTokens.Spacing.md)
+            infoButton(plugin)
             Toggle("", isOn: Binding(
                 get: { auth.isEnabled },
                 set: { enabled in
@@ -143,7 +219,14 @@ struct PluginPreferencesSection: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .controlSize(.small)
-                .accessibilityLabel(Text(manifest.displayName(preferredLanguages: [language.rawValue])))
+                .accessibilityLabel(Text(String(
+                    format: t("Enable “%@”"),
+                    manifest.displayName(preferredLanguages: [language.rawValue])
+                )))
+            Image(systemName: isSelected ? "chevron.up" : "chevron.down")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.secondary)
+                .accessibilityHidden(true)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
@@ -152,12 +235,16 @@ struct PluginPreferencesSection: View {
     /// The “?” by the name: hover shows a short summary, click lists exactly what the plugin may do.
     private func infoButton(_ plugin: InstalledPlugin) -> some View {
         let id = plugin.id
-        return Image(systemName: "questionmark.circle")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.secondary)
+        return Button {
+            expandedInfo = expandedInfo == id ? nil : id
+        } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary)
+        }
+            .buttonStyle(.plain)
             .help(infoTooltip(plugin))
-            .contentShape(Circle())
-            .onTapGesture { expandedInfo = expandedInfo == id ? nil : id }
+            .accessibilityLabel(Text(t("What this plugin can do")))
             .popover(isPresented: Binding(get: { expandedInfo == id }, set: { if !$0 { expandedInfo = nil } }),
                      arrowEdge: .bottom) {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
@@ -171,8 +258,6 @@ struct PluginPreferencesSection: View {
                 .padding(14)
                 .frame(width: 280, alignment: .leading)
             }
-            .accessibilityLabel(Text(t("What this plugin can do")))
-            .accessibilityAddTraits(.isButton)
     }
 
     private func infoTooltip(_ plugin: InstalledPlugin) -> String {
@@ -235,6 +320,31 @@ struct PluginPreferencesSection: View {
         )
     }
 
+    private var filteredEmptyState: some View {
+        HStack(spacing: DesignTokens.Spacing.sm) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+            Text(t("No plugins match this search and status"))
+                .font(.callout)
+                .foregroundColor(.secondary)
+            Spacer()
+            Button(t("Clear Filters")) {
+                searchText = ""
+                statusFilter = .all
+            }
+            .controlSize(.small)
+            .accessibilityLabel(Text(t("Clear plugin filters")))
+        }
+        .padding(14)
+        .cardSurface(
+            fill: Color.crystalSurfaceBase.opacity(settings.crystalMaterial.cardOpacity),
+            cornerRadius: DesignTokens.Radius.card,
+            material: settings.crystalMaterial,
+            showsBorder: true
+        )
+    }
+
     // MARK: - Options
 
     /// One option row: label on the left, its control on the right, so every
@@ -254,6 +364,7 @@ struct PluginPreferencesSection: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .controlSize(.small)
+                .accessibilityLabel(Text(spec.displayTitle(preferredLanguages: [language.rawValue])))
             }
         case .select:
             let selected = Binding<String>(
@@ -276,6 +387,7 @@ struct PluginPreferencesSection: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .fixedSize()
+                .accessibilityLabel(Text(spec.displayTitle(preferredLanguages: [language.rawValue])))
             }
         case .number:
             let value = Binding<Double>(
@@ -365,36 +477,7 @@ struct PluginPreferencesSection: View {
         onSettingsChange(updated)
     }
 
-    /// Mirrors a fetched reading into the plugin's manual weather options, so
-    /// the fields above the switch show what the gacha is actually drawing on.
-    private func apply(_ reading: WeatherReading, to pluginID: String) {
-        var updated = settings
-        var values = updated.pluginValues[pluginID] ?? [:]
-        values["condition"] = .string(reading.condition)
-        values["temperature"] = .number(reading.temperatureCelsius.rounded())
-        values["windSpeed"] = .number((reading.windSpeedKmh / 5).rounded() * 5)
-        updated.pluginValues[pluginID] = values
-        onSettingsChange(updated)
-    }
-
-    private func refresh() {
-        plugins = host.installedPlugins()
-    }
-
-    private func openFolder() {
-        let dir = PluginRegistry.defaultDirectory
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        NSWorkspace.shared.open(dir)
-    }
-
-    private func permissionText(_ permission: PluginCapability) -> String {
-        if case .appleScript(let bundleID) = permission {
-            return String(format: t(permission.displayKey), bundleID)
-        }
-        return t(permission.displayKey)
-    }
-
-    private func t(_ key: String) -> String {
+    func t(_ key: String) -> String {
         language.localizedString(key)
     }
 }

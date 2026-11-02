@@ -21,10 +21,37 @@ jobs:
     name: Build & Test (macOS)
     runs-on: macos-26
     timeout-minutes: 30
+    env:
+      SWITCHLY_PLUGIN_SOURCE: ${{ github.workspace }}/.build/plugin-source/dist/Plugins
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Read external plugin revision
+        id: plugin-lock
+        run: python3 -c 'import json, os; d=json.load(open("distribution/bundled-plugins.lock.json")); print("ref=" + (d.get("sourceRevision") or ""), file=open(os.environ["GITHUB_OUTPUT"], "a"))'
+
+      - name: 检查私有插件仓库读取凭据
+        env:
+          PLUGIN_SOURCE_TOKEN: ${{ secrets.SWITCHLY_PLUGINS_READ_TOKEN }}
+        run: |
+          if test -z "$PLUGIN_SOURCE_TOKEN"; then
+            echo "::error::请配置 SWITCHLY_PLUGINS_READ_TOKEN，仅授权读取私有 switchly-plugins 仓库 Contents。默认 GITHUB_TOKEN 无法跨仓读取。"
+            exit 1
+          fi
+
+      - name: Checkout external plugin source
+        uses: actions/checkout@v7
+        with:
+          repository: leungingit/switchly-plugins
+          token: ${{ secrets.SWITCHLY_PLUGINS_READ_TOKEN }}
+          ref: ${{ steps.plugin-lock.outputs.ref }}
+          path: .build/plugin-source
+          persist-credentials: false
+
+      - name: Build external plugin artifacts
+        run: npm --prefix .build/plugin-source run build
 
       # Runs before anything is generated, so the "working tree is clean" check
       # reflects the committed state rather than a freshly generated project.

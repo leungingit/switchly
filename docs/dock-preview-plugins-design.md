@@ -3,6 +3,8 @@
 > 状态：Phase 1 运行时已实现；Phase 0 的 AppleScript 验证已完成（见 §6 R1）；内置 Music 插件（`Resources/Plugins/com.switchly.music-controls/`）、`PluginOverlayView` 渲染、Music 媒体桥已接入 Dock 预览，真机悬停验收待完成（R2）。封面（宿主读取，插件拿不到像素）、曲名滚动、插件授权（`AppSettings.pluginGrants` + 设置 → 权限 → 插件）已实现；SDK 尚未开始。日期：2026-10-23。分支：`feat/dock-preview-plugins`。
 > 本文的结论尚未经原型验证，标注「待验证」的条目需在 Phase 0 原型中实测后更新。
 
+> 2026-11-02 外迁实现更新：当前 API 以 [API 参考](plugin-api-reference.md) 为准，执行与验收见 [外迁台账](plugin-externalization-progress.md)。历史路径与阶段说明保留作轨迹，D20–D23 补充/覆盖关系见台账。
+
 ## 1. 目标与非目标
 
 **目标**

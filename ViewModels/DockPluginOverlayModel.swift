@@ -11,6 +11,20 @@
 
 import AppKit
 
+/// A host-owned action address. Percent-encoding each component keeps plugin
+/// IDs and action IDs separate even when either contains punctuation.
+struct PluginActionNamespace: Hashable {
+    let pluginID: String
+    let actionID: String
+
+    var identifier: String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
+        let plugin = pluginID.addingPercentEncoding(withAllowedCharacters: allowed) ?? pluginID
+        let action = actionID.addingPercentEncoding(withAllowedCharacters: allowed) ?? actionID
+        return "switchly-plugin-action:\(plugin):\(action)"
+    }
+}
+
 /// One plugin's content for a slot. Several plugins may share a slot (the
 /// Music card and the weather gacha both ask for `center`), so slots hold a
 /// stack instead of a single winner.
@@ -46,7 +60,11 @@ final class DockPluginOverlayModel: ObservableObject {
     private let host: PluginHosting
     private var context: PluginRenderContext?
     private var runtimes: [PluginRuntimeProtocol] = []
-    private var actionOwners: [String: PluginRuntimeProtocol] = [:]
+    private struct OwnedAction {
+        let runtime: PluginRuntimeProtocol
+        let namespace: PluginActionNamespace
+    }
+    private var actionOwners: [String: OwnedAction] = [:]
     private var loopTask: Task<Void, Never>?
     /// Bumped on every start/stop so a render that finishes after the
     /// target changed cannot overwrite newer state.
@@ -70,6 +88,7 @@ final class DockPluginOverlayModel: ObservableObject {
             runtime.onInvalidate = { [weak self] in
                 DispatchQueue.main.async { self?.renderOnce(generation: generation) }
             }
+            runtime.resume()
         }
         let interval = runtimes.compactMap { $0.manifest.effectiveRefreshInterval }.min() ?? Self.defaultRefreshInterval
         loopTask = Task { @MainActor [weak self] in
@@ -85,13 +104,23 @@ final class DockPluginOverlayModel: ObservableObject {
         generation += 1
         loopTask?.cancel()
         loopTask = nil
-        runtimes.forEach { $0.onInvalidate = nil }
+        runtimes.forEach {
+            $0.onInvalidate = nil
+            $0.suspend()
+        }
         runtimes = []
         actionOwners = [:]
         context = nil
         if !slots.isEmpty { slots = [:] }
         artwork = nil
         artworkData = nil
+    }
+
+    /// 授权变化后重新向 Host 取运行时，不能让可见面板继续使用旧授权对象。
+    func reloadCurrentContext() {
+        guard let current = context else { return }
+        stop()
+        start(context: current)
     }
 
     /// Hard reset: frees every plugin VM, so a plugin's own state starts over.
@@ -107,14 +136,45 @@ final class DockPluginOverlayModel: ObservableObject {
     /// Routes a control event to the plugin that rendered it, then re-renders.
     func perform(actionID: String, value: Double? = nil) {
         dispatchPrecondition(condition: .onQueue(.main))
-        guard let runtime = actionOwners[actionID], let context else { return }
+        guard let owned = actionOwners[actionID] ?? legacyActionOwner(actionID), let context else { return }
+        perform(owned: owned, value: value, context: context)
+    }
+
+    /// Explicit route used by rendered slot entries. The plugin's own action ID
+    /// remains unchanged when it crosses into the runtime.
+    func perform(pluginID: String, actionID: String, value: Double? = nil) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        let namespace = PluginActionNamespace(pluginID: pluginID, actionID: actionID)
+        guard let owned = actionOwners[namespace.identifier], let context else { return }
+        perform(owned: owned, value: value, context: context)
+    }
+
+    private func perform(owned: OwnedAction, value: Double?, context: PluginRenderContext) {
         let generation = self.generation
         Task { @MainActor [weak self] in
-            if case .failure(let error) = await runtime.performAction(id: actionID, value: value, context: context) {
-                AppLogger.warning("Plugin action failed. plugin=\(runtime.manifest.id) action=\(actionID) error=\(error)")
+            if case .failure(let error) = await owned.runtime.performAction(
+                id: owned.namespace.actionID, value: value, context: context
+            ) {
+                AppLogger.warning("Plugin action failed. plugin=\(owned.runtime.manifest.id) action=\(owned.namespace.actionID) error=\(error)")
             }
             await self?.render(generation: generation)
         }
+    }
+
+    /// Keeps the legacy `perform(actionID:)` call path for one owner. If two
+    /// plugins expose the same raw ID, only the namespaced path is unambiguous.
+    private func legacyActionOwner(_ actionID: String) -> OwnedAction? {
+        let matches = actionOwners.values.filter { $0.namespace.actionID == actionID }
+        guard matches.count == 1 else {
+            if matches.count > 1 {
+                AppLogger.throttledWarning(
+                    key: "plugin.action.ambiguous.\(actionID)",
+                    "Plugin action is ambiguous without a namespace. action=\(actionID) owners=\(matches.count)"
+                )
+            }
+            return nil
+        }
+        return matches[0]
     }
 
     private func renderOnce(generation: Int) {
@@ -125,7 +185,7 @@ final class DockPluginOverlayModel: ObservableObject {
     private func render(generation: Int) async {
         guard generation == self.generation, let context else { return }
         var merged: [PluginSlot: [PluginSlotEntry]] = [:]
-        var owners: [String: PluginRuntimeProtocol] = [:]
+        var owners: [String: OwnedAction] = [:]
         for runtime in runtimes {
             // A failing plugin only loses its own overlay.
             guard case .success(let contents) = await runtime.render(context: context) else { continue }
@@ -136,7 +196,10 @@ final class DockPluginOverlayModel: ObservableObject {
                 merged[content.slot, default: []].append(PluginSlotEntry(id: runtime.manifest.id,
                                                                        node: content.node,
                                                                        directory: runtime.assetDirectory))
-                content.node.actionIDs.forEach { owners[$0] = runtime }
+                content.node.actionIDs.forEach { actionID in
+                    let namespace = PluginActionNamespace(pluginID: runtime.manifest.id, actionID: actionID)
+                    owners[namespace.identifier] = OwnedAction(runtime: runtime, namespace: namespace)
+                }
             }
         }
         guard generation == self.generation else { return }

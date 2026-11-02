@@ -42,7 +42,7 @@ protocol PluginRegistryProtocol {
 
 final class PluginRegistry: PluginRegistryProtocol {
     /// Bundles larger than this are rejected before evaluation.
-    static let maxEntrySize = 2 * 1024 * 1024
+    static let maxEntrySize = PluginPackageValidator.maxEntryBytes
 
     static var defaultDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -105,20 +105,6 @@ final class PluginRegistry: PluginRegistryProtocol {
     }
 
     private func load(from dir: URL, origin: PluginOrigin) throws -> PluginPackage {
-        let manifestData: Data
-        do {
-            manifestData = try Data(contentsOf: dir.appendingPathComponent("manifest.json"))
-        } catch {
-            throw LoadError("missing manifest.json")
-        }
-        let manifest = try JSONDecoder().decode(PluginManifest.self, from: manifestData)
-        try manifest.validate()
-
-        let entryURL = dir.appendingPathComponent(manifest.entry).standardizedFileURL
-        guard entryURL.path.hasPrefix(dir.standardizedFileURL.path + "/") else { throw LoadError("entry escapes plugin") }
-        let size = (try? entryURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        guard size <= Self.maxEntrySize else { throw LoadError("entry too large bytes=\(size)") }
-        guard let source = try? String(contentsOf: entryURL, encoding: .utf8) else { throw LoadError("unreadable entry") }
-        return PluginPackage(manifest: manifest, directory: dir, source: source, origin: origin)
+        try PluginPackageValidator.load(directory: dir, origin: origin, fileManager: fileManager)
     }
 }
