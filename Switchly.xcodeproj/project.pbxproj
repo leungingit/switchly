@@ -58,6 +58,7 @@
 		549DCC5C314E323C70534CF8 /* WorkspacesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB73E8A8C3255DFB68679B69 /* WorkspacesViewModelTests.swift */; };
 		557D68547549ED39FDA46C08 /* ShortcutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */; };
 		56515D6849D58FE6F491AA7F /* GridPanelLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */; };
+		56E3A56517915441578539FF /* WorkspaceBarRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DD52312002F9FA54F893558 /* WorkspaceBarRefreshTests.swift */; };
 		58AF36F0B0E5A06841964EDF /* PluginAssetBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A441DA7C1D341308D995E6C0 /* PluginAssetBudgetTests.swift */; };
 		5B9F757E94BC377A96C08E0E /* GridPrerequisiteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6893DEFCCFFFB529574170B /* GridPrerequisiteViewModel.swift */; };
 		5CFFD80558D38BC6FE92F240 /* UsageStatisticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */; };
@@ -205,6 +206,7 @@
 		1A150EFC35E5F5EDD6F0524B /* DesktopSpaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSpaceService.swift; sourceTree = "<group>"; };
 		1AD5F5DC076F55D773A14D1C /* DockLayoutSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockLayoutSpec.swift; sourceTree = "<group>"; };
 		1BD5104F8699B3D346D80611 /* GridOverviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewPanel.swift; sourceTree = "<group>"; };
+		1DD52312002F9FA54F893558 /* WorkspaceBarRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceBarRefreshTests.swift; sourceTree = "<group>"; };
 		1F30365BE450846F0634ADC9 /* AllSpacesRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSpacesRenderingTests.swift; sourceTree = "<group>"; };
 		1F795794526AB4B760F1EE25 /* SwitchlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwitchlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSystemTests.swift; sourceTree = "<group>"; };
@@ -457,6 +459,7 @@
 				8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */,
 				57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */,
 				68F713C8680F2216BAB1D055 /* WindowMonitorIdleTests.swift */,
+				1DD52312002F9FA54F893558 /* WorkspaceBarRefreshTests.swift */,
 				BB73E8A8C3255DFB68679B69 /* WorkspacesViewModelTests.swift */,
 			);
 			name = UnitTests;
@@ -836,6 +839,7 @@
 				9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */,
 				349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */,
 				9F828F9C5B96E35E83D48D9A /* WindowMonitorIdleTests.swift in Sources */,
+				56E3A56517915441578539FF /* WorkspaceBarRefreshTests.swift in Sources */,
 				549DCC5C314E323C70534CF8 /* WorkspacesViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

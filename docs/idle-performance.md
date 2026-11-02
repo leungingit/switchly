@@ -32,3 +32,38 @@
 **证据**：`make build` 成功；`make test-unit` 268 项、4 跳过、0 失败。`WindowMonitorIdleTests` 覆盖：仅无缓存窗口被预热、全部有缓存时 51 次监控入口调用零预热、单轮上限 8、仍发出刷新通知。
 
 **未验项**：未做空闲 GPU 占用前后对照，也未实机验证“稳态下确实不再截图”（需看日志中 `Preheating thumbnails. reason=timer` 在缓存齐全后不再出现）。
+
+## D03 — 周期性刷新重复发布导致面板重复重绘（2026-11-02）
+
+**现象**：Dock 预览面板一直打开时每 2~3 秒闪白一次，像重新渲染或重新截图。
+
+**代码依据**：`WindowMonitorService` 默认 `balanced` 每 2 秒重扫窗口并发 `.windowListDidRefresh`。`DockPreviewViewModel.refreshWindows` 对 `windows` / `selectedWindow` / `panelWidth` / `panelHeight` / `isEnumeratingWindows` 无条件赋值，而 `@Published` 对同值赋值同样发布；`panelWidth`、`panelHeight` 的发布驱动 `DockPreviewPanel.observePanelWidth`，每 2 秒执行一次 `Motion.movePanel(... setFrame(display: true))`，透明玻璃面板被周期性强制重绘。`WorkspaceBarPanel` 是同一类缺陷：`refreshItems()` 无条件 `items = nextItems`，`$items` 的订阅方对同一 frame 重复做 morph。
+
+**结论**：发布前先比较内容，尺寸/位置未变则不重设。`WindowInfo.==` 只比 id，必须逐字段比较（标题、几何、桌面归属、最小化/隐藏）。
+
+- Dock 预览：`DockPreviewViewModel.refreshWindows` 逐字段比较 `windows`，其余属性仅在变化时赋值；抽出 `setPanelSize` 只在尺寸真实变化时发布。PR #23。
+- Workspace 栏：`refreshItems` 逐字段比较 `items`（`itemsEquivalent`），空工作区也不再重复发布；`positionInCurrentScreen` 增加 frame 近似相等则跳过重定位。本记录同批提交。
+
+**证据**：
+
+- `DockPreviewRefreshTests`：同一窗口快照重复刷新，旧实现 5 次发布（正好 5 个 `@Published`），新实现 0 次；标题变化仍更新。
+- `DockPreviewPanelRefreshTests`：真实 `DockPreviewPanel` 可见时 3 次刷新，旧实现 67 次 `setFrame`（动画帧），新实现 0 次；窗口消失仍重新布局。测试先等入场动画静默 0.3 秒再计数，避免把动画帧算进去。
+- `WorkspaceBarRefreshTests`：同一快照重复刷新，旧实现 1 次发布，新实现 0 次；空工作区同样不再重复发布。
+- `make build` 成功；`make test-unit` 543 项、8 跳过、0 失败。
+- 真实悬停取证：修复后的 Debug 构建在 Dock 预览打开状态下连拍 10 帧（约 7 秒，覆盖 3 个刷新周期），面板区域逐帧像素差全为 0。闪白本身持续时间短，0.7 秒间隔的连拍未直接截到闪白帧，旧实现下的帧差经裁剪核对来自玻璃后方窗口内容滚动，因此该组截图只作为辅助证据。
+
+**影响面与未验项**：仅减少重复发布与重复定位，不改变窗口匹配、缓存或截图路径。Workspace 栏的 frame 跳过重定位没有独立单测（`positionInCurrentScreen` 为私有且 `show` 会激活应用），需要真实快捷键唤起核对。
+
+## D04 — 待办：两个 20 Hz 常驻轮询（未实施）
+
+`DockHoverMonitor` 与 `PreviewTriggerMonitor` 各自以 0.05 秒间隔常驻 `Timer`，且未设置 `tolerance`；两者都另有全局 `mouseMoved` 监听。轮询真正必要的场景只有两处：Dock 自动隐藏时图标尚未识别出来需要重试 AX；面板被 Escape/点击等外部路径关闭后需要检测 desync。其余时刻鼠标移动事件已覆盖。实测空闲 CPU（Debug 构建）约 0.6%~0.8%，采样中主线程绝大多数时间阻塞在 `mach_msg`，未见截图路径。
+
+**建议**：给定时器设置 `tolerance`，或改为只在“面板可见 / 指针在 Dock 带或热点区”时启动。改动涉及自动隐藏与 desync 检测，需要真实 Dock 悬停回归，暂未实施。
+
+## D05 — 待办：插件渲染循环（未实施）
+
+`DockPluginOverlayModel` 在 Dock 面板可见时按插件 `refreshInterval` 循环渲染，内置三个插件分别声明 1s / 1s / 2s（`../switchly-plugins/plugins/*/manifest.json`），即每秒 3 次 JS 渲染。`render` 已用 `merged != slots` 避免无谓发布，但 JS 本身照跑。若插件内容不依赖时间，可改为输入变化才渲染；需要插件侧先明确时间依赖，暂未实施。
+
+## D06 — 待办：缩略图自动刷新跳过不可见窗口（未实施）
+
+`ThumbnailService` 每 8 秒对“可见面板声明感兴趣的窗口”重截图，面板隐藏即 `clearRefreshInterest`，属于实时预览的固有成本。最小化与其他桌面的窗口仍会进入截图队列并走失败冷却，可提前跳过以减少无效截图。收益有限，暂未实施。
