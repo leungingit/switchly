@@ -113,11 +113,16 @@ class DockPreviewViewModel: ObservableObject {
         }
         AppLogger.info("Refreshing dock preview windows. appName=\(appName), bundleURL=\(bundleURL?.path ?? "nil"), resolvedPID=\(runningApp.processIdentifier), matchedCount=\(matched.count)")
 
-        self.windows = matched
+        // 监控器每约 2s 触发一次刷新；@Published 对同值赋值也会发布，
+        // 会让面板内容重绘并以相同 frame 重复 setFrame（周期性闪白）。内容未变则不赋值。
+        if !Self.sameWindows(windows, matched) { self.windows = matched }
         // 监控器每约 2s 会后台重扫 AX 窗口；已有窗口时的刷新不应让标题栏闪出“正在查找”。
-        isEnumeratingWindows = windowMonitorService.isEnumeratingWindows && matched.isEmpty
-        isWindowDiscoveryLimited = windowMonitorService.isWindowDiscoveryLimited
-        selectedWindow = matched.first { $0.id == selectedWindow?.id } ?? matched.first
+        let enumerating = windowMonitorService.isEnumeratingWindows && matched.isEmpty
+        if isEnumeratingWindows != enumerating { isEnumeratingWindows = enumerating }
+        let limited = windowMonitorService.isWindowDiscoveryLimited
+        if isWindowDiscoveryLimited != limited { isWindowDiscoveryLimited = limited }
+        let newSelected = matched.first { $0.id == selectedWindow?.id } ?? matched.first
+        if selectedWindow?.id != newSelected?.id { selectedWindow = newSelected }
         updatePanelWidth()
         updatePluginOverlay(app: runningApp, bundleID: bundleID)
     }
@@ -253,8 +258,7 @@ class DockPreviewViewModel: ObservableObject {
         let hideStrip = hasPluginCard && pluginOverlay.hidesWindowPreviews(in: settings)
         if hidesWindowStrip != hideStrip { hidesWindowStrip = hideStrip }
         guard hasPluginCard else {
-            panelHeight = size.height
-            panelWidth = size.width
+            setPanelSize(width: size.width, height: size.height)
             return
         }
 
@@ -265,11 +269,24 @@ class DockPreviewViewModel: ObservableObject {
         let maxHeight = visible.height - DockPanelMetrics.screenMargin
         // With no windows (or the option on) the card replaces the strip area.
         if windows.isEmpty || hideStrip {
-            panelHeight = min(maxHeight, DockPanelMetrics.headerHeight + cardExtra)
-            panelWidth = minWidth
+            setPanelSize(width: minWidth, height: min(maxHeight, DockPanelMetrics.headerHeight + cardExtra))
         } else {
-            panelHeight = min(maxHeight, size.height + cardExtra)
-            panelWidth = max(size.width, minWidth)
+            setPanelSize(width: max(size.width, minWidth), height: min(maxHeight, size.height + cardExtra))
+        }
+    }
+
+    /// 仅在尺寸真实变化时发布，避免相同尺寸触发面板重复 setFrame。
+    private func setPanelSize(width: CGFloat, height: CGFloat) {
+        if panelHeight != height { panelHeight = height }
+        if panelWidth != width { panelWidth = width }
+    }
+
+    /// 比较窗口列表的全部展示字段；`WindowInfo.==` 只比 id，不能用于判断“无变化”。
+    private static func sameWindows(_ a: [WindowInfo], _ b: [WindowInfo]) -> Bool {
+        a.count == b.count && zip(a, b).allSatisfy {
+            $0.id == $1.id && $0.windowTitle == $1.windowTitle && $0.bounds == $1.bounds
+                && $0.isOnCurrentSpace == $1.isOnCurrentSpace && $0.isMinimized == $1.isMinimized
+                && $0.isHidden == $1.isHidden && $0.isOnOtherSpace == $1.isOnOtherSpace
         }
     }
 
