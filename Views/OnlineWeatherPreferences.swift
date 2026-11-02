@@ -54,10 +54,7 @@ struct OnlineWeatherPreferences: View {
         HStack(spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: 5) {
                 Text(t("Weather data source")).font(.callout.weight(.medium))
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .help(t("Optional online weather for plugins with weather access. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local."))
+                SettingsHelpButton(help: t("Optional online weather for plugins with weather access. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local."))
             }
             Spacer(minLength: DesignTokens.Spacing.md)
             Toggle("", isOn: isOn)
