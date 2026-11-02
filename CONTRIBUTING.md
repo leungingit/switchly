@@ -266,3 +266,7 @@ By contributing you agree that your contributions are licensed under the
 本地 SDK：`npm --prefix packages/plugin-sdk test`；CLI：`npm --prefix packages/plugin-cli test`。使用 `node packages/plugin-cli/bin/switchly-plugin.js --help` 查看真实命令。CLI 的 `build` 校验后复制单入口 JS，不负责 TypeScript 转译。发布前的类型消费验证需要 TypeScript 编译器，包自身无运行依赖。
 
 `make plugin-verifier` 构建独立真实 JSC 验证工具；CLI 的 `verify <插件目录> --host <工具路径>` 在单独可终止进程内验证入口与 render，使用假系统能力，不读取真实授权目录。
+
+### 私有插件仓库的 CI 读取
+
+当前 `leungingit/switchly-plugins` 是私有仓库。宿主 Actions 的默认 `GITHUB_TOKEN` 不能跨仓读取，需在宿主仓库配置 Actions secret `SWITCHLY_PLUGINS_READ_TOKEN`，使用仅对插件仓库授予 Contents 只读权限的令牌。令牌值只通过 GitHub 的 secret 界面保存，不写入代码或日志；checkout 完成后不保留凭据。来自 fork 且拿不到 secret 的工作流会明确停止，不能改用有写权限的 `pull_request_target` 绕过。

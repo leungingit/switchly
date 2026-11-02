@@ -402,3 +402,7 @@ Copy this into the release pull request or issue.
 3. 执行 `make verify-plugin-release`、`make build`、`make test-unit`。来源提交为空时发行构建会拒绝；本地 Debug 仍可消费哈希匹配的未提交制品。
 4. CI/Release 按 lock 的来源提交拉取外仓并构建，`make prepare-plugins` 再验证所有哈希。必须先使被锁定提交在外仓远端可获取；本轮本地验证不代替远端 CI。
 5. 插件制品复制发生在 App 签名前；不修改已签名 App 内的预装目录。用户安装/更新仍走独立用户目录，不能冒充预装来源。
+
+### 私有插件仓库的 CI 读取
+
+当前 `leungingit/switchly-plugins` 是私有仓库。宿主 Actions 的默认 `GITHUB_TOKEN` 不能跨仓读取，需在宿主仓库配置 Actions secret `SWITCHLY_PLUGINS_READ_TOKEN`，使用仅对插件仓库授予 Contents 只读权限的令牌。令牌值只通过 GitHub 的 secret 界面保存，不写入代码或日志；checkout 完成后不保留凭据。来自 fork 且拿不到 secret 的工作流会明确停止，不能改用有写权限的 `pull_request_target` 绕过。

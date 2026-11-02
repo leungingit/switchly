@@ -64,3 +64,10 @@
 - 修复旧 `Packages/` 忽略规则对小写 SDK/CLI `packages/` 的误匹配，确保源码进入提交，生成 contract 与 node_modules 仍忽略。
 - 独立检出：`make generate`、`make build`、`make test-unit` 通过；539 项、8 项按条件跳过、0 失败。本次没有启用额外截图环境变量，较前轮多跳过原生视图取证测试；此前实际看图记录保留。
 - SDK 6 项（含 tsc）和 CLI 12 项通过；外仓 21 项业务/包测试通过。远端 CI 在 PR 创建后另行查看，不提前报告通过。
+
+
+## PR 远端校验
+
+- 宿主 PR #21 已创建；首次 CI 在读取私有插件仓库时返回 Repository not found，尚未进入构建。
+- 确认宿主尚未配置 `SWITCHLY_PLUGINS_READ_TOKEN`；已给 CI/Release 添加只读凭据入口与缺失提示，并同步配置说明。没有读取或复制本机凭据，也没有修改仓库可见性。
+- 本地隔离构建与测试通过，远端 CI 仍需仓库管理员配置该 Actions secret 后重跑；不将配置缺失记成代码测试通过。
