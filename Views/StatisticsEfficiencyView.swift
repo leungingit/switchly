@@ -209,10 +209,7 @@ struct BaselinePicker: View {
                     .frame(width: 22)
                 Text(language.localizedString("Efficiency baseline"))
                     .font(.body)
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .help(assumptionSummary)
+                SettingsHelpButton(help: assumptionSummary)
                 Spacer(minLength: DesignTokens.Spacing.md)
                 Picker("", selection: presetBinding) {
                     ForEach(EfficiencyBaselinePreset.allCases, id: \.self) { preset in
@@ -275,10 +272,7 @@ struct BaselinePicker: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.secondary)
 
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .help(assumptionSummary)
+                SettingsHelpButton(help: assumptionSummary)
 
                 Picker("", selection: presetBinding) {
                     ForEach(EfficiencyBaselinePreset.allCases, id: \.self) { preset in

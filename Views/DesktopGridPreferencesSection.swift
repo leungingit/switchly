@@ -407,11 +407,7 @@ struct DesktopGridPreferencesSection: View {
                 .font(.body)
 
             if let help {
-                Image(systemName: "questionmark.circle")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .help(help)
-                    .accessibilityLabel(Text(help))
+                SettingsHelpButton(help: help)
             }
 
             Spacer(minLength: DesignTokens.Spacing.lg)

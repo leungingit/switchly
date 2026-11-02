@@ -120,6 +120,7 @@
 		A7247E24A7B75417318BC00B /* WindowSystemIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49CFADAD909F280F349847B /* WindowSystemIdentity.swift */; };
 		A8787B16DE389140CF48D9AF /* UsageStatisticsPreferencesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */; };
 		AA7BEAF963CB36DDC1C4FA10 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337C977CD2AF7514192B081 /* DesignTokens.swift */; };
+		AA9419A4F30A62D9FFFEBC58 /* SettingsHelpButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED4EA7CB3EBAB16E3821C56 /* SettingsHelpButton.swift */; };
 		AD00BF4A25EEBFC308259DC0 /* PluginSceneDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CE51AB1199542766F6B6CD /* PluginSceneDrawing.swift */; };
 		B09D2790372896E8A13F7090 /* PluginGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290E7694EDAC0E810F258F5E /* PluginGrant.swift */; };
 		B32AACF7C6D7DA1385B8F872 /* PluginLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3FA3BA196C23A2260E4A0 /* PluginLifecycleTests.swift */; };
@@ -320,6 +321,7 @@
 		CA27D10772371E9573FC8678 /* PluginFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFileReader.swift; sourceTree = "<group>"; };
 		CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherSettings.swift; sourceTree = "<group>"; };
 		CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTriggerMonitorTests.swift; sourceTree = "<group>"; };
+		CED4EA7CB3EBAB16E3821C56 /* SettingsHelpButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsHelpButton.swift; sourceTree = "<group>"; };
 		CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarViewModel.swift; sourceTree = "<group>"; };
 		D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewView.swift; sourceTree = "<group>"; };
 		D34689921552D03B9A0939D3 /* ThumbnailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailService.swift; sourceTree = "<group>"; };
@@ -492,6 +494,7 @@
 				EA808BAFE0367506C45C90FD /* PreferencesView.swift */,
 				960008BE3922EDC5D06FB1FC /* PreviewPanel.swift */,
 				E270A7C7525E09B303AE2508 /* PreviewReplicaPanel.swift */,
+				CED4EA7CB3EBAB16E3821C56 /* SettingsHelpButton.swift */,
 				F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */,
 				5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */,
 				B39BEC7FA3384FA15C08FF3B /* StatisticsView.swift */,
@@ -914,6 +917,7 @@
 				0D5D33312D630DEC557DBB80 /* PreviewTriggerMonitor.swift in Sources */,
 				7CE92B9881FC19BB2489D2CF /* PreviewViewModel.swift in Sources */,
 				D0E86F4A6963F3CED6099BCF /* SceneEvaluator.swift in Sources */,
+				AA9419A4F30A62D9FFFEBC58 /* SettingsHelpButton.swift in Sources */,
 				33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */,
 				34A8A5EB0367745AFAD728C3 /* ShortcutPrefix.swift in Sources */,
 				557D68547549ED39FDA46C08 /* ShortcutService.swift in Sources */,

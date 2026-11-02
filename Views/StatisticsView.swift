@@ -62,7 +62,8 @@ struct StatisticsView: View {
                                         material: settings.crystalMaterial, style: .statistics))
         .preferredColorScheme(settings.theme.colorScheme)
         .frame(minWidth: 840, minHeight: 810)
-        .onAppear { model.activate() }
+        .settingsHelpBubbleOverlay()
+            .onAppear { model.activate() }
         .onDisappear { model.deactivate() }
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             settings = SettingsService.shared.loadSettings()

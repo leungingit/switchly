@@ -88,10 +88,7 @@ struct PluginPreferencesSection: View {
                     .disabled(isPluginOperationInProgress)
                     .accessibilityLabel(Text(t("Reload Plugins")))
                     Spacer()
-                    Button {} label: { Image(systemName: "questionmark.circle") }
-                        .buttonStyle(.plain)
-                        .help(t("Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then."))
-                        .accessibilityLabel(Text(t("Plugin locations")))
+                    SettingsHelpButton(help: t("Built-in plugins ship inside Switchly itself — their cards above are marked Built-in. This folder only holds plugins you install yourself, so it stays empty until then."))
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)

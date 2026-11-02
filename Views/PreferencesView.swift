@@ -73,6 +73,7 @@ struct PreferencesView: View {
                                         material: viewModel.settings.crystalMaterial, style: .preferences))
         .preferredColorScheme(viewModel.settings.theme.colorScheme)
         .frame(width: 760, height: 560)
+        .settingsHelpBubbleOverlay()
         .animation(MotionTokens.animated(.easeInOut(duration: MotionTokens.contentSwapDuration)), value: selectedTab)
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             viewModel.settings = SettingsService.shared.loadSettings()
@@ -1174,11 +1175,7 @@ struct PreferencesView: View {
 
     /// Small “?” that explains a section on hover instead of a permanent subtitle line.
     private func infoHint(_ text: String) -> some View {
-        Image(systemName: "questionmark.circle")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.secondary)
-            .help(text)
-            .accessibilityLabel(Text(text))
+        SettingsHelpButton(help: text)
     }
 
     private func settingsGroup<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -1426,32 +1423,6 @@ struct PreferencesView: View {
 
     private func t(_ key: String) -> String {
         viewModel.settings.language.localizedString(key)
-    }
-}
-
-/// 使用悬停状态直接打开说明，不等待系统 tooltip 的默认延迟。
-private struct SettingsHelpButton: View {
-    let help: String
-    @State private var isPresented = false
-
-    var body: some View {
-        Button { isPresented = true } label: {
-            Image(systemName: "questionmark.circle")
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-                .padding(4)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(help))
-        .onHover { isPresented = $0 }
-        .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            Text(help)
-                .font(.callout)
-                .frame(width: 280, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(12)
-        }
     }
 }
 
