@@ -249,13 +249,16 @@ class WorkspaceBarPanel: NSPanel {
         let maxPanelWidth = visibleFrame.width - Self.horizontalScreenMargin * 2
         let desiredWidth = WorkspaceBarMetrics.panelWidth(for: viewModel.items.count)
         let panelWidth = min(max(desiredWidth, Self.minimumPanelWidth), maxPanelWidth)
-        viewModel.panelWidth = panelWidth
+        if viewModel.panelWidth != panelWidth { viewModel.panelWidth = panelWidth }
         let frame = NSRect(
             x: visibleFrame.midX - panelWidth / 2,
             y: visibleFrame.midY - Self.panelHeight / 2,
             width: panelWidth,
             height: Self.panelHeight
         )
+        // 窗口列表每约 2s 刷新一次；尺寸没变就不要重新动画，否则透明玻璃
+        // 面板会被周期性强制重绘（与 Dock 预览同类问题）。
+        guard !Self.framesApproximatelyEqual(self.frame, frame) else { return }
         if animated {
             // Refit the width with the morph timing so the panel breathes
             // open/closed instead of jumping (e.g. workspace switches).
@@ -263,6 +266,11 @@ class WorkspaceBarPanel: NSPanel {
         } else {
             setFrame(frame, display: true)
         }
+    }
+
+    private static func framesApproximatelyEqual(_ a: NSRect, _ b: NSRect) -> Bool {
+        abs(a.origin.x - b.origin.x) < 0.5 && abs(a.origin.y - b.origin.y) < 0.5
+            && abs(a.size.width - b.size.width) < 0.5 && abs(a.size.height - b.size.height) < 0.5
     }
 
     /// Re-fits the panel width while visible when the window list changes
@@ -438,8 +446,10 @@ final class WorkspaceBarViewModel: ObservableObject {
 
     func refreshItems() {
         guard let workspace else {
-            items = []
-            selectedItemID = nil
+            // 监控每约 2s 触发一次刷新；@Published 对同值赋值也会发布，
+            // 空工作区反复发布会让面板重复重定位。
+            if !items.isEmpty { items = [] }
+            if selectedItemID != nil { selectedItemID = nil }
             return
         }
 
@@ -465,11 +475,31 @@ final class WorkspaceBarViewModel: ObservableObject {
             }
         }
 
-        items = nextItems
+        // 内容未变则不赋值：$items 的订阅方会重定位面板，
+        // 每 2 秒对同一 frame 重复 morph 会让玻璃面板周期性重绘。
+        if !Self.itemsEquivalent(items, nextItems) { items = nextItems }
         if let selectedItemID, nextItems.contains(where: { $0.id == selectedItemID }) {
             return
         }
         selectedItemID = nextItems.first?.id
+    }
+
+    /// 比较卡片的全部展示字段。`WindowInfo.==` 只比 id，不能直接比较数组；
+    /// 标题、几何、桌面归属变化都必须算作变化。
+    private static func itemsEquivalent(_ a: [WorkspaceBarItem], _ b: [WorkspaceBarItem]) -> Bool {
+        a.count == b.count && zip(a, b).allSatisfy { lhs, rhs in
+            switch (lhs, rhs) {
+            case let (.window(l, appL), .window(r, appR)):
+                return appL.id == appR.id
+                    && l.id == r.id && l.windowTitle == r.windowTitle && l.bounds == r.bounds
+                    && l.isOnCurrentSpace == r.isOnCurrentSpace && l.isMinimized == r.isMinimized
+                    && l.isHidden == r.isHidden && l.isOnOtherSpace == r.isOnOtherSpace
+            case let (.placeholder(appL, idL), .placeholder(appR, idR)):
+                return idL == idR && appL.id == appR.id
+            default:
+                return false
+            }
+        }
     }
 
     /// Keeps the strip honest while the panel is open: closing a window
