@@ -1,5 +1,6 @@
 import XCTest
 import AppKit
+import Combine
 @testable import Switchly
 
 private final class PanelRefreshMonitor: WindowMonitorServiceProtocol {
@@ -60,15 +61,32 @@ final class DockPreviewPanelRefreshTests: XCTestCase {
 
         let iconFrame = NSRect(x: 200, y: 40, width: 64, height: 64)
         panel.show(forApp: finder.localizedName ?? "Finder", aboveIconFrame: iconFrame)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        // 入场动画逐帧 setFrame；等计数连续 0.3s 不再增长后再开始计数。
+        var quietSince = Date()
+        var lastCount = panel.frameSetCount
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+            if panel.frameSetCount != lastCount {
+                lastCount = panel.frameSetCount
+                quietSince = Date()
+            } else if Date().timeIntervalSince(quietSince) >= 0.3 {
+                break
+            }
+        }
         XCTAssertTrue(panel.isVisible)
         XCTAssertEqual(model.windows.map(\.id), [9101])
 
         panel.frameSetCount = 0
+        var sizeEmissions = 0
+        var bag = Set<AnyCancellable>()
+        model.$panelWidth.dropFirst().sink { _ in sizeEmissions += 1 }.store(in: &bag)
+        model.$panelHeight.dropFirst().sink { _ in sizeEmissions += 1 }.store(in: &bag)
         for _ in 0..<3 {
             NotificationCenter.default.post(name: .windowListDidRefresh, object: nil)
             RunLoop.main.run(until: Date().addingTimeInterval(0.2))
         }
+        XCTAssertEqual(sizeEmissions, 0, "内容未变的刷新不得重新发布尺寸")
         XCTAssertEqual(panel.frameSetCount, 0, "内容未变的刷新不得重设面板 frame")
 
         // 真实变化仍需重新布局：窗口消失后面板要收缩。
