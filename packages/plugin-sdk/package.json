@@ -1,0 +1,22 @@
+{
+  "name": "@switchly/plugin-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Switchly 插件的零依赖 JavaScript 注册与 UI 构建器",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "types": "./index.d.ts",
+  "files": [
+    "src",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "test": "node --test"
+  }
+}

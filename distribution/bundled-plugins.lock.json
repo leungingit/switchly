@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "repository": "leungingit/switchly-plugins",
+  "sourceRevision": "d1de39c22a8b5e131879d00b761c346dac949a41",
+  "plugins": [
+    {
+      "id": "com.switchly.music-controls",
+      "version": "1.0.0",
+      "apiVersion": 1,
+      "files": {
+        "locales/en.json": "23e9acf6c57a8031f9144de32d1c045b7c5ec659beba67775e2b4cb572c78866",
+        "locales/zh-Hans.json": "f167d25aa7b19a95776a098f4e5ee083d3ce7d2a14512f7622373436a3aee5dd",
+        "main.js": "cb7c6d8f864c50b683ae523dda6edd1df017463ca4d4ce4d6643dd3de310e76d",
+        "manifest.json": "ab3cdac8fd5236d7e3d06269e4f063b84b11e6b2194b363635346e740fb44838"
+      }
+    },
+    {
+      "id": "com.switchly.weather-gacha",
+      "version": "1.0.0",
+      "apiVersion": 2,
+      "files": {
+        "assets/burst_common.png": "007baebec915c5e2f78315e766ca17b51064b13c4da94c08bf1e21d9281bc8d7",
+        "assets/burst_epic.png": "2f8f025cb6b609d7d1343f3172db0fb0dbf5dd5234287360dbe7137a57707222",
+        "assets/burst_rare.png": "475986cdd29d51809b6a10c1296ab5539920616001f144e584c2830039a5804c",
+        "locales/en.json": "99155abc95181f3953e2a38d06874819f3fa29090079cc20fe00fbaf51ddb47c",
+        "locales/zh-Hans.json": "1bc10ee5b2996a1c35b05da6a20966174636886436d72b786bf2e82e05232ebb",
+        "main.js": "9a874ee72b33c1d27d102d4662709342ef398b70fdf0fa91d293a8c62c60a0c3",
+        "manifest.json": "a5f2e601be8064b15090d07792c6ddba5d8ba6d23a8f4e97e1649dce10f8a80a"
+      }
+    },
+    {
+      "id": "com.switchly.whale",
+      "version": "0.1.0",
+      "apiVersion": 2,
+      "files": {
+        "assets/arm-left.png": "29b39dbdf30dc1b47afa8c27a1db4b4036530b0314b4e16ab38d434ced6ab268",
+        "assets/arm-right.png": "3566a88fe8d70a628bd816b824be5237f60149dfb443da8fbc29bde5952daeff",
+        "assets/back-hair.png": "57d8c3e70978ca720f712adaecc53bc9959654c82af8141ba3e14a6515ce6ed5",
+        "assets/banner.png": "7b514c0f96880ad0f31657fa2df3a718eeeadff3663db36e99a902150e63e9e2",
+        "assets/body.png": "a6c2a99d61103cb7e1d131d67f69de0d3740f7525690ab27730ff92b0a806151",
+        "assets/ears.png": "becc801004a23657603861c7edf4e58497ed110182110c4f33893f51fef77229",
+        "assets/eyes-closed.png": "0a6f8c65d73f6e1399377bdb060e5f81ef5ada360d34371710f33c2ef4475347",
+        "assets/eyes-open.png": "40e417246aabb2ebb62c78c2f22f4dfcf5435804dc8932e5e30705505a51be82",
+        "assets/hair-front.png": "ba071393c9ebc099525e6fc6f6b4eeedf2b2f691233a6d38df8561fbf9c0d7cc",
+        "assets/head.png": "75d6b69e0177e566f568d353f4279db4d8b0f38f0931106e006634a1befb7c3b",
+        "assets/legs.png": "20d2b1e4726f38da0b1f93ff68aad7d8e4dfda0ea07913238669e75f3cb9e964",
+        "assets/skirt.png": "e06ac3923f08ec6ef2fea760be647e50f916e7fa003a75c52fa0b9dbe1f9f08e",
+        "main.js": "416498df9ac6887983bddfc083a60113068d4dd7d93ce3ce3828a8da060fe7d5",
+        "manifest.json": "a226ac3589d703a4e94fa894d435541e4f2e54d3a07b08a577a1dc820793d613"
+      }
+    }
+  ]
+}

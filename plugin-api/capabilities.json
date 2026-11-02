@@ -1,0 +1,459 @@
+{
+  "schemaVersion": "1.0.0",
+  "apiVersions": {
+    "supported": [
+      1,
+      2
+    ],
+    "recommended": 2,
+    "runtimeGate": "1...2",
+    "note": "宿主当前只校验 apiVersion 是否位于 1...2；较新的 UI、Scene 与设置类型按 v2 约定发布，但运行时没有逐项按版本拒绝。"
+  },
+  "packageLimits": {
+    "maxPackageBytes": 33554432,
+    "maxEntries": 1024,
+    "maxManifestBytes": 262144,
+    "maxEntryBytes": 2097152,
+    "symlinksAllowed": false,
+    "manifestVersionRule": "non-empty-string; semver is not required"
+  },
+  "installPolicy": {
+    "firstPhaseSource": "user-selected-local-directory",
+    "builtinIDCanBeShadowed": false,
+    "sameIDUserUpdate": "replace-after-validation",
+    "userUpdateRequiresReauthorization": true
+  },
+  "features": [
+    {
+      "id": "runtime.definePlugin",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "globalThis.__switchlyPlugin",
+      "injected": true,
+      "description": "入口脚本必须把 render/onAction 对象注册到该全局变量。"
+    },
+    {
+      "id": "runtime.console",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "console",
+      "injected": true,
+      "methods": [
+        "log",
+        "info",
+        "debug",
+        "warn",
+        "error"
+      ],
+      "limits": {
+        "maxLogLength": 500
+      }
+    },
+    {
+      "id": "runtime.timers",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": [
+        "setTimeout",
+        "clearTimeout"
+      ],
+      "injected": true,
+      "limits": {
+        "maxPendingTimers": 32
+      }
+    },
+    {
+      "id": "runtime.invoke",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "methods": [
+        "render",
+        "onAction"
+      ],
+      "supports": [
+        "sync",
+        "promise",
+        "throw"
+      ],
+      "timeout": {
+        "productionMilliseconds": 1000,
+        "defaultRuntimeMilliseconds": 200,
+        "hardInterrupt": false,
+        "consecutiveTimeoutsBeforeDisable": 3
+      }
+    },
+    {
+      "id": "ctx.app",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.app",
+      "injected": true,
+      "fields": [
+        "bundleID",
+        "pid",
+        "name",
+        "lastActiveAt"
+      ]
+    },
+    {
+      "id": "ctx.window",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.window",
+      "injected": true,
+      "fields": [
+        "windowID",
+        "title"
+      ],
+      "limits": {
+        "titleSummaryCharacters": 40
+      }
+    },
+    {
+      "id": "ctx.localization",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": [
+        "ctx.locale",
+        "ctx.t"
+      ],
+      "injected": true,
+      "localeFiles": "locales/<language>.json",
+      "fallback": [
+        "preferred language",
+        "en",
+        "key"
+      ]
+    },
+    {
+      "id": "ctx.settings",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.settings",
+      "injected": true,
+      "valueTypes": [
+        "boolean",
+        "string",
+        "number"
+      ]
+    },
+    {
+      "id": "ctx.storage",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.storage",
+      "injected": true,
+      "methods": [
+        "get",
+        "set",
+        "remove",
+        "clear"
+      ],
+      "asynchronous": true,
+      "returns": "Promise",
+      "valueFormat": "JSON",
+      "limits": {
+        "maxKeyBytes": 256,
+        "maxValueBytes": 65536,
+        "maxTotalBytes": 1048576
+      }
+    },
+    {
+      "id": "ctx.reduceMotion",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.reduceMotion",
+      "injected": true
+    },
+    {
+      "id": "ctx.invalidate",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.invalidate",
+      "injected": true
+    },
+    {
+      "id": "ctx.weather.current",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.weather.current",
+      "injected": "always",
+      "permission": "weather.current",
+      "withoutPermission": null,
+      "networkFromPlugin": false,
+      "description": "同步读取宿主已有快照；权限未授权、在线天气关闭、未配置、请求失败或结果过期时均返回 null。"
+    },
+    {
+      "id": "ctx.media.nowPlaying",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.media.nowPlaying",
+      "injected": "when-authorized",
+      "permission": "media.nowPlaying",
+      "returns": "Promise<NowPlaying|null>"
+    },
+    {
+      "id": "ctx.media.controls",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": [
+        "ctx.media.togglePlayPause",
+        "ctx.media.next",
+        "ctx.media.previous",
+        "ctx.media.setLiked"
+      ],
+      "injected": "when-authorized",
+      "permission": "media.control",
+      "returns": "Promise<void>"
+    },
+    {
+      "id": "ctx.media.library",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.media.library",
+      "injected": "when-authorized",
+      "permission": "media.library",
+      "methods": [
+        "pickRandom",
+        "play",
+        "pause"
+      ]
+    },
+    {
+      "id": "ctx.fs",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "ctx.fs",
+      "injected": "when-authorized",
+      "permission": "fs.read",
+      "methods": [
+        "list",
+        "stat",
+        "readText",
+        "scan",
+        "isLocked"
+      ],
+      "limits": {
+        "maxReadBytes": 262144,
+        "maxListEntries": 500,
+        "maxCallsPerInvocation": 50,
+        "maxScanResults": 200,
+        "maxScanVisited": 5000,
+        "maxScanDepth": 3
+      }
+    },
+    {
+      "id": "ui.declarative",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "render() return value",
+      "nodeTypes": [
+        "hstack",
+        "vstack",
+        "zstack",
+        "spacer",
+        "surface",
+        "button",
+        "toggle",
+        "slider",
+        "text",
+        "progress",
+        "image",
+        "badge",
+        "marquee",
+        "screen",
+        "wheel",
+        "scene"
+      ],
+      "limits": {
+        "maxDepth": 8,
+        "maxNodes": 64,
+        "uniqueSlots": true,
+        "uniqueActionIds": true
+      }
+    },
+    {
+      "id": "ui.image.artwork",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "image.source.artwork",
+      "permission": "media.nowPlaying",
+      "description": "封面字节由宿主读取和绘制，不传入插件 JS。"
+    },
+    {
+      "id": "ui.image.pluginAsset",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "image.source.pluginAsset",
+      "decoded": true,
+      "rendered": true,
+      "integrationStatus": "verified-native-rendering",
+      "description": "普通插件图片复用 SceneAssets，含路径与解码前纹理预算，已通过原生渲染回归。"
+    },
+    {
+      "id": "scene",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "ui.scene",
+      "layerKinds": [
+        "group",
+        "rect",
+        "ellipse",
+        "text",
+        "symbol",
+        "wave",
+        "emitter",
+        "sprite",
+        "image"
+      ],
+      "limits": {
+        "maxLayers": 160,
+        "maxDepth": 6,
+        "maxParticles": 400,
+        "maxParticlesPerEmitter": 120,
+        "maxKeysPerTrack": 160,
+        "maxPlucks": 8,
+        "maxHits": 12,
+        "minDimension": 16,
+        "maxDimension": 1200
+      }
+    },
+    {
+      "id": "window.focus",
+      "status": "unimplemented",
+      "apiVersions": [],
+      "permission": "window.focus",
+      "manifestAccepted": true,
+      "injected": false,
+      "description": "权限字符串可声明，但当前没有对应 ctx 方法，宿主不会注入聚焦能力。"
+    },
+    {
+      "id": "appleScript",
+      "status": "unimplemented",
+      "apiVersions": [],
+      "permissionPattern": "^appleScript:.+$",
+      "manifestAccepted": true,
+      "injected": false,
+      "description": "权限字符串可声明，但当前没有对应 ctx 方法，宿主不会向插件暴露任意 AppleScript。"
+    },
+    {
+      "id": "ctx.app.activate",
+      "status": "unimplemented",
+      "apiVersions": [],
+      "injected": false
+    },
+    {
+      "id": "ctx.capabilities",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.capabilities",
+      "description": "按能力名查询 supported/granted/available；window.focus 与 appleScript 始终报告未实现，storage 是基础能力。"
+    }
+  ],
+  "permissions": [
+    {
+      "id": "media.nowPlaying",
+      "status": "stable",
+      "injectedWhenGranted": true
+    },
+    {
+      "id": "media.control",
+      "status": "stable",
+      "injectedWhenGranted": true
+    },
+    {
+      "id": "media.library",
+      "status": "stable",
+      "injectedWhenGranted": true
+    },
+    {
+      "id": "weather.current",
+      "status": "stable",
+      "injectedWhenGranted": true,
+      "unauthorizedResult": null
+    },
+    {
+      "id": "fs.read",
+      "status": "stable",
+      "injectedWhenGranted": true,
+      "requires": "fsRoots"
+    },
+    {
+      "id": "window.focus",
+      "status": "unimplemented",
+      "injectedWhenGranted": false
+    },
+    {
+      "id": "appleScript:<bundleID>",
+      "status": "unimplemented",
+      "injectedWhenGranted": false
+    }
+  ],
+  "forbiddenGlobals": [
+    "fetch",
+    "XMLHttpRequest",
+    "WebSocket",
+    "require",
+    "process"
+  ]
+}

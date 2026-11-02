@@ -251,6 +251,8 @@ struct PluginManifest: Codable, Equatable {
         case emptyMatches
         case invalidEntry
         case invalidFSRoot
+        case invalidSettings
+        case invalidMetadata
     }
 
     func validate() throws {
@@ -263,6 +265,18 @@ struct PluginManifest: Codable, Equatable {
         // Entry must stay inside the plugin directory.
         guard !entry.isEmpty, !entry.hasPrefix("/"), !entry.split(separator: "/").contains("..") else {
             throw ValidationError.invalidEntry
+        }
+        guard !name.isEmpty, name.values.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+              !version.isEmpty,
+              matches.allSatisfy({ !$0.isEmpty }),
+              refreshInterval.map({ $0.isFinite && $0 > 0 && $0 <= 86400 }) ?? true,
+              Set(permissions).count == permissions.count else { throw ValidationError.invalidMetadata }
+        let specs = settings ?? []
+        guard Set(specs.map(\.key)).count == specs.count,
+              specs.allSatisfy({ !$0.key.isEmpty && !$0.title.isEmpty
+                  && Set($0.options.map(\.value)).count == $0.options.count
+                  && ($0.effect == nil || $0.effect == "hideWindowPreviews") }) else {
+            throw ValidationError.invalidSettings
         }
         // `fs.read` and `fsRoots` go together; every root must be usable and non-sensitive.
         let roots = fsRoots ?? []

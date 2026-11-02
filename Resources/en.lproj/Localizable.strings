@@ -486,3 +486,42 @@
 "Unexpected reply from the weather service." = "Unexpected reply from the weather service.";
 "Enter a city first." = "Enter a city first.";
 "Couldn't reach Open-Meteo. Check your connection." = "Couldn't reach Open-Meteo. Check your connection.";
+
+// 插件管理与通用天气数据源
+"All" = "All";
+"Disabled" = "Disabled";
+"Needs attention" = "Needs attention";
+"Search plugins" = "Search plugins";
+"Status" = "Status";
+"Plugin status filter" = "Plugin status filter";
+"Press Return to select the first matching plugin." = "Press Return to select the first matching plugin.";
+"Clear plugin search" = "Clear plugin search";
+"%d shown" = "%d shown";
+"%d plugins shown" = "%d plugins shown";
+"Review plugin permission requests and loading problems." = "Review plugin permission requests and loading problems.";
+"Could not be loaded" = "Could not be loaded";
+"Enable “%@”" = "Enable “%@”";
+"Selected plugin" = "Selected plugin";
+"Show plugin details" = "Show plugin details";
+"No plugins match this search and status" = "No plugins match this search and status";
+"Clear Filters" = "Clear Filters";
+"Clear plugin filters" = "Clear plugin filters";
+"Install Plugin" = "Install Plugin";
+"Choose a plugin folder containing manifest.json." = "Choose a plugin folder containing manifest.json.";
+"Install or Replace" = "Install or Replace";
+"Install or Replace Plugin" = "Install or Replace Plugin";
+"Install a plugin from the selected local folder. If a user-installed plugin with the same ID exists, its package will be replaced and it will need permission again." = "Install a plugin from the selected local folder. If a user-installed plugin with the same ID exists, its package will be replaced and it will need permission again.";
+"Install Failed" = "Install Failed";
+"Installed plugins can be removed from Switchly." = "Installed plugins can be removed from Switchly.";
+"Uninstall Plugin" = "Uninstall Plugin";
+"Uninstall “%@”" = "Uninstall “%@”";
+"Uninstall “%@”?" = "Uninstall “%@”?";
+"Uninstall" = "Uninstall";
+"This removes the plugin package. Its saved settings are kept, and the plugin stays disabled if you install it again." = "This removes the plugin package. Its saved settings are kept, and the plugin stays disabled if you install it again.";
+"Uninstall Failed" = "Uninstall Failed";
+"Weather data source" = "Weather data source";
+"Enter a city to use the weather data source; until then plugins receive no weather data." = "Enter a city to use the weather data source; until then plugins receive no weather data.";
+"Optional online weather for plugins with weather access. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "Optional online weather for plugins with weather access. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local.";
+"The plugin operation failed. Check its manifest, compatibility, and folder access." = "The plugin operation failed. Check its manifest, compatibility, and folder access.";
+
+"Plugin locations" = "Plugin locations";

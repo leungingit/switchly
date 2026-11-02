@@ -137,6 +137,20 @@ final class PluginSystemTests: XCTestCase {
             variant: .plain, enabled: true, selected: false))])
     }
 
+    func testCapabilitySnapshotDoesNotMistakeDeclarationForImplementation() async throws {
+        let source = """
+        globalThis.__switchlyPlugin = { render(ctx) {
+          return [{slot:"center",node:{type:"text",value:JSON.stringify([
+            ctx.capabilities["media.control"].supported,
+            ctx.capabilities["media.control"].available,
+            ctx.capabilities["window.focus"].supported
+          ])}}];
+        }};
+        """
+        let result = try await runtime(source: source).render(context: context).get()
+        XCTAssertEqual(result.first?.node, .text(value: "[true,false,false]", style: .body, lines: nil))
+    }
+
     func testRuntimeHasNoNetworkOrFileGlobals() async throws {
         let source = """
         globalThis.__switchlyPlugin = { render() {
@@ -231,83 +245,6 @@ final class PluginMediaTests: XCTestCase {
     private let windowlessContext = PluginRenderContext(bundleID: "com.apple.Music", pid: 1, appName: "Music",
                                                         windowID: 0, titleSummary: "")
 
-    private var builtinMusic: PluginPackage {
-        get throws {
-            let dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-                .appendingPathComponent("../../Resources/Plugins").standardizedFileURL
-            let result = PluginRegistry(directory: dir, origin: .builtin).reload()
-            XCTAssertEqual(result.failures, [])
-            return try XCTUnwrap(result.plugins.first { $0.manifest.id == "com.switchly.music-controls" })
-        }
-    }
-
-    func testBuiltinMusicPluginRendersCardBelowStrip() async throws {
-        let bridge = FakeMediaBridge()
-        let rt = PluginRuntime(package: try builtinMusic, preferredLanguages: ["zh-Hans"], mediaBridge: bridge)
-        let slots = try await rt.render(context: windowContext).get()
-        XCTAssertEqual(slots.map(\.slot), [.center])
-        XCTAssertEqual(slots.first?.node.actionIDs, ["love", "previous", "toggle", "next"])
-        XCTAssertTrue(slots.first?.node.usesArtwork ?? false)
-    }
-
-    func testBuiltinMusicPluginShowsTrackWithoutWindowAndKeepsCardWhenIdle() async throws {
-        let bridge = FakeMediaBridge()
-        let rt = PluginRuntime(package: try builtinMusic, preferredLanguages: ["en"], mediaBridge: bridge)
-        let slots = try await rt.render(context: windowlessContext).get()
-        guard case .surface(let children, _) = slots.first?.node,
-              case .hstack(let row, _, _) = children.first,
-              case .vstack(let lines, _, _) = row.last else { return XCTFail() }
-        XCTAssertEqual(row.first, .image(source: .artwork, size: .l, corner: .m))
-        XCTAssertEqual(lines[1], .marquee(value: "Song"))
-
-        // Stopped: the card stays so Play can start playback.
-        bridge.current = nil
-        let idle = try await rt.render(context: windowlessContext).get()
-        XCTAssertEqual(idle.map(\.slot), [.center])
-        XCTAssertEqual(idle.first?.node.actionIDs, ["love", "previous", "toggle", "next"])
-    }
-
-    func testBuiltinMusicPluginHonoursOwnSettings() async throws {
-        let bridge = FakeMediaBridge()
-        let rt = PluginRuntime(package: try builtinMusic, preferredLanguages: ["en"], mediaBridge: bridge,
-                               settings: { ["showCover": false, "showLove": false, "unknown": true] })
-        let slots = try await rt.render(context: windowlessContext).get()
-        XCTAssertEqual(slots.first?.node.actionIDs, ["previous", "toggle", "next"])
-        XCTAssertFalse(slots.first?.node.usesArtwork ?? true)
-    }
-
-    func testBuiltinMusicPluginWheelLayout() async throws {
-        let rt = PluginRuntime(package: try builtinMusic, preferredLanguages: ["en"], mediaBridge: FakeMediaBridge(),
-                               settings: { ["wheelLayout": true] })
-        let slots = try await rt.render(context: windowlessContext).get()
-        XCTAssertEqual(slots.map(\.slot), [.center])
-        XCTAssertEqual(Set(slots.first?.node.actionIDs ?? []), ["love", "previous", "toggle", "next"])
-    }
-
-    func testBuiltinMusicPluginDeclaresHidePreviewsOption() throws {
-        let keys = try builtinMusic.manifest.hidePreviewsKeys
-        XCTAssertEqual(keys.map(\.key), ["hidePreviews"])
-        XCTAssertFalse(keys[0].default)
-    }
-
-    func testWheelLayoutWrapsInfoInScreen() async throws {
-        let rt = PluginRuntime(package: try builtinMusic, preferredLanguages: ["en"], mediaBridge: FakeMediaBridge(),
-                               settings: { ["wheelLayout": true] })
-        let slots = try await rt.render(context: windowlessContext).get()
-        guard case .surface(let outer, _) = slots.first?.node,
-              case .vstack(let parts, _, _) = outer.first,
-              case .screen = parts.first else { return XCTFail("screen frame missing") }
-    }
-
-    func testBuiltinMusicPluginActionsReachBridge() async throws {
-        let bridge = FakeMediaBridge()
-        let rt = PluginRuntime(package: try builtinMusic, mediaBridge: bridge)
-        for (id, value) in [("toggle", nil), ("next", nil), ("previous", nil), ("love", 1.0), ("love", 0.0)] as [(String, Double?)] {
-            _ = try await rt.performAction(id: id, value: value, context: windowContext).get()
-        }
-        XCTAssertEqual(bridge.queue.sync { bridge.commands }, [.togglePlayPause, .next, .previous, .like, .unlike])
-    }
-
     func testMediaIsAbsentWithoutPermission() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("PluginMediaTests-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }
@@ -322,21 +259,7 @@ final class PluginMediaTests: XCTestCase {
         XCTAssertEqual(slots.first?.node, .text(value: "nowPlaying", style: .body, lines: nil))
     }
 
-    func testBuiltinPathWinsOverUserCopy() throws {
-        let builtin = try builtinMusic
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("PluginOrigin-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: builtin.directory, to: root.appendingPathComponent("copy"))
-        let result = PluginRegistry(searchPaths: [
-            PluginSearchPath(directory: builtin.directory.deletingLastPathComponent(), origin: .builtin),
-            PluginSearchPath(directory: root, origin: .user),
-        ]).reload()
-        // Every built-in plugin loads once; the user copy of Music Controls is rejected as a duplicate.
-        XCTAssertEqual(result.plugins.filter { $0.manifest.id == "com.switchly.music-controls" }.map(\.origin), [.builtin])
-        XCTAssertEqual(result.plugins.map(\.origin), Array(repeating: .builtin, count: result.plugins.count))
-        XCTAssertEqual(result.failures.count, 1)
-    }
+
 }
 
 // MARK: - Authorization and host

@@ -486,3 +486,42 @@
 "Unexpected reply from the weather service." = "天气服务返回了无法识别的数据。";
 "Enter a city first." = "请先填写城市。";
 "Couldn't reach Open-Meteo. Check your connection." = "无法连接 Open-Meteo，请检查网络。";
+
+// 插件管理与通用天气数据源
+"All" = "全部";
+"Disabled" = "已禁用";
+"Needs attention" = "需处理";
+"Search plugins" = "搜索插件";
+"Status" = "状态";
+"Plugin status filter" = "插件状态筛选";
+"Press Return to select the first matching plugin." = "按回车键选择第一个匹配的插件。";
+"Clear plugin search" = "清除插件搜索";
+"%d shown" = "显示 %d 项";
+"%d plugins shown" = "显示 %d 个插件";
+"Review plugin permission requests and loading problems." = "查看待确认的插件权限和加载问题。";
+"Could not be loaded" = "无法加载";
+"Enable “%@”" = "启用“%@”";
+"Selected plugin" = "已选插件";
+"Show plugin details" = "显示插件详情";
+"No plugins match this search and status" = "没有符合搜索和状态条件的插件";
+"Clear Filters" = "清除筛选";
+"Clear plugin filters" = "清除插件筛选";
+"Install Plugin" = "安装插件";
+"Choose a plugin folder containing manifest.json." = "选择包含 manifest.json 的插件文件夹。";
+"Install or Replace" = "安装或替换";
+"Install or Replace Plugin" = "安装或替换插件";
+"Install a plugin from the selected local folder. If a user-installed plugin with the same ID exists, its package will be replaced and it will need permission again." = "从所选本地文件夹安装插件。如果已安装同 ID 的用户插件，将替换其插件包，并需要重新确认权限。";
+"Install Failed" = "安装失败";
+"Installed plugins can be removed from Switchly." = "可移除自行安装的插件。";
+"Uninstall Plugin" = "卸载插件";
+"Uninstall “%@”" = "卸载“%@”";
+"Uninstall “%@”?" = "卸载“%@”？";
+"Uninstall" = "卸载";
+"This removes the plugin package. Its saved settings are kept, and the plugin stays disabled if you install it again." = "这会移除插件包并保留已保存的设置；再次安装后，插件保持禁用，需要重新授权。";
+"Uninstall Failed" = "卸载失败";
+"Weather data source" = "天气数据源";
+"Enter a city to use the weather data source; until then plugins receive no weather data." = "请输入城市以使用天气数据源；配置完成前，插件不会收到在线天气数据。";
+"Optional online weather for plugins with weather access. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local." = "可选在线天气，仅供已获天气权限的插件使用。数据来自 Open-Meteo（免费、无需密钥），每 15 分钟最多一次地名查询和一次天气查询；关闭后保持本地运行。";
+"The plugin operation failed. Check its manifest, compatibility, and folder access." = "插件操作失败。请检查插件清单、API 兼容性和文件夹访问权限。";
+
+"Plugin locations" = "插件位置说明";

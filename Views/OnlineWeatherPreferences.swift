@@ -2,10 +2,10 @@
 //  OnlineWeatherPreferences.swift
 //  Switchly
 //
-//  Online weather block, shown inside the Weather Gacha card in Preferences →
-//  Plugins. Opt-in and off by default: the only place in Switchly that touches
-//  the network (Open-Meteo, no API key). Plugins only read the snapshot the
-//  host already fetched.
+//  Host-level online weather block, shown for every plugin authorized to read
+//  current weather. Opt-in and off by default: the only place in Switchly that
+//  touches the network (Open-Meteo, no API key). Plugins only read the snapshot
+//  the host already fetched.
 //
 
 import AppKit
@@ -15,9 +15,6 @@ struct OnlineWeatherPreferences: View {
     let value: OnlineWeatherSettings
     let language: AppLanguage
     let onChange: (OnlineWeatherSettings) -> Void
-    /// Called after a successful fetch so the host can mirror it into the
-    /// plugin's own weather options.
-    var onReading: (WeatherReading) -> Void = { _ in }
     var service: OnlineWeatherService = .shared
     /// Shown as if a fetch had failed; used by previews and tests.
     var injectedError: String? = nil
@@ -41,7 +38,7 @@ struct OnlineWeatherPreferences: View {
                 Divider().padding(.leading, 14)
                 statusRow
                 if !value.isReady {
-                    Text(t("Enter a city to use online weather; until then the gacha keeps the manual weather above."))
+                    Text(t("Enter a city to use the weather data source; until then plugins receive no weather data."))
                         .font(.caption)
                         .foregroundColor(.orange)
                         .fixedSize(horizontal: false, vertical: true)
@@ -56,18 +53,18 @@ struct OnlineWeatherPreferences: View {
     private var header: some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: 5) {
-                Text(t("Online weather")).font(.callout.weight(.medium))
+                Text(t("Weather data source")).font(.callout.weight(.medium))
                 Image(systemName: "questionmark.circle")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
-                    .help(t("Switchly's only network feature, off by default. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local."))
+                    .help(t("Optional online weather for plugins with weather access. Uses Open-Meteo (free, no API key): one lookup and one forecast per 15 minutes. Turn it off and everything stays local."))
             }
             Spacer(minLength: DesignTokens.Spacing.md)
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .controlSize(.small)
-                .accessibilityLabel(Text(t("Online weather")))
+                .accessibilityLabel(Text(t("Weather data source")))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
@@ -92,6 +89,7 @@ struct OnlineWeatherPreferences: View {
             .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
                 .strokeBorder(Color(nsColor: .systemRed), lineWidth: shownError == nil ? 0 : 1.5))
             .onSubmit { refresh() }
+            .accessibilityLabel(Text(t("City")))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
@@ -121,6 +119,7 @@ struct OnlineWeatherPreferences: View {
             .controlSize(.small)
             .disabled(isRefreshing || !value.isReady)
             .help(t("Fetches once; the result is reused for 15 minutes."))
+            .accessibilityLabel(Text(t("Refresh now")))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
@@ -142,9 +141,8 @@ struct OnlineWeatherPreferences: View {
             let result = await service.refreshNow()
             isRefreshing = false
             switch result {
-            case .success(let reading):
+            case .success:
                 cityError = nil
-                onReading(reading)
             case .failure(let error):
                 cityError = message(for: error)
             }

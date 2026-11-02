@@ -39,8 +39,16 @@ final class SceneAssets {
     /// Decodes `name` once. Over-budget or unreadable files are refused once and stay blank.
     private func decode(_ name: String) -> CGImage? {
         guard let directory, !refused.contains(name) else { return nil }
-        let url = directory.appendingPathComponent(name)
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+        let root = directory.resolvingSymlinksInPath().standardizedFileURL
+        let url = directory.appendingPathComponent(name).resolvingSymlinksInPath().standardizedFileURL
+        guard !name.isEmpty, !name.hasPrefix("/"), !name.split(separator: "/").contains(".."),
+              url.path.hasPrefix(root.path + "/"),
+              let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int,
+              width > 0, height > 0, width <= Self.maxEdge, height <= Self.maxEdge,
+              decodedBytes + width * height * 4 <= Self.maxDecodedBytes,
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
               image.width <= Self.maxEdge, image.height <= Self.maxEdge,
               decodedBytes + image.width * image.height * 4 <= Self.maxDecodedBytes else {

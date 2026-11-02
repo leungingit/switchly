@@ -117,3 +117,12 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 - [ ] 最终检查 `git diff --check` 与 `git status --short`，无本次引入的临时文件、构建产物或敏感信息。
 
 本约定参考了全局 Agent 约定入口，以及 oh-my-workers 的 AGENTS、前端和后端规范中关于契约一致性、共享设计、单向分层、并发安全、资源生命周期和证据验收的原则；具体规则与命令已按本仓库的原生 macOS 实现调整，无需依赖外部仓库才能执行。
+
+## 9. 插件外仓与公开契约（2026-11-02）
+
+- 插件 JS、资产、专属文案与算法测试唯一来源为相邻 `switchly-plugins` 仓库；禁止重新写回宿主 `Resources/Plugins` 或添加按插件 ID 的业务分支。
+- 宿主公开 API 真源见 `plugin-api/` 与 `docs/plugin-api-reference.md`。`packages/plugin-sdk`、`packages/plugin-cli` 是未发布的本地工具包；CLI `build` 仅校验与复制，不冒充 TS 转译。
+- 先在外仓 `npm test`、`npm run build`，再宿主 `make prepare-plugins` / `make build`。工程使用忽略的 `.build/Plugins` 制品；`make generate`、build、test 会先校验锁文件，完全不联网。
+- `make update-plugin-lock` 是显式接受新制品的入口，审查逐文件哈希与来源提交；禁止让普通构建自动刷新锁文件。发行前外仓必须提交并锁定不可变 revision，再运行 `make verify-plugin-release`。
+- 用户目录安装与 Registry 复用 `PluginPackageValidator`，用户更新重新授权；当前没有发布者签名验证，因此继续拒绝覆盖预装 ID。不可提前宣称在线市场、独立更新信任或硬隔离完成。
+- `ctx.storage` 是插件私有 JSON，不保存凭据；限额单值 64 KiB、总量 1 MiB。隐藏时挂起受控 Timer，状态保留至卸载；同步死循环仍需后续独立进程隔离。

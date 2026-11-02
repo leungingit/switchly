@@ -60,9 +60,11 @@ Workspaces organize app groups and access to their windows; they do not create m
 
 *Rendered from the current source with sample content, not a live screenshot.*
 
-Plugins add controls to the window cards shown on Dock hover. They are written in JavaScript, run in an embedded JavaScriptCore sandbox, and only return a declarative UI tree that Switchly draws natively—so they match your theme and glass settings, and have no network, file or process access of their own. Two plugins are built in: **Music Controls** (the reference implementation) and **Weather Gacha** (set the weather, draw three cards, play a song from your Music library; its animation is a host-played `scene`). Music Controls offers cover art, a scrolling title, playback and Love buttons, an optional click-wheel layout, and a **hide window previews** option.
+插件为 Dock 预览卡片提供原生声明式控件与 Scene。音乐控制、天气抽卡、鲸娘的源码、素材和业务测试统一位于独立的 [switchly-plugins 仓库](https://github.com/leungingit/switchly-plugins)；App 只消费哈希锁定的预装制品，保留离线首次启动。插件没有直接网络和进程能力；目录只读需显式授权。
 
-Plugins declare permissions in `manifest.json` (for example `media.nowPlaying`, `media.control`). Built-in plugins run unless you turn them off; plugins you install yourself stay off until you review and confirm their permissions in **Preferences → Permissions → Plugins**. The npm SDK and CLI are not released yet—plugins are plain JavaScript for now. See the [plugin API reference](https://leungingit.github.io/switchly/plugins.html) and the [design notes](docs/dock-preview-plugins-design.md).
+「偏好设置 → 插件」支持搜索、状态筛选、按需展开详情、本地文件夹安装、重新加载和用户插件卸载。用户插件默认关闭，更新后需要重新授权，预装同 ID 不可被用户包覆盖。天气设置是共享宿主数据源，不依赖某个插件 ID。
+
+本仓库提供本地 SDK/CLI（尚未发布 npm），含 TypeScript 类型、注册/UI 构建器、创建、校验和制品复制工具。完整契约见 [API 参考](docs/plugin-api-reference.md)，后续能力见 [发展路线](docs/plugin-api-roadmap.md)。
 
 ## Desktop Grid: all your desktops, one glance away
 
@@ -166,6 +168,8 @@ Use **Xcode 26+**, Swift 5.9, and [XcodeGen](https://github.com/yonaskolb/XcodeG
 git clone https://github.com/leungingit/switchly.git
 cd switchly
 brew install xcodegen
+# 先将 switchly-plugins 克隆到相邻目录，并构建制品
+(cd ../switchly-plugins && npm run build)
 make bootstrap
 make build
 make test-unit
