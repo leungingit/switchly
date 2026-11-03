@@ -4,7 +4,7 @@
 
 ## PV-D01：分开处理不抢焦点、不遮挡与桌面隔离
 
-依据：`Tools/PluginPreview/Build/PreviewAppMain.swift` 的启动路径对 `dev`、`run` 均执行 `makeKeyAndOrderFront` 与 `NSApp.activate(ignoringOtherApps: true)`；截图路径另外创建窗口并再次 `makeKeyAndOrderFront`。因此当前自动化运行会主动切走用户焦点，并显示两个窗口。
+依据：`Tools/PluginPreview/Entry/PreviewAppMain.swift` 的启动路径对 `dev`、`run` 均执行 `makeKeyAndOrderFront` 与 `NSApp.activate(ignoringOtherApps: true)`；截图路径另外创建窗口并再次 `makeKeyAndOrderFront`。因此当前自动化运行会主动切走用户焦点，并显示两个窗口。
 
 “不抢焦点”不等于“不遮挡”。仅删除 activate 或改成 `orderFrontRegardless`，仍可能把预览盖在用户工作窗口上，不能作为最终验收结论。当前截图使用真实 WindowServer 窗口和 `screencapture -l`；真实窗口不意味着必须成为 key 或位于最前，但非前台、遮挡和隐藏时的截图完整性必须分别实测。
 

@@ -105,7 +105,7 @@ targets:
 
   # T04 build wiring only. These targets intentionally contain no host
   # resources, services, app lifecycle, or entitlements. The minimal entry
-  # points live under Tools/PluginPreview/Build until T06/T08 freeze their
+  # points live under Tools/PluginPreview/Entry until T06/T08 freeze their
   # real protocol and window implementations.
   SwitchlyPluginPreview:
     type: application
@@ -167,7 +167,7 @@ targets:
       - Tools/PluginPreview/Artifacts/PluginPreviewPackageHasher.swift
       - Tools/PluginPreview/Artifacts/PluginPreviewArtifactWriter.swift
       - Tools/PluginPreview/Reload/PluginPreviewPackageWatcher.swift
-      - Tools/PluginPreview/Build/PreviewAppMain.swift
+      - Tools/PluginPreview/Entry/PreviewAppMain.swift
       - Tools/PluginPreview/UI
       - path: Tools/PluginPreview/Resources/Assets.xcassets
         buildPhase: resources
@@ -214,7 +214,7 @@ targets:
       - Tools/PluginPreview/Worker/PluginPreviewWorkerFixtures.swift
       - Tools/PluginPreview/Worker/PluginPreviewWorkerSession.swift
       - Tools/PluginPreview/Worker/PluginPreviewWorkerService.swift
-      - Tools/PluginPreview/Build/PreviewWorkerMain.swift
+      - Tools/PluginPreview/Entry/PreviewWorkerMain.swift
     settings:
       base:
         PRODUCT_MODULE_NAME: SwitchlyPluginPreviewWorker

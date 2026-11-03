@@ -70,6 +70,18 @@ expect_case "未知场景步骤类型"         good        badstep             3
 expect_case "授权超出 manifest（取交集）" good     grantsbeyondmanifest 0 passed -
 expect_case "插件死循环（被终止）"     loop        ok                  1 failed plugin-timeout
 
+# 临时文件卫生：用独立的 TMPDIR 运行，成功与失败的 run 结束后都不得在其中留下任何东西
+# （曾经每次成功的 run 都会泄漏一张插件截图）。
+mkdir -p "$WORK/private-tmp"
+for pair in "good ok" "throws ok" "empty ok" "slotonly ok"; do
+  set -- $pair
+  TMPDIR="$WORK/private-tmp" node "$ROOT/packages/plugin-cli/bin/switchly-plugin.js" run "$WORK/plugin-$1" --preview-tool "$APP" \
+    --scenario "$WORK/scn-$2.json" --out "$WORK/o-tmp-$1" --json >/dev/null 2>&1
+done
+leftover="$(ls -A "$WORK/private-tmp")"
+if [ -z "$leftover" ]; then echo "PASS run 结束后不在 TMPDIR 留下任何临时文件（成功与 3 种失败路径）"
+else echo "FAIL run 在 TMPDIR 留下了临时文件：$(echo "$leftover" | head -3 | tr '\n' ' ')"; failures=$((failures + 1)); fi
+
 if pgrep -f "SwitchlyPluginPreviewWorker" >/dev/null 2>&1; then
   sleep 1
   pgrep -f "SwitchlyPluginPreviewWorker" >/dev/null 2>&1 && { echo "FAIL 死循环之后仍有 worker 进程残留"; failures=$((failures + 1)); } || echo "PASS 死循环的 worker 已被回收"
