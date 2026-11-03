@@ -10,6 +10,7 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPreviewCommand } from "./preview.js";
+import { runBaselineCommand } from "./baseline.js";
 import { validatePluginDirectory } from "./validate.js";
 
 const capabilitiesURL = new URL("../contract/capabilities.json", import.meta.url);
@@ -24,6 +25,8 @@ const help = `Switchly 插件 CLI
   switchly-plugin create <目标目录> [--id <插件ID>] [--name <名称>] [--match <bundleID>] [--json]
   switchly-plugin dev <插件目录> --preview-tool <App> --scenario <场景> [--json]
   switchly-plugin run <插件目录> --preview-tool <App> --scenario <场景> --out <输出目录> [--json]
+  switchly-plugin baseline accept <run输出目录> --baseline-dir <基线目录> [--replace] [--json]
+  switchly-plugin baseline compare <run输出目录> --baseline-dir <基线目录> --out <差异输出目录> [--tolerance 0-255] [--json]
 
 说明：
   validate  检查 manifest、入口、设置唯一性、权限和静态资源路径。
@@ -33,6 +36,8 @@ const help = `Switchly 插件 CLI
   create    创建不依赖外部模板的最小零依赖插件，并立即运行 validate。
   dev       启动独立预览 App；不转译 TypeScript，也不更新插件锁。
   run       执行一次独立预览并写入调用者指定的输出目录。
+  baseline  视觉基线：accept 显式接受 run 的截图为基线；compare 与基线像素比较并输出差异图。
+            仅接受确定时钟且非玻璃的 run；环境指纹不一致时拒绝比较，不会自动接受或放宽阈值。
 `;
 
 function optionValue(args, name) {
@@ -247,6 +252,7 @@ export async function main(args) {
     if (args[0] === "validate") return await validateCommand(args.slice(1));
     if (args[0] === "build") return await buildCommand(args.slice(1));
     if (args[0] === "create") return await createCommand(args.slice(1));
+    if (args[0] === "baseline") return await runBaselineCommand(args.slice(1));
     if (args[0] === "dev" || args[0] === "run") {
       return await runPreviewCommand(args[0], args.slice(1));
     }

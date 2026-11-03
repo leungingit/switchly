@@ -9,7 +9,7 @@ files=(capabilities.json manifest.schema.json preview-fs-fixture.schema.json pre
 hash=$(for f in "${files[@]}"; do (cd "$root/plugin-api" && shasum -a 256 "$f"); done | shasum -a 256 | cut -d' ' -f1)
 hash="sha256:$hash"
 if [ "${1:-}" = "--check" ]; then
-  declared=$(grep -o 'sha256:[0-9a-f]\{64\}' "$root/Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift" | head -1)
+  declared=$(grep 'sdkContractHash' "$root/Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift" | grep -o 'sha256:[0-9a-f]\{64\}' | head -1)
   if [ "$declared" != "$hash" ]; then
     echo "契约哈希不一致：常量=$declared 实际=$hash" >&2; exit 1
   fi

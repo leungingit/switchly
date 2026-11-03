@@ -72,13 +72,26 @@ struct PluginPreviewArtifactEnvironment: Codable, Equatable {
     var architecture: String?
     var locale: String?
     var appearance: String?
+    /// 视觉基线兼容性指纹：显示缩放、渲染器 revision、是否玻璃、是否使用确定时钟。
+    var displayScale: Double?
+    var rendererRevision: String?
+    var glass: Bool?
+    var deterministicClock: Bool?
 
     init(
         operatingSystemVersion: String? = nil,
         architecture: String? = nil,
         locale: String? = nil,
-        appearance: String? = nil
+        appearance: String? = nil,
+        displayScale: Double? = nil,
+        rendererRevision: String? = nil,
+        glass: Bool? = nil,
+        deterministicClock: Bool? = nil
     ) {
+        self.displayScale = displayScale
+        self.rendererRevision = rendererRevision
+        self.glass = glass
+        self.deterministicClock = deterministicClock
         self.operatingSystemVersion = operatingSystemVersion
         self.architecture = architecture
         self.locale = locale

@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test
 
 .DEFAULT_GOAL := help
 
@@ -273,9 +273,14 @@ plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview 
 	@echo "${GREEN}✅ Plugin preview build wiring complete${NC}"
 
 .PHONY: plugin-preview-contract-check
-plugin-preview-contract-check: ## Verify the preview contract hash constant matches plugin-api files
+plugin-preview-contract-check: ## Verify contract hash and renderer revision constants match their sources
 	@./Tools/PluginPreview/contract-hash.sh --check
+	@./Tools/PluginPreview/renderer-revision.sh --check
 
 .PHONY: plugin-preview-native-test
 plugin-preview-native-test: plugin-preview-build ## T15 native-input regression (needs GUI + Screen Recording; exits 77 if unavailable)
 	@./Tests/PluginPreview/run-native-input-tests.sh
+
+.PHONY: plugin-preview-baseline-test
+plugin-preview-baseline-test: plugin-preview-build ## T16 visual-baseline regression (needs GUI + Screen Recording; exits 77 if unavailable)
+	@./Tests/PluginPreview/run-baseline-tests.sh
