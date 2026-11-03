@@ -108,3 +108,90 @@ jobs:
             exit 1
           fi
           echo "OK: no tracked build artifacts."
+
+  # ── 插件独立预览：分层验证（T19）──────────────────────────────────────
+  # 第 1 层：Node 静态与业务。无需 macOS、无需外仓凭据、完全离线。
+  preview-static:
+    name: Preview — static & Node (ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Contract hash, renderer revision and shared-source guard
+        run: |
+          ./Tools/PluginPreview/contract-hash.sh --check
+          ./Tools/PluginPreview/renderer-revision.sh --check
+          ./Tools/PluginPreview/shared-source-check.sh
+
+      - name: plugin-cli tests
+        run: |
+          node --version
+          npm --prefix packages/plugin-cli test
+
+  # 第 2 层：macOS 上的 JavaScriptCore 与协议测试。不需要图形会话。
+  preview-jsc:
+    name: Preview — JSC & protocol (macOS)
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Preview unit tests (swiftc harnesses)
+        run: |
+          failed=0
+          for script in \
+            Tools/PluginPreview/Protocol/run-tests.sh \
+            Tools/PluginPreview/Scenario/run-tests.sh \
+            Tools/PluginPreview/Artifacts/run-tests.sh \
+            Tools/PluginPreview/Reload/run-tests.sh \
+            Tools/PluginPreview/Worker/Tests/run-tests.sh \
+            Tests/PluginPreview/run-session-tests.sh \
+            Tests/PluginPreview/run-process-supervisor-tests.sh; do
+            echo "::group::$script"
+            bash "$script" || { echo "::error::$script failed"; failed=1; }
+            echo "::endgroup::"
+          done
+          exit "$failed"
+
+  # 第 3 层：需要图形会话与屏幕录制授权的视觉/输入回归与工具包验收。
+  # GitHub 托管 runner 没有屏幕录制授权，因此只在仓库变量 PREVIEW_GUI_RUNNER 指定了
+  # 带授权的 runner 标签时运行；未配置时该 job 显示为「跳过」，而不是绿灯。
+  # 脚本在环境不可用时退出 77，这里按失败处理，不会把「没跑」当成「通过」。
+  preview-gui:
+    name: Preview — GUI regression & toolkit
+    if: ${{ vars.PREVIEW_GUI_RUNNER != '' }}
+    runs-on: ${{ vars.PREVIEW_GUI_RUNNER }}
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install XcodeGen
+        env:
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+          HOMEBREW_NO_ENV_HINTS: 1
+        run: command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+
+      - name: Build preview app and worker
+        run: make plugin-preview-build
+
+      - name: Native input, visual baseline, dev lifecycle
+        run: |
+          ./Tests/PluginPreview/run-native-input-tests.sh
+          ./Tests/PluginPreview/run-baseline-tests.sh
+          ./Tests/PluginPreview/run-dev-lifecycle-tests.sh
+
+      - name: Package toolkit and run the clean-environment acceptance
+        run: make plugin-preview-toolkit-test
+
+      - name: Upload toolkit
+        uses: actions/upload-artifact@v7
+        with:
+          name: switchly-plugin-preview-toolkit
+          path: |
+            DerivedData/PluginPreviewRelease/toolkit/*.tar.gz
+            DerivedData/PluginPreviewRelease/toolkit/*.tar.gz.sha256
+          if-no-files-found: error

@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression plugin-preview-package plugin-preview-toolkit-test
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression plugin-preview-package plugin-preview-toolkit-test plugin-preview-cleanroom
 
 .DEFAULT_GOAL := help
 
@@ -316,3 +316,7 @@ plugin-preview-package: plugin-preview-generate plugin-preview-contract-check ##
 .PHONY: plugin-preview-toolkit-test
 plugin-preview-toolkit-test: plugin-preview-package ## T18 acceptance: run the packaged toolkit with no Xcode, no network (needs GUI + Screen Recording)
 	@./Tests/PluginPreview/run-toolkit-tests.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz
+
+.PHONY: plugin-preview-cleanroom
+plugin-preview-cleanroom: plugin-preview-package ## T19 author journey with only the plugin repo + toolkit (needs GUI + Screen Recording; PLUGINS_REPO=<dir>)
+	@./Tests/PluginPreview/run-clean-room.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz $(PLUGINS_REPO)
