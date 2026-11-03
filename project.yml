@@ -169,6 +169,8 @@ targets:
       - Tools/PluginPreview/Reload/PluginPreviewPackageWatcher.swift
       - Tools/PluginPreview/Build/PreviewAppMain.swift
       - Tools/PluginPreview/UI
+      - path: Tools/PluginPreview/Resources/Assets.xcassets
+        buildPhase: resources
       - path: Resources/en.lproj
         buildPhase: resources
       - path: Resources/zh-Hans.lproj
@@ -180,6 +182,7 @@ targets:
         PRODUCT_NAME: SwitchlyPluginPreview
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Switchly Plugin Preview
+        ASSETCATALOG_COMPILER_APPICON_NAME: PreviewAppIcon
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_LSUIElement: YES
         CODE_SIGN_ENTITLEMENTS: ""

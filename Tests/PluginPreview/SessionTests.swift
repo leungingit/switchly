@@ -89,18 +89,21 @@ private func makeSession(
     executable: URL,
     arguments: [String],
     recorder: SessionEventRecorder,
-    compatibility: PluginPreviewSessionCompatibility
+    compatibility: PluginPreviewSessionCompatibility,
+    realProcess: Bool = false
 ) throws -> PluginPreviewSession {
+    // 脚本化的假 worker 用紧凑超时，快速验证超时逻辑；真实 worker 是刚启动的进程（含 JavaScriptCore
+    // 初始化），机器稍忙就会超过 0.5 秒，使用与产品默认值同量级的预算，避免把负载抖动误报为缺陷。
     let configuration = try PluginPreviewProcessConfiguration(
         executableURL: executable,
         arguments: arguments,
         environment: ["SWITCHLY_PREVIEW_ALLOWED": "1"],
         workingDirectoryURL: FileManager.default.temporaryDirectory,
-        startupTimeout: 0.5,
-        requestTimeout: 0.5,
-        shutdownTimeout: 0.25,
-        terminationGracePeriod: 0.1,
-        reapingTimeout: 0.5
+        startupTimeout: realProcess ? 10 : 0.5,
+        requestTimeout: realProcess ? 5 : 0.5,
+        shutdownTimeout: realProcess ? 2 : 0.25,
+        terminationGracePeriod: realProcess ? 0.5 : 0.1,
+        reapingTimeout: realProcess ? 2 : 0.5
     )
     return PluginPreviewSession(
         configuration: configuration,
@@ -459,7 +462,8 @@ private struct SessionTests {
                     pluginAPIVersion: 2,
                     sdkContractHash: PluginPreviewContract.sdkContractHash,
                     toolVersion: "0.1.0"
-                )
+                ),
+                realProcess: true
             )
             do {
                 _ = try await session.start(generation: 0)
@@ -486,7 +490,8 @@ private struct SessionTests {
                 try sessionExpectEqual(snapshot.process.state, .stopped, "real worker process cleanup")
                 let replacement = try makeSession(
                     executable: URL(fileURLWithPath: realWorkerPath), arguments: [], recorder: SessionEventRecorder(),
-                    compatibility: PluginPreviewSessionCompatibility(pluginAPIVersion: 2, sdkContractHash: PluginPreviewContract.sdkContractHash, toolVersion: "0.1.0")
+                    compatibility: PluginPreviewSessionCompatibility(pluginAPIVersion: 2, sdkContractHash: PluginPreviewContract.sdkContractHash, toolVersion: "0.1.0"),
+                    realProcess: true
                 )
                 do {
                     _ = try await replacement.start(generation: 2)

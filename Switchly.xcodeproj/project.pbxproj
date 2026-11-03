@@ -105,6 +105,7 @@
 		641505FD43ABC11B089FF553 /* PluginManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3731E6CAD353BCD2A1663E0 /* PluginManifest.swift */; };
 		65996F0D789B2455B3F83A18 /* SwitchlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */; };
 		674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */; };
+		69AB47854A41F9F08B18CADB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4E0E8FE4D53097A66445F548 /* Assets.xcassets */; };
 		6B0C967C9567C91B5E0FE76F /* StatisticsChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */; };
 		6CBAA46EEEABA09F7860EC6C /* EnumsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D3BA644980C96412DADE54F /* EnumsTests.swift */; };
 		6D66A44DCAF2CFC8F266309C /* PluginGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290E7694EDAC0E810F258F5E /* PluginGrant.swift */; };
@@ -333,6 +334,7 @@
 		4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewModel.swift; sourceTree = "<group>"; };
 		4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsPreferencesSection.swift; sourceTree = "<group>"; };
 		4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
+		4E0E8FE4D53097A66445F548 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5052EF0E08EDCF930ED33444 /* AppActivationTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivationTrackerTests.swift; sourceTree = "<group>"; };
 		508AA5707CAD3B02E30DE6B1 /* InstalledAppsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledAppsServiceTests.swift; sourceTree = "<group>"; };
 		5229299C311246FE54964A9D /* PluginPreferencesSection+Management.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PluginPreferencesSection+Management.swift"; sourceTree = "<group>"; };
@@ -711,6 +713,15 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		873422988C164751A18E372A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				4E0E8FE4D53097A66445F548 /* Assets.xcassets */,
+			);
+			name = Resources;
+			path = Tools/PluginPreview/Resources;
+			sourceTree = "<group>";
+		};
 		9A6616176837D35F1D02BB2C /* Enums */ = {
 			isa = PBXGroup;
 			children = (
@@ -748,6 +759,7 @@
 				A49BC91155FE95C5B19D2B40 /* Protocol */,
 				E41AA27517B43F1E11CED266 /* Reload */,
 				6A931C801F97DB00884DD3D3 /* Resources */,
+				873422988C164751A18E372A /* Resources */,
 				CFCD62820D484A2C431B0568 /* Scenario */,
 				D8B35C4208D3EAACA25E09E8 /* Services */,
 				54794EBE8098747095FB466C /* UI */,
@@ -1049,6 +1061,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				69AB47854A41F9F08B18CADB /* Assets.xcassets in Resources */,
 				6FD480D3CA014E0A70E5C244 /* en.lproj in Resources */,
 				8652C32E2ABA8D7DE2806726 /* zh-Hans.lproj in Resources */,
 				581A749B78531737F567CD95 /* SwitchlyPluginPreviewWorker in Resources */,
@@ -1451,7 +1464,7 @@
 		0C6986A1E4803C51D90F2BB8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = PreviewAppIcon;
 				CODE_SIGN_ENTITLEMENTS = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1624,7 +1637,7 @@
 		C839D1D1B5DC7BDF2BA3E735 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = PreviewAppIcon;
 				CODE_SIGN_ENTITLEMENTS = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;

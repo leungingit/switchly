@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   chmod,
   mkdir,
@@ -353,4 +353,31 @@ test("unsupported 结果保留对象并使用独立非零退出码", async (t) =
 
   assert.equal(result.status, 3);
   assert.equal(parseSingleJSON(result.stdout).status, "unsupported");
+});
+
+test("只向 CLI 发送 SIGTERM 时转发给预览进程，不留下孤儿", async (t) => {
+  const fixture = await makeFixture(t);
+  const marker = path.join(fixture.root, "child-got-signal");
+  const ready = path.join(fixture.root, "child-ready");
+  // 假预览进程：就绪后挂起，收到 SIGTERM 才写标记并以 143 退出。
+  await writeFile(fixture.executable, `#!/usr/bin/env node
+const fs = require("node:fs");
+process.on("SIGTERM", () => { fs.writeFileSync(${JSON.stringify(marker)}, String(process.pid)); process.exit(143); });
+fs.writeFileSync(${JSON.stringify(ready)}, String(process.pid));
+setInterval(() => {}, 1000);
+`);
+  const cli = spawn(process.execPath, [cliPath, "dev", fixture.plugin, "--preview-tool", fixture.app, "--scenario", fixture.scenario],
+    { stdio: "ignore" });
+  const exited = new Promise((resolve) => cli.on("exit", (code, signal) => resolve({ code, signal })));
+  let childPID = null;
+  for (let attempt = 0; attempt < 100 && childPID === null; attempt += 1) {
+    try { childPID = Number(await readFile(ready, "utf8")); } catch { await new Promise((r) => setTimeout(r, 50)); }
+  }
+  assert.ok(childPID, "假预览进程应已启动");
+  cli.kill("SIGTERM");
+  const result = await Promise.race([exited, new Promise((resolve) => setTimeout(() => resolve("timeout"), 8000))]);
+  if (result === "timeout") { cli.kill("SIGKILL"); try { process.kill(childPID, "SIGKILL"); } catch { /* 已退出 */ } }
+  assert.notEqual(result, "timeout", "CLI 应在子进程退出后结束，而不是挂起");
+  assert.equal(Number(await readFile(marker, "utf8")), childPID, "子进程必须收到被转发的 SIGTERM");
+  assert.throws(() => process.kill(childPID, 0), "子进程不应存活");
 });

@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression
 
 .DEFAULT_GOAL := help
 
@@ -273,9 +273,10 @@ plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview 
 	@echo "${GREEN}✅ Plugin preview build wiring complete${NC}"
 
 .PHONY: plugin-preview-contract-check
-plugin-preview-contract-check: ## Verify contract hash and renderer revision constants match their sources
+plugin-preview-contract-check: ## Verify contract hash, renderer revision and shared-source guard
 	@./Tools/PluginPreview/contract-hash.sh --check
 	@./Tools/PluginPreview/renderer-revision.sh --check
+	@./Tools/PluginPreview/shared-source-check.sh
 
 .PHONY: plugin-preview-native-test
 plugin-preview-native-test: plugin-preview-build ## T15 native-input regression (needs GUI + Screen Recording; exits 77 if unavailable)
@@ -284,3 +285,13 @@ plugin-preview-native-test: plugin-preview-build ## T15 native-input regression 
 .PHONY: plugin-preview-baseline-test
 plugin-preview-baseline-test: plugin-preview-build ## T16 visual-baseline regression (needs GUI + Screen Recording; exits 77 if unavailable)
 	@./Tests/PluginPreview/run-baseline-tests.sh
+
+# G2 regression: native input, visual baseline, dev lifecycle and every scenario of the plugin repo.
+# Needs a GUI session and Screen Recording; each script exits 77 (not a pass) when the environment is unavailable.
+PLUGINS_REPO ?= ../switchly-plugins
+.PHONY: plugin-preview-regression
+plugin-preview-regression: plugin-preview-contract-check plugin-preview-build ## G2 GUI regression suite (set PLUGINS_REPO=<dir> for the plugin repo)
+	@./Tests/PluginPreview/run-native-input-tests.sh
+	@./Tests/PluginPreview/run-baseline-tests.sh
+	@./Tests/PluginPreview/run-dev-lifecycle-tests.sh
+	@./Tests/PluginPreview/run-plugin-scenarios.sh $(PLUGINS_REPO)

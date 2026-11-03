@@ -20,6 +20,7 @@ const EXIT = Object.freeze({
 const PREVIEW_EXECUTABLE = path.join("Contents", "MacOS", "SwitchlyPluginPreview");
 const MAX_JSON_OUTPUT_BYTES = 8 * 1024 * 1024;
 const MAX_DIAGNOSTIC_BUFFER_BYTES = 64 * 1024;
+const FORWARDED_SIGNAL_GRACE_MS = 10_000;
 const RESULT_STATUSES = new Set(["passed", "failed", "unsupported", "environment-error"]);
 
 class PreviewCliError extends Error {
@@ -362,7 +363,28 @@ function runProcess(request, io) {
       return;
     }
 
+    // 只向 CLI 进程发送终止信号时（脚本、CI、Agent），必须转发给预览进程，否则 App 与 worker 会成为孤儿。
+    // 终端里的 Ctrl-C 会发给整个进程组，转发只会重复投递，预览 App 对重复信号是幂等的。
+    const forwardedSignals = ["SIGINT", "SIGTERM", "SIGHUP"];
+    let escalation = null;
+    const forwarders = forwardedSignals.map((name) => {
+      const handler = () => {
+        try { child.kill(name); } catch { /* 子进程已退出 */ }
+        escalation ??= setTimeout(() => {
+          try { child.kill("SIGKILL"); } catch { /* 子进程已退出 */ }
+        }, FORWARDED_SIGNAL_GRACE_MS);
+        escalation.unref?.();
+      };
+      process.on(name, handler);
+      return [name, handler];
+    });
+    const stopForwarding = () => {
+      for (const [name, handler] of forwarders) process.off(name, handler);
+      if (escalation) clearTimeout(escalation);
+    };
+
     child.on("error", () => {
+      stopForwarding();
       stderrWriter.finish();
       reject(environmentError("preview-process-launch-failed", "预览工具无法启动"));
     });
@@ -382,6 +404,7 @@ function runProcess(request, io) {
     child.stderr.on("data", (chunk) => stderrWriter.push(chunk.toString("utf8")));
 
     child.on("close", (code, signal) => {
+      stopForwarding();
       stdoutWriter?.finish();
       stderrWriter.finish();
       if (stdoutOverflow) {
