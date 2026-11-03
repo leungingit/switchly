@@ -116,6 +116,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private let storage: PluginStorageProviding?
     private let valuesProvider: () -> [String: PluginSettingValue]
     private let reduceMotion: () -> Bool
+    /// 非 nil 时 JS 的 Date / Math.random / setTimeout 由虚拟时钟接管（仅预览使用）。
+    private let virtualClock: PluginVirtualClock?
     private let queue: DispatchQueue
     private let stateLock = NSLock()
 
@@ -148,7 +150,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          values: @escaping () -> [String: PluginSettingValue] = { [:] },
          weather: (() -> [String: Any]?)? = nil,
          storage: PluginStorageProviding? = nil,
+         virtualClock: PluginVirtualClock? = nil,
          reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }) {
+        self.virtualClock = virtualClock
         self.reduceMotion = reduceMotion
         self.settingsProvider = settings
         self.valuesProvider = values
@@ -388,6 +392,10 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     }
 
     private func installTimers(in js: JSContext) {
+        if let clock = virtualClock {
+            installVirtualTime(in: js, clock: clock)
+            return
+        }
         let set: @convention(block) (JSValue, Double) -> Int = { [weak self] callback, ms in
             guard let self, self.timers.count < Self.maxTimers else { return 0 }
             let id = self.nextTimerID
@@ -402,6 +410,44 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         }
         js.setObject(set, forKeyedSubscript: "setTimeout" as NSString)
         js.setObject(clear, forKeyedSubscript: "clearTimeout" as NSString)
+    }
+
+    /// 虚拟时间：定时器只在 `advanceVirtualTime` 时触发；`suspend` 期间推进不触发回调。
+    private func installVirtualTime(in js: JSContext, clock: PluginVirtualClock) {
+        let set: @convention(block) (JSValue, Double) -> Int = { callback, ms in
+            clock.schedule(afterMilliseconds: ms) { callback.call(withArguments: []) }
+        }
+        let clear: @convention(block) (Int) -> Void = { clock.cancel($0) }
+        let now: @convention(block) () -> Double = { clock.nowMilliseconds }
+        let random: @convention(block) () -> Double = { clock.nextRandom() }
+        js.setObject(set, forKeyedSubscript: "setTimeout" as NSString)
+        js.setObject(clear, forKeyedSubscript: "clearTimeout" as NSString)
+        js.setObject(now, forKeyedSubscript: "__virtualNow" as NSString)
+        js.setObject(random, forKeyedSubscript: "__virtualRandom" as NSString)
+        js.evaluateScript("""
+        (function () {
+          var now = __virtualNow, random = __virtualRandom;
+          var Native = Date;
+          class VirtualDate extends Native {
+            constructor(...args) { if (args.length === 0) super(now()); else super(...args); }
+            static now() { return now(); }
+          }
+          Date = VirtualDate;
+          Math.random = function () { return random(); };
+          __virtualNow = undefined; __virtualRandom = undefined;
+        })();
+        """)
+    }
+
+    /// 推进虚拟时间并触发到期定时器；`suspend` 期间时间不推进。返回触发数，超限返回 nil。
+    func advanceVirtualTime(byMilliseconds delta: Double) async -> Int? {
+        guard let clock = virtualClock else { return nil }
+        return await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self, !self.suspended else { continuation.resume(returning: 0); return }
+                continuation.resume(returning: clock.advance(byMilliseconds: delta))
+            }
+        }
     }
 
     private func scheduleTimer(_ id: Int) {

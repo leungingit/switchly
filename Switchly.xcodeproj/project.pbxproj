@@ -55,6 +55,7 @@
 		33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */; };
 		349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */; };
 		34A8A5EB0367745AFAD728C3 /* ShortcutPrefix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D718DDF3DF82D909F59365 /* ShortcutPrefix.swift */; };
+		3699A92430BE4CCFADCF40DB /* PluginVirtualClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = E661266025E368204707569B /* PluginVirtualClock.swift */; };
 		38147395BB14489FE5588E4C /* GridBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8CD30C6683B78FF9301D38 /* GridBackground.swift */; };
 		383814D400E15E0BAA25119C /* PluginSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C9FFAA0E50CCA50D6D6F5A /* PluginSceneView.swift */; };
 		386155ED0238256DEED6A14D /* GridStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA270BA7907E1777FD01E21 /* GridStyle.swift */; };
@@ -195,6 +196,7 @@
 		C92BC8D761AB3483ECA9EC94 /* PluginPackageValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2760466C86A743DE701B4 /* PluginPackageValidator.swift */; };
 		CB2AE0E1E658E4873B506D8B /* PluginStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065CFA59BAA97E4133D79FE4 /* PluginStorage.swift */; };
 		CB93F748CFF9B95AB7007A75 /* WindowSwitchFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FCE7362D3D2B1B5ED72BDE3 /* WindowSwitchFeedback.swift */; };
+		CBF3CE7F804C440D02841E79 /* PluginVirtualClockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ABB5FFEE1D8E1CA7614AF7 /* PluginVirtualClockTests.swift */; };
 		CC2F70B1D38D49A3904205C7 /* zh-Hans.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8C454449F43BF62BEDCE15AD /* zh-Hans.lproj */; };
 		CC764C95FBC1A3E5F0AE9375 /* PluginPreviewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B6359AF089A8884AD486143 /* PluginPreviewState.swift */; };
 		CD3E7E5608B3CEB73C313AEE /* PreviewStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */; };
@@ -448,6 +450,7 @@
 		E54F2C8AADF0827EEC8A96D8 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		E5CE51AB1199542766F6B6CD /* PluginSceneDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSceneDrawing.swift; sourceTree = "<group>"; };
 		E5DC6D7B68AA6B89AFB14000 /* StatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
+		E661266025E368204707569B /* PluginVirtualClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginVirtualClock.swift; sourceTree = "<group>"; };
 		E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSceneTests.swift; sourceTree = "<group>"; };
 		E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassRenderingTests.swift; sourceTree = "<group>"; };
 		E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyLightSpaceBridge.swift; sourceTree = "<group>"; };
@@ -458,6 +461,7 @@
 		F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifierTests.swift; sourceTree = "<group>"; };
 		F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacesView.swift; sourceTree = "<group>"; };
 		F5955DA07BEC3230249E226F /* PluginPreviewWorkerSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewWorkerSupervisor.swift; sourceTree = "<group>"; };
+		F7ABB5FFEE1D8E1CA7614AF7 /* PluginVirtualClockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginVirtualClockTests.swift; sourceTree = "<group>"; };
 		F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchlyApp.swift; sourceTree = "<group>"; };
 		FC8CD30C6683B78FF9301D38 /* GridBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridBackground.swift; sourceTree = "<group>"; };
 		FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifier.swift; sourceTree = "<group>"; };
@@ -566,6 +570,7 @@
 				E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */,
 				A60A2E958ABBD35836FC322F /* PluginStorageTests.swift */,
 				2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */,
+				F7ABB5FFEE1D8E1CA7614AF7 /* PluginVirtualClockTests.swift */,
 				4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */,
 				CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */,
 				46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */,
@@ -675,6 +680,7 @@
 				46EBA602A293A20853A59E9F /* PluginRegistry.swift */,
 				9FDBD58543D26CB798059E1C /* PluginRuntime.swift */,
 				065CFA59BAA97E4133D79FE4 /* PluginStorage.swift */,
+				E661266025E368204707569B /* PluginVirtualClock.swift */,
 			);
 			path = Plugins;
 			sourceTree = "<group>";
@@ -1171,6 +1177,7 @@
 				A5105AB477196D0D6392696C /* PluginSceneTests.swift in Sources */,
 				8B69B3CEAD3BB61B8A93701B /* PluginStorageTests.swift in Sources */,
 				1A3FB074DE69877640E4C4C3 /* PluginSystemTests.swift in Sources */,
+				CBF3CE7F804C440D02841E79 /* PluginVirtualClockTests.swift in Sources */,
 				CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */,
 				0EA1E4834CCF195ECE4166EA /* PreviewTriggerMonitorTests.swift in Sources */,
 				FC4B737FDDAF385608C00299 /* PreviewViewModelTests.swift in Sources */,
@@ -1285,6 +1292,7 @@
 				2FBD22FF2B8C953E92F8931C /* PluginSlotSurface.swift in Sources */,
 				CB2AE0E1E658E4873B506D8B /* PluginStorage.swift in Sources */,
 				5D7CC19CB2A8650CF28C160E /* PluginUINode.swift in Sources */,
+				3699A92430BE4CCFADCF40DB /* PluginVirtualClock.swift in Sources */,
 				0AC113AF38FAB4A56F187DBC /* PreferencesView.swift in Sources */,
 				17970177CADBF3DF3FB0AA57 /* PreferencesViewModel.swift in Sources */,
 				E2553B4A97E3BA40CBF8A007 /* PreviewHotspotEdge.swift in Sources */,
