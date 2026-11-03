@@ -235,7 +235,7 @@ verify-plugin-release: ## Require an immutable external source revision before r
 .PHONY: plugin-verifier
 plugin-verifier: ## Build the standalone verifier using the real JSC runtime and decoders
 	@mkdir -p .build/tools
-	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Services/Plugins/PluginRuntime.swift Services/Plugins/PluginFileReader.swift Services/Plugins/PluginStorage.swift Services/Plugins/MediaBridge.swift Utilities/AppLogger.swift
+	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Services/Plugins/PluginRuntime.swift Services/Plugins/PluginVirtualClock.swift Services/Plugins/PluginFileReader.swift Services/Plugins/PluginStorage.swift Services/Plugins/MediaBridge.swift Utilities/AppLogger.swift
 
 # T04: build wiring for the independent preview. Generation intentionally
 # skips prepare-plugins and the targets carry no host resources, services, or

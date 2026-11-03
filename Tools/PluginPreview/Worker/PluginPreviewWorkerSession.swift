@@ -22,6 +22,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
         let context: PluginRenderContext
         let generation: UInt64
         let storage: PluginPreviewFixtureStorage
+        let hasVirtualClock: Bool
     }
 
     private let output: PluginPreviewWorkerFrameWriter
@@ -57,6 +58,8 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
             return await render(request)
         case PluginPreviewWorkerMessageType.action:
             return await action(request)
+        case PluginPreviewWorkerMessageType.advance:
+            return await advance(request)
         case PluginPreviewWorkerMessageType.suspend:
             return lifecycle(request, operation: .suspend)
         case PluginPreviewWorkerMessageType.resume:
@@ -116,7 +119,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
         lock.lock()
         previous = active
         currentGeneration = request.generation
-        let activePlugin = ActivePlugin(runtime: prepared.runtime, context: prepared.context, generation: request.generation, storage: prepared.storage)
+        let activePlugin = ActivePlugin(runtime: prepared.runtime, context: prepared.context, generation: request.generation, storage: prepared.storage, hasVirtualClock: prepared.hasVirtualClock)
         active = activePlugin
         lock.unlock()
 
@@ -169,6 +172,23 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
             return (failureResponse(request, failure), true)
         }
     }
+
+    /// 仅当场景声明 `clock` 时可用；实时场景明确拒绝，避免静默忽略。
+    private func advance(_ request: PluginPreviewWorkerFrame) async -> (PluginPreviewWorkerFrame, Bool) {
+        guard let active = activePlugin(for: request) else { return (failure(request, stateFailure(request)), true) }
+        guard active.hasVirtualClock, let delta = request.payload.value,
+              delta.isFinite, delta >= 0, delta <= PluginPreviewWorkerSession.maxAdvanceMilliseconds else {
+            return (failure(request, .invalidRequest), true)
+        }
+        guard let fired = await active.runtime.advanceVirtualTime(byMilliseconds: delta) else {
+            diagnostics.log("advance_failed code=timerLimit")
+            return (failure(request, .timedOut), true)
+        }
+        return (response(request, payload: PluginPreviewWorkerPayload(ok: true, firedTimers: fired)), true)
+    }
+
+    /// 单次推进上限 24 小时，防止无意义的超大推进。
+    static let maxAdvanceMilliseconds: Double = 24 * 60 * 60 * 1000
 
     private func storageDump(_ request: PluginPreviewWorkerFrame) -> (PluginPreviewWorkerFrame, Bool) {
         guard let active = activePlugin(for: request) else { return (failure(request, stateFailure(request)), true) }

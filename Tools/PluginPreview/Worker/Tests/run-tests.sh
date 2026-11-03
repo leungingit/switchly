@@ -18,6 +18,7 @@ xcrun swiftc -swift-version 5 -D PLUGIN_PREVIEW_WORKER_TESTS \
     Services/Plugins/PluginRegistry.swift \
     Services/Plugins/PluginPackageValidator.swift \
     Services/Plugins/PluginRuntime.swift \
+    Services/Plugins/PluginVirtualClock.swift \
     Services/Plugins/PluginFileReader.swift \
     Services/Plugins/PluginStorage.swift \
     Services/Plugins/MediaBridge.swift \

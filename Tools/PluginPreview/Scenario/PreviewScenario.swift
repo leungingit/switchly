@@ -18,6 +18,12 @@ struct PreviewScenario: Decodable {
         let lastActiveAt: Double?
     }
 
+    /// 存在时 JS 的 Date / Math.random / setTimeout 使用虚拟时钟，仅在 `advance` 请求时前进。
+    struct Clock: Decodable {
+        let startEpochMs: Double
+        let seed: UInt32
+    }
+
     struct Fixtures: Decodable {
         let media: String?
         let weather: String?
@@ -29,6 +35,7 @@ struct PreviewScenario: Decodable {
     let environment: Environment
     let target: Target
     let fixtures: Fixtures?
+    let clock: Clock?
     let grants: [String]?
     // 业务值保留在 JSON 对象中，稍后使用 manifest 的设置规则校验。
     let settings: [String: JSONValue]?
@@ -45,12 +52,17 @@ struct PreviewScenario: Decodable {
     static func decode(_ data: Data) throws -> PreviewScenario {
         guard let json = try? JSONSerialization.jsonObject(with: data),
               let object = json as? [String: Any],
-              hasOnly(object, ["schemaVersion", "id", "environment", "target", "fixtures", "grants", "settings", "storageSeed", "steps"]),
+              hasOnly(object, ["schemaVersion", "id", "environment", "target", "fixtures", "clock", "grants", "settings", "storageSeed", "steps"]),
               let environment = object["environment"] as? [String: Any],
               hasOnly(environment, ["locale", "appearance", "glass", "reduceMotion", "contentWidthPoints"]),
               let target = object["target"] as? [String: Any],
               hasOnly(target, ["bundleID", "appName", "titleSummary", "lastActiveAt"]) else {
             throw Failure.invalidScenario
+        }
+        if let clock = object["clock"], !(clock is NSNull) {
+            guard let clock = clock as? [String: Any], hasOnly(clock, ["startEpochMs", "seed"]) else {
+                throw Failure.invalidScenario
+            }
         }
         if let fixtures = object["fixtures"] {
             guard let fixtures = fixtures as? [String: Any], hasOnly(fixtures, ["media", "weather", "fs"]) else {
@@ -60,7 +72,7 @@ struct PreviewScenario: Decodable {
                 throw Failure.invalidFixturePath
             }
         }
-        for key in ["grants", "settings", "storageSeed", "steps"] where object[key] is NSNull {
+        for key in ["clock", "grants", "settings", "storageSeed", "steps"] where object[key] is NSNull {
             throw Failure.invalidScenario
         }
         if target["titleSummary"] is NSNull { throw Failure.invalidScenario }
@@ -73,6 +85,7 @@ struct PreviewScenario: Decodable {
               value.environment.contentWidthPoints.isFinite, value.environment.contentWidthPoints > 0,
               !value.target.bundleID.isEmpty, !value.target.appName.isEmpty,
               value.target.lastActiveAt?.isFinite != false,
+              value.clock.map({ $0.startEpochMs.isFinite && $0.startEpochMs >= 0 }) != false,
               Set(value.grants ?? []).count == (value.grants ?? []).count,
               (value.grants ?? []).allSatisfy({ !$0.isEmpty }),
               (value.settings ?? [:]).values.allSatisfy(\.isSettingValue) else {

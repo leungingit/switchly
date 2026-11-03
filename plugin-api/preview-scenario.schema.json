@@ -37,6 +37,14 @@
         "fs": { "$ref": "#/$defs/relativePath" }
       }
     },
+    "clock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["startEpochMs", "seed"],
+      "properties": {
+        "startEpochMs": { "type": "number", "minimum": 0 },
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+      }
+    },
     "grants": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "settings": { "type": "object", "additionalProperties": { "type": ["boolean", "number", "string"] } },
     "storageSeed": { "type": "object" },

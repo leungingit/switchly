@@ -27,6 +27,7 @@ xcrun swiftc \
     Services/Plugins/PluginRegistry.swift \
     Services/Plugins/PluginPackageValidator.swift \
     Services/Plugins/PluginRuntime.swift \
+    Services/Plugins/PluginVirtualClock.swift \
     Services/Plugins/PluginFileReader.swift \
     Services/Plugins/PluginStorage.swift \
     Services/Plugins/MediaBridge.swift \

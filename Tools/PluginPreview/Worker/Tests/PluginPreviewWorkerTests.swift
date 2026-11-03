@@ -38,6 +38,7 @@ private enum PluginPreviewWorkerTests {
         try testProtocolErrorIsAFrame()
         try testRawRenderJSONUsesTheHostValidator()
         try testWorkerLifecycleAndFrames()
+        try testVirtualClockAdvance()
         print("PluginPreviewWorker tests passed")
     }
 
@@ -309,6 +310,62 @@ private enum PluginPreviewWorkerTests {
         try expectEqual(try response(16, in: responses).payload.ok, true, "shutdown")
         try expect(!responses.contains { $0.requestID > 16 }, "no frames after shutdown")
     }
+
+    private static func testVirtualClockAdvance() throws {
+        let temporary = FileManager.default.temporaryDirectory
+            .appendingPathComponent("switchly-preview-clock-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        let pluginDirectory = temporary.appendingPathComponent("plugin", isDirectory: true)
+        try FileManager.default.createDirectory(at: pluginDirectory, withIntermediateDirectories: true)
+        try Data(loggingManifest.utf8).write(to: pluginDirectory.appendingPathComponent("manifest.json"))
+        try Data(clockPluginSource.utf8).write(to: pluginDirectory.appendingPathComponent("main.js"))
+        let withClock = temporary.appendingPathComponent("clock.json")
+        let realtime = temporary.appendingPathComponent("realtime.json")
+        try Data(clockScenario.utf8).write(to: withClock)
+        try Data(loggingScenario.utf8).write(to: realtime)
+
+        let session = PluginPreviewWorkerSession(
+            output: PluginPreviewWorkerFrameWriter(handle: FileHandle(forWritingAtPath: "/dev/null")!),
+            diagnostics: PluginPreviewWorkerDiagnostics(handle: FileHandle(forWritingAtPath: "/dev/null")!)
+        )
+        func send(_ type: String, _ generation: UInt64, _ id: UInt64, _ payload: PluginPreviewWorkerPayload = .init()) -> PluginPreviewWorkerPayload {
+            let request = PluginPreviewWorkerFrame(type: type, generation: generation, requestID: id, payload: payload)
+            return waitForAsync { await session.handle(request) }.response.payload
+        }
+        func texts(_ payload: PluginPreviewWorkerPayload) -> String { payload.renderJSON ?? "" }
+
+        _ = send("hello", 0, 1)
+        let loaded = send("load", 1, 2, .init(pluginDirectory: pluginDirectory.path, scenarioPath: withClock.path))
+        try expectEqual(loaded.ok, true, "clock scenario loads")
+        let first = texts(send("render", 1, 3))
+        try expect(first.contains("1700000000000|0"), "virtual start time and no tick yet: \(first)")
+        try expectEqual(send("advance", 1, 4, .init(value: 99)).firedTimers, 0, "early advance fires nothing")
+        try expect(texts(send("render", 1, 5)).contains("1700000000099|0"), "time advanced by 99 ms")
+        try expectEqual(send("advance", 1, 6, .init(value: 1)).firedTimers, 1, "due advance fires the timer")
+        try expect(texts(send("render", 1, 7)).contains("|1"), "timer callback ran")
+        try expectEqual(send("advance", 1, 8, .init(value: -1)).errorCode, "invalidRequest", "negative advance rejected")
+        try expectEqual(send("advance", 1, 9, .init(value: 1e12)).errorCode, "invalidRequest", "oversized advance rejected")
+
+        let realtimeLoaded = send("load", 2, 10, .init(pluginDirectory: pluginDirectory.path, scenarioPath: realtime.path))
+        try expectEqual(realtimeLoaded.ok, true, "realtime scenario loads")
+        try expectEqual(send("advance", 2, 11, .init(value: 10)).errorCode, "invalidRequest", "advance needs a declared clock")
+    }
+
+    private static let clockScenario = #"""
+    {"schemaVersion":1,"id":"clock","environment":{"locale":"en","appearance":"light","glass":false,"reduceMotion":false,"contentWidthPoints":320},"target":{"bundleID":"com.example.app","appName":"Example"},"clock":{"startEpochMs":1700000000000,"seed":7},"steps":[]}
+    """#
+
+    private static let clockPluginSource = #"""
+    var ticks = 0, armed = false;
+    globalThis.__switchlyPlugin = {
+      async render(ctx) {
+        if (!armed) { armed = true; setTimeout(function () { ticks = 1; }, 100); }
+        return [{ slot: "center", node: { type: "text", value: Date.now() + "|" + ticks } }];
+      },
+      onAction(ctx, id, value) {}
+    };
+    """#
 
     private static func frame(
         _ type: String,

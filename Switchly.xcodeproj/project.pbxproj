@@ -117,6 +117,7 @@
 		7421BBBB5DC93D163DDC2965 /* PluginPackageValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2760466C86A743DE701B4 /* PluginPackageValidator.swift */; };
 		74E0D2C645E1A103BF01BC87 /* DockHoverMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */; };
 		7531BE17CA610CCDC319A362 /* PluginPreviewWorkerFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 406F961437E81E9A5E6EEE8D /* PluginPreviewWorkerFixtures.swift */; };
+		75612BBD2098A5AD4669CADF /* PluginVirtualClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = E661266025E368204707569B /* PluginVirtualClock.swift */; };
 		75791B6119F99767ACC30751 /* DesktopGridCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E053C29F12B5FFA9A9996CF4 /* DesktopGridCoordinatorTests.swift */; };
 		757EC4F4A1872830AA959C08 /* MotionTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CB9A08E9B399F1B3D306AF /* MotionTokensTests.swift */; };
 		76AE82D6C575FB21E54B95E7 /* PluginOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C6D1F998B7FE20E7E9E79D /* PluginOverlayView.swift */; };
@@ -1218,6 +1219,7 @@
 				A22DC9C6CF45CD31ED6E8C1A /* PluginScene.swift in Sources */,
 				D8428B6E4847EB4A802F4025 /* PluginStorage.swift in Sources */,
 				255A53C7D0488BE6696A47BF /* PluginUINode.swift in Sources */,
+				75612BBD2098A5AD4669CADF /* PluginVirtualClock.swift in Sources */,
 				624687C20F919D88169C9299 /* PreviewScenario.swift in Sources */,
 				E038C6F9A5AD14EA9696B3C2 /* PreviewWorkerMain.swift in Sources */,
 			);

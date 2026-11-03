@@ -340,6 +340,7 @@ struct PluginPreviewPreparedPlugin {
     let fixtureSources: [String: String]
     let artworkBase64: String?
     let storage: PluginPreviewFixtureStorage
+    let hasVirtualClock: Bool
 }
 
 enum PluginPreviewWorkerLoader {
@@ -392,6 +393,9 @@ enum PluginPreviewWorkerLoader {
 
         let mediaBridge = fixtures.media.map(PluginPreviewMediaBridge.init(fixture:))
         let weather = fixtures.weather
+        let virtualClock = scenario.clock.map {
+            PluginVirtualClock(startMilliseconds: $0.startEpochMs, seed: $0.seed)
+        }
         let runtime = PluginRuntime(
             package: package,
             timeout: 2,
@@ -404,6 +408,7 @@ enum PluginPreviewWorkerLoader {
             values: { settings.values },
             weather: weather.map { fixture in { fixture.jsObject } },
             storage: fixtures.storage,
+            virtualClock: virtualClock,
             reduceMotion: { scenario.environment.reduceMotion }
         )
         let context = PluginRenderContext(
@@ -421,7 +426,8 @@ enum PluginPreviewWorkerLoader {
             permissions: authorization.permissions.map(\.rawValue).sorted(),
             fixtureSources: fixtures.sources,
             artworkBase64: authorization.permissions.contains(.mediaNowPlaying) ? fixtures.media?.artworkBase64 : nil,
-            storage: fixtures.storage
+            storage: fixtures.storage,
+            hasVirtualClock: virtualClock != nil
         )
     }
 

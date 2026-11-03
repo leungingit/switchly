@@ -344,6 +344,18 @@ actor PluginPreviewSession {
         )
     }
 
+    /// 推进虚拟时钟并返回触发的定时器数；场景未声明 `clock` 时 worker 返回 invalidRequest。
+    @discardableResult
+    func advance(milliseconds: Double) async throws -> Int {
+        guard state == .loaded else { throw PluginPreviewSessionError.invalidState }
+        guard milliseconds.isFinite, milliseconds >= 0 else { throw PluginPreviewSessionError.invalidRequest }
+        let response = try await send(
+            type: PluginPreviewWorkerMessageType.advance,
+            payload: PluginPreviewWorkerPayload(value: milliseconds)
+        )
+        return response.payload.firedTimers ?? 0
+    }
+
     func storageDump() async throws -> String {
         guard state == .loaded || state == .suspended else { throw PluginPreviewSessionError.invalidState }
         let response = try await send(type: PluginPreviewWorkerMessageType.storageDump, payload: PluginPreviewWorkerPayload())

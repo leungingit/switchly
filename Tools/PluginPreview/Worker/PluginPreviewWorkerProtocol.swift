@@ -25,6 +25,8 @@ struct PluginPreviewWorkerPayload: Codable, Equatable {
     var artworkBase64: String? = nil
     var storageJSON: String? = nil
     var renderJSON: String? = nil
+    /// `advance` 响应：本次推进实际触发的定时器数。
+    var firedTimers: Int? = nil
 }
 
 enum PluginPreviewWorkerMessageType {
@@ -37,10 +39,11 @@ enum PluginPreviewWorkerMessageType {
     static let unmount = "unmount"
     static let shutdown = "shutdown"
     static let storageDump = "storageDump"
+    static let advance = "advance"
     static let invalidate = "invalidate"
     static let error = "error"
 
-    static let requests: Set<String> = [hello, load, render, action, suspend, resume, unmount, shutdown, storageDump]
+    static let requests: Set<String> = [hello, load, render, action, suspend, resume, unmount, shutdown, storageDump, advance]
 }
 
 typealias PluginPreviewWorkerFrame = PluginPreviewFrame<PluginPreviewWorkerPayload>
@@ -48,5 +51,5 @@ typealias PluginPreviewWorkerFrame = PluginPreviewFrame<PluginPreviewWorkerPaylo
 /// 预览公共契约的唯一常量，由 `Tools/PluginPreview/contract-hash.sh --check` 校验。
 /// plugin-api/ 下 6 个契约文件变化时必须同步更新并重新验收。
 enum PluginPreviewContract {
-    static let sdkContractHash = "sha256:2be9f743672269ef5b1d466719091fb2d8a835307aca9b32e8409d518ff6e4d5"
+    static let sdkContractHash = "sha256:a650b17ed30e4f883e7b736305aaa5bff8e54ca67931a7853914d99700911d48"
 }
