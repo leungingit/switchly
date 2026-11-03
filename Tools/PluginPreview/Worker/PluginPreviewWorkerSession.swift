@@ -87,7 +87,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
             ok: true,
             toolVersion: PluginPreviewWorkerService.toolVersion,
             protocolVersion: PluginPreviewFrameCodec.protocolVersion,
-            scenarioSchemaVersion: 1,
+            scenarioSchemaVersion: PluginPreviewContract.scenarioSchemaVersion,
             pluginAPIVersions: Array(PluginManifest.supportedAPIVersions),
             sdkContractHash: PluginPreviewContract.sdkContractHash,
             activeGeneration: generation

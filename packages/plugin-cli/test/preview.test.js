@@ -13,6 +13,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { cliContractHash } from "../src/compat.js";
 import { parsePreviewArguments } from "../src/preview.js";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -38,8 +39,17 @@ async function makeFixture(t, options = {}) {
   });
   const stderr = options.stderr ?? "";
   const exitCode = options.exitCode ?? 0;
+  // 假预览工具先回答 --version-json（与 CLI 兼容，可用 options.version 覆盖），再按选项模拟一次运行。
+  const version = {
+    tool: "switchly-plugin-preview", toolVersion: "0.1.0", protocolVersion: 1, scenarioSchemaVersion: 1,
+    pluginAPIVersions: [1, 2], sdkContractHash: await cliContractHash(), rendererRevision: "sha256:test",
+    architecture: "arm64", ...(options.version ?? {}),
+  };
   await writeFile(executable, `#!/usr/bin/env node
 const fs = require("node:fs");
+if (process.argv[2] === "--version-json") {
+  ${options.versionBehavior === "no-support" ? "process.exit(2);" : options.versionBehavior === "garbage" ? 'process.stdout.write("not json"); process.exit(0);' : `process.stdout.write(${JSON.stringify(JSON.stringify(version))}); process.exit(0);`}
+}
 fs.writeFileSync(${JSON.stringify(argsLog)}, JSON.stringify(process.argv.slice(2)));
 process.stdout.write(${JSON.stringify(stdout)});
 process.stderr.write(${JSON.stringify(stderr)});
@@ -47,7 +57,10 @@ process.exit(${exitCode});
 `);
   await chmod(executable, 0o755);
 
+  // 自定义假工具脚本复用这段，保持对 --version-json 的应答。
+  const versionPreamble = `if (process.argv[2] === "--version-json") { process.stdout.write(${JSON.stringify(JSON.stringify(version))}); process.exit(0); }`;
   return {
+    versionPreamble,
     root,
     plugin,
     scenario,
@@ -155,6 +168,7 @@ test("run 传递 --out，诊断中的显式路径不会进入结果或日志", a
   ].join(" ");
   await writeFile(fixture.executable, `#!/usr/bin/env node
 const fs = require("node:fs");
+${fixture.versionPreamble}
 fs.writeFileSync(${JSON.stringify(fixture.argsLog)}, JSON.stringify(process.argv.slice(2)));
 process.stdout.write(${JSON.stringify(JSON.stringify({
     schemaVersion: 1,
@@ -362,6 +376,7 @@ test("只向 CLI 发送 SIGTERM 时转发给预览进程，不留下孤儿", asy
   // 假预览进程：就绪后挂起，收到 SIGTERM 才写标记并以 143 退出。
   await writeFile(fixture.executable, `#!/usr/bin/env node
 const fs = require("node:fs");
+${fixture.versionPreamble}
 process.on("SIGTERM", () => { fs.writeFileSync(${JSON.stringify(marker)}, String(process.pid)); process.exit(143); });
 fs.writeFileSync(${JSON.stringify(ready)}, String(process.pid));
 setInterval(() => {}, 1000);
@@ -380,4 +395,52 @@ setInterval(() => {}, 1000);
   assert.notEqual(result, "timeout", "CLI 应在子进程退出后结束，而不是挂起");
   assert.equal(Number(await readFile(marker, "utf8")), childPID, "子进程必须收到被转发的 SIGTERM");
   assert.throws(() => process.kill(childPID, 0), "子进程不应存活");
+});
+
+function runDev(fixture, extra = []) {
+  return invoke(["dev", fixture.plugin, "--preview-tool", fixture.app, "--scenario", fixture.scenario, "--json", ...extra]);
+}
+
+test("兼容握手：契约哈希、协议、场景版本与工具主版本不一致时在启动预览前拒绝，并列出可操作的诊断", async (t) => {
+  const fixture = await makeFixture(t, {
+    version: { sdkContractHash: "sha256:stale", protocolVersion: 2, scenarioSchemaVersion: 3, toolVersion: "1.4.0" },
+  });
+  const result = runDev(fixture);
+  assert.equal(result.status, 4);
+  const output = parseSingleJSON(result.stdout);
+  assert.equal(output.status, "environment-error");
+  assert.equal(output.error.code, "incompatible-preview-tool");
+  assert.deepEqual(output.error.details.mismatches.map((item) => item.field).sort(),
+    ["protocolVersion", "scenarioSchemaVersion", "sdkContractHash", "toolVersion"]);
+  assert.match(output.error.message, /同一工具包/, "诊断必须告诉作者怎么修");
+  await assert.rejects(readFile(fixture.argsLog), "不兼容时不得启动预览");
+});
+
+test("兼容握手：插件 apiVersion 超出工具支持范围返回 unsupported（退出码 3）", async (t) => {
+  const fixture = await makeFixture(t, { version: { pluginAPIVersions: [1] } });
+  await writeFile(path.join(fixture.plugin, "manifest.json"), JSON.stringify({ apiVersion: 2 }));
+  const result = runDev(fixture);
+  assert.equal(result.status, 3);
+  const output = parseSingleJSON(result.stdout);
+  assert.equal(output.status, "unsupported");
+  assert.equal(output.error.code, "plugin-api-unsupported");
+  assert.deepEqual(output.error.details, { pluginAPIVersion: 2, supported: [1] });
+});
+
+test("兼容握手：工具不支持 --version-json 或输出无效时拒绝，而不是盲目运行", async (t) => {
+  for (const versionBehavior of ["no-support", "garbage"]) {
+    const fixture = await makeFixture(t, { versionBehavior });
+    const result = runDev(fixture);
+    assert.equal(result.status, 4, versionBehavior);
+    assert.equal(parseSingleJSON(result.stdout).error.code, "incompatible-preview-tool", versionBehavior);
+    await assert.rejects(readFile(fixture.argsLog), `${versionBehavior} 时不得启动预览`);
+  }
+});
+
+test("兼容握手：兼容的工具正常运行，manifest 不可读时不阻断（由预览工具与 validate 报告）", async (t) => {
+  const fixture = await makeFixture(t);
+  await writeFile(path.join(fixture.plugin, "manifest.json"), "{ not json");
+  const result = runDev(fixture);
+  assert.equal(result.status, 0);
+  assert.equal(parseSingleJSON(result.stdout).status, "passed");
 });

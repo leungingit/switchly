@@ -2,8 +2,8 @@ import Foundation
 
 /// 预览用的确定性时间源：虚拟毫秒时钟、可复现随机数与显式推进的定时器。
 /// 仅在注入 `PluginRuntime` 时启用；正式宿主默认不创建，仍使用系统时间与 `DispatchQueue`。
-/// 所有成员只能在所属 Runtime 的串行队列上访问。
-final class PluginVirtualClock {
+/// 所有成员只能在所属 Runtime 的串行队列上访问（与 `PluginRuntime` 同样的 `@unchecked Sendable` 约定）。
+final class PluginVirtualClock: @unchecked Sendable {
     /// 单次推进最多触发的定时器回调数，防止回调自我重排造成无界循环。
     static let maxFiresPerAdvance = 10_000
     static let maxTimers = 32

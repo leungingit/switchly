@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression plugin-preview-package plugin-preview-toolkit-test
 
 .DEFAULT_GOAL := help
 
@@ -295,3 +295,24 @@ plugin-preview-regression: plugin-preview-contract-check plugin-preview-build ##
 	@./Tests/PluginPreview/run-baseline-tests.sh
 	@./Tests/PluginPreview/run-dev-lifecycle-tests.sh
 	@./Tests/PluginPreview/run-plugin-scenarios.sh $(PLUGINS_REPO)
+
+# T18: offline toolkit. Forces ad-hoc signing so no private identity or Config/Local.xcconfig value can leak
+# into the distributable; the package script fails if the app is not ad-hoc signed.
+PLUGIN_PREVIEW_RELEASE_DERIVED_DATA := $(DERIVED_DATA)/PluginPreviewRelease
+PLUGIN_PREVIEW_TOOLKIT_DIR ?= $(PLUGIN_PREVIEW_RELEASE_DERIVED_DATA)/toolkit
+.PHONY: plugin-preview-package
+plugin-preview-package: plugin-preview-generate plugin-preview-contract-check ## Build the Release preview app and package the offline toolkit
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
+		-scheme $(PLUGIN_PREVIEW_SCHEME) \
+		-configuration Release \
+		-destination 'generic/platform=macOS' \
+		-derivedDataPath $(PLUGIN_PREVIEW_RELEASE_DERIVED_DATA) \
+		CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" CODE_SIGN_STYLE=Manual \
+		-quiet \
+		build
+	@rm -rf "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"
+	@./Tools/PluginPreview/package-toolkit.sh "$(PLUGIN_PREVIEW_RELEASE_DERIVED_DATA)/Build/Products/Release/$(PLUGIN_PREVIEW_SCHEME).app" "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"
+
+.PHONY: plugin-preview-toolkit-test
+plugin-preview-toolkit-test: plugin-preview-package ## T18 acceptance: run the packaged toolkit with no Xcode, no network (needs GUI + Screen Recording)
+	@./Tests/PluginPreview/run-toolkit-tests.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz

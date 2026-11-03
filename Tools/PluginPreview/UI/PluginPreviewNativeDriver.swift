@@ -25,15 +25,16 @@ enum PluginPreviewNativeDriver {
         collect(label: label, node: root, depth: 0, visited: &visited, into: &matches)
         guard let first = matches.first else { return .notFound }
         guard matches.count == 1 else { return .ambiguous }
-        guard boolValue(first, "isAccessibilityEnabled") ?? true else { return .disabled }
-        return boolValue(first, "accessibilityPerformPress") == true ? .pressed : .pressFailed
+        guard boolValue(first, #selector(NSAccessibilityProtocol.isAccessibilityEnabled)) ?? true else { return .disabled }
+        return boolValue(first, #selector(NSAccessibilityProtocol.accessibilityPerformPress)) == true ? .pressed : .pressFailed
     }
 
     private static func collect(label: String, node: NSObject, depth: Int, visited: inout Int, into matches: inout [NSObject]) {
         guard depth <= maxDepth, visited < maxNodes else { return }
         visited += 1
-        if let text = stringValue(node, "accessibilityLabel"), text == label { matches.append(node) }
-        guard node.responds(to: Selector(("accessibilityChildren"))),
+        if let text = stringValue(node, #selector(NSAccessibilityProtocol.accessibilityLabel), key: "accessibilityLabel"),
+           text == label { matches.append(node) }
+        guard node.responds(to: #selector(NSAccessibilityProtocol.accessibilityChildren)),
               let children = node.value(forKey: "accessibilityChildren") as? [Any] else { return }
         for child in children {
             if let object = child as? NSObject {
@@ -42,16 +43,15 @@ enum PluginPreviewNativeDriver {
         }
     }
 
-    private static func stringValue(_ node: NSObject, _ selector: String) -> String? {
-        guard node.responds(to: Selector((selector))) else { return nil }
-        return node.value(forKey: selector) as? String
+    private static func stringValue(_ node: NSObject, _ selector: Selector, key: String) -> String? {
+        guard node.responds(to: selector) else { return nil }
+        return node.value(forKey: key) as? String
     }
 
     /// 调用返回 BOOL 的无参 ObjC 方法；对象不响应时返回 nil。
-    private static func boolValue(_ node: NSObject, _ selector: String) -> Bool? {
-        let sel = Selector((selector))
-        guard node.responds(to: sel), let imp = node.method(for: sel) else { return nil }
+    private static func boolValue(_ node: NSObject, _ selector: Selector) -> Bool? {
+        guard node.responds(to: selector), let imp = node.method(for: selector) else { return nil }
         typealias Function = @convention(c) (AnyObject, Selector) -> Bool
-        return unsafeBitCast(imp, to: Function.self)(node, sel)
+        return unsafeBitCast(imp, to: Function.self)(node, selector)
     }
 }

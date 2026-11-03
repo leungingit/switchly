@@ -19,7 +19,7 @@ final class PluginPreviewWorkerDiagnostics: @unchecked Sendable {
 }
 
 struct PluginPreviewWorkerService {
-    static let toolVersion = "0.1.0"
+    static let toolVersion = PluginPreviewContract.toolVersion
 
     let input: FileHandle
     let output: FileHandle

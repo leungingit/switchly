@@ -4,10 +4,12 @@ import {
   access,
   lstat,
   readdir,
+  readFile,
   realpath,
   stat,
 } from "node:fs/promises";
 import path from "node:path";
+import { cliContractHash, findMismatches, queryToolVersion } from "./compat.js";
 
 const EXIT = Object.freeze({
   passed: 0,
@@ -24,11 +26,12 @@ const FORWARDED_SIGNAL_GRACE_MS = 10_000;
 const RESULT_STATUSES = new Set(["passed", "failed", "unsupported", "environment-error"]);
 
 class PreviewCliError extends Error {
-  constructor(code, message, status = "failed", exitCode = EXIT.failed) {
+  constructor(code, message, status = "failed", exitCode = EXIT.failed, details = undefined) {
     super(message);
     this.code = code;
     this.status = status;
     this.exitCode = exitCode;
+    this.details = details;
   }
 }
 
@@ -303,8 +306,56 @@ function failureResult(command, error) {
     error: {
       code: error.code,
       message: error.message,
+      ...(error.details ? { details: error.details } : {}),
     },
   };
+}
+
+const COMPAT_HINT = "请使用同一工具包中的 switchly-plugin CLI 与 SwitchlyPluginPreview.app（版本、协议与契约必须配套）。";
+
+/**
+ * 启动预览前核对工具与 CLI、插件的兼容性。任何一项无法确认或不一致都在此处以可操作的诊断拒绝。
+ */
+async function checkToolCompatibility(request, io) {
+  const result = await queryToolVersion(request.executable, io.spawn);
+  if (result.failure === "launch-failed") {
+    throw environmentError("preview-process-launch-failed", "预览工具无法启动");
+  }
+  if (result.failure) {
+    const reasons = {
+      unresponsive: "预览工具没有在时限内报告版本",
+      "no-version-support": "预览工具不支持 --version-json（版本过旧或不是预览工具）",
+      "invalid-output": "预览工具报告的版本信息无效",
+    };
+    throw environmentError("incompatible-preview-tool", `${reasons[result.failure]}。${COMPAT_HINT}`);
+  }
+  let expectedHash;
+  try {
+    expectedHash = await cliContractHash();
+  } catch {
+    throw environmentError("cli-contract-missing", "CLI 缺少随包契约文件，无法核对兼容性；请重新安装工具包。");
+  }
+  const mismatches = findMismatches(result.tool, expectedHash);
+  if (mismatches.length > 0) {
+    const summary = mismatches.map((item) => `${item.field}（CLI 要求 ${item.expected}，工具为 ${item.actual}）`).join("；");
+    throw new PreviewCliError("incompatible-preview-tool", `预览工具与 CLI 不兼容：${summary}。${COMPAT_HINT}`,
+      "environment-error", EXIT.environmentError, { mismatches });
+  }
+  const pluginAPIVersion = await readPluginAPIVersion(request.plugin);
+  if (pluginAPIVersion !== null && !result.tool.pluginAPIVersions.includes(pluginAPIVersion)) {
+    throw new PreviewCliError("plugin-api-unsupported",
+      `预览工具支持的插件 API 为 ${result.tool.pluginAPIVersions.join("、")}，插件声明了 ${pluginAPIVersion}。请升级工具包或调整插件 apiVersion。`,
+      "unsupported", EXIT.unsupported, { pluginAPIVersion, supported: result.tool.pluginAPIVersions });
+  }
+}
+
+async function readPluginAPIVersion(pluginDirectory) {
+  try {
+    const manifest = JSON.parse(await readFile(path.join(pluginDirectory, "manifest.json"), "utf8"));
+    return Number.isInteger(manifest.apiVersion) ? manifest.apiVersion : null;
+  } catch {
+    return null; // manifest 问题由预览工具与 validate 负责报告
+  }
 }
 
 function emitResult(io, request, result) {
@@ -434,6 +485,7 @@ export async function runPreviewCommand(command, args, io = {
   try {
     const options = parsePreviewArguments(command, args);
     request = await resolvePreviewRequest(options);
+    await checkToolCompatibility(request, io);
     const processResult = await runProcess(request, io);
 
     if (request.json) {

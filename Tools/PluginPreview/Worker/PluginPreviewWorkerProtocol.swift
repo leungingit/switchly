@@ -51,6 +51,9 @@ typealias PluginPreviewWorkerFrame = PluginPreviewFrame<PluginPreviewWorkerPaylo
 /// 预览公共契约的唯一常量，由 `Tools/PluginPreview/contract-hash.sh --check` 校验。
 /// plugin-api/ 下 6 个契约文件变化时必须同步更新并重新验收。
 enum PluginPreviewContract {
+    /// 预览工具版本与场景 Schema 版本的唯一来源（worker 握手、报告、`--version-json` 共用）。
+    static let toolVersion = "0.1.0"
+    static let scenarioSchemaVersion = 1
     /// 共享渲染源码的 revision，由 `renderer-revision.sh --check` 校验；变化即视觉基线失效。
     static let rendererRevision = "sha256:f87a797a7e20a25e07652ed299c5a7b4abbb04472cf56ffe697426a1363bc33a"
     static let sdkContractHash = "sha256:2ba89126f3eb0a194bd3cdadcd8b791b672c6eab34c3cab46c7b72b845d4aac3"
