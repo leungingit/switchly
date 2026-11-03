@@ -41,6 +41,12 @@ struct PreviewScenario: Decodable {
     let settings: [String: JSONValue]?
     let storageSeed: [String: JSONValue]?
     let steps: [JSONValue]?
+    /// 已校验的强类型步骤；空数组与省略等价。
+    private(set) var typedSteps: [PluginPreviewStep] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, id, environment, target, fixtures, clock, grants, settings, storageSeed, steps
+    }
 
     enum Failure: Error, Equatable {
         case invalidScenario
@@ -91,8 +97,15 @@ struct PreviewScenario: Decodable {
               (value.settings ?? [:]).values.allSatisfy(\.isSettingValue) else {
             throw Failure.invalidScenario
         }
-        if !(value.steps ?? []).isEmpty { throw Failure.unsupportedSteps }
-        return value
+        var result = value
+        if let steps = object["steps"] as? [Any], !steps.isEmpty {
+            result.typedSteps = try PluginPreviewStep.parse(steps)
+            if result.clock == nil, result.typedSteps.contains(where: { if case .advance = $0 { return true } else { return false } }) {
+                // advance 只作用于虚拟时钟；实时场景不能静默忽略。
+                throw Failure.invalidScenario
+            }
+        }
+        return result
     }
 
     private static func hasOnly(_ object: [String: Any], _ allowed: Set<String>) -> Bool {

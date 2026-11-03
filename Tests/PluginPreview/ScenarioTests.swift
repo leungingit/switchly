@@ -2,7 +2,8 @@ import Foundation
 
 @main
 struct ScenarioTests {
-    static func main() throws {
+    static func main() async throws {
+        try await StepTests.run()
         let valid = #"{"schemaVersion":1,"id":"default","environment":{"locale":"zh-Hans","appearance":"dark","glass":false,"reduceMotion":true,"contentWidthPoints":360},"target":{"bundleID":"example.app","appName":"Example"},"steps":[]}"#
         let parsed = try PreviewScenario.decode(Data(valid.utf8))
         precondition(parsed.id == "default" && parsed.environment.contentWidthPoints == 360)
@@ -19,6 +20,11 @@ struct ScenarioTests {
         reject(valid.replacingOccurrences(of: "\"steps\":[]", with: "\"supported\":true"), expected: .invalidScenario)
         reject(valid.replacingOccurrences(of: "\"contentWidthPoints\":360", with: "\"contentWidthPoints\":0"), expected: .invalidScenario)
         reject("{", expected: .invalidScenario)
+        let stepsJSON = "\"clock\":{\"startEpochMs\":1,\"seed\":1},\"steps\":[{\"type\":\"advance\",\"ms\":50},{\"type\":\"expectText\",\"contains\":\"x\"}]"
+        let typed = try PreviewScenario.decode(Data(valid.replacingOccurrences(of: "\"steps\":[]", with: stepsJSON).utf8))
+        precondition(typed.typedSteps == [.advance(milliseconds: 50), .expectText(contains: "x")])
+        precondition(parsed.typedSteps.isEmpty)
+        reject(valid.replacingOccurrences(of: "\"steps\":[]", with: "\"steps\":[{\"type\":\"advance\",\"ms\":5}]"), expected: .invalidScenario)
         let withClock = valid.replacingOccurrences(of: "\"steps\":[]", with: "\"clock\":{\"startEpochMs\":1700000000000,\"seed\":7},\"steps\":[]")
         let clocked = try PreviewScenario.decode(Data(withClock.utf8))
         precondition(clocked.clock?.seed == 7 && clocked.clock?.startEpochMs == 1_700_000_000_000)

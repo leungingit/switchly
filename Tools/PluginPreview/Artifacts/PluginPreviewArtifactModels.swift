@@ -16,6 +16,7 @@ enum PluginPreviewArtifactFailureCode: String, Codable, Equatable {
     case writeFailed = "write-failed"
     case unsupported
     case environmentUnavailable = "environment-unavailable"
+    case stepFailed = "step-failed"
 
     var message: String {
         switch self {
@@ -27,6 +28,7 @@ enum PluginPreviewArtifactFailureCode: String, Codable, Equatable {
         case .writeFailed: return "Artifacts could not be written completely."
         case .unsupported: return "The preview scenario uses an unsupported capability."
         case .environmentUnavailable: return "The preview environment is unavailable."
+        case .stepFailed: return "A scenario step failed; see the step trace in this report."
         }
     }
 }
@@ -145,6 +147,8 @@ struct PluginPreviewArtifactReport: Codable, Equatable {
     let versions: PluginPreviewArtifactVersions
     let environment: PluginPreviewArtifactEnvironment?
     let failure: PluginPreviewArtifactFailure?
+    /// 场景声明了 steps 时的逐步 trace；无步骤的运行省略该字段，保持既有报告形状。
+    var steps: [PluginPreviewStepTrace]? = nil
 }
 
 enum PluginPreviewArtifactValue: Codable, Equatable {

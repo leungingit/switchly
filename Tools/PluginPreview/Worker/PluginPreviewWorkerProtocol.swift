@@ -51,5 +51,5 @@ typealias PluginPreviewWorkerFrame = PluginPreviewFrame<PluginPreviewWorkerPaylo
 /// 预览公共契约的唯一常量，由 `Tools/PluginPreview/contract-hash.sh --check` 校验。
 /// plugin-api/ 下 6 个契约文件变化时必须同步更新并重新验收。
 enum PluginPreviewContract {
-    static let sdkContractHash = "sha256:a650b17ed30e4f883e7b736305aaa5bff8e54ca67931a7853914d99700911d48"
+    static let sdkContractHash = "sha256:fc81d4148942eebf6568923b89c26a4ffb8692f9a512e8e48c42873af9a2db0e"
 }

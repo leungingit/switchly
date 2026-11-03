@@ -10,7 +10,8 @@ struct PluginPreviewArtifactWriter {
         identity: PluginPreviewArtifactIdentity,
         rawJSON: Data,
         screenshotURL: URL,
-        outputDirectory: URL
+        outputDirectory: URL,
+        steps: [PluginPreviewStepTrace]? = nil
     ) throws -> PluginPreviewArtifactReport {
         try validate(identity)
         let packageHash = try PluginPreviewPackageHasher.sha256(packageURL: identity.packageURL)
@@ -39,7 +40,8 @@ struct PluginPreviewArtifactWriter {
                 artifacts: .complete,
                 versions: identity.versions,
                 environment: identity.environment,
-                failure: nil
+                failure: nil,
+                steps: steps
             )
             written.append(try writeJSON(report, name: "report.json", directory: outputFD))
             return report
@@ -56,7 +58,8 @@ struct PluginPreviewArtifactWriter {
         identity: PluginPreviewArtifactIdentity,
         status: PluginPreviewArtifactStatus,
         failure: PluginPreviewArtifactFailureCode,
-        outputDirectory: URL
+        outputDirectory: URL,
+        steps: [PluginPreviewStepTrace]? = nil
     ) throws -> PluginPreviewArtifactReport {
         guard status != .passed else { throw PluginPreviewArtifactError.invalidIdentity }
         try validate(identity)
@@ -74,7 +77,8 @@ struct PluginPreviewArtifactWriter {
             artifacts: .reportOnly,
             versions: identity.versions,
             environment: identity.environment,
-            failure: PluginPreviewArtifactFailure(failure)
+            failure: PluginPreviewArtifactFailure(failure),
+            steps: steps
         )
         _ = try writeJSON(report, name: "report.json", directory: outputFD)
         return report

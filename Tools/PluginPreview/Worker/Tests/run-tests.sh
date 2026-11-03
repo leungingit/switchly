@@ -25,6 +25,7 @@ xcrun swiftc -swift-version 5 -D PLUGIN_PREVIEW_WORKER_TESTS \
     Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Scenario/PreviewScenario.swift \
+    Tools/PluginPreview/Scenario/PluginPreviewStep.swift \
     Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift \
     Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift \
     Tools/PluginPreview/Worker/PluginPreviewWorkerFixtures.swift \

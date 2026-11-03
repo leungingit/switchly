@@ -34,6 +34,7 @@ xcrun swiftc \
     Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Scenario/PreviewScenario.swift \
+    Tools/PluginPreview/Scenario/PluginPreviewStep.swift \
     Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift \
     Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift \
     Tools/PluginPreview/Worker/PluginPreviewWorkerFixtures.swift \

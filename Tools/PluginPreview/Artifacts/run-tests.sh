@@ -7,6 +7,7 @@ cd "$ROOT"
 xcrun swiftc -swift-version 5 -parse-as-library \
   Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift \
   Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Utilities/AppLogger.swift \
+  Tools/PluginPreview/Scenario/PluginPreviewStep.swift Tools/PluginPreview/Scenario/PreviewScenario.swift \
   Tools/PluginPreview/Artifacts/PluginPreviewArtifactModels.swift \
   Tools/PluginPreview/Artifacts/PluginPreviewArtifactBuilder.swift \
   Tools/PluginPreview/Artifacts/PluginPreviewPackageHasher.swift \

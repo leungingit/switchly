@@ -161,6 +161,7 @@ targets:
       - Tools/PluginPreview/Controller/PluginPreviewWorkerSupervisor.swift
       - Tools/PluginPreview/Controller/PluginPreviewSession.swift
       - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Scenario/PluginPreviewStep.swift
       - Tools/PluginPreview/Artifacts/PluginPreviewArtifactModels.swift
       - Tools/PluginPreview/Artifacts/PluginPreviewArtifactBuilder.swift
       - Tools/PluginPreview/Artifacts/PluginPreviewPackageHasher.swift
@@ -204,6 +205,7 @@ targets:
       - Utilities/AppLogger.swift
       - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
       - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Scenario/PluginPreviewStep.swift
       - Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift
       - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
       - Tools/PluginPreview/Worker/PluginPreviewWorkerFixtures.swift

@@ -157,6 +157,7 @@
 		9E2FA5DCDBD20C995796CD33 /* DesktopNavigationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B327F0F758209F4FAF26918 /* DesktopNavigationServiceTests.swift */; };
 		9F4403A6356D3C66EA5CB406 /* UsageStatisticsEfficiency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */; };
 		9F828F9C5B96E35E83D48D9A /* WindowMonitorIdleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68F713C8680F2216BAB1D055 /* WindowMonitorIdleTests.swift */; };
+		9FA6BC4916254931443C4288 /* PluginPreviewStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156D163E15282FCBFB613474 /* PluginPreviewStep.swift */; };
 		9FABCB54E3792FEE65EEA7B1 /* GridStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA270BA7907E1777FD01E21 /* GridStyle.swift */; };
 		9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */; };
 		A072D06E5B68A96A4DCADA1E /* StatisticsEfficiencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */; };
@@ -224,6 +225,7 @@
 		DC31DBC9E56F4460B2A36B9A /* AllSpacesRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F30365BE450846F0634ADC9 /* AllSpacesRenderingTests.swift */; };
 		DCC611909E026C6CCBED6F33 /* OnlineWeatherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */; };
 		DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34689921552D03B9A0939D3 /* ThumbnailService.swift */; };
+		DD2618DAEF66223C90A57743 /* PluginPreviewStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156D163E15282FCBFB613474 /* PluginPreviewStep.swift */; };
 		DE315F783867424EB13162FD /* PreviewAppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2418F157E2541D7343E8881 /* PreviewAppMain.swift */; };
 		E0014664397567828FF3D23A /* PluginSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C9FFAA0E50CCA50D6D6F5A /* PluginSceneView.swift */; };
 		E038C6F9A5AD14EA9696B3C2 /* PreviewWorkerMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B43BC28498AA94925DA8F01F /* PreviewWorkerMain.swift */; };
@@ -283,6 +285,7 @@
 		0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModelTests.swift; sourceTree = "<group>"; };
 		0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutService.swift; sourceTree = "<group>"; };
 		1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCacheTests.swift; sourceTree = "<group>"; };
+		156D163E15282FCBFB613474 /* PluginPreviewStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewStep.swift; sourceTree = "<group>"; };
 		1586F73A4F525E88C759A1C8 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewPanel.swift; sourceTree = "<group>"; };
 		188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewViewModel.swift; sourceTree = "<group>"; };
@@ -758,6 +761,7 @@
 		CFCD62820D484A2C431B0568 /* Scenario */ = {
 			isa = PBXGroup;
 			children = (
+				156D163E15282FCBFB613474 /* PluginPreviewStep.swift */,
 				E4B9A3A2125D75888717ADE1 /* PreviewScenario.swift */,
 			);
 			name = Scenario;
@@ -1113,6 +1117,7 @@
 				BCE3A9A312B74260D0089A66 /* PluginPreviewProcessTypes.swift in Sources */,
 				AE49D1A312A4DB8AB184A0B4 /* PluginPreviewSession.swift in Sources */,
 				CC764C95FBC1A3E5F0AE9375 /* PluginPreviewState.swift in Sources */,
+				DD2618DAEF66223C90A57743 /* PluginPreviewStep.swift in Sources */,
 				28F3294E6E6AFE271647432B /* PluginPreviewView.swift in Sources */,
 				5ACA21E551EF05A37C063BF7 /* PluginPreviewWorkerProtocol.swift in Sources */,
 				2A0A4B94E03075C0BEF4E307 /* PluginPreviewWorkerSupervisor.swift in Sources */,
@@ -1210,6 +1215,7 @@
 				641505FD43ABC11B089FF553 /* PluginManifest.swift in Sources */,
 				7421BBBB5DC93D163DDC2965 /* PluginPackageValidator.swift in Sources */,
 				14EB24B1E4D976B23E3657BB /* PluginPreviewFrameCodec.swift in Sources */,
+				9FA6BC4916254931443C4288 /* PluginPreviewStep.swift in Sources */,
 				7531BE17CA610CCDC319A362 /* PluginPreviewWorkerFixtures.swift in Sources */,
 				BA1D588FB91F4CFE1687563C /* PluginPreviewWorkerProtocol.swift in Sources */,
 				8B99AB0E555B214F00B6C558 /* PluginPreviewWorkerService.swift in Sources */,

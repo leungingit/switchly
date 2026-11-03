@@ -48,7 +48,20 @@
     "grants": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "settings": { "type": "object", "additionalProperties": { "type": ["boolean", "number", "string"] } },
     "storageSeed": { "type": "object" },
-    "steps": { "type": "array", "maxItems": 0 }
+    "steps": {
+      "type": "array", "maxItems": 64,
+      "items": {
+        "oneOf": [
+          { "type": "object", "additionalProperties": false, "required": ["type", "ms"],
+            "properties": { "type": { "const": "advance" }, "ms": { "type": "number", "minimum": 0, "maximum": 86400000 } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "id"],
+            "properties": { "type": { "const": "action" }, "id": { "type": "string", "minLength": 1, "maxLength": 128 }, "value": { "type": "number" } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "contains"],
+            "properties": { "type": { "const": "expectText" }, "contains": { "type": "string", "minLength": 1, "maxLength": 256 } } }
+        ]
+      },
+      "description": "advance 需要场景声明 clock；action 是业务动作（直接调用 onAction，不经原生输入）。"
+    }
   },
   "$defs": {
     "relativePath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\u0000]*[^/\\u0000]$" }

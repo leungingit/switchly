@@ -49,6 +49,21 @@ struct ArtifactTests {
         try Data([137,80,78,71,13,10,26,10]).write(to: bad)
         do { _ = try PluginPreviewArtifactWriter().writeSuccess(identity: identity, rawJSON: raw, screenshotURL: bad, outputDirectory: root.appendingPathComponent("bad-out")); fatalError("accepted invalid PNG") }
         catch PluginPreviewArtifactError.invalidScreenshot {}
+
+        // 无 steps 的报告不出现 steps 键；有 steps 时成功与失败报告都带 trace。
+        let reportJSON = try String(contentsOf: out.appendingPathComponent("report.json"), encoding: .utf8)
+        precondition(!reportJSON.contains("\"steps\""), "reports without steps keep their existing shape")
+        let traces = [PluginPreviewStepTrace(index: 0, type: "advance", source: "clock", status: "passed", detail: nil)]
+        let withSteps = try PluginPreviewArtifactWriter().writeSuccess(identity: identity, rawJSON: raw, screenshotURL: image,
+            outputDirectory: root.appendingPathComponent("steps-out"), steps: traces)
+        precondition(withSteps.steps == traces)
+        let failedOut = root.appendingPathComponent("failed-out")
+        let failedTraces = [PluginPreviewStepTrace(index: 0, type: "expectText", source: "render-output", status: "failed", detail: "text-not-found")]
+        let failed = try PluginPreviewArtifactWriter().writeFailure(identity: identity, status: .failed, failure: .stepFailed,
+            outputDirectory: failedOut, steps: failedTraces)
+        precondition(failed.status == .failed && failed.failure?.code == "step-failed" && failed.artifacts == .reportOnly)
+        let decoded = try JSONDecoder().decode(PluginPreviewArtifactReport.self, from: Data(contentsOf: failedOut.appendingPathComponent("report.json")))
+        precondition(decoded.steps == failedTraces)
         print("产物、哈希与 PNG 测试通过")
     }
 }
