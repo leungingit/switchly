@@ -86,7 +86,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
             protocolVersion: PluginPreviewFrameCodec.protocolVersion,
             scenarioSchemaVersion: 1,
             pluginAPIVersions: Array(PluginManifest.supportedAPIVersions),
-            sdkContractHash: PluginPreviewWorkerService.unfrozenContractHash,
+            sdkContractHash: PluginPreviewContract.sdkContractHash,
             activeGeneration: generation
         )
     }

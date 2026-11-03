@@ -274,7 +274,7 @@ private enum PluginPreviewWorkerTests {
         let hello = try response(1, in: responses)
         try expectEqual(hello.payload.toolVersion, PluginPreviewWorkerService.toolVersion, "tool version")
         try expectEqual(hello.payload.pluginAPIVersions, [1, 2], "plugin API versions")
-        try expectEqual(hello.payload.sdkContractHash, PluginPreviewWorkerService.unfrozenContractHash, "contract hash marker")
+        try expectEqual(hello.payload.sdkContractHash, PluginPreviewContract.sdkContractHash, "contract hash marker")
 
         try expectEqual(try response(2, in: responses).payload.errorCode, "notLoaded", "render before load")
         let loaded = try response(3, in: responses)

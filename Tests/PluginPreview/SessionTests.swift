@@ -457,7 +457,7 @@ private struct SessionTests {
                 recorder: SessionEventRecorder(),
                 compatibility: PluginPreviewSessionCompatibility(
                     pluginAPIVersion: 2,
-                    sdkContractHash: "unfrozen",
+                    sdkContractHash: PluginPreviewContract.sdkContractHash,
                     toolVersion: "0.1.0"
                 )
             )
@@ -486,7 +486,7 @@ private struct SessionTests {
                 try sessionExpectEqual(snapshot.process.state, .stopped, "real worker process cleanup")
                 let replacement = try makeSession(
                     executable: URL(fileURLWithPath: realWorkerPath), arguments: [], recorder: SessionEventRecorder(),
-                    compatibility: PluginPreviewSessionCompatibility(pluginAPIVersion: 2, sdkContractHash: "unfrozen", toolVersion: "0.1.0")
+                    compatibility: PluginPreviewSessionCompatibility(pluginAPIVersion: 2, sdkContractHash: PluginPreviewContract.sdkContractHash, toolVersion: "0.1.0")
                 )
                 do {
                     _ = try await replacement.start(generation: 2)

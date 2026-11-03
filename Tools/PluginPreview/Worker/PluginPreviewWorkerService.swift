@@ -20,9 +20,6 @@ final class PluginPreviewWorkerDiagnostics: @unchecked Sendable {
 
 struct PluginPreviewWorkerService {
     static let toolVersion = "0.1.0"
-    /// Contract hashing is not frozen. The explicit marker prevents callers from
-    /// treating this value as a compatibility guarantee.
-    static let unfrozenContractHash = "unfrozen"
 
     let input: FileHandle
     let output: FileHandle

@@ -271,3 +271,7 @@ plugin-preview-worker: plugin-preview-generate ## Build the standalone preview w
 .PHONY: plugin-preview-build
 plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview app and worker targets
 	@echo "${GREEN}✅ Plugin preview build wiring complete${NC}"
+
+.PHONY: plugin-preview-contract-check
+plugin-preview-contract-check: ## Verify the preview contract hash constant matches plugin-api files
+	@./Tools/PluginPreview/contract-hash.sh --check
