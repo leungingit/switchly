@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { runPreviewCommand } from "./preview.js";
 import { validatePluginDirectory } from "./validate.js";
 
 const capabilitiesURL = new URL("../contract/capabilities.json", import.meta.url);
@@ -21,6 +22,8 @@ const help = `Switchly 插件 CLI
   switchly-plugin build <插件目录> [--out <输出根目录>] [--json]
   switchly-plugin verify <插件目录> --host <宿主校验工具路径>
   switchly-plugin create <目标目录> [--id <插件ID>] [--name <名称>] [--match <bundleID>] [--json]
+  switchly-plugin dev <插件目录> --preview-tool <App> --scenario <场景> [--json]
+  switchly-plugin run <插件目录> --preview-tool <App> --scenario <场景> --out <输出目录> [--json]
 
 说明：
   validate  检查 manifest、入口、设置唯一性、权限和静态资源路径。
@@ -28,6 +31,8 @@ const help = `Switchly 插件 CLI
             默认输出根目录为当前目录下的 .build/Plugins。
             该命令不做 TypeScript 转译或 JavaScript 打包。
   create    创建不依赖外部模板的最小零依赖插件，并立即运行 validate。
+  dev       启动独立预览 App；不转译 TypeScript，也不更新插件锁。
+  run       执行一次独立预览并写入调用者指定的输出目录。
 `;
 
 function optionValue(args, name) {
@@ -242,6 +247,9 @@ export async function main(args) {
     if (args[0] === "validate") return await validateCommand(args.slice(1));
     if (args[0] === "build") return await buildCommand(args.slice(1));
     if (args[0] === "create") return await createCommand(args.slice(1));
+    if (args[0] === "dev" || args[0] === "run") {
+      return await runPreviewCommand(args[0], args.slice(1));
+    }
     throw new Error(`未知命令：${args[0]}`);
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

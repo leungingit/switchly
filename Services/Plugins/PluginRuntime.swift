@@ -108,7 +108,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     /// Only kept when `media.library` is authorized.
     private let libraryBridge: MusicLibraryPlaying?
     /// Only kept when `fs.read` is authorized.
-    private let fileReader: PluginFileReader?
+    private let fileReader: PluginFileReading?
     private let settingsProvider: () -> [String: Bool]
     /// Host-held weather snapshot for `ctx.weather.current()`; nil when the
     /// permission is not granted. Never triggers a request from JS.
@@ -143,7 +143,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          mediaBridge: MediaBridging? = nil,
          permissions: Set<PluginCapability>? = nil,
          libraryBridge: MusicLibraryPlaying? = nil,
-         fileReader: PluginFileReader? = nil,
+         fileReader: PluginFileReading? = nil,
          settings: @escaping () -> [String: Bool] = { [:] },
          values: @escaping () -> [String: PluginSettingValue] = { [:] },
          weather: (() -> [String: Any]?)? = nil,
@@ -179,15 +179,14 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     }
 
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> {
-        let result = await invoke("render", context: context, extra: [])
-        return result.flatMap { json in
-            do {
-                return .success(try PluginRenderOutput.decode(json: Data(json.utf8)))
-            } catch {
-                AppLogger.throttledWarning(key: "plugin.output.\(manifest.id)", "Plugin render output rejected. plugin=\(manifest.id) error=\(error)")
-                return .failure(.invalidOutput(String(describing: error)))
-            }
-        }
+        await renderValidated(context: context).map(\.slots)
+    }
+
+    /// The worker forwards the original JSON after the same strict host decode.
+    /// Re-encoding decoded UI values would lose unknown fields and create a second
+    /// render representation.
+    func renderJSON(context: PluginRenderContext) async -> Result<String, PluginRuntimeError> {
+        await renderValidated(context: context).map(\.json)
     }
 
     func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError> {
@@ -222,6 +221,19 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     }
 
     // MARK: - Invocation
+
+    private func renderValidated(context: PluginRenderContext) async -> Result<(json: String, slots: [PluginSlotContent]), PluginRuntimeError> {
+        let result = await invoke("render", context: context, extra: [])
+        return result.flatMap { json in
+            do {
+                let slots = try PluginRenderOutput.decode(json: Data(json.utf8))
+                return .success((json, slots))
+            } catch {
+                AppLogger.throttledWarning(key: "plugin.output.\(manifest.id)", "Plugin render output rejected. plugin=\(manifest.id) error=\(error)")
+                return .failure(.invalidOutput(String(describing: error)))
+            }
+        }
+    }
 
     private func invoke(_ method: String, context ctx: PluginRenderContext, extra: [Any]) async -> Result<String, PluginRuntimeError> {
         await withCheckedContinuation { continuation in

@@ -199,4 +199,103 @@ final class PluginFileReaderTests: XCTestCase {
         let withheld = try await context(script, permissions: [])
         XCTAssertEqual(withheld, "no-fs")
     }
+
+    func testRuntimeInjectsTheReaderProtocolAndResetsItPerInvocation() async throws {
+        let m = manifest(permissions: [.fsRead], roots: [PluginFSRoot(id: "s", path: "~/.sessions", summary: [:])])
+        let source = """
+        globalThis.__switchlyPlugin = {
+          async render(ctx) {
+            const names = (await ctx.fs.list("s", "")).map(e => e.name).join(",");
+            const body = await ctx.fs.readText("s", "fixture.txt");
+            const available = ctx.capabilities["fs.read"].available;
+            return [{ slot: "center", node: { type: "text", value: names + "|" + body + "|" + available } }];
+          },
+          onAction(ctx, id, value) {}
+        };
+        """
+        let package = PluginPackage(manifest: m, directory: root, source: source, origin: .builtin)
+        let reader = ProtocolFileReader()
+        let runtime = PluginRuntime(package: package, timeout: 2, permissions: [.fsRead], fileReader: reader)
+
+        let ctx = PluginRenderContext(bundleID: "com.example.app", pid: 1, appName: "App", windowID: 0, titleSummary: "")
+        let slots = try await runtime.render(context: ctx).get()
+        guard case .text(let text, _, _) = slots[0].node else { return XCTFail("expected text") }
+        XCTAssertEqual(text, "fixture.txt|synthetic|true")
+        XCTAssertEqual(reader.resetCount, 1)
+
+        _ = try await runtime.performAction(id: "noop", value: nil, context: ctx).get()
+        XCTAssertEqual(reader.resetCount, 2, "each render/action starts a fresh fs quota")
+    }
+
+    /// `Tools/PluginPreview` is not part of the current test target. Compile the real fixture provider
+    /// with the host protocol and run its contract in a temporary directory, without touching user files.
+    func testSyntheticFileReaderContract() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let temporary = FileManager.default.temporaryDirectory
+            .appendingPathComponent("plugin-fixture-fs-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+        process.currentDirectoryURL = repositoryRoot
+        process.arguments = [
+            "swiftc", "-swift-version", "5", "-D", "PLUGIN_FIXTURE_SMOKE",
+            "Models/Plugins/PluginManifest.swift",
+            "Services/Plugins/PluginFileReader.swift",
+            "Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift",
+            "Tools/PluginPreview/Fixtures/PluginFixtureFileReaderSmoke.swift",
+            "-o", temporary.appendingPathComponent("fixture-fs-smoke").path,
+        ]
+        let stderr = Pipe()
+        process.standardError = stderr
+        try process.run()
+        process.waitUntilExit()
+
+        let errors = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        XCTAssertEqual(process.terminationStatus, 0, errors)
+
+        let marker = temporary.appendingPathComponent("result.txt")
+        let smoke = Process()
+        smoke.executableURL = temporary.appendingPathComponent("fixture-fs-smoke")
+        smoke.arguments = [marker.path]
+        try smoke.run()
+        smoke.waitUntilExit()
+        XCTAssertEqual(smoke.terminationStatus, 0)
+        XCTAssertEqual(try String(contentsOf: marker, encoding: .utf8), "plugin-fixture-fs-smoke=passed\n")
+    }
+}
+
+private final class ProtocolFileReader: PluginFileReading, @unchecked Sendable {
+    private let lock = NSLock()
+    private var resets = 0
+
+    var resetCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return resets
+    }
+
+    func resetCalls() {
+        lock.lock()
+        resets += 1
+        lock.unlock()
+    }
+
+    func list(root: String, path: String) throws -> [PluginFSEntry] {
+        [PluginFSEntry(name: "fixture.txt", isDirectory: false, size: 9, modified: 1)]
+    }
+
+    func stat(root: String, path: String) throws -> PluginFSEntry {
+        PluginFSEntry(name: "fixture.txt", isDirectory: false, size: 9, modified: 1)
+    }
+
+    func readText(root: String, path: String, maxBytes: Int?) throws -> String { "synthetic" }
+
+    func scan(root: String, path: String, depth: Int, suffix: String?, modifiedWithin: TimeInterval?) throws -> [PluginFSScanEntry] { [] }
+
+    func isLocked(root: String, path: String) throws -> Bool { false }
 }

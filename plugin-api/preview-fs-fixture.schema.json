@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchly.local/plugin-api/preview-fs-fixture.schema.json",
+  "title": "Switchly 预览文件系统 fixture（开发中）",
+  "type": "object", "additionalProperties": false, "required": ["roots"],
+  "properties": {
+    "roots": {
+      "type": "object", "maxProperties": 32,
+      "propertyNames": { "minLength": 1 },
+      "additionalProperties": {
+        "type": "object", "additionalProperties": false, "required": ["entries"],
+        "properties": {
+          "entries": {
+            "type": "array", "maxItems": 5000,
+            "items": {
+              "type": "object", "additionalProperties": false, "required": ["path"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1, "pattern": "^(?!\\.$)(?!/)(?!.*//)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000]*[^/\\u0000]$" },
+                "isDirectory": { "type": "boolean" },
+                "text": { "type": "string" },
+                "modified": { "type": "number" },
+                "locked": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

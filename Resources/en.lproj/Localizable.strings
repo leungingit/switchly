@@ -525,3 +525,33 @@
 "The plugin operation failed. Check its manifest, compatibility, and folder access." = "The plugin operation failed. Check its manifest, compatibility, and folder access.";
 
 "Plugin locations" = "Plugin locations";
+
+// Plugin preview UI
+"Glass" = "Glass";
+"Preview failed" = "Preview failed";
+"Reload is not yet available" = "Reload is not yet available";
+"Plugin Preview" = "Plugin Preview";
+"Plugin area" = "Plugin area";
+"Diagnostics" = "Diagnostics";
+"Slot" = "Slot";
+"Width" = "Width";
+"Reload" = "Reload";
+"Reset" = "Reset";
+"Center" = "Center";
+"Bottom bar" = "Bottom bar";
+"Top trailing" = "Top trailing";
+"Title accessory" = "Title accessory";
+"Connected" = "Connected";
+"Component preview only" = "Component preview only";
+"Switchly Dock currently connects only the center and bottom bar slots. This view still renders the shared component." = "Switchly Dock currently connects only the center and bottom bar slots. This view still renders the shared component.";
+"No plugin content for this slot" = "No plugin content for this slot";
+"No plugin selected" = "No plugin selected";
+"No diagnostics" = "No diagnostics";
+"Waiting for a plugin render" = "Waiting for a plugin render";
+"Rendering" = "Rendering";
+"Ready" = "Ready";
+"Stale render" = "Stale render";
+"Failed" = "Failed";
+"Info" = "Info";
+"Warning" = "Warning";
+"Generation %d" = "Generation %d";

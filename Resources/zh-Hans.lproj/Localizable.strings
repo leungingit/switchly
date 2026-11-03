@@ -525,3 +525,33 @@
 "The plugin operation failed. Check its manifest, compatibility, and folder access." = "插件操作失败。请检查插件清单、API 兼容性和文件夹访问权限。";
 
 "Plugin locations" = "插件位置说明";
+
+// 插件预览界面
+"Glass" = "玻璃";
+"Preview failed" = "预览失败";
+"Reload is not yet available" = "重载功能尚未完成";
+"Plugin Preview" = "插件预览";
+"Plugin area" = "插件区域";
+"Diagnostics" = "诊断";
+"Slot" = "槽位";
+"Width" = "宽度";
+"Reload" = "重载";
+"Reset" = "重置";
+"Center" = "中心";
+"Bottom bar" = "底栏";
+"Top trailing" = "右上角";
+"Title accessory" = "标题附件";
+"Connected" = "已接入";
+"Component preview only" = "仅组件预览";
+"Switchly Dock currently connects only the center and bottom bar slots. This view still renders the shared component." = "Switchly Dock 目前只接入中心和底栏槽位；此视图仍会渲染同一共享组件。";
+"No plugin content for this slot" = "此槽位暂无插件内容";
+"No plugin selected" = "未选择插件";
+"No diagnostics" = "暂无诊断";
+"Waiting for a plugin render" = "等待插件渲染";
+"Rendering" = "正在渲染";
+"Ready" = "就绪";
+"Stale render" = "上次渲染已过期";
+"Failed" = "失败";
+"Info" = "信息";
+"Warning" = "警告";
+"Generation %d" = "第 %d 代";

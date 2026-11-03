@@ -102,3 +102,118 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: Switchly
+
+  # T04 build wiring only. These targets intentionally contain no host
+  # resources, services, app lifecycle, or entitlements. The minimal entry
+  # points live under Tools/PluginPreview/Build until T06/T08 freeze their
+  # real protocol and window implementations.
+  SwitchlyPluginPreview:
+    type: application
+    platform: macOS
+    dependencies:
+      - target: SwitchlyPluginPreviewWorker
+    postBuildScripts:
+      - name: Bundle preview worker
+        script: |
+          cp "${BUILT_PRODUCTS_DIR}/SwitchlyPluginPreviewWorker" "${TARGET_BUILD_DIR}/${EXECUTABLE_FOLDER_PATH}/SwitchlyPluginPreviewWorker"
+        inputFiles:
+          - "$(BUILT_PRODUCTS_DIR)/SwitchlyPluginPreviewWorker"
+        outputFiles:
+          - "$(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/SwitchlyPluginPreviewWorker"
+    sources:
+      - Models/AppSettings.swift
+      - Models/DockLayoutSpec.swift
+      - Models/Enums/GridBackground.swift
+      - Models/Enums/GridStyle.swift
+      - Models/Enums/NotificationStrategy.swift
+      - Models/Enums/PreviewHotspotEdge.swift
+      - Models/Enums/PreviewStrategy.swift
+      - Models/Enums/ShortcutPrefix.swift
+      - Models/Enums/ThumbnailSize.swift
+      - Models/MenuBarIcon.swift
+      - Models/MonitoredApp.swift
+      - Models/OnlineWeatherSettings.swift
+      - Models/UsageStatistics.swift
+      - Models/UsageStatisticsEfficiency.swift
+      - Models/Workspace.swift
+      - Models/Plugins/PluginGrant.swift
+      - Models/Plugins/PluginManifest.swift
+      - Models/Plugins/PluginScene.swift
+      - Models/Plugins/PluginUINode.swift
+      - Models/Plugins/SceneEvaluator.swift
+      - Services/Plugins/PluginRegistry.swift
+      - Services/Plugins/PluginPackageValidator.swift
+      - Services/Plugins/PluginStorage.swift
+      - Utilities/AppLogger.swift
+      - Utilities/DesignTokens.swift
+      - Utilities/MotionTokens.swift
+      - Utilities/GlassEffect.swift
+      - Utilities/NativeCrystalContainer.swift
+      - Utilities/ThemeApplier.swift
+      - Views/PluginSlotSurface.swift
+      - Views/PluginOverlayView.swift
+      - Views/PluginSceneView.swift
+      - Views/PluginSceneDrawing.swift
+      - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
+      - Tools/PluginPreview/Controller/PluginPreviewPipeIO.swift
+      - Tools/PluginPreview/Controller/PluginPreviewProcessTypes.swift
+      - Tools/PluginPreview/Controller/PluginPreviewWorkerSupervisor.swift
+      - Tools/PluginPreview/Controller/PluginPreviewSession.swift
+      - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewArtifactModels.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewArtifactBuilder.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewPackageHasher.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewArtifactWriter.swift
+      - Tools/PluginPreview/Reload/PluginPreviewPackageWatcher.swift
+      - Tools/PluginPreview/Build/PreviewAppMain.swift
+      - Tools/PluginPreview/UI
+      - path: Resources/en.lproj
+        buildPhase: resources
+      - path: Resources/zh-Hans.lproj
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.switchly.pluginpreview
+        PRODUCT_MODULE_NAME: SwitchlyPluginPreview
+        PRODUCT_NAME: SwitchlyPluginPreview
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Switchly Plugin Preview
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_LSUIElement: YES
+        CODE_SIGN_ENTITLEMENTS: ""
+        SKIP_INSTALL: YES
+    scheme:
+      gatherCoverageData: false
+
+  SwitchlyPluginPreviewWorker:
+    type: tool
+    platform: macOS
+    sources:
+      - Models/Plugins/PluginGrant.swift
+      - Models/Plugins/PluginManifest.swift
+      - Models/Plugins/PluginUINode.swift
+      - Models/Plugins/PluginScene.swift
+      - Services/Plugins/PluginRegistry.swift
+      - Services/Plugins/PluginPackageValidator.swift
+      - Services/Plugins/PluginRuntime.swift
+      - Services/Plugins/PluginFileReader.swift
+      - Services/Plugins/PluginStorage.swift
+      - Services/Plugins/MediaBridge.swift
+      - Utilities/AppLogger.swift
+      - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
+      - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerFixtures.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerSession.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerService.swift
+      - Tools/PluginPreview/Build/PreviewWorkerMain.swift
+    settings:
+      base:
+        PRODUCT_MODULE_NAME: SwitchlyPluginPreviewWorker
+        PRODUCT_NAME: SwitchlyPluginPreviewWorker
+        CODE_SIGN_ENTITLEMENTS: ""
+        SKIP_INSTALL: YES
+    scheme:
+      gatherCoverageData: false

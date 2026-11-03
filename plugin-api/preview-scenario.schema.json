@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchly.local/plugin-api/preview-scenario.schema.json",
+  "title": "Switchly 插件预览场景（开发中）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "environment", "target"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "environment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["locale", "appearance", "glass", "reduceMotion", "contentWidthPoints"],
+      "properties": {
+        "locale": { "enum": ["en", "zh-Hans"] },
+        "appearance": { "enum": ["light", "dark"] },
+        "glass": { "type": "boolean" },
+        "reduceMotion": { "type": "boolean" },
+        "contentWidthPoints": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bundleID", "appName"],
+      "properties": {
+        "bundleID": { "type": "string", "minLength": 1 },
+        "appName": { "type": "string", "minLength": 1 },
+        "titleSummary": { "type": "string" },
+        "lastActiveAt": { "type": ["number", "null"] }
+      }
+    },
+    "fixtures": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "media": { "$ref": "#/$defs/relativePath" },
+        "weather": { "$ref": "#/$defs/relativePath" },
+        "fs": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "grants": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "settings": { "type": "object", "additionalProperties": { "type": ["boolean", "number", "string"] } },
+    "storageSeed": { "type": "object" },
+    "steps": { "type": "array", "maxItems": 0 }
+  },
+  "$defs": {
+    "relativePath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\u0000]*[^/\\u0000]$" }
+  }
+}

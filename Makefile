@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker
 
 .DEFAULT_GOAL := help
 
@@ -8,6 +8,9 @@ SCHEME := Switchly
 APP_NAME := Switchly
 BUILD_DIR := ./build
 DERIVED_DATA := ./DerivedData
+PLUGIN_PREVIEW_SCHEME := SwitchlyPluginPreview
+PLUGIN_PREVIEW_WORKER_SCHEME := SwitchlyPluginPreviewWorker
+PLUGIN_PREVIEW_DERIVED_DATA := $(DERIVED_DATA)/PluginPreview
 
 # Marketing version, read from Info.plist (the single source of truth).
 VERSION := $(shell /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist 2>/dev/null || echo 0.0.0)
@@ -233,3 +236,38 @@ verify-plugin-release: ## Require an immutable external source revision before r
 plugin-verifier: ## Build the standalone verifier using the real JSC runtime and decoders
 	@mkdir -p .build/tools
 	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Services/Plugins/PluginRuntime.swift Services/Plugins/PluginFileReader.swift Services/Plugins/PluginStorage.swift Services/Plugins/MediaBridge.swift Utilities/AppLogger.swift
+
+# T04: build wiring for the independent preview. Generation intentionally
+# skips prepare-plugins and the targets carry no host resources, services, or
+# entitlements. The entry points are compile shells until T06/T08 land.
+.PHONY: plugin-preview-generate
+plugin-preview-generate: check-xcodegen ## Generate the project for preview targets
+	@xcodegen generate
+
+.PHONY: plugin-preview-app
+plugin-preview-app: plugin-preview-generate ## Build the standalone preview app shell
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
+		-scheme $(PLUGIN_PREVIEW_SCHEME) \
+		-configuration Debug \
+		-destination 'generic/platform=macOS' \
+		-derivedDataPath $(PLUGIN_PREVIEW_DERIVED_DATA) \
+		$(SIGN_FLAG) \
+		-quiet \
+		build
+	@echo "${BLUE}→ $(PLUGIN_PREVIEW_DERIVED_DATA)/Build/Products/Debug/$(PLUGIN_PREVIEW_SCHEME).app${NC}"
+
+.PHONY: plugin-preview-worker
+plugin-preview-worker: plugin-preview-generate ## Build the standalone preview worker shell
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
+		-scheme $(PLUGIN_PREVIEW_WORKER_SCHEME) \
+		-configuration Debug \
+		-destination 'generic/platform=macOS' \
+		-derivedDataPath $(PLUGIN_PREVIEW_DERIVED_DATA) \
+		$(SIGN_FLAG) \
+		-quiet \
+		build
+	@echo "${BLUE}→ $(PLUGIN_PREVIEW_DERIVED_DATA)/Build/Products/Debug/$(PLUGIN_PREVIEW_WORKER_SCHEME)${NC}"
+
+.PHONY: plugin-preview-build
+plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview app and worker targets
+	@echo "${GREEN}✅ Plugin preview build wiring complete${NC}"

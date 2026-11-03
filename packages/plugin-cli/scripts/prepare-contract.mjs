@@ -6,7 +6,14 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageDirectory = path.resolve(scriptDirectory, "..");
 const repositoryRoot = path.resolve(packageDirectory, "../..");
 const contractDirectory = path.join(packageDirectory, "contract");
-const files = ["capabilities.json", "manifest.schema.json"];
+const files = [
+  "capabilities.json",
+  "manifest.schema.json",
+  "preview-scenario.schema.json",
+  "preview-media-fixture.schema.json",
+  "preview-weather-fixture.schema.json",
+  "preview-fs-fixture.schema.json",
+];
 
 await mkdir(contractDirectory, { recursive: true });
 for (const file of files) {

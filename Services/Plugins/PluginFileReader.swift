@@ -38,7 +38,18 @@ struct PluginFSScanEntry: Equatable {
     var jsObject: [String: Any] { ["path": path, "size": size, "mtime": modified] }
 }
 
-final class PluginFileReader: @unchecked Sendable {
+/// The narrow boundary `PluginRuntime` needs for `ctx.fs`. The host uses the
+/// real reader; preview and tests can provide a deterministic in-memory one.
+protocol PluginFileReading: AnyObject {
+    func resetCalls()
+    func list(root: String, path: String) throws -> [PluginFSEntry]
+    func stat(root: String, path: String) throws -> PluginFSEntry
+    func readText(root: String, path: String, maxBytes: Int?) throws -> String
+    func scan(root: String, path: String, depth: Int, suffix: String?, modifiedWithin: TimeInterval?) throws -> [PluginFSScanEntry]
+    func isLocked(root: String, path: String) throws -> Bool
+}
+
+final class PluginFileReader: PluginFileReading, @unchecked Sendable {
     static let maxReadBytes = 256 * 1024
     static let maxListEntries = 500
     static let maxCallsPerRender = 50

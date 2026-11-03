@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { validateManifest } from "../src/validate.js";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const cliPath = path.resolve(testDirectory, "../bin/switchly-plugin.js");
@@ -57,6 +58,19 @@ async function makePlugin() {
   return { root, plugin };
 }
 
+function manifestWithSettings(settings) {
+  return {
+    id: "com.example.settings",
+    name: { en: "Settings" },
+    version: "1",
+    apiVersion: 2,
+    matches: ["com.example.app"],
+    permissions: [],
+    entry: "main.js",
+    settings,
+  };
+}
+
 test("api describe --json 输出机器能力清单", () => {
   const output = execFileSync(process.execPath, [cliPath, "api", "describe", "--json"], {
     encoding: "utf8",
@@ -77,6 +91,83 @@ test("api describe --json 输出机器能力清单", () => {
   assert.equal(focusFeature.injected, false);
   assert.equal(capabilities.packageLimits.maxPackageBytes, 32 * 1024 * 1024);
   assert.equal(capabilities.packageLimits.symlinksAllowed, false);
+});
+
+test("公共 manifest 校验接受 toggle/select/number 并拒绝设置漂移", () => {
+  const valid = validateManifest(manifestWithSettings([
+    { key: "enabled", title: { en: "Enabled" }, default: true },
+    {
+      key: "mode",
+      type: "select",
+      title: { en: "Mode" },
+      default: "compact",
+      options: [
+        { value: "compact", title: { en: "Compact" } },
+        { value: "detailed", title: { en: "Detailed" } },
+      ],
+    },
+    {
+      key: "temperature",
+      type: "number",
+      title: { en: "Temperature" },
+      default: 20,
+      min: -40,
+      max: 50,
+      step: 1,
+    },
+  ]));
+  assert.equal(valid.ok, true);
+  assert.deepEqual(valid.errors, []);
+
+  const invalidCases = [
+    [
+      { key: "text", type: "string", title: { en: "Text" }, default: "hello" },
+      "type 未知",
+    ],
+    [
+      { key: "enabled", title: { en: "Enabled" }, default: "true" },
+      "toggle 必须是 boolean",
+    ],
+    [
+      { key: "mode", type: "select", title: { en: "Mode" }, default: "a", options: [] },
+      "options 对 select 必须是非空数组",
+    ],
+    [
+      {
+        key: "mode",
+        type: "select",
+        title: { en: "Mode" },
+        default: "missing",
+        options: [{ value: "a", title: { en: "A" } }],
+      },
+      "default 不在 options 中",
+    ],
+    [
+      { key: "level", type: "number", title: { en: "Level" }, default: "1" },
+      "number 必须是有限数字",
+    ],
+    [
+      { key: "level", type: "number", title: { en: "Level" }, default: 1, step: 0 },
+      "step 必须大于 0",
+    ],
+    [
+      {
+        key: "level",
+        type: "number",
+        title: { en: "Level" },
+        default: 20,
+        min: 0,
+        max: 10,
+      },
+      "default 大于 max",
+    ],
+  ];
+
+  for (const [setting, expected] of invalidCases) {
+    const result = validateManifest(manifestWithSettings([setting]));
+    assert.equal(result.ok, false, expected);
+    assert(result.errors.some((error) => error.includes(expected)), `${expected}: ${result.errors.join("; ")}`);
+  }
 });
 
 test("validate 接受设置唯一且资源存在的插件", async (t) => {
@@ -141,6 +232,30 @@ test("validate 拒绝符号链接", async (t) => {
   assert.equal(run.status, 1);
   const result = JSON.parse(run.stdout);
   assert(result.errors.some((error) => error.includes("禁止符号链接")));
+});
+
+test("validate 拒绝非法 manifest JSON", async (t) => {
+  const fixture = await makePlugin();
+  t.after(() => rm(fixture.root, { recursive: true, force: true }));
+  await writeFile(path.join(fixture.plugin, "manifest.json"), "{");
+  const run = spawnSync(process.execPath, [cliPath, "validate", fixture.plugin, "--json"], {
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 1);
+  const result = JSON.parse(run.stdout);
+  assert(result.errors.some((error) => error.includes("manifest.json 无法读取或不是合法 JSON")));
+});
+
+test("validate 拒绝超过入口体积预算的脚本", async (t) => {
+  const fixture = await makePlugin();
+  t.after(() => rm(fixture.root, { recursive: true, force: true }));
+  await writeFile(path.join(fixture.plugin, "main.js"), Buffer.alloc(2 * 1024 * 1024 + 1, "a"));
+  const run = spawnSync(process.execPath, [cliPath, "validate", fixture.plugin, "--json"], {
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 1);
+  const result = JSON.parse(run.stdout);
+  assert(result.errors.some((error) => error.includes("entry 超过 2 MiB")));
 });
 
 test("validate 拒绝未知权限与不配对的 fs.read", async (t) => {

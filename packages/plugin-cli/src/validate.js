@@ -227,7 +227,7 @@ function validateSettings(settings, errors) {
         errors.push(`${where}.${key} 必须是有限数字`);
       }
     }
-    if (setting.step !== undefined && setting.step <= 0) {
+    if (typeof setting.step === "number" && setting.step <= 0) {
       errors.push(`${where}.step 必须大于 0`);
     }
     if (typeof setting.min === "number"
@@ -244,6 +244,64 @@ function validateSettings(settings, errors) {
       }
     }
   });
+}
+
+/**
+ * Validate the host-owned manifest contract without touching the plugin filesystem.
+ * Repository-specific policies such as asset budgets and locale pairing stay with
+ * their caller so they can remain stricter than the host contract.
+ */
+export function validateManifest(manifest) {
+  const errors = [];
+  const warnings = [];
+  if (!isObject(manifest)) {
+    errors.push("manifest 顶层必须是对象");
+    return { ok: false, id: null, permissions: [], errors, warnings };
+  }
+
+  let id = null;
+  if (typeof manifest.id !== "string" || !idPattern.test(manifest.id)) {
+    errors.push("id 必须匹配 ^[A-Za-z0-9]+(\\.[A-Za-z0-9-]+)+$");
+  } else {
+    id = manifest.id;
+  }
+  if (!isLocalizedText(manifest.name)) {
+    errors.push("name 必须是非空的本地化字符串对象");
+  }
+  if (typeof manifest.version !== "string" || manifest.version.length === 0) {
+    errors.push("version 必须是非空字符串");
+  }
+  if (!Number.isInteger(manifest.apiVersion) || ![1, 2].includes(manifest.apiVersion)) {
+    errors.push("apiVersion 必须是 1 或 2");
+  }
+  if (!Array.isArray(manifest.matches) || manifest.matches.length === 0
+      || !manifest.matches.every((item) => typeof item === "string" && item.length > 0)) {
+    errors.push("matches 必须是非空的 bundle ID 字符串数组");
+  }
+  if (manifest.summary !== undefined && !isLocalizedText(manifest.summary)) {
+    errors.push("summary 必须是非空的本地化字符串对象");
+  }
+  if (manifest.refreshInterval !== undefined
+      && (typeof manifest.refreshInterval !== "number"
+          || !Number.isFinite(manifest.refreshInterval)
+          || manifest.refreshInterval <= 0
+          || manifest.refreshInterval > 86400)) {
+    errors.push("refreshInterval 必须是 (0, 86400] 内的有限数字");
+  }
+  if (manifest.defaultEnabled !== undefined
+      && typeof manifest.defaultEnabled !== "boolean") {
+    errors.push("defaultEnabled 必须是 boolean");
+  }
+  const permissions = validatePermissions(manifest, errors, warnings);
+  validateSettings(manifest.settings, errors);
+  validateFSRoots(manifest, permissions, errors);
+  return {
+    ok: errors.length === 0,
+    id,
+    permissions,
+    errors,
+    warnings,
+  };
 }
 
 function validatePermissions(manifest, errors, warnings) {
@@ -321,6 +379,7 @@ async function validateEntry(pluginDir, manifest, errors) {
     }
     if (info.size > packageLimits.maxEntryBytes) {
       errors.push(`entry 超过 2 MiB：${info.size} bytes`);
+      return null;
     }
     const realEntry = await realpath(entryPath);
     const realPluginDir = await realpath(pluginDir);
@@ -431,43 +490,11 @@ export async function validatePluginDirectory(inputDirectory) {
   }
 
   let id = null;
-  let permissions = [];
   if (manifest) {
-    if (typeof manifest.id !== "string" || !idPattern.test(manifest.id)) {
-      errors.push("id 必须匹配 ^[A-Za-z0-9]+(\\.[A-Za-z0-9-]+)+$");
-    } else {
-      id = manifest.id;
-    }
-    if (!isLocalizedText(manifest.name)) {
-      errors.push("name 必须是非空的本地化字符串对象");
-    }
-    if (typeof manifest.version !== "string" || manifest.version.length === 0) {
-      errors.push("version 必须是非空字符串");
-    }
-    if (!Number.isInteger(manifest.apiVersion) || ![1, 2].includes(manifest.apiVersion)) {
-      errors.push("apiVersion 必须是 1 或 2");
-    }
-    if (!Array.isArray(manifest.matches) || manifest.matches.length === 0
-        || !manifest.matches.every((item) => typeof item === "string" && item.length > 0)) {
-      errors.push("matches 必须是非空的 bundle ID 字符串数组");
-    }
-    if (manifest.summary !== undefined && !isLocalizedText(manifest.summary)) {
-      errors.push("summary 必须是非空的本地化字符串对象");
-    }
-    if (manifest.refreshInterval !== undefined
-        && (typeof manifest.refreshInterval !== "number"
-            || !Number.isFinite(manifest.refreshInterval)
-            || manifest.refreshInterval <= 0
-            || manifest.refreshInterval > 86400)) {
-      errors.push("refreshInterval 必须是 (0, 86400] 内的有限数字");
-    }
-    if (manifest.defaultEnabled !== undefined
-        && typeof manifest.defaultEnabled !== "boolean") {
-      errors.push("defaultEnabled 必须是 boolean");
-    }
-    permissions = validatePermissions(manifest, errors, warnings);
-    validateSettings(manifest.settings, errors);
-    validateFSRoots(manifest, permissions, errors);
+    const manifestValidation = validateManifest(manifest);
+    errors.push(...manifestValidation.errors);
+    warnings.push(...manifestValidation.warnings);
+    id = manifestValidation.id;
     const entry = await validateEntry(pluginDir, manifest, errors);
     if (entry) await validateResourceReferences(pluginDir, entry.source, errors);
     await validateLocales(pluginDir, errors);

@@ -9,7 +9,7 @@ import {
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageDirectory = path.resolve(testDirectory, "..");
@@ -36,6 +36,26 @@ test("npm pack 后的 CLI 自包含 contract 且可执行 create", async (t) => 
   const packedPackage = path.join(extracted, "package");
   await access(path.join(packedPackage, "contract", "capabilities.json"));
   await access(path.join(packedPackage, "contract", "manifest.schema.json"));
+  await access(path.join(packedPackage, "contract", "preview-scenario.schema.json"));
+  await access(path.join(packedPackage, "contract", "preview-media-fixture.schema.json"));
+  await access(path.join(packedPackage, "contract", "preview-weather-fixture.schema.json"));
+  await access(path.join(packedPackage, "contract", "preview-fs-fixture.schema.json"));
+  const publicValidator = await import(pathToFileURL(
+    path.join(packedPackage, "src", "validate.js"),
+  ).href);
+  const manifest = {
+    id: "com.example.packed",
+    name: { en: "Packed" },
+    version: "1",
+    apiVersion: 2,
+    matches: ["com.example.target"],
+    permissions: [],
+    entry: "main.js",
+    settings: [{ key: "enabled", title: { en: "Enabled" }, default: true }],
+  };
+  assert.equal(publicValidator.validateManifest(manifest).ok, true);
+  manifest.settings = [{ key: "unsupported", type: "string", title: { en: "Unsupported" }, default: "x" }];
+  assert.equal(publicValidator.validateManifest(manifest).ok, false);
   const cli = path.join(packedPackage, "bin", "switchly-plugin.js");
   const described = execFileSync(process.execPath, [cli, "api", "describe", "--json"], {
     cwd: root,
