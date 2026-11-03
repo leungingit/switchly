@@ -11,7 +11,7 @@ for name in "${types[@]}"; do
   count=$(printf '%s' "$defs" | grep -c . || true)
   if [ "$count" -ne 1 ]; then
     echo "类型 $name 应只有一处定义，实际 $count 处：" >&2; printf '%s\n' "$defs" >&2; status=1
-  elif printf '%s' "$defs" | grep -qE "^(Tools|Tests)/"; then
+  elif grep -qE "^(Tools|Tests)/" <<<"$defs"; then
     echo "类型 $name 的定义位于 Tools/Tests（预览不得另造实现）：$defs" >&2; status=1
   fi
 done

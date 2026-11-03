@@ -66,6 +66,8 @@ Workspaces organize app groups and access to their windows; they do not create m
 
 本仓库提供本地 SDK/CLI（尚未发布 npm），含 TypeScript 类型、注册/UI 构建器、创建、校验和制品复制工具。完整契约见 [API 参考](docs/plugin-api-reference.md)，后续能力见 [发展路线](docs/plugin-api-roadmap.md)。
 
+插件可以在 Switchly 本体未运行时独立预览：用与本体同一份 Runtime、解码器和渲染代码，配合合成数据渲染、执行动作、导出截图与报告，并支持固定时钟、场景步骤、原生输入点击与逐像素视觉基线。当前为本地候选工具包（`make plugin-preview-package`，ad-hoc 签名，未发布 npm、未公证）。使用方法见 [插件独立预览使用指南](docs/plugin-preview-guide.md)，覆盖范围与未验证项见 [覆盖矩阵](docs/plugin-preview-coverage.md)；真实 Dock、AX 切窗、跨屏与桌面玻璃仍需在本体验证。
+
 ## Desktop Grid: all your desktops, one glance away
 
 ![Desktop Grid: a 3×3 overview of macOS desktops and the gestures that drive it](docs/images/desktop-grid-en.svg)

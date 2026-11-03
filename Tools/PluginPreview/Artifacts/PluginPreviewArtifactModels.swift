@@ -17,6 +17,8 @@ enum PluginPreviewArtifactFailureCode: String, Codable, Equatable {
     case unsupported
     case environmentUnavailable = "environment-unavailable"
     case stepFailed = "step-failed"
+    case noCapturableSlot = "no-capturable-slot"
+    case emptyRender = "empty-render"
 
     var message: String {
         switch self {
@@ -29,6 +31,8 @@ enum PluginPreviewArtifactFailureCode: String, Codable, Equatable {
         case .unsupported: return "The preview scenario uses an unsupported capability."
         case .environmentUnavailable: return "The preview environment is unavailable."
         case .stepFailed: return "A scenario step failed; see the step trace in this report."
+        case .noCapturableSlot: return "The plugin rendered no content in a captured slot (center, bottomBar); topTrailing and titleAccessory are not captured."
+        case .emptyRender: return "The plugin rendered no content in any slot."
         }
     }
 }

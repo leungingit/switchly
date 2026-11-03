@@ -183,8 +183,9 @@ jobs:
           ./Tests/PluginPreview/run-native-input-tests.sh
           ./Tests/PluginPreview/run-baseline-tests.sh
           ./Tests/PluginPreview/run-dev-lifecycle-tests.sh
+          ./Tests/PluginPreview/run-failure-modes-tests.sh
 
-      - name: Package toolkit and run the clean-environment acceptance
+      - name: Package toolkit, run the clean-environment acceptance and the documented commands
         run: make plugin-preview-toolkit-test
 
       - name: Upload toolkit

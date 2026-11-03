@@ -37,7 +37,9 @@ for key in ("toolVersion", "protocolVersion", "scenarioSchemaVersion", "pluginAP
 PY
 check "清单与 App --version-json 一致" 0 $?
 [ -z "$(find "$KIT" \( -name '*.swift' -o -name '*.xcconfig' -o -name '*.pbxproj' -o -name 'project.yml' \) | head -1)" ]; check "不含源码/工程/签名配置文件" 0 $?
-codesign -dv "$APP" 2>&1 | grep -q "Signature=adhoc"; check "ad-hoc 签名（无私有身份）" 0 $?
+# 先捕获再匹配：pipefail 下 `codesign | grep -q` 会因 grep 提前退出让 codesign 收到 SIGPIPE（141）而偶发误报。
+SIGNATURE_INFO="$(codesign -dv "$APP" 2>&1)"
+grep -q "Signature=adhoc" <<<"$SIGNATURE_INFO"; check "ad-hoc 签名（无私有身份）" 0 $?
 
 # 3. 离线安装 CLI（空 npm 缓存 + --offline：任何联网需求都会失败）
 CLI_TGZ="$(find "$KIT" -maxdepth 1 -name 'switchly-plugin-cli-*.tgz' | head -1)"

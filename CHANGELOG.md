@@ -9,6 +9,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- 插件独立预览与开发工具（本地候选）：本体未运行时用同一份 Runtime/解码器/渲染代码预览插件，`switchly-plugin dev|run` 导出截图、声明式树、动作清单与报告；场景支持固定虚拟时钟（`Date`/`Math.random`/定时器/Scene）、步骤（推进时间、业务动作、文本断言、经可访问树的原生点击）、逐像素视觉基线与差异图。提供离线工具包（`make plugin-preview-package`）与兼容握手；CLI 与预览 App 版本、协议或契约不配套时在启动前拒绝。详见 `docs/plugin-preview-guide.md`。
+
 - 插件源码与算法测试迁往独立 `switchly-plugins` 仓库，预装包通过文件哈希和来源提交锁定；新增本地 SDK/CLI、完整 API 参考与机器能力清单（尚未发布 npm）。
 - 插件管理新增搜索、状态筛选、选中展开、本地目录安装、用户包替换/卸载与加载失败展示；更新用户包后重新授权并保留业务设置。
 - 插件 API 增加私有 Promise JSON 存储，普通插件图片复用通用资产预算；修复同名动作跨插件冲突，隐藏预览时暂停受控定时器。

@@ -294,6 +294,7 @@ plugin-preview-regression: plugin-preview-contract-check plugin-preview-build ##
 	@./Tests/PluginPreview/run-native-input-tests.sh
 	@./Tests/PluginPreview/run-baseline-tests.sh
 	@./Tests/PluginPreview/run-dev-lifecycle-tests.sh
+	@./Tests/PluginPreview/run-failure-modes-tests.sh
 	@./Tests/PluginPreview/run-plugin-scenarios.sh $(PLUGINS_REPO)
 
 # T18: offline toolkit. Forces ad-hoc signing so no private identity or Config/Local.xcconfig value can leak
@@ -316,6 +317,7 @@ plugin-preview-package: plugin-preview-generate plugin-preview-contract-check ##
 .PHONY: plugin-preview-toolkit-test
 plugin-preview-toolkit-test: plugin-preview-package ## T18 acceptance: run the packaged toolkit with no Xcode, no network (needs GUI + Screen Recording)
 	@./Tests/PluginPreview/run-toolkit-tests.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz
+	@./Tests/PluginPreview/run-guide-check.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz
 
 .PHONY: plugin-preview-cleanroom
 plugin-preview-cleanroom: plugin-preview-package ## T19 author journey with only the plugin repo + toolkit (needs GUI + Screen Recording; PLUGINS_REPO=<dir>)
