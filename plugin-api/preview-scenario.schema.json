@@ -57,10 +57,13 @@
           { "type": "object", "additionalProperties": false, "required": ["type", "id"],
             "properties": { "type": { "const": "action" }, "id": { "type": "string", "minLength": 1, "maxLength": 128 }, "value": { "type": "number" } } },
           { "type": "object", "additionalProperties": false, "required": ["type", "contains"],
-            "properties": { "type": { "const": "expectText" }, "contains": { "type": "string", "minLength": 1, "maxLength": 256 } } }
+            "properties": { "type": { "const": "expectText" }, "contains": { "type": "string", "minLength": 1, "maxLength": 256 } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "label"],
+            "properties": { "type": { "const": "nativeClick" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+                            "expectAction": { "type": "string", "minLength": 1, "maxLength": 128 }, "expectDisabled": { "type": "boolean" } } }
         ]
       },
-      "description": "advance 需要场景声明 clock；action 是业务动作（直接调用 onAction，不经原生输入）。"
+      "description": "advance 需要场景声明 clock；action 是业务动作（直接调用 onAction，不经原生输入）；nativeClick 经可访问树按标签 press 并核对路由动作，expectDisabled 与 expectAction 互斥。"
     }
   },
   "$defs": {

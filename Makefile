@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test
 
 .DEFAULT_GOAL := help
 
@@ -275,3 +275,7 @@ plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview 
 .PHONY: plugin-preview-contract-check
 plugin-preview-contract-check: ## Verify the preview contract hash constant matches plugin-api files
 	@./Tools/PluginPreview/contract-hash.sh --check
+
+.PHONY: plugin-preview-native-test
+plugin-preview-native-test: plugin-preview-build ## T15 native-input regression (needs GUI + Screen Recording; exits 77 if unavailable)
+	@./Tests/PluginPreview/run-native-input-tests.sh

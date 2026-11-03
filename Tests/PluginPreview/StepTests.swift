@@ -13,6 +13,11 @@ private final class FakeTarget: PluginPreviewStepTarget {
     }
     func perform(actionID: String, value: Double?) async throws { log.append("action:\(actionID)") }
     func renderJSON() async throws -> String { text }
+    var clickFailure: String?
+    func nativeClick(label: String, expectAction: String?, expectDisabled: Bool) async throws {
+        if let clickFailure { throw PluginPreviewStepFailure(code: clickFailure) }
+        log.append("click:\(label):\(expectAction ?? "-"):\(expectDisabled)")
+    }
     func availableActions() async throws -> [PluginPreviewStepAction] { actions }
 }
 
@@ -34,6 +39,14 @@ enum StepTests {
             precondition(outcome.failedIndex == 0 && outcome.traces[0].detail == code, "expected \(code), got \(String(describing: outcome.traces[0].detail))")
             precondition(outcome.traces[1].status == "skipped" && t.log.isEmpty, "steps after a failure never run")
         }
+
+        let clicker = FakeTarget()
+        let clicked = await PluginPreviewStepRunner.run([.nativeClick(label: "Pause", expectAction: "toggle", expectDisabled: false)], on: clicker)
+        precondition(clicked.traces[0].source == "native-input" && clicked.traces[0].status == "passed")
+        precondition(clicker.log == ["click:Pause:toggle:false"])
+        let refused = FakeTarget(); refused.clickFailure = "element-not-found"
+        let refusedOutcome = await PluginPreviewStepRunner.run([.nativeClick(label: "X", expectAction: nil, expectDisabled: false)], on: refused)
+        precondition(refusedOutcome.traces[0].detail == "element-not-found", "target failure codes pass through verbatim")
 
         let failing = FakeTarget(); failing.failAdvance = true
         let errored = await PluginPreviewStepRunner.run([.advance(milliseconds: 1)], on: failing)
@@ -59,6 +72,13 @@ enum StepTests {
             catch let e as PreviewScenario.Failure { precondition(e == expected, "\(json) -> \(e)") }
             catch { fatalError("\(error)") }
         }
+        let nativeA = try parse(#"[{"type":"nativeClick","label":"Pause","expectAction":"toggle"}]"#)
+        precondition(nativeA == [.nativeClick(label: "Pause", expectAction: "toggle", expectDisabled: false)])
+        let nativeB = try parse(#"[{"type":"nativeClick","label":"Pause","expectDisabled":true}]"#)
+        precondition(nativeB == [.nativeClick(label: "Pause", expectAction: nil, expectDisabled: true)])
+        rejects(#"[{"type":"nativeClick","label":"A","expectAction":"x","expectDisabled":true}]"#, .invalidScenario)
+        rejects(#"[{"type":"nativeClick","label":""}]"#, .invalidScenario)
+        rejects(#"[{"type":"nativeClick","label":"A","expectDisabled":1}]"#, .invalidScenario)
         rejects(#"[{"type":"wait"}]"#, .unsupportedSteps)
         rejects(#"[{"ms":1}]"#, .unsupportedSteps)
         rejects(#"[{"type":"advance","ms":-1}]"#, .invalidScenario)

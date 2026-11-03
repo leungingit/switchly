@@ -101,6 +101,7 @@
 		60B9DBAD7C145E9A9982D88E /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337C977CD2AF7514192B081 /* DesignTokens.swift */; };
 		6189D2944B99573EE7AA3B88 /* PluginPreferencesRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43BDFA2C436D1D0F6EA6706 /* PluginPreferencesRenderingTests.swift */; };
 		624687C20F919D88169C9299 /* PreviewScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B9A3A2125D75888717ADE1 /* PreviewScenario.swift */; };
+		6313CE2EE84C1E8C72CF13AC /* PluginPreviewNativeDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4E007C8703B1F76B550963 /* PluginPreviewNativeDriver.swift */; };
 		641505FD43ABC11B089FF553 /* PluginManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3731E6CAD353BCD2A1663E0 /* PluginManifest.swift */; };
 		65996F0D789B2455B3F83A18 /* SwitchlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */; };
 		674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */; };
@@ -436,6 +437,7 @@
 		D6BAA4649436C3C22EAAA03E /* GridHUDViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDViewModel.swift; sourceTree = "<group>"; };
 		D6F5C7C95324E78B239798F5 /* PluginFixtureFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFixtureFileReader.swift; sourceTree = "<group>"; };
 		D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPalette.swift; sourceTree = "<group>"; };
+		DA4E007C8703B1F76B550963 /* PluginPreviewNativeDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewNativeDriver.swift; sourceTree = "<group>"; };
 		DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsTests.swift; sourceTree = "<group>"; };
 		DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridOnboardingView.swift; sourceTree = "<group>"; };
 		DF1FBC046B3B164BC5604AF1 /* SystemGestureInterceptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemGestureInterceptorTests.swift; sourceTree = "<group>"; };
@@ -644,6 +646,7 @@
 		54794EBE8098747095FB466C /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				DA4E007C8703B1F76B550963 /* PluginPreviewNativeDriver.swift */,
 				9B6359AF089A8884AD486143 /* PluginPreviewState.swift */,
 				756A911A2233196D768CEBF5 /* PluginPreviewView.swift */,
 			);
@@ -1111,6 +1114,7 @@
 				5290FC79BCF59304009A9FC1 /* PluginPreviewArtifactModels.swift in Sources */,
 				A8F6F15D5B65DEBAAC3C2C49 /* PluginPreviewArtifactWriter.swift in Sources */,
 				B350218760B76CCF7D5CB18C /* PluginPreviewFrameCodec.swift in Sources */,
+				6313CE2EE84C1E8C72CF13AC /* PluginPreviewNativeDriver.swift in Sources */,
 				5F8646499C553D59B1EFAB86 /* PluginPreviewPackageHasher.swift in Sources */,
 				E252E12E2A360DFDEC5A2950 /* PluginPreviewPackageWatcher.swift in Sources */,
 				81176EB6BDA3B62C1AB698EE /* PluginPreviewPipeIO.swift in Sources */,

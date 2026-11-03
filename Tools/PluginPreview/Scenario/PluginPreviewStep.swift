@@ -6,6 +6,9 @@ enum PluginPreviewStep: Equatable {
     case advance(milliseconds: Double)
     case action(id: String, value: Double?)
     case expectText(contains: String)
+    /// 经原生可访问树按标签定位控件并执行 press，再核对路由到会话的动作 ID（T15）。
+    /// `expectDisabled` 为 true 时要求控件存在、处于禁用状态且没有动作被路由。
+    case nativeClick(label: String, expectAction: String?, expectDisabled: Bool)
 
     static let maxCount = 64
     static let maxAdvanceMilliseconds: Double = 24 * 60 * 60 * 1000
@@ -17,6 +20,7 @@ enum PluginPreviewStep: Equatable {
         case .advance: return "advance"
         case .action: return "action"
         case .expectText: return "expectText"
+        case .nativeClick: return "nativeClick"
         }
     }
 
@@ -26,6 +30,7 @@ enum PluginPreviewStep: Equatable {
         case .advance: return "clock"
         case .action: return "business-action"
         case .expectText: return "render-output"
+        case .nativeClick: return "native-input"
         }
     }
 
@@ -66,11 +71,37 @@ enum PluginPreviewStep: Equatable {
                     throw PreviewScenario.Failure.invalidScenario
                 }
                 return .expectText(contains: text)
+            case "nativeClick":
+                try only(["label", "expectAction", "expectDisabled"])
+                guard let label = object["label"] as? String, !label.isEmpty, label.count <= maxTextLength else {
+                    throw PreviewScenario.Failure.invalidScenario
+                }
+                var expectAction: String?
+                if let raw = object["expectAction"] {
+                    guard let id = raw as? String, !id.isEmpty, id.count <= maxActionIDLength else {
+                        throw PreviewScenario.Failure.invalidScenario
+                    }
+                    expectAction = id
+                }
+                var disabled = false
+                if let raw = object["expectDisabled"] {
+                    guard let number = raw as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else {
+                        throw PreviewScenario.Failure.invalidScenario
+                    }
+                    disabled = number.boolValue
+                }
+                if disabled && expectAction != nil { throw PreviewScenario.Failure.invalidScenario }
+                return .nativeClick(label: label, expectAction: expectAction, expectDisabled: disabled)
             default:
                 throw PreviewScenario.Failure.unsupportedSteps
             }
         }
     }
+}
+
+/// 目标实现用固定失败码报告可预期的步骤失败（如控件不存在），不携带内容。
+struct PluginPreviewStepFailure: Error, Equatable {
+    let code: String
 }
 
 /// 每步结果。`detail` 只使用固定错误码，不回显断言文本或渲染内容。
@@ -93,6 +124,7 @@ protocol PluginPreviewStepTarget {
     func perform(actionID: String, value: Double?) async throws
     func renderJSON() async throws -> String
     func availableActions() async throws -> [PluginPreviewStepAction]
+    func nativeClick(label: String, expectAction: String?, expectDisabled: Bool) async throws
 }
 
 struct PluginPreviewStepOutcome: Equatable {
@@ -142,6 +174,8 @@ enum PluginPreviewStepRunner {
                 if enabled.isEmpty { return "action-disabled" }
                 if enabled.count > 1 { return "action-ambiguous" }
                 try await target.perform(actionID: id, value: value)
+            case .nativeClick(let label, let expectAction, let expectDisabled):
+                try await target.nativeClick(label: label, expectAction: expectAction, expectDisabled: expectDisabled)
             case .expectText(let needle):
                 let json = try await target.renderJSON()
                 guard let data = json.data(using: .utf8),
@@ -149,6 +183,8 @@ enum PluginPreviewStepRunner {
                 if !strings(in: object).contains(where: { $0.contains(needle) }) { return "text-not-found" }
             }
             return nil
+        } catch let failure as PluginPreviewStepFailure {
+            return failure.code
         } catch is CancellationError {
             return "cancelled"
         } catch {

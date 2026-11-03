@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "native-input",
+  "environment": { "locale": "en", "appearance": "light", "glass": false, "reduceMotion": true, "contentWidthPoints": 360 },
+  "target": { "bundleID": "com.example.app", "appName": "Example" },
+  "clock": { "startEpochMs": 1700000000000, "seed": 1 },
+  "steps": [
+    { "type": "expectText", "contains": "last:none" },
+    { "type": "nativeClick", "label": "Go", "expectAction": "go" },
+    { "type": "expectText", "contains": "last:go" },
+    { "type": "nativeClick", "label": "Stop", "expectDisabled": true },
+    { "type": "expectText", "contains": "last:go" },
+    { "type": "nativeClick", "label": "Mute", "expectAction": "mute" },
+    { "type": "expectText", "contains": "last:mute" }
+  ]
+}
