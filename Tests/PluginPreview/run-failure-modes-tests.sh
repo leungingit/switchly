@@ -71,7 +71,7 @@ expect_case "授权超出 manifest（取交集）" good     grantsbeyondmanifest
 expect_case "插件死循环（被终止）"     loop        ok                  1 failed plugin-timeout
 
 # 临时文件卫生：用独立的 TMPDIR 运行，成功与失败的 run 结束后都不得在其中留下任何东西
-# （曾经每次成功的 run 都会泄漏一张插件截图）。
+# （对照实验显示正常结束的 run 本就不泄漏；本断言是回归防护，不证明某个修复。进程被信号杀死的路径不在此覆盖）。
 mkdir -p "$WORK/private-tmp"
 for pair in "good ok" "throws ok" "empty ok" "slotonly ok"; do
   set -- $pair

@@ -556,8 +556,8 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         let report = try PluginPreviewArtifactWriter().writeSuccess(
             identity: artifactIdentity(scenario: scenario, package: package), rawJSON: Data(rawJSON.utf8),
             screenshotURL: screenshot, outputDirectory: outputDirectory, steps: steps)
-        // 截图已复制到输出目录。必须在终止进程前删除临时目录：emitReportAndExit 会结束进程，
-        // 之后调用方的 defer 不会执行，否则每次 run 都会在系统临时目录留下一张插件截图。
+        // 截图已复制到输出目录，在上报并结束进程之前显式删除临时目录，不依赖 defer 是否还能执行
+        // （进程被信号杀死时 defer 同样不会执行，此处无法覆盖）。
         try? FileManager.default.removeItem(at: temporary)
         try await emitReportAndExit(report, code: 0)
     }
