@@ -174,6 +174,7 @@ struct PluginPreviewView: View {
             ) { pluginID, actionID, value in
                 state.perform(pluginID: pluginID, actionID: actionID, value: value)
             }
+            .environment(\.pluginSceneNow, state.virtualNowSeconds.map { now in { now } })
             .frame(width: state.environment.contentWidth)
             .fixedSize(horizontal: false, vertical: true)
         }

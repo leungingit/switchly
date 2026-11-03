@@ -69,6 +69,8 @@ final class PluginPreviewState: ObservableObject {
     @Published var artwork: NSImage?
     @Published var diagnostics: [PluginPreviewDiagnostic] = []
     @Published var environment = PluginPreviewEnvironment()
+    /// 场景声明 `clock` 时的虚拟当前时刻（Unix 秒），供 Scene 绘制；nil 表示使用系统时间。
+    @Published var virtualNowSeconds: Double?
 
     var reloadHandler: (() -> Void)?
     var resetHandler: (() -> Void)?

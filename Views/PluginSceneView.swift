@@ -12,7 +12,20 @@
 import AppKit
 import SwiftUI
 
+/// 预览用的 Scene 时钟（Unix 秒）。缺省为 nil，使用系统时间；仅独立预览在固定/推进模式下注入。
+private struct PluginSceneNowKey: EnvironmentKey {
+    static let defaultValue: (() -> Double)? = nil
+}
+
+extension EnvironmentValues {
+    var pluginSceneNow: (() -> Double)? {
+        get { self[PluginSceneNowKey.self] }
+        set { self[PluginSceneNowKey.self] = newValue }
+    }
+}
+
 struct PluginSceneView: View {
+    @Environment(\.pluginSceneNow) private var sceneNow
     let scene: PluginScene
     let assetDirectory: URL?
     let onAction: (String, Double?) -> Void
@@ -46,7 +59,7 @@ struct PluginSceneView: View {
                         var c = ctx
                         c.translateBy(x: origin.x, y: origin.y)
                         c.scaleBy(x: k, y: k)
-                        SceneDrawing(scene: scene, t: scene.time(now: context.date.timeIntervalSince1970, reduceMotion: reduce),
+                        SceneDrawing(scene: scene, t: scene.time(now: sceneNow?() ?? context.date.timeIntervalSince1970, reduceMotion: reduce),
                                      still: reduce, hover: hoverFactors(at: context.date), assets: assets)
                             .draw(into: c)
                     }
@@ -83,7 +96,7 @@ struct PluginSceneView: View {
         settleTask?.cancel()
         settled = false
         guard let end = scene.settledAt else { return }
-        let remaining = end - (Date().timeIntervalSince1970 - scene.epoch) + 0.3
+        let remaining = end - ((sceneNow?() ?? Date().timeIntervalSince1970) - scene.epoch) + 0.3
         settleTask = Task { @MainActor in
             if remaining > 0 { try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000)) }
             if !Task.isCancelled { settled = true }
@@ -103,7 +116,7 @@ struct PluginSceneView: View {
     }
 
     private func regions(origin: CGPoint, k: CGFloat) -> [SceneDrawing.HitRegion] {
-        let t = scene.time(now: Date().timeIntervalSince1970, reduceMotion: MotionTokens.reduceMotion)
+        let t = scene.time(now: sceneNow?() ?? Date().timeIntervalSince1970, reduceMotion: MotionTokens.reduceMotion)
         return SceneDrawing.hitRegions(in: scene, at: t, still: MotionTokens.reduceMotion)
     }
 
