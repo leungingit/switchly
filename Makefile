@@ -242,6 +242,10 @@ plugin-verifier: ## Build the standalone verifier using the real JSC runtime and
 # entitlements. The entry points are compile shells until T06/T08 land.
 .PHONY: plugin-preview-generate
 plugin-preview-generate: check-xcodegen ## Generate the project for preview targets
+	@# The preview targets use no bundled plugins, but xcodegen validates the whole spec and the host target
+	@# references .build/Plugins (produced by `make prepare-plugins` from the private plugin repo). Make sure the
+	@# directory exists so the preview toolchain builds from a clean clone without that repo.
+	@mkdir -p .build/Plugins
 	@xcodegen generate
 
 .PHONY: plugin-preview-app
