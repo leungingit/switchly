@@ -36,7 +36,7 @@
 | --- | --- | --- | --- | --- | --- |
 | T00 | P0a | 当前契约与依赖清点 | 无 | 契约与集成 | 已完成 |
 | T01 | P0a | 独立原生窗口与截图可行性验证 | T00 | 原生渲染、工程与构建 | 已完成（当前环境） |
-| T02 | P0a | 冻结跨任务接口和支持矩阵 | T00、T01 | 契约与集成 | 进行中（草案） |
+| T02 | P0a | 冻结跨任务接口和支持矩阵 | T00、T01 | 契约与集成 | 待验证（契约哈希已冻结，接口表待主控复核） |
 | T03 | P0b | 公共校验收敛与场景 Schema | T02 | 公共校验 | 进行中 |
 | T04 | P0b | 正式预览 target 与共享源码接线 | T02 | 工程与构建 | 进行中（构建壳） |
 | T05 | P0b | 合成能力与 Runtime 注入边界 | T02 | Runtime 与 fixture | 进行中 |
@@ -276,3 +276,5 @@
 - run 联通（CLI→App→worker→窗口截图）：音乐 `playing-zh`、天气 `with-fixture-zh-wide`、鲸娘 `unread-en` 均 `status=passed`、退出码 0，stdout 仅一个 JSON 对象，stderr 仅固定诊断，产物含 report/preview.png/ui-tree/actions。主控读取三张截图：音乐卡的封面、标题、上一首/暂停/下一首可见；天气 Scene 的图标、五线谱与数字可见；鲸娘立绘与星标可见。
 - dev 热重载（T10 部分）：对临时插件副本连续两次保存，各触发一次 `preview reload requested` 并换代，始终只有一个 worker；SIGINT 后无残留预览进程。临时目录已清理。
 - 仍未满足：T02 未冻结（`sdkContractHash` 仍为 `unfrozen`）；T12 要求的无 GUI 分支、通用控件交互经原生输入、冷启动/重载/退出基线尚无证据；macOS 12、Intel、无屏幕录制授权未验。T13–T21（P1 时钟/步骤/输入/基线，P2 离线包/CI/文档）尚未开始。
+
+执行记录 PT-07（2026-11-03）：用户授权先本地提交、不提 PR，并继续完成其余任务。已在 `feat/plugin-preview` 提交 Switchly `26d1a0c`、外仓 `27e3f12`（均未推送）。T02 推进：`sdkContractHash` 由 `unfrozen` 改为 6 个 `plugin-api` 契约文件的真实哈希（`Tools/PluginPreview/contract-hash.sh`），单一常量位于 `PluginPreviewContract`，`make plugin-preview-contract-check` 校验；人为改坏常量时返回非零（实测）；会话测试 5 项、worker 测试、`make plugin-preview-build` 通过。T13 评估：Runtime 定时器基于 `DispatchQueue`，Date/Math.random 未被注入，Scene 时钟在渲染层；需引入时钟协议并串行改动 `PluginRuntime.swift`（706 行，已超 500 行建议）与 Scene 渲染，属较大改动，T13–T21 尚未开始，G0/G1 仍未放行。
