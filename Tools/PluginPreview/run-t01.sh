@@ -53,9 +53,9 @@ xcrun swiftc \
 set +e
 "$BIN" offscreen --out "$EVIDENCE_ROOT/offscreen"
 OFFSCREEN_STATUS=$?
-"$BIN" plain --out "$EVIDENCE_ROOT/plain"
+"$BIN" plain --out "$EVIDENCE_ROOT/plain" "$@"
 PLAIN_STATUS=$?
-"$BIN" glass --out "$EVIDENCE_ROOT/glass"
+"$BIN" glass --out "$EVIDENCE_ROOT/glass" "$@"
 GLASS_STATUS=$?
 set -e
 

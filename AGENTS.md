@@ -96,6 +96,7 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 ./verify.sh        # 工具链、工程、版本、跟踪文件与隐私卫生检查
 ```
 
+- `mise.toml` 是上述命令与官网 Pages 任务的统一入口（`mise tasks` 查看，`mise run app:build`、`test:test-unit`、`pages:serve` 等）；复杂逻辑留在 Makefile 或 `Scripts/`（如 `Scripts/pages.sh`），mise 内不写大段 shell。
 - Debug 产物为 `DerivedData/Build/Products/Debug/Switchly.app`；`make build-release` 不会自动更新 `build/`，分发副本由 `make dist` 或 `build.sh` 生成。
 - Swift 代码修改后运行 `make build` 与 `make test-unit`，并补充与风险相称的回归测试；优先覆盖窗口归属、设置旧数据解码、取消、缓存失效和错误分支，不写只复述实现的测试。
 - UI 修改必须实际运行并查看相关界面截图，检查布局、遮挡、材质、交互和所涉及的主题状态；不能只凭编译、文本存在断言或未查看的快照宣称视觉通过。几何变化应验证真实边界、间距或重叠情况。

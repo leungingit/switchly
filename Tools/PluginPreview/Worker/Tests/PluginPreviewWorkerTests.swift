@@ -34,6 +34,7 @@ private enum PluginPreviewWorkerTests {
             exit(PluginPreviewWorkerService.runStandardStreams())
         }
         try testFixtureLimitsAndStableScanOrder()
+        try testConsoleIsBufferedAndDrainedOnce()
         try testStandardStreamIsolation()
         try testProtocolErrorIsAFrame()
         try testRawRenderJSONUsesTheHostValidator()
@@ -92,6 +93,26 @@ private enum PluginPreviewWorkerTests {
         guard case .failure(.invalidOutput) = result else {
             throw WorkerTestFailure(description: "raw render JSON bypassed PluginRenderOutput validation")
         }
+    }
+
+    /// 插件 console 只进内存缓冲，由请求方显式 drain；drain 后清空，缓冲有上限。
+    private static func testConsoleIsBufferedAndDrainedOnce() throws {
+        let manifest = PluginManifest(
+            id: "com.example.console", name: ["en": "Console"], version: "1", apiVersion: 2,
+            matches: ["com.example.app"], permissions: [], entry: "main.js", refreshInterval: nil
+        )
+        let source = #"globalThis.__switchlyPlugin={render(){for(let i=0;i<250;i++)console.log("n"+i);console.warn("w");return [{slot:"center",node:{type:"text",value:"x"}}]}};"#
+        let package = PluginPackage(manifest: manifest, directory: FileManager.default.temporaryDirectory, source: source, origin: .user)
+        let runtime = PluginRuntime(package: package, timeout: 2, permissions: [])
+        let context = PluginRenderContext(bundleID: "com.example.app", pid: 0, appName: "App", windowID: 0, titleSummary: "")
+        let result = waitForAsync { await runtime.renderJSON(context: context) }
+        guard case .success = result else { throw WorkerTestFailure(description: "console plugin failed to render: \(result)") }
+        let lines = runtime.drainConsole()
+        try expectEqual(lines.count, 200, "console ring is capped")
+        try expectEqual(lines.last?.level, "warn", "newest line kept")
+        try expectEqual(lines.last?.message, "w", "newest message")
+        try expectEqual(lines.first?.message, "n51", "oldest lines dropped")
+        try expect(runtime.drainConsole().isEmpty, "drain clears the buffer")
     }
 
     private static func testStandardStreamIsolation() throws {

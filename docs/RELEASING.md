@@ -237,9 +237,9 @@ Release workflow (macos-26, contents: write)
   7. make test-unit         the tagged commit must pass its own tests
   8. Import certificate     only when BUILD_CERTIFICATE_BASE64 is set
   9. Check notarization     certificate without Apple ID credentials = hard fail
- 10. make dist              Release build, ad-hoc unless a certificate was imported
- 11. Notarize               only when signed
- 12. Package                Switchly-<version>.zip + .sha256
+ 10. Build                  主 App 和独立插件预览 App，使用相同签名身份
+ 11. Notarize               已签名时分别公证并装订两个 App
+ 12. Package                两个 App 分别打包并生成 SHA-256
  13. Compose notes          awk-extract the CHANGELOG section for this version
  14. gh release create      --verify-tag, pre-release when the tag contains "-"
 ```
@@ -272,6 +272,8 @@ Artifacts published per release:
 |---|---|
 | `Switchly-<version>.zip` | `Switchly.app`, ad-hoc or Developer ID signed |
 | `Switchly-<version>.zip.sha256` | SHA-256 of the zip |
+| `SwitchlyPluginPreview-<version>.zip` | 独立插件预览 App，包含运行所需的 worker |
+| `SwitchlyPluginPreview-<version>.zip.sha256` | 预览 App 压缩包的 SHA-256 |
 
 Published builds are **universal** — `xcodebuild -configuration Release` uses
 Xcode's default `ARCHS` (`arm64 x86_64`) with `ONLY_ACTIVE_ARCH = NO`, so the

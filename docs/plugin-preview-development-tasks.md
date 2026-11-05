@@ -292,3 +292,22 @@
 - G0–G3 结论：G0 通过；G1 通过（含上述未验项）；G2 通过；G3 以「本地候选」通过——可独立使用的本地工具包、文档、验收记录均已就绪，公开发布、推送、PR、版本号变更与 npm 发布均未执行，需用户另行授权。
 
 执行记录 PT-11（2026-11-03）：用户裁决「接受为本地候选完成」。含义：T00–T21 在本机可验证范围内完成；PT-10「仍未验证」清单（macOS 12、原生 Intel、无图形会话真实分支、GitHub runner/CI 实跑、滑块/hover/键盘焦点、隐藏/最小化联动自动化、fixture 更新步骤、Developer ID 签名与公证）继续保持未验证，不视为通过，也不视为已放弃。`switchly-preview-*` 临时目录遗留成因未查清（正常结束与管道提前关闭两条路径对照实验均无遗留），已清理。不 push、不提 PR、不发布；会话前遗留的 4 个未提交改动未审查、未纳入。
+
+执行记录 PT-12（2026-11-04）：预览 App 统一入口改造（默认场景、覆盖项、`inspect`、GUI 启动器）文档契约先行。状态：**进行中**。
+- 改动文件（仅文档）：`docs/plugin-preview-contract.md` 新增 2.1 默认场景推导、2.2 覆盖项与互斥规则、2.3 fixture 显式文件选择、3.1 `scenarioSource`、3.2 `inspect`、3.3 GUI 启动器与自定义模式，并更新 §8 当前限制；`docs/plugin-preview-guide.md` 快速开始改为无需场景文件（create → validate → inspect → run 覆盖项），新增 4.1 默认场景与覆盖项、11 GUI 使用、12 Agent 无 GUI 流程，场景文件降为进阶/回归用，更新视觉基线与已知限制；`docs/plugin-preview-coverage.md` 新增第 6 节“2026-11-04 改造（进行中，无验证结论）”；本记录。未改代码、脚本或外仓。
+- 验证：按 `Tests/PluginPreview/run-guide-check.sh` 的提取规则从指南取出 `quickstart` 与 `agent-loop` 块，`bash -n` 均通过；参数名与规格 `/tmp/switchly-preview-redesign/spec.md` 逐项校对；`git diff --check` 通过。
+- 限制：未执行任何运行时回归，不宣称默认场景、覆盖项、`inspect`、GUI 启动器或导出场景已验证。实现落地后以 `Tests/PluginPreview/` 实际结果替换覆盖矩阵第 6 节；在此之前状态保持“实现中”。
+- 2026-11-04 追加（用户裁决 A+B；仍为文档先行，状态保持**进行中**）：
+  - 默认（派生）场景自动附加内置合成 fixture：manifest 声明 `media.nowPlaying`/`media.control`/`media.library` 任一 → 内置媒体样例（如 `Synthetic Evening` / `Fixture Ensemble`）；声明 `weather.current` → 内置天气样例；`fs.read` 仍需显式 `--fixture fs=<文件>` 或 GUI 选择文件。内置样例随预览 App 资源分发，只含合成数据；显式文件覆盖内置样例，GUI「清除」表示不可用且不回退；显式 `--scenario` 语义不变（未声明 `fixtures` 仍不可用）。
+  - `inspect` 的 `fixtures[]` 增加 `source`（`builtin`/`explicit`/`none`）；`fs.read` 需要但无来源时为 `none`，`reason` 指明需要显式文件。导出场景时内置样例作为文件复制到导出目录并相对引用。
+  - 缺数据提示：渲染以 `plugin-script-error` 失败且 manifest 所需 fixture 无来源时，GUI 窗口、`run` 的 `error.message`、`report.json.failure.message` 统一为固定文案“该插件需要 <kind> fixture，请在自定义模式选择文件，或使用 --fixture <kind>=<文件>”；错误码与退出码不变，不含本机路径。
+  - GUI 可访问性：所有可交互控件（打开目录、模式切换、各编辑控件、fixture 选择/清除）必须有可访问标签。
+  - 同步文档：契约 §1、2.1、2.2、2.3、3.2、3.3、新增 3.4、§8；使用指南 §1、§4/4.1、§5、§7、§8、§11、§12、§14；覆盖矩阵 §6 新增“内置样例与缺数据提示”及可访问标签计划项。未改代码、脚本或外仓。
+  - 验证：从指南提取的 `quickstart` 与 `agent-loop` 块 `bash -n` 通过；`git diff --check` 通过。未执行任何运行时回归，不宣称内置样例、`source`、缺数据提示或可访问标签已验证。
+- 2026-11-04 追加（启动器两栏改版与模拟 Dock；仍为文档先行，状态保持**进行中**）：
+  - 无参启动器窗口改为左右两栏：左栏为不透明控制区（插件选择/打开/拖入/最近使用、默认/自定义模式、场景设置、fixture、导出场景、诊断）；右栏为透明背景的模拟 Dock（底部图标 + 悬停浮层），窗口 `<900 pt` 时纵向堆叠。
+  - 模拟 Dock：目标应用图标按 `manifest.matches` 首项（自定义模式按 `target.bundleID`）解析系统图标，失败用占位图标；另 1–2 个固定占位图标，仅目标图标响应悬停。显示延迟 0.4 s、离开宽限 0.3 s、图标切换即时；浮层从图标上方居中弹出并限制在右栏内。浮层为面板壳（标题头 + 窗口条）+ 模拟窗口卡片（固定示例标题、占位缩略图、交通灯仅展示不可操作），插件动作在浮层内真实走会话。
+  - 槽位挂载以 `Views/DockPreviewView.swift` 核对：`center` 挂在窗口条之后/窗口卡片区下方（独立卡片，不在单张卡内），`bottomBar` 覆盖首张窗口卡缩略图底部，`topTrailing`/`titleAccessory` 本体未接入、模拟 Dock 不展示内容。此处纠正需求描述中“center 在窗口卡片区”的表述：实现与本体的实际挂载位置为准。
+  - 范围声明：仅启动器窗口改版；`dev`/`run` 窗口、截图路径（离屏 `PluginSlotSurface` 平铺）、可访问树匹配、退出码与基线身份不变。模拟 Dock 不验证真实 AX 悬停、Dock 命中、跨屏、真实缩略图或桌面玻璃合成；透明右栏下玻璃外观依赖桌面背景，不得作为视觉基线。
+  - 同步文档：契约 3.3 改写并新增 3.5「模拟 Dock 与悬停」、§8 当前限制；使用指南 §1 能做/不能做表、§11 两栏布局与模拟 Dock、边界声明与 §14；覆盖矩阵 §6 新增「两栏启动器与模拟 Dock」「透明右栏」计划项（状态“实现中”）。
+  - 验证：静态检查链接与措辞；从指南提取的 `quickstart` 与 `agent-loop` 块 `bash -n` 通过；`git diff --check` 通过。未改代码、脚本或外仓；未运行任何运行时回归，不宣称两栏布局、模拟 Dock 悬停/定位/槽位挂载或透明右栏已验证。

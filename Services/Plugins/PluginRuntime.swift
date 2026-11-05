@@ -137,6 +137,26 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private static let maxTimers = 32
     private static let maxLogLength = 500
+    private static let maxBufferedConsoleLines = 200
+    private let consoleLock = NSLock()
+    private var consoleBuffer: [PluginConsoleLine] = []
+
+    /// Returns and clears the console lines buffered since the last call (newest 200 at most).
+    func drainConsole() -> [PluginConsoleLine] {
+        consoleLock.lock()
+        defer { consoleLock.unlock() }
+        let lines = consoleBuffer
+        consoleBuffer = []
+        return lines
+    }
+
+    private func bufferConsole(level: String, message: String) {
+        consoleLock.lock()
+        consoleBuffer.append(PluginConsoleLine(level: level, message: String(message.prefix(Self.maxLogLength)),
+                                               time: Date().timeIntervalSince1970))
+        if consoleBuffer.count > Self.maxBufferedConsoleLines { consoleBuffer.removeFirst(consoleBuffer.count - Self.maxBufferedConsoleLines) }
+        consoleLock.unlock()
+    }
 
     init(package: PluginPackage,
          timeout: TimeInterval = 0.2,
@@ -372,7 +392,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private func installConsole(in js: JSContext) {
         let pluginID = manifest.id
-        let log: @convention(block) (String, String) -> Void = { level, message in
+        let log: @convention(block) (String, String) -> Void = { [weak self] level, message in
+            self?.bufferConsole(level: level, message: message)
             let line = "Plugin log. plugin=\(pluginID) message=\(message.prefix(Self.maxLogLength))"
             if level == "error" {
                 AppLogger.throttledError(key: "plugin.console.\(pluginID)", line)

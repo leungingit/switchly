@@ -295,6 +295,10 @@ test("create 从零创建可验证插件", async (t) => {
   assert.equal(result.ok, true);
   assert.equal(result.validation.ok, true);
   assert.equal(JSON.parse(await readFile(path.join(plugin, "manifest.json"), "utf8")).id, "com.example.fresh");
+  const entry = await readFile(path.join(plugin, "main.js"), "utf8");
+  assert.match(entry, /slot: "center"/, "默认模板必须渲染到 center，run 才能捕获");
+  assert.match(entry, /\/\/ render 返回要展示的节点数组/);
+  assert.match(entry, /\/\/ 可选：onAction/);
 });
 
 test("validate 只检查 fsRoots 声明而不访问真实目录", async (t) => {

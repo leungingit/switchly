@@ -4,6 +4,10 @@ import Foundation
 struct ScenarioTests {
     static func main() async throws {
         try await StepTests.run()
+        try DefaultScenarioTests.run()
+        await LauncherLogicTests.run()
+        DebugModelTests.run()
+        MockDockTests.run()
         let valid = #"{"schemaVersion":1,"id":"default","environment":{"locale":"zh-Hans","appearance":"dark","glass":false,"reduceMotion":true,"contentWidthPoints":360},"target":{"bundleID":"example.app","appName":"Example"},"steps":[]}"#
         let parsed = try PreviewScenario.decode(Data(valid.utf8))
         precondition(parsed.id == "default" && parsed.environment.contentWidthPoints == 360)

@@ -46,8 +46,9 @@ struct PluginPreviewDiagnostic: Identifiable, Equatable {
 }
 
 struct PluginPreviewEnvironment: Equatable {
-    static let minimumContentWidth: CGFloat = 300
-    static let maximumContentWidth: CGFloat = 720
+    /// 与覆盖项/草稿共用同一范围，避免参数校验与 GUI 出现两套常量。
+    static let minimumContentWidth = CGFloat(PreviewScenarioDraft.contentWidthRange.lowerBound)
+    static let maximumContentWidth = CGFloat(PreviewScenarioDraft.contentWidthRange.upperBound)
 
     var theme: AppTheme = .dark
     var language: AppLanguage = .simplifiedChinese

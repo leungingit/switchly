@@ -24,7 +24,7 @@
   <p>原生 macOS 菜单栏应用——先看见窗口，再切换过去。</p>
   <a class="btn" href="https://github.com/leungingit/switchly/releases/latest">下载 macOS 版</a>
   <a class="btn alt" href="plugins.html">插件开发文档</a>
-  <p style="font-size:14px">macOS 12+ · MIT 开源 · 无账号、无网络请求、不上传窗口内容</p>
+  <p style="font-size:14px">macOS 12+ · MIT 开源 · 无账号、不上传窗口内容 · 在线天气可选且默认关闭</p>
 </section>
 
 <section class="roster" aria-label="主要功能截图">
@@ -66,7 +66,7 @@
     <p>全局快捷键（默认 <code>⌘ ⌥ P</code>）呼出所有打开窗口的缩略图，支持标题搜索；同一应用的多个窗口也能一眼区分。</p>
     <p><b>窗口来源</b>：「预览全部窗口」或默认的「仅已配置应用」。</p>
     <p><b>预览模式</b>：「窗口复刻」在原位置与原尺寸预览高亮窗口；「仅高亮」保持紧凑。可在预览上直接关闭、最小化、缩放窗口。</p>
-    <p><b>桌面范围</b>：「全部桌面／当前桌面」，其他桌面、最小化、隐藏状态分别标记；无法截图时保留图标与标题。</p></div>
+    <p><b>桌面范围</b>：「全部桌面／当前桌面」，其他桌面、最小化、隐藏状态分别标记；无法截图时保留图标与标题。跨桌面切换仍待实机验收，详见<a href="https://github.com/leungingit/switchly/blob/main/docs/reviews/all-spaces-window-preview.md">验证记录</a>。</p></div>
   <div class="card"><h3>Dock 悬停预览</h3>
     <p>鼠标悬停 Dock 图标，即显示该应用所有窗口缩略图，直达需要的文档，无需打开完整面板。</p>
     <p>也可启用<b>屏幕边缘热区</b>或<b>摇动鼠标</b>触发；卡片布局可选横向、纵向或网格，窗口过多时滚动并受目标屏幕 <code>visibleFrame</code> 约束。</p>
@@ -77,6 +77,9 @@
   <div class="card"><h3>音乐插件（Dock 预览）</h3>
     <p>内置插件：悬停 Apple Music 显示封面、曲名、播放 / 暂停、上一首、下一首与喜欢；Music 窗口关闭时也可使用。可选“只显示组件”或点按转盘布局。</p>
     <p>首次使用需允许 Switchly 控制「音乐」。插件由 JavaScript 编写、声明式界面、按权限授权，详见<a href="plugins.html">插件 API</a>。</p></div>
+  <div class="card"><h3>让 Dock 预览更有用</h3>
+    <p>内置「天气抽卡」可根据手动天气或可选在线天气揭晓卡片，并从 Music 资料库播放歌曲。在线天气默认关闭。</p>
+    <p>在「偏好设置 → 插件」搜索、筛选和管理插件，也可安装本地插件；用户插件默认关闭，更新后重新授权。<a href="plugins.html">了解插件与独立预览工具</a>。</p></div>
   <div class="card"><h3>应用专属快捷键</h3>
     <p>为常用应用分配专属快捷键，多个应用可共用同一快捷键。</p>
     <p>目标应用只有一个窗口时，可开启<b>自动直达</b>跳过选择。</p></div>
@@ -108,16 +111,18 @@
   <li>按 <code>⌘ ⌥ P</code> 呼出预览，点击窗口即可切换。冲突时可在偏好设置中修改快捷键。</li>
 </ol>
 <p>不需要 Xcode。发布包面向 Apple Silicon 与 Intel 通用，目前仅在 Apple Silicon 上测试。</p>
-<div class="note">默认构建为 ad-hoc 签名且未公证：请确认来自本仓库 Releases，再用 macOS「仍要打开」。可用 <code>shasum -a 256 -c Switchly-&lt;version&gt;.zip.sha256</code> 校验完整性。没有缩略图时请检查屏幕录制权限；没有任何窗口时检查窗口来源设置。</div>
+<div class="note">未配置签名凭据的发布包为 ad-hoc 签名且未公证：请确认来自本仓库 Releases，再用 macOS「仍要打开」。可用 <code>shasum -a 256 -c Switchly-&lt;version&gt;.zip.sha256</code> 校验完整性。没有缩略图时请检查屏幕录制权限；没有任何窗口时检查窗口来源设置。</div>
 
 <h3>从源码构建</h3>
 <pre><code>brew install xcodegen      # 需要 Xcode 26+、Swift 5.9
 git clone https://github.com/leungingit/switchly.git &amp;&amp; cd switchly
+# 先将 switchly-plugins 克隆到相邻目录
+(cd ../switchly-plugins &amp;&amp; npm run build)
 make bootstrap &amp;&amp; make build &amp;&amp; make test-unit &amp;&amp; make run</code></pre>
 
 <h2 id="privacy">窗口内容留在你的 Mac 上</h2>
 <ul>
-  <li>完全本地处理：无账号、无在线授权、无遥测 SDK、无网络请求。</li>
+  <li>窗口内容在本地处理：无账号、无在线授权、无遥测 SDK。唯一的联网功能是可选在线天气，默认关闭。</li>
   <li><b>缩略图缓存</b>：仅保存压缩小图，自截取起最长 24 小时、磁盘上限 64 MB；放大预览原图不落盘。复用需系统启动会话、目标进程与窗口身份一致。</li>
   <li><b>清除</b>：删除 <code>~/Library/Caches/Switchly/Thumbnails/</code> 即可；过期文件读取时拒绝并删除。</li>
   <li>缓存图像可能含窗口内容，未额外加密。详见仓库中的 <a href="https://github.com/leungingit/switchly/blob/main/PRIVACY_POLICY.md">隐私政策</a>。</li>

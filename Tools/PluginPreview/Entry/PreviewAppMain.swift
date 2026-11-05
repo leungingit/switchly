@@ -3,54 +3,12 @@ import Darwin
 import Foundation
 import SwiftUI
 
-private struct PreviewArguments {
-    let command: String
-    let plugin: URL
-    let scenario: URL
-    let output: URL?
-    let json: Bool
-
-    init(_ args: [String]) throws {
-        guard args.count >= 4, ["dev", "run"].contains(args[0]), !args[1].hasPrefix("--") else { throw PreviewAppError.arguments }
-        command = args[0]
-        plugin = URL(fileURLWithPath: args[1], isDirectory: true).standardizedFileURL
-        var scenarioPath: String?
-        var outputPath: String?
-        var jsonMode = false
-        var index = 2
-        while index < args.count {
-            switch args[index] {
-            case "--json":
-                guard !jsonMode else { throw PreviewAppError.arguments }
-                jsonMode = true
-                index += 1
-            case "--scenario", "--out":
-                let option = args[index]
-                guard index + 1 < args.count, !args[index + 1].hasPrefix("--") else { throw PreviewAppError.arguments }
-                if option == "--scenario" {
-                    guard scenarioPath == nil else { throw PreviewAppError.arguments }
-                    scenarioPath = args[index + 1]
-                } else {
-                    guard outputPath == nil else { throw PreviewAppError.arguments }
-                    outputPath = args[index + 1]
-                }
-                index += 2
-            default: throw PreviewAppError.arguments
-            }
-        }
-        guard let scenarioPath, (command == "run") == (outputPath != nil) else { throw PreviewAppError.arguments }
-        scenario = URL(fileURLWithPath: scenarioPath).standardizedFileURL
-        output = outputPath.map { URL(fileURLWithPath: $0, isDirectory: true).standardizedFileURL }
-        json = jsonMode
-    }
-}
-
 private enum PreviewAppError: Error {
-    case arguments, environment, worker, capture, invalidPackage
+    case arguments, environment, worker, capture, invalidPackage, invalidGrants, invalidSettings
 }
 
 /// 失败出口的稳定分类：状态、退出码、固定码与固定提示。提示不含插件内容、路径或 fixture 数据。
-private struct PreviewFailure {
+struct PreviewFailure {
     let status: String
     let exitCode: Int32
     let code: String
@@ -60,10 +18,36 @@ private struct PreviewFailure {
         PreviewFailure(status: "failed", exitCode: 1, code: code, message: message)
     }
 
-    static func classify(_ error: Error) -> PreviewFailure {
-        if error is PreviewAppError {
-            if case PreviewAppError.invalidPackage = error { return failed("invalid-package", "The plugin package is invalid (manifest, entry file or limits).") }
-            return PreviewFailure(status: "environment-error", exitCode: 4, code: "environment-unavailable", message: "The preview environment is unavailable.")
+    /// `missingFixtureKind` 仅在已知 manifest 必需但无来源时提供，用于契约 §3.4 的固定修复提示。
+    static func classify(_ error: Error,
+                         missingFixtureKind: PreviewScenarioDraft.FixtureKind? = nil,
+                         language: AppLanguage = .english) -> PreviewFailure {
+        if let error = error as? PreviewAppError {
+            switch error {
+            case .invalidPackage:
+                return failed("invalid-package", "The plugin package is invalid (manifest, entry file or limits).")
+            case .invalidGrants:
+                return failed("invalid-grants", "The scenario grants are invalid for this plugin.")
+            case .invalidSettings:
+                return failed("invalid-settings", "The scenario settings are invalid for this plugin manifest.")
+            case .arguments:
+                return PreviewFailure(status: "failed", exitCode: 2, code: "invalid-arguments", message: "The preview arguments are invalid.")
+            default:
+                return PreviewFailure(status: "environment-error", exitCode: 4, code: "environment-unavailable", message: "The preview environment is unavailable.")
+            }
+        }
+        if let error = error as? PreviewScenarioOverrideError {
+            switch error {
+            case .invalidArgument:
+                return PreviewFailure(status: "failed", exitCode: 2, code: "invalid-arguments", message: "The preview arguments are invalid.")
+            case .invalidGrants:
+                return failed("invalid-grants", "The scenario grants are invalid for this plugin.")
+            case .invalidSettings:
+                return failed("invalid-settings", "The scenario settings are invalid for this plugin manifest.")
+            }
+        }
+        if error is FixtureTransferError {
+            return failed("invalid-fixture", "A scenario fixture is missing, oversized or does not match the plugin.")
         }
         if case PluginPreviewSessionError.workerFailure(let code, _) = error {
             switch code {
@@ -74,7 +58,11 @@ private struct PreviewFailure {
             case "invalidGrants": return failed("invalid-grants", "The scenario grants are invalid for this plugin.")
             case "invalidSettings": return failed("invalid-settings", "The scenario settings are invalid for this plugin manifest.")
             case "timedOut": return failed("plugin-timeout", "The plugin did not finish rendering within the time limit.")
-            case "pluginError": return failed("plugin-script-error", "The plugin script threw an error while running.")
+            case "pluginError":
+                let message = missingFixtureKind.map {
+                    PreviewFixtureHint.message(kind: $0, localize: language.localizedString)
+                } ?? "The plugin script threw an error while running."
+                return failed("plugin-script-error", message)
             case "invalidOutput": return failed("invalid-render-output", "The plugin returned UI that does not pass host decoding.")
             case "disabled": return failed("plugin-disabled", "The plugin was disabled after repeated timeouts.")
             default: break
@@ -152,8 +140,8 @@ private enum PreviewAppMain {
         guard sink >= 0, dup2(sink, STDOUT_FILENO) >= 0 else { exit(74) }
         close(sink)
         let output = FileHandle(fileDescriptor: protocolFD, closeOnDealloc: true)
-        let arguments: PreviewArguments
-        do { arguments = try PreviewArguments(args) }
+        let invocation: PluginPreviewInvocation
+        do { invocation = try PluginPreviewCommandLine.parse(args) }
         catch {
             let result = ["schemaVersion": 1, "status": "failed", "error": ["code": "invalid-arguments"]] as [String: Any]
             if json, let data = try? JSONSerialization.data(withJSONObject: result), let line = String(data: data, encoding: .utf8) {
@@ -162,18 +150,50 @@ private enum PreviewAppMain {
             fputs("预览参数无效。\n", stderr)
             exit(2)
         }
+        if case .inspect(let plugin) = invocation {
+            exit(runInspect(plugin: plugin, output: output))
+        }
         let app = NSApplication.shared
-        let delegate = PreviewAppDelegate(arguments: arguments, output: output)
+        let delegate = PreviewAppDelegate(invocation: invocation, output: output)
         app.delegate = delegate
         app.setActivationPolicy(.regular)
         app.run()
         exit(delegate.exitCode)
     }
+
+    /// 无 GUI 的 inspect：只读取插件包与 manifest，与 `--version-json` 同类。
+    private static func runInspect(plugin: URL, output: FileHandle) -> Int32 {
+        let failure: PreviewFailure
+        do {
+            let package = try PluginPackageValidator.load(directory: plugin, origin: .user)
+            let data = try PluginPreviewInspectReport.data(manifest: package.manifest)
+            try output.write(contentsOf: data + Data("\n".utf8))
+            return 0
+        } catch is PluginPreviewInspectError {
+            failure = PreviewFailure(status: "failed", exitCode: 1, code: "invalid-scenario",
+                                     message: "The default scenario could not be encoded.")
+        } catch is PluginPackageValidator.Failure {
+            failure = PreviewFailure(status: "failed", exitCode: 1, code: "invalid-package",
+                                     message: "The plugin package is invalid (manifest, entry file or limits).")
+        } catch {
+            failure = PreviewFailure(status: "failed", exitCode: 1, code: "invalid-package",
+                                     message: "The plugin package is invalid (manifest, entry file or limits).")
+        }
+        let value: [String: Any] = [
+            "schemaVersion": 1,
+            "status": failure.status,
+            "error": ["code": failure.code, "message": failure.message],
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys, .withoutEscapingSlashes]) {
+            try? output.write(contentsOf: data + Data("\n".utf8))
+        }
+        return failure.exitCode
+    }
 }
 
 @MainActor
 private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    private let arguments: PreviewArguments
+    private let arguments: PluginPreviewCommandArguments?
     private let output: FileHandle
     private let state = PluginPreviewState()
     private var session: PluginPreviewSession?
@@ -186,6 +206,8 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     private var activeHash: String?
     private var watcher: PluginPreviewPackageWatcher?
     private var reloadTask: Task<Void, Never>?
+    private var refreshTask: Task<Void, Never>?
+    private let debugModel = PreviewDebugModel()
     private var reloadPending = false
     private var resetPending = false
     private var starting = true
@@ -194,33 +216,94 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     private var closing = false
     private(set) var exitCode: Int32 = 1
 
-    init(arguments: PreviewArguments, output: FileHandle) {
-        self.arguments = arguments
+    // GUI 启动器：模型负责草稿与防抖，会话重建仍由本类完成。
+    private var launcherModel: PreviewLauncherModel?
+    /// 最新草稿的序号；旧请求在真正重建会话前发现序号已过期就直接放弃。
+    private var launcherRevision = 0
+    private var launcherRenderLocked = false
+    private var launcherWaiters: [CheckedContinuation<Void, Never>] = []
+
+    // GUI 扩展点：后续面板替换插件目录或草稿后调用 `start()` / `replaceSession`，
+    // 会话创建只读取这两个属性与 `scenarioPath`。
+    private var pluginURL: URL?
+    /// 当前草稿（推导 + 覆盖项）；显式 `--scenario` 时由场景文件回读。
+    private var draft: PreviewScenarioDraft?
+    /// 当前插件 manifest；用于把缺失 fixture 的渲染失败映射为固定修复提示。
+    private var pluginManifest: PluginManifest?
+    private var scenarioPath: URL?
+    private var scenarioSource: PluginPreviewScenarioSource = .derived
+    private let overrides: PreviewScenarioOverrides
+
+    var isLauncher: Bool { arguments == nil }
+
+    init(invocation: PluginPreviewInvocation, output: FileHandle) {
+        if case .preview(let arguments) = invocation {
+            self.arguments = arguments
+            self.overrides = arguments.overrides
+            self.pluginURL = arguments.plugin
+            self.scenarioSource = arguments.scenario == nil ? .derived : .file
+        } else {
+            self.arguments = nil
+            self.overrides = PreviewScenarioOverrides()
+        }
         self.output = output
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installSignalHandlers()
         guard NSScreen.main != nil else { finish(status: "environment-error", code: 4, reason: "gui-unavailable"); return }
-        let view = PluginPreviewView(state: state)
-        let hosting = NSHostingView(rootView: view)
-        let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 700, height: 700),
+        let content: NSView
+        let windowSize: NSSize
+        if isLauncher {
+            let model = PreviewLauncherModel()
+            model.host = self
+            launcherModel = model
+            let hosting = NSHostingView(rootView: PreviewLauncherView(model: model, state: state, debug: debugModel))
+            // 右栏透明：宿主视图自身不能铺底色，否则窗口再透明也会被内容层挡住。
+            hosting.wantsLayer = true
+            hosting.layer?.backgroundColor = NSColor.clear.cgColor
+            content = hosting
+            windowSize = NSSize(width: 1080, height: 720)
+        } else {
+            content = NSHostingView(rootView: PluginPreviewView(state: state))
+            windowSize = NSSize(width: 700, height: 700)
+        }
+        let panel = NSWindow(contentRect: NSRect(origin: .zero, size: windowSize),
                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
         panel.title = "Switchly Plugin Preview"
-        panel.contentView = hosting
+        panel.contentView = content
+        if isLauncher {
+            // 只改启动器窗口：左栏不透明，右栏透出桌面。标题栏保持系统外观。
+            // 堆叠布局需要足够的纵向空间让浮层完整落在模拟 Dock 栏内。
+            panel.minSize = NSSize(width: 680, height: 700)
+            panel.isOpaque = false
+            panel.backgroundColor = .clear
+            panel.isMovableByWindowBackground = true
+            // 标题栏与左栏同色：内容延伸到标题栏下方并让标题栏透明，避免透明窗口下
+            // 标题栏落成另一种材质色。
+            panel.styleMask.insert(.fullSizeContentView)
+            panel.titlebarAppearsTransparent = true
+            panel.titleVisibility = .hidden
+            // 窗口阴影会沿右栏里浮层/Dock 条的半透明像素再描一圈灰黑边，
+            // 与 SwiftUI 自带的浮层阴影叠加；右栏要的是“漂在桌面上”，故关闭系统阴影。
+            panel.hasShadow = false
+        }
         panel.isReleasedWhenClosed = false
         panel.delegate = self
         panel.center()
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         window = panel
+        debugModel.onVisibilityChange = { [weak self] visible in self?.resizeWindowForDebugPanel(visible: visible) }
         state.actionHandler = { [weak self] pluginID, actionID, value in self?.perform(pluginID: pluginID, id: actionID, value: value) }
         state.reloadHandler = { [weak self] in self?.requestReload(force: true, reset: false) }
         state.resetHandler = { [weak self] in self?.requestReload(force: true, reset: true) }
-        Task { await start() }
+        // 无参数启动器只显示空状态，插件选择后由启动器模型触发会话重建。
+        if !isLauncher { Task { await start() } }
     }
 
     private func start() async {
+        guard let arguments, let pluginURL else { return }
         state.status = .rendering
         defer {
             starting = false
@@ -232,19 +315,36 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             }
         }
         do {
-            let scenarioData = try PreviewFixtureFile.read(relativePath: arguments.scenario.lastPathComponent,
-                scenarioDirectory: arguments.scenario.deletingLastPathComponent(), maximumBytes: PluginStorage.maxTotalBytes)
-            let scenario = try PreviewScenario.decode(scenarioData)
-            self.scenario = scenario
-            state.environment.language = AppLanguage(rawValue: scenario.environment.locale) ?? .english
-            state.environment.theme = scenario.environment.appearance == "dark" ? .dark : .light
-            state.environment.glassEnabled = scenario.environment.glass
-            state.environment.contentWidth = CGFloat(scenario.environment.contentWidthPoints)
             let root = FileManager.default.temporaryDirectory.appendingPathComponent("switchly-preview-session-" + UUID().uuidString, isDirectory: true)
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
             workRoot = root
+            let scenario: PreviewScenario
+            if let file = arguments.scenario {
+                let scenarioData = try PreviewFixtureFile.read(relativePath: file.lastPathComponent,
+                    scenarioDirectory: file.deletingLastPathComponent(), maximumBytes: PluginStorage.maxTotalBytes)
+                scenario = try PreviewScenario.decode(scenarioData)
+                scenarioPath = file
+                scenarioSource = .file
+                draft = PreviewScenarioDraft(scenario: scenario, scenarioDirectory: file.deletingLastPathComponent())
+            } else {
+                let pluginPackage: PluginPackage
+                do { pluginPackage = try PluginPackageValidator.load(directory: pluginURL, origin: .user) }
+                catch { throw PreviewAppError.invalidPackage }
+                pluginManifest = pluginPackage.manifest
+                var derived = PreviewScenarioDraft.derive(manifest: pluginPackage.manifest)
+                do { try derived.applyOverrides(overrides, manifest: pluginPackage.manifest) }
+                catch PreviewScenarioOverrideError.invalidGrants { throw PreviewAppError.invalidGrants }
+                catch PreviewScenarioOverrideError.invalidSettings { throw PreviewAppError.invalidSettings }
+                draft = derived
+                scenarioSource = .derived
+                let prepared = try writeDerivedScenario(derived, root: root)
+                scenarioPath = prepared.path
+                scenario = prepared.scenario
+            }
+            self.scenario = scenario
+            applyEnvironment(scenario)
             if arguments.command == "dev" {
-                let watcher = PluginPreviewPackageWatcher(directory: arguments.plugin) { [weak self] in
+                let watcher = PluginPreviewPackageWatcher(directory: pluginURL) { [weak self] in
                     Task { @MainActor [weak self] in self?.requestReload(force: false, reset: false) }
                 }
                 try await Task.detached { try watcher.start() }.value
@@ -256,11 +356,39 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             state.status = .failed
             state.diagnostics = [PluginPreviewDiagnostic(level: .error, message: "Preview failed")]
             if arguments.command == "run" {
-                let failure = PreviewFailure.classify(error)
+                let manifest = pluginManifest
+                    ?? (try? PluginPackageValidator.load(directory: pluginURL, origin: .user).manifest)
+                let missing = manifest.flatMap { manifest in
+                    draft?.missingRequiredFixtureKind(for: manifest)
+                }
+                let language = AppLanguage(rawValue: draft?.locale.rawValue ?? "") ?? .english
+                let failure = PreviewFailure.classify(error, missingFixtureKind: missing, language: language)
                 fputs("preview \(failure.status): \(failure.code)\n", stderr)
                 finish(status: failure.status, code: failure.exitCode, reason: failure.code, message: failure.message)
             }
         }
+    }
+
+    /// 把场景环境同步到预览视图；命令行与 GUI 启动器共用。
+    private func applyEnvironment(_ scenario: PreviewScenario) {
+        state.environment.language = AppLanguage(rawValue: scenario.environment.locale) ?? .english
+        state.environment.theme = scenario.environment.appearance == "dark" ? .dark : .light
+        state.environment.glassEnabled = scenario.environment.glass
+        state.environment.contentWidth = CGFloat(scenario.environment.contentWidthPoints)
+    }
+
+    /// 把草稿写成会话私有场景文件；fixtures 复制进同一 `workRoot`，场景内只写相对路径。
+    private func writeDerivedScenario(_ draft: PreviewScenarioDraft, root: URL) throws -> (path: URL, scenario: PreviewScenario) {
+        let fixturePaths = try draft.materializeFixtures(in: root)
+        let data = try draft.encode(fixtureRelativePaths: fixturePaths)
+        let scenario = try PreviewScenario.decode(data)
+        let path = root.appendingPathComponent("scenario.json")
+        do {
+            try data.write(to: path, options: [.atomic])
+        } catch {
+            throw PreviewAppError.environment
+        }
+        return (path, scenario)
     }
 
     private func workerURL() throws -> URL {
@@ -273,14 +401,48 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func updateRender(_ session: PluginPreviewSession) async throws {
-        let json = try await session.render()
+        let started = Date()
+        let json: String
+        do { json = try await session.render() }
+        catch {
+            debugModel.recordFailure(String(describing: error), durationMs: Date().timeIntervalSince(started) * 1000)
+            throw error
+        }
         guard self.session === session, !closing else { throw CancellationError() }
+        debugModel.recordRender(json: json, durationMs: Date().timeIntervalSince(started) * 1000)
         let contents = try PluginRenderOutput.decode(json: Data(json.utf8))
         guard let package else { throw PreviewAppError.worker }
         rawJSON = json
         state.slots = Dictionary(uniqueKeysWithValues: contents.map { content in
             (content.slot, [PluginSlotSurface.Entry(id: package.manifest.id, node: content.node, assetDirectory: activeSnapshot)])
         })
+    }
+
+    /// 按 manifest 的 refreshInterval 周期重绘，与宿主 Dock 浮层一致；否则依赖时间推进的插件
+    /// （如空闲阶段）在预览里只渲染一次，永远停在第一帧。只用于交互式预览（启动器 / dev），
+    /// 一次性截图与场景步骤保持确定性。会话被替换或关闭后循环自行退出。
+    /// 面板展开时把窗口向右加宽一个面板的宽度（屏幕放不下则向左补），收起时还原，模拟 Dock 区不被挤压。
+    private func resizeWindowForDebugPanel(visible: Bool) {
+        guard let window else { return }
+        let delta = PreviewDebugModel.panelWidth * (visible ? 1 : -1)
+        var frame = window.frame
+        frame.size.width = max(window.minSize.width, frame.size.width + delta)
+        if visible, let screen = window.screen ?? NSScreen.main, frame.maxX > screen.visibleFrame.maxX {
+            frame.origin.x = max(screen.visibleFrame.minX, screen.visibleFrame.maxX - frame.width)
+        }
+        window.setFrame(frame, display: true, animate: false)
+    }
+
+    private func startRefreshLoop(for session: PluginPreviewSession, interval: TimeInterval) {
+        guard isLauncher || arguments?.command == "dev" else { return }
+        refreshTask?.cancel()
+        refreshTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                guard let self, !self.closing, self.session === session else { return }
+                await self.render()
+            }
+        }
     }
 
     private func render() async {
@@ -328,7 +490,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func requestReload(force: Bool, reset: Bool) {
-        guard !closing, arguments.command == "dev" else { return }
+        guard !closing, arguments?.command == "dev" else { return }
         fputs("preview reload requested\n", stderr)
         if starting || reloadTask != nil {
             reloadPending = true
@@ -354,9 +516,9 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func replaceSession(force: Bool, reset: Bool) async throws {
-        guard let root = workRoot, !closing else { throw CancellationError() }
+        guard let root = workRoot, let pluginURL, let scenarioPath, !closing else { throw CancellationError() }
         let snapshot = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        let source = arguments.plugin
+        let source = pluginURL
         let hash = try await Task.detached { try PluginPreviewPackageHasher.snapshot(packageURL: source, destination: snapshot) }.value
         guard !closing, !Task.isCancelled else { try? FileManager.default.removeItem(at: snapshot); throw CancellationError() }
         if !force && hash == activeHash { try? FileManager.default.removeItem(at: snapshot); return }
@@ -370,17 +532,26 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             let compatibility = PluginPreviewSessionCompatibility(pluginAPIVersion: package.manifest.apiVersion,
                                                                    sdkContractHash: PluginPreviewContract.sdkContractHash)
             let expectedGeneration = UInt64(state.generation) + 1
-            let next = PluginPreviewSession(configuration: configuration, compatibility: compatibility) { [weak self] event in
+            let debugModel = self.debugModel
+            let captures = isLauncher
+            let next = PluginPreviewSession(configuration: configuration, compatibility: compatibility, capturesConsole: captures) { [weak self] event in
+                if case .console(let generation, let lines) = event, generation == expectedGeneration {
+                    Task { @MainActor in debugModel.appendConsole(lines) }
+                    return
+                }
                 guard case .invalidate(let generation) = event, generation == expectedGeneration else { return }
                 Task { @MainActor [weak self] in
                     guard self?.state.generation == Int(clamping: generation) else { return }
                     await self?.render()
                 }
             }
+            debugModel.clear()
             candidate = next
             _ = try await next.start(generation: UInt64(state.generation))
-            let loaded = try await next.load(pluginDirectory: snapshot, scenarioPath: arguments.scenario, storageJSON: saved)
+            let loaded = try await next.load(pluginDirectory: snapshot, scenarioPath: scenarioPath, storageJSON: saved)
+            let firstRenderStart = Date()
             let json = try await next.render()
+            debugModel.recordRender(json: json, durationMs: Date().timeIntervalSince(firstRenderStart) * 1000)
             let contents = try PluginRenderOutput.decode(json: Data(json.utf8))
             if hidden { try await next.suspend() }
             guard !closing, !Task.isCancelled else { throw CancellationError() }
@@ -388,6 +559,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             let oldSnapshot = activeSnapshot
             session = next
             self.package = package
+            pluginManifest = package.manifest
             activeSnapshot = snapshot
             activeHash = hash
             state.pluginID = package.manifest.id
@@ -402,6 +574,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             state.diagnostics = []
             state.status = .ready
             fputs("preview generation ready\n", stderr)
+            startRefreshLoop(for: next, interval: package.manifest.effectiveRefreshInterval ?? 1)
             await old?.shutdown()
             if let oldSnapshot { try? FileManager.default.removeItem(at: oldSnapshot) }
         } catch {
@@ -482,11 +655,12 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             rendererRevision: PluginPreviewContract.rendererRevision, glass: scenario.environment.glass,
             deterministicClock: scenario.clock != nil)
         return PluginPreviewArtifactIdentity(scenarioID: scenario.id, pluginID: package.manifest.id,
-            pluginVersion: package.manifest.version, generation: UInt64(state.generation), packageURL: activeSnapshot ?? arguments.plugin,
+            pluginVersion: package.manifest.version, generation: UInt64(state.generation),
+            packageURL: activeSnapshot ?? pluginURL ?? URL(fileURLWithPath: "/"),
             versions: .init(toolVersion: PluginPreviewContract.toolVersion, protocolVersion: PluginPreviewFrameCodec.protocolVersion,
                             scenarioSchemaVersion: PluginPreviewContract.scenarioSchemaVersion,
                             pluginAPIVersion: package.manifest.apiVersion, sdkContractHash: PluginPreviewContract.sdkContractHash),
-            environment: environment)
+            environment: environment, scenarioSource: scenarioSource)
     }
 
     private func emitReportAndExit(_ report: PluginPreviewArtifactReport, code: Int32) async throws {
@@ -501,7 +675,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func captureAndReport() async throws {
-        guard let scenario, let package, let outputDirectory = arguments.output,
+        guard let scenario, let package, let outputDirectory = arguments?.output,
               let screen = window?.screen ?? NSScreen.main,
               CGPreflightScreenCaptureAccess() else { throw PreviewAppError.capture }
         let steps = try await runScenarioSteps(scenario, package: package, outputDirectory: outputDirectory)
@@ -562,11 +736,17 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         try await emitReportAndExit(report, code: 0)
     }
 
+    /// 报告对象里的场景来源；GUI 启动器不产生运行结果，因此省略。
+    private var reportedScenarioSource: String? {
+        arguments == nil ? nil : scenarioSource.rawValue
+    }
+
     private func finish(status: String, code: Int32, reason: String, message: String? = nil) {
         var errorValue: [String: Any] = ["code": reason]
         if let message { errorValue["message"] = message }
-        let value: [String: Any] = ["schemaVersion": 1, "status": status, "error": errorValue]
-        if arguments.json, let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]) {
+        var value: [String: Any] = ["schemaVersion": 1, "status": status, "error": errorValue]
+        if let source = reportedScenarioSource { value["scenarioSource"] = source }
+        if arguments?.json == true, let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]) {
             try? output.write(contentsOf: data + Data("\n".utf8))
         }
         exitCode = code
@@ -580,18 +760,23 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     func windowWillClose(_ notification: Notification) {
         guard !closing else { return }
         closing = true
-        if state.status == .ready {
+        if isLauncher {
+            // 启动器正常关窗不是失败。
             exitCode = 0
-            if arguments.json {
-                let value: [String: Any] = ["schemaVersion": 1, "status": "passed"]
+        } else if state.status == .ready {
+            exitCode = 0
+            if arguments?.json == true {
+                var value: [String: Any] = ["schemaVersion": 1, "status": "passed"]
+                if let source = reportedScenarioSource { value["scenarioSource"] = source }
                 if let data = try? JSONSerialization.data(withJSONObject: value) {
                     try? output.write(contentsOf: data + Data("\n".utf8))
                 }
             }
         } else {
             exitCode = 1
-            if arguments.json {
-                let value: [String: Any] = ["schemaVersion": 1, "status": "failed"]
+            if arguments?.json == true {
+                var value: [String: Any] = ["schemaVersion": 1, "status": "failed"]
+                if let source = reportedScenarioSource { value["scenarioSource"] = source }
                 if let data = try? JSONSerialization.data(withJSONObject: value) {
                     try? output.write(contentsOf: data + Data("\n".utf8))
                 }
@@ -660,5 +845,91 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             source.resume()
             signalSources.append(source)
         }
+    }
+}
+
+/// GUI 启动器的会话边界：插件目录与草稿由模型提供，本扩展只负责安全替换会话。
+extension PreviewAppDelegate: PreviewLauncherHost {
+    func launcherApply(plugin: URL, draft: PreviewScenarioDraft) async throws {
+        launcherRevision += 1
+        let revision = launcherRevision
+        // 同一时刻只允许一个会话重建；等待者被唤醒后若已过期或取消会直接退出。
+        if launcherRenderLocked {
+            await withCheckedContinuation { launcherWaiters.append($0) }
+        }
+        launcherRenderLocked = true
+        defer {
+            launcherRenderLocked = false
+            if !launcherWaiters.isEmpty {
+                launcherWaiters.removeFirst().resume()
+            }
+        }
+        try Task.checkCancellation()
+        guard !closing, launcherRevision == revision else { return }
+        try await applyLauncherDraft(plugin: plugin, draft: draft)
+    }
+
+    func launcherAdvance(milliseconds: Double) async throws {
+        guard !closing, milliseconds.isFinite, milliseconds > 0, milliseconds <= 86_400_000 else {
+            throw PreviewAppError.arguments
+        }
+        // 时钟开关的草稿更新有防抖：新会话尚未就绪时按钮点击按无操作处理。
+        guard let session, draft?.clock.isEnabled == true, scenario?.clock != nil else { return }
+        try await session.advance(milliseconds: milliseconds)
+        advanceVirtualNow(by: milliseconds)
+        try await updateRender(session)
+    }
+
+    /// 导出当前草稿：fixtures 复制到导出目录下的独立子目录，场景内写相对路径；
+    /// 写出后立即按 `run` 相同路径回读，schema 或 fixture 校验失败则清理本次产物。
+    func launcherExport(draft: PreviewScenarioDraft, to destination: URL) throws {
+        try PreviewScenarioExporter.write(draft, to: destination)
+    }
+
+    private func applyLauncherDraft(plugin: URL, draft: PreviewScenarioDraft) async throws {
+        let standardized = plugin.standardizedFileURL
+        if pluginURL?.path != standardized.path || workRoot == nil {
+            await teardownLauncherSession()
+            pluginURL = standardized
+            scenarioSource = .derived
+            let root = FileManager.default.temporaryDirectory
+                .appendingPathComponent("switchly-preview-session-" + UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false,
+                                                    attributes: [.posixPermissions: 0o700])
+            workRoot = root
+        }
+        guard let root = workRoot else { throw PreviewAppError.environment }
+        self.draft = draft
+        let prepared = try writeDerivedScenario(draft, root: root)
+        scenarioPath = prepared.path
+        scenario = prepared.scenario
+        applyEnvironment(prepared.scenario)
+        state.status = .rendering
+        try Task.checkCancellation()
+        try await replaceSession(force: true, reset: true)
+    }
+
+    /// 切换插件前停止旧 watcher 与 worker，并清理该会话的私有目录。
+    private func teardownLauncherSession() async {
+        refreshTask?.cancel()
+        refreshTask = nil
+        watcher?.stop()
+        watcher = nil
+        await session?.shutdown()
+        session = nil
+        if let workRoot { try? FileManager.default.removeItem(at: workRoot) }
+        workRoot = nil
+        activeSnapshot = nil
+        activeHash = nil
+        rawJSON = nil
+        package = nil
+        pluginManifest = nil
+        scenario = nil
+        scenarioPath = nil
+        state.slots = [:]
+        state.artwork = nil
+        state.pluginID = ""
+        state.pluginVersion = ""
+        state.virtualNowSeconds = nil
     }
 }

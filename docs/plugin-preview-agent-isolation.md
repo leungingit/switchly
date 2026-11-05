@@ -25,7 +25,7 @@
 
 ## 后续任务与可检查验收
 
-1. **PV-T01（待实施）— 后台截图探针**：先复用 T01 渲染内容，分别测试普通与玻璃材质在非 key、后置且被遮挡时的捕获。以合成背景窗口避免捕获用户内容。记录运行前、中、后的前台应用是否变化；检查 PNG 的控件、图片、Scene 和尺寸。验证失败明确返回环境错误，不自动回退到抢前台截图。
+1. **PV-T01（当前环境验证通过，见 PV-D04）— 后台截图探针**：先复用 T01 渲染内容，分别测试普通与玻璃材质在非 key、后置且被遮挡时的捕获。以合成背景窗口避免捕获用户内容。记录运行前、中、后的前台应用是否变化；检查 PNG 的控件、图片、Scene 和尺寸。验证失败明确返回环境错误，不自动回退到抢前台截图。
 2. **PV-T02（依赖 PV-T01，待实施）— 分离 dev/run 窗口策略**：dev 保留显式打开的交互窗口；自动化 run 不主动激活 App，不展示工作台，只创建经验证所需的渲染表面。进程内可访问性 press 独立验证，不把它表述为全局鼠标键盘测试。参数、报告和错误语义先同步契约，再实现与 CLI 测试。
 3. **PV-T03（待环境选型）— 独立 GUI runner**：提供固定系统、分辨率、缩放与合成桌面背景，单次运行单个视觉任务；输出既有 report.json、preview.png、ui-tree.json、actions.json。宿主侧实测运行期间无前台变化、无弹窗覆盖，另验 runner 内截图和输入。保留正式宿主 Dock/AX/跨屏的实机验收。
 
@@ -38,3 +38,32 @@
 依据与检查：`project.yml` 配置 `PreviewAppIcon`；执行 `make plugin-preview-app` 后核对产物 Info.plist 的 CFBundleIconName/CFBundleIconFile 与实际 icns。检查源图、大/小尺寸和编译后的图标；构建与实际读图结果以本次交付记录为准。
 
 本次实测：`make plugin-preview-app` 退出 0；Info.plist 两个图标字段均为 `PreviewAppIcon`，资源目录存在 `PreviewAppIcon.icns`；已实际读取生成图、128px 资源和从 icns 解出的图像，窗口、拼图及播放符号可见。资源含 16/32/64/128/256/512/1024px 七档 PNG、十个 macOS 图标槽位。`./verify.sh` 输出 `PASS 0 check(s) failed, 2 warning(s)`（工作区未提交修改、已有超长文件）；Xcode 另报 CoreSimulator 版本不匹配诊断，macOS 构建仍成功。未启动预览 App，Dock/Finder 的运行时缓存刷新未验证。未修改 Swift 逻辑，未重跑宿主单元测试。
+
+
+## PV-D03：基础遮挡探针实测（2026-11-03）
+
+基础 AppKit/SwiftUI 合成窗口三次运行通过：窗口后置、不 makeKey、不激活，在浮动蓝色合成遮挡窗覆盖时按窗口 ID 捕获。三次均 capture_status=0；PNG=480x560、red=96000、blue=0、transparent=0，前台应用在每次运行前、中、后保持一致。主控实际读图确认红黄内容完整，未混入蓝色遮挡层。
+
+此结果仅证明基础窗口捕获可行，不证明真实插件共享 Renderer、玻璃材质及 nativeClick 回归通过。PV-T01 状态为部分完成，PV-T02/PV-T03 未放行。执行者还报告 make plugin-preview-app 退出 0，但没有完成修改后真实 run 的端到端验证，因此未保留窗口策略变更。当前未启用后台运行模式。临时探针与截图复核后清理。
+
+
+## PV-D04：共享 Renderer 后台遮挡捕获（2026-11-03）
+
+本条更新 PV-D03 的“共享 Renderer 尚未验证”状态；PV-D03 的历史基础探针证据保留。执行 `./Tools/PluginPreview/run-t01.sh --background`，退出 0：plain_status=0、glass_status=0、core_window_capture=PASS。两种模式均输出 background_occlusion=PASS、background_frontmost_during=unchanged、background_frontmost_after=unchanged。窗口列表确认浮动合成遮挡窗口在目标前且 frame 完全覆盖，未调用 makeKey/activate。
+
+环境为 arm64、macOS 27.0.1、主屏 1920×1080@2x、两屏、屏幕捕获预检 true。两张原生截图均为 1212×1612；plain red=29447/yellow=29082/cyan=39391，glass red=29455/yellow=29096/cyan=48263。主控实际读图：原生按钮、toggle、slider、progress，artwork、插件条纹资产与 Scene 图片均可见，未发现空白、漏层或裁切。玻璃有蓝灰材质层；不将其作为逐像素稳定基线。
+
+PV-T01 在上述环境的普通与玻璃共享渲染捕获验证通过。前台检测是捕获前、中、后的采样，不是连续事件审计；探针有意短暂显示合成遮挡窗，因此不代表零桌面干扰。未验证其他系统/架构/Space、无捕获权限、无 GUI、真实插件动作或 nativeClick；这些不因本探针通过而视为完成。PV-T02/PV-T03 尚未实施，正式 run 行为未改。
+
+回归检查：`make build` 退出 0；`make test-unit` 退出 0，Executed 551 tests, with 8 tests skipped and 0 failures；`git diff --check` 通过。本轮只改探针、脚本及说明，保留此前 PV-D03 文档修改。主控读图后已清理本轮截图、探针产物和临时构建/测试日志。
+
+
+## PV-D05：PV-T02 首轮集成未通过（2026-11-03）
+
+尝试将 run 改为 accessory、不激活/隐藏工作台、截图 orderBack。`make plugin-preview-app` 退出 0；`Tests/PluginPreview/run-baseline-tests.sh` 全部通过（重复截图差异像素为 0、插件改动被检出、玻璃拒绝基线）。但 `Tests/PluginPreview/run-native-input-tests.sh` 失败：positive、disabled-click、not-disabled、wrong-action 四项均得到 element-not-found；missing 负向项通过。
+
+补充实验包括显式 layout/display、透明后置工作台、离屏工作台、仅插件表面的后置窗口、重新创建 hosting；均未恢复 nativeClick。这些尝试只支持“后台窗口的 SwiftUI 可访问性节点不可按原路径定位”这一现象，不足以断言框架根因或证明必须激活。不得增加重试、将动作直调冒充原生输入，或自动回退到抢前台。
+
+已撤回本轮所有运行态和候选契约改动，重新构建退出 0，并复跑原实现原生输入：positive/disabled-click/not-disabled/missing/wrong-action 五项全部 PASS。PV-T02 未完成、不放行；正式 run 仍为原行为，既有 PV-T01 改动保留。本轮临时构建日志已清理。
+
+下一排查应对相同内容、相同窗口依次单独改变 activation policy、是否激活、是否 key、ordering、occlusion，记录可访问树节点数及生命周期；每个变量独立对照，先定位触发条件再改实现。此项未执行；PV-T03 的独立 GUI runner 仍可承载现有原生输入验证，但尚无已验环境。

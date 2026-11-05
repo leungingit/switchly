@@ -7,6 +7,12 @@ enum PluginPreviewArtifactStatus: String, Codable, Equatable {
     case environmentError = "environment-error"
 }
 
+/// 场景来源只作说明，不参与视觉基线身份（基线仍是插件 ID + 场景 ID）。
+enum PluginPreviewScenarioSource: String, Codable, Equatable {
+    case derived
+    case file
+}
+
 enum PluginPreviewArtifactFailureCode: String, Codable, Equatable {
     case invalidRenderOutput = "invalid-render-output"
     case missingScreenshot = "missing-screenshot"
@@ -111,6 +117,7 @@ struct PluginPreviewArtifactIdentity: Equatable {
     let packageURL: URL
     var versions: PluginPreviewArtifactVersions
     var environment: PluginPreviewArtifactEnvironment?
+    var scenarioSource: PluginPreviewScenarioSource?
 
     init(
         scenarioID: String,
@@ -119,7 +126,8 @@ struct PluginPreviewArtifactIdentity: Equatable {
         generation: UInt64,
         packageURL: URL,
         versions: PluginPreviewArtifactVersions = .init(),
-        environment: PluginPreviewArtifactEnvironment? = nil
+        environment: PluginPreviewArtifactEnvironment? = nil,
+        scenarioSource: PluginPreviewScenarioSource? = nil
     ) {
         self.scenarioID = scenarioID
         self.pluginID = pluginID
@@ -128,6 +136,7 @@ struct PluginPreviewArtifactIdentity: Equatable {
         self.packageURL = packageURL
         self.versions = versions
         self.environment = environment
+        self.scenarioSource = scenarioSource
     }
 }
 
@@ -166,6 +175,8 @@ struct PluginPreviewArtifactReport: Codable, Equatable {
     let failure: PluginPreviewArtifactFailure?
     /// 场景声明了 steps 时的逐步 trace；无步骤的运行省略该字段，保持既有报告形状。
     var steps: [PluginPreviewStepTrace]? = nil
+    /// 旧报告没有该字段时按可选字段读取，不影响既有产物解析。
+    var scenarioSource: PluginPreviewScenarioSource? = nil
 }
 
 enum PluginPreviewArtifactValue: Codable, Equatable {

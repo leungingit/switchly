@@ -176,21 +176,32 @@ jobs:
       - name: Build Release
         env:
           SIGN_IDENTITY: ${{ steps.signing.outputs.identity || '-' }}
-        run: make dist SIGN_IDENTITY="$SIGN_IDENTITY"
+        run: |
+          set -euo pipefail
+          make dist SIGN_IDENTITY="$SIGN_IDENTITY"
+          Scripts/xcodebuild-no-warnings.sh -project Switchly.xcodeproj \
+            -scheme SwitchlyPluginPreview -configuration Release \
+            -destination 'generic/platform=macOS' -derivedDataPath DerivedData/PluginPreview \
+            CODE_SIGN_IDENTITY="$SIGN_IDENTITY" -quiet build
+          ditto DerivedData/PluginPreview/Build/Products/Release/SwitchlyPluginPreview.app build/SwitchlyPluginPreview.app
+          test -x build/SwitchlyPluginPreview.app/Contents/MacOS/SwitchlyPluginPreviewWorker
+          codesign --verify --deep --strict build/SwitchlyPluginPreview.app
 
       - name: Notarize
         id: notarize
         if: steps.signing.outputs.signed == 'true'
         run: |
           set -euo pipefail
-          ditto -c -k --keepParent build/Switchly.app build/notarize.zip
-          xcrun notarytool submit build/notarize.zip \
-            --apple-id "$APPLE_ID" \
-            --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_PASSWORD" \
-            --wait
-          xcrun stapler staple build/Switchly.app
-          rm -f build/notarize.zip
+          for app in Switchly SwitchlyPluginPreview; do
+            ditto -c -k --keepParent "build/$app.app" build/notarize.zip
+            xcrun notarytool submit build/notarize.zip \
+              --apple-id "$APPLE_ID" \
+              --team-id "$APPLE_TEAM_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --wait
+            xcrun stapler staple "build/$app.app"
+            rm -f build/notarize.zip
+          done
           echo "notarized=true" >> "$GITHUB_OUTPUT"
 
       - name: Package zip & checksum
@@ -204,7 +215,13 @@ jobs:
           (cd build && shasum -a 256 "$ASSET" > "$ASSET.sha256")
           echo "asset=build/$ASSET" >> "$GITHUB_OUTPUT"
           echo "sum=build/$ASSET.sha256" >> "$GITHUB_OUTPUT"
+          PREVIEW_ASSET="SwitchlyPluginPreview-${VERSION}.zip"
+          ditto -c -k --keepParent build/SwitchlyPluginPreview.app "build/$PREVIEW_ASSET"
+          (cd build && shasum -a 256 "$PREVIEW_ASSET" > "$PREVIEW_ASSET.sha256")
+          echo "preview_asset=build/$PREVIEW_ASSET" >> "$GITHUB_OUTPUT"
+          echo "preview_sum=build/$PREVIEW_ASSET.sha256" >> "$GITHUB_OUTPUT"
           ls -lh "build/$ASSET" "build/$ASSET.sha256"
+          ls -lh "build/$PREVIEW_ASSET" "build/$PREVIEW_ASSET.sha256"
 
       - name: Report code signature
         run: |
@@ -239,6 +256,7 @@ jobs:
               printf '> macOS Gatekeeper will warn on first launch. To open it, right-click the\n'
               printf '> app and choose *Open*, or run:\n>\n'
               printf '> ```sh\n> xattr -dr com.apple.quarantine /Applications/Switchly.app\n> ```\n>\n'
+              printf '> 对预览 App，请将上述路径替换为 `/Applications/SwitchlyPluginPreview.app`。\n>\n'
               printf '> Verify the download with:\n>\n'
               printf '> ```sh\n> shasum -a 256 -c Switchly-*.zip.sha256\n> ```\n'
             } >> "$NOTES"
@@ -254,13 +272,15 @@ jobs:
           TAG: ${{ steps.meta.outputs.tag }}
           ASSET: ${{ steps.package.outputs.asset }}
           SUM: ${{ steps.package.outputs.sum }}
+          PREVIEW_ASSET: ${{ steps.package.outputs.preview_asset }}
+          PREVIEW_SUM: ${{ steps.package.outputs.preview_sum }}
         run: |
           set -euo pipefail
           FLAGS=(--title "$TAG" --notes-file release_notes.md --verify-tag)
           case "$TAG" in
             *-*) FLAGS+=(--prerelease) ;;
           esac
-          gh release create "$TAG" "$ASSET" "$SUM" "${FLAGS[@]}"
+          gh release create "$TAG" "$ASSET" "$SUM" "$PREVIEW_ASSET" "$PREVIEW_SUM" "${FLAGS[@]}"
 
       - name: Clean up keychain
         if: always() && steps.signing.outputs.signed == 'true'

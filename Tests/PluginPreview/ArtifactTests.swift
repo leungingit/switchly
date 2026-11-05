@@ -35,10 +35,12 @@ struct ArtifactTests {
         let image = root.appendingPathComponent("capture.png")
         try png.write(to: image)
         let raw = Data(#"[{"slot":"center","node":{"type":"button","id":"go","symbol":"play","label":"Play","size":"m","enabled":false}}]"#.utf8)
-        let identity = PluginPreviewArtifactIdentity(scenarioID: "s", pluginID: "com.example.plugin", pluginVersion: "1", generation: 1, packageURL: package)
+        let identity = PluginPreviewArtifactIdentity(scenarioID: "s", pluginID: "com.example.plugin", pluginVersion: "1", generation: 1, packageURL: package,
+                                                     scenarioSource: .derived)
         let out = root.appendingPathComponent("out")
         let report = try PluginPreviewArtifactWriter().writeSuccess(identity: identity, rawJSON: raw, screenshotURL: image, outputDirectory: out)
         precondition(report.status == .passed)
+        precondition(report.scenarioSource == .derived)
         let tree = try Data(contentsOf: out.appendingPathComponent("ui-tree.json"))
         precondition(tree == raw)
         let actions = try JSONDecoder().decode(PluginPreviewArtifactActions.self, from: Data(contentsOf: out.appendingPathComponent("actions.json")))
@@ -53,6 +55,7 @@ struct ArtifactTests {
         // 无 steps 的报告不出现 steps 键；有 steps 时成功与失败报告都带 trace。
         let reportJSON = try String(contentsOf: out.appendingPathComponent("report.json"), encoding: .utf8)
         precondition(!reportJSON.contains("\"steps\""), "reports without steps keep their existing shape")
+        precondition(reportJSON.contains("\"scenarioSource\" : \"derived\""))
         let traces = [PluginPreviewStepTrace(index: 0, type: "advance", source: "clock", status: "passed", detail: nil)]
         let withSteps = try PluginPreviewArtifactWriter().writeSuccess(identity: identity, rawJSON: raw, screenshotURL: image,
             outputDirectory: root.appendingPathComponent("steps-out"), steps: traces)

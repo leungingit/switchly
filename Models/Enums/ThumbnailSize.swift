@@ -70,6 +70,13 @@ enum ThumbnailSize: String, Codable, CaseIterable, Hashable {
     }
 }
 
+/// Posted by the thumbnail service after a newly captured (or disk-recovered)
+/// image lands. Declared with the thumbnail types so card-only hosts can
+/// observe it without compiling `ThumbnailService`.
+extension Notification.Name {
+    static let thumbnailDidUpdate = Notification.Name("com.switchly.thumbnailDidUpdate")
+}
+
 /// Cache tier for window thumbnails.
 ///
 /// Resolution is a property of the cached entry: a window needs a small bitmap

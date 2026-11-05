@@ -1555,7 +1555,3 @@ enum ThumbnailError: LocalizedError {
         }
     }
 }
-
-extension Notification.Name {
-    static let thumbnailDidUpdate = Notification.Name("com.switchly.thumbnailDidUpdate")
-}

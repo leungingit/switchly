@@ -23,10 +23,18 @@ const help = `Switchly 插件 CLI
   switchly-plugin build <插件目录> [--out <输出根目录>] [--json]
   switchly-plugin verify <插件目录> --host <宿主校验工具路径>
   switchly-plugin create <目标目录> [--id <插件ID>] [--name <名称>] [--match <bundleID>] [--json]
-  switchly-plugin dev <插件目录> --preview-tool <App> --scenario <场景> [--json]
-  switchly-plugin run <插件目录> --preview-tool <App> --scenario <场景> --out <输出目录> [--json]
+  switchly-plugin inspect <插件目录> --preview-tool <App> [--json]
+  switchly-plugin dev <插件目录> --preview-tool <App> [--scenario <场景> | 覆盖项…] [--json]
+  switchly-plugin run <插件目录> --preview-tool <App> [--scenario <场景> | 覆盖项…] --out <输出目录> [--json]
   switchly-plugin baseline accept <run输出目录> --baseline-dir <基线目录> [--replace] [--json]
   switchly-plugin baseline compare <run输出目录> --baseline-dir <基线目录> --out <差异输出目录> [--tolerance 0-255] [--json]
+
+覆盖项（仅当未提供 --scenario 时可用）：
+  --locale en|zh-Hans            --appearance light|dark
+  --glass | --no-glass           --reduce-motion | --no-reduce-motion
+  --width <点数>                 --grants <a,b,c|none>
+  --set <key=value>（可重复）    --fixture <media|weather|fs>=<文件>（可重复）
+  --target-bundle-id <id>        --target-app-name <名称>
 
 说明：
   validate  检查 manifest、入口、设置唯一性、权限和静态资源路径。
@@ -34,6 +42,9 @@ const help = `Switchly 插件 CLI
             默认输出根目录为当前目录下的 .build/Plugins。
             该命令不做 TypeScript 转译或 JavaScript 打包。
   create    创建不依赖外部模板的最小零依赖插件，并立即运行 validate。
+            默认渲染到 center 槽位，创建后无需场景文件即可直接 run。
+  inspect   无 GUI 检查插件：输出版本握手结果、默认场景、可调设置与所需 fixture。
+            --json 原样输出单个 JSON 对象；否则打印人类可读摘要。
   dev       启动独立预览 App；不转译 TypeScript，也不更新插件锁。
   run       执行一次独立预览并写入调用者指定的输出目录。
   baseline  视觉基线：accept 显式接受 run 的截图为基线；compare 与基线像素比较并输出差异图。
@@ -189,13 +200,21 @@ async function createCommand(args) {
     permissions: [],
     entry: "main.js",
   }, null, 2)}\n`);
-  await writeFile(path.join(directory, "main.js"), `globalThis.__switchlyPlugin = {
+  await writeFile(path.join(directory, "main.js"), `// Switchly 插件入口：宿主在独立 worker 中加载本文件，并调用 globalThis.__switchlyPlugin。
+globalThis.__switchlyPlugin = {
+  // render 返回要展示的节点数组；"center" 是面板主体（预览可捕获的槽位），
+  // "titleAccessory" 是标题旁的附加槽位。返回空数组表示本次不渲染。
   render(ctx) {
     return [{
-      slot: "titleAccessory",
+      slot: "center",
       node: { type: "badge", value: "Ready", tone: "accent" }
     }];
   }
+
+  // 可选：onAction 接收交互动作（id 为节点 action id，value 为可选数值）。
+  // onAction(action, ctx) {
+  //   console.log("action", action.id);
+  // }
 };
 `);
   await writeFile(
@@ -253,7 +272,7 @@ export async function main(args) {
     if (args[0] === "build") return await buildCommand(args.slice(1));
     if (args[0] === "create") return await createCommand(args.slice(1));
     if (args[0] === "baseline") return await runBaselineCommand(args.slice(1));
-    if (args[0] === "dev" || args[0] === "run") {
+    if (args[0] === "dev" || args[0] === "run" || args[0] === "inspect") {
       return await runPreviewCommand(args[0], args.slice(1));
     }
     throw new Error(`未知命令：${args[0]}`);

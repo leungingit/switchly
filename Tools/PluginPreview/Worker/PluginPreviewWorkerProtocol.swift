@@ -27,6 +27,9 @@ struct PluginPreviewWorkerPayload: Codable, Equatable {
     var renderJSON: String? = nil
     /// `advance` 响应：本次推进实际触发的定时器数。
     var firedTimers: Int? = nil
+    /// 请求方显式要求时，render / action / advance 响应附带自上次以来缓冲的插件 console 行；默认不回传。
+    var includeConsole: Bool? = nil
+    var consoleLines: [PluginConsoleLine]? = nil
 }
 
 enum PluginPreviewWorkerMessageType {

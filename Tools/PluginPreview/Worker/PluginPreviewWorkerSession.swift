@@ -144,7 +144,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
         let result = await active.runtime.renderJSON(context: active.context)
         switch result {
         case .success(let json):
-            return (response(request, payload: PluginPreviewWorkerPayload(ok: true, renderJSON: json)), true)
+            return (response(request, payload: PluginPreviewWorkerPayload(ok: true, renderJSON: json, consoleLines: console(request, active))), true)
         case .failure(let error):
             let failure = runtimeFailure(error)
             diagnostics.log("render_failed code=\(failure.code)")
@@ -165,7 +165,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
         )
         switch result {
         case .success:
-            return (response(request, payload: PluginPreviewWorkerPayload(ok: true)), true)
+            return (response(request, payload: PluginPreviewWorkerPayload(ok: true, consoleLines: console(request, active))), true)
         case .failure(let error):
             let failure = runtimeFailure(error)
             diagnostics.log("action_failed code=\(failure.code)")
@@ -184,7 +184,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
             diagnostics.log("advance_failed code=timerLimit")
             return (failure(request, .timedOut), true)
         }
-        return (response(request, payload: PluginPreviewWorkerPayload(ok: true, firedTimers: fired)), true)
+        return (response(request, payload: PluginPreviewWorkerPayload(ok: true, firedTimers: fired, consoleLines: console(request, active))), true)
     }
 
     /// 单次推进上限 24 小时，防止无意义的超大推进。
@@ -197,6 +197,12 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
             return (failure(request, .invalidFixture), true)
         }
         return (response(request, payload: PluginPreviewWorkerPayload(ok: true, storageJSON: json)), true)
+    }
+
+    /// 仅在请求方要求时回传缓冲的 console 行（预览 GUI 的控制台面板）；CLI 与场景运行从不请求，
+    /// 插件 console 仍保持抑制。
+    private func console(_ request: PluginPreviewWorkerFrame, _ active: ActivePlugin) -> [PluginConsoleLine]? {
+        request.payload.includeConsole == true ? active.runtime.drainConsole() : nil
     }
 
     private enum LifecycleOperation { case suspend, resume }

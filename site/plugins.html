@@ -11,7 +11,7 @@
 <body>
 <header class="nav"><div>
   <b><a href="index.html" style="color:inherit">Switchly</a> / 插件 API</b>
-  <a href="#manifest">manifest</a><a href="#runtime">运行时</a><a href="#ctx">ctx</a><a href="#ui">UI 组件</a><a href="#permissions">权限</a><a href="#tooling">工具</a><a href="#example">示例</a>
+  <a href="#manifest">manifest</a><a href="#runtime">运行时</a><a href="#ctx">ctx</a><a href="#ui">UI 组件</a><a href="#permissions">权限</a><a href="#tooling">工具</a><a href="#preview">独立预览</a><a href="#basics">基础案例</a><a href="#example">音乐示例</a>
   <a href="https://github.com/leungingit/switchly">GitHub</a>
 </div></header>
 <main>
@@ -20,7 +20,7 @@
 <div class="note"><b>当前支持 apiVersion 1 和 2，新插件应使用 2。</b>完整中文契约见 <a href="https://github.com/leungingit/switchly/blob/main/docs/plugin-api-reference.md">公开 API 参考</a>，机器能力清单位于 <a href="https://github.com/leungingit/switchly/blob/main/plugin-api/capabilities.json">capabilities.json</a>，manifest 校验规则位于 <a href="https://github.com/leungingit/switchly/blob/main/plugin-api/manifest.schema.json">manifest.schema.json</a>。SDK 与 CLI 已以本仓库零依赖源码包提供，但<b>尚未发布到 npm</b>。</div>
 
 <img class="wide" src="images/shots/music.png" alt="内置 Music 插件在 Dock 预览中的效果">
-<p class="cap">内置 Music 插件（<code>com.switchly.music-controls</code>）在 Dock 预览中的实际效果。</p>
+<p class="cap">内置 Music 插件（<code>com.switchly.music-controls</code>）由当前源码和示例内容渲染，非实机截图。</p>
 
 <h2>概览</h2>
 <pre><code>Dock 预览 ── PluginOverlayView（渲染 UI 树，处理点击）
@@ -31,7 +31,7 @@
 
 插件目录
   开发源：../switchly-plugins/plugins/&lt;id&gt;/
-  未来预装制品：.build/Plugins/&lt;id&gt;/
+  构建时预装制品：.build/Plugins/&lt;id&gt;/
   用户安装：~/Library/Application Support/Switchly/Plugins/&lt;id&gt;/
         ├── manifest.json
         ├── main.js            # 单文件 bundle
@@ -192,7 +192,71 @@ node packages/plugin-cli/bin/switchly-plugin.js build &lt;插件目录&gt;
 node packages/plugin-cli/bin/switchly-plugin.js create &lt;目标目录&gt;</code></pre>
 <p><code>build</code> 不执行 TypeScript 转译或 JavaScript 打包，也不会伪造完整编译器。正式插件需先在自身构建流程中形成单入口 JavaScript。<code>create</code> 会生成最小 manifest、入口和双语 locale，并立即运行验证；CLI 发布包的 <code>prepack</code> 会把能力清单与 manifest Schema 复制到包内 <code>contract/</code>，因此 <code>api describe</code> 不依赖宿主仓库路径。</p>
 
-<h2 id="example">最小示例：Music 控制条</h2>
+<h2 id="preview">独立预览插件</h2>
+<p>无需运行 Switchly 本体，即可用独立预览 App 和合成数据查看插件。启动器提供模拟 Dock；场景可执行动作、导出截图与报告，并比较视觉基线。默认场景与启动器改进仍在开发中。</p>
+<p>工具包目前为本地候选，可在源码仓库运行 <code>make plugin-preview-package</code> 构建；SDK / CLI 尚未发布到 npm。真实 Dock 悬停、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。详见<a href="https://github.com/leungingit/switchly/blob/main/docs/plugin-preview-guide.md">预览使用指南</a>与<a href="https://github.com/leungingit/switchly/blob/main/docs/plugin-preview-coverage.md">覆盖矩阵</a>。</p>
+
+<h2 id="basics">基础 API 使用案例</h2>
+<p>以下案例面向第一次编写插件的开发者，使用宿主直接加载的 JavaScript。每个案例都是独立的 <code>main.js</code>；先完成案例 1，再按说明替换文件。用户插件安装后默认关闭，需要在「偏好设置 → 插件」中启用并确认所需权限。</p>
+<h3>1. 显示应用信息与响应点击</h3>
+<p>将下面的清单和入口文件放在同一个插件目录。匹配 Finder 时，卡片显示应用名称和计数；点击加号后通过私有存储保存计数，再请求重绘。无需额外权限。</p>
+<pre><code>// manifest.json
+{
+  &quot;id&quot;: &quot;com.example.counter&quot;,
+  &quot;name&quot;: { &quot;en&quot;: &quot;Counter&quot;, &quot;zh-Hans&quot;: &quot;计数器&quot; },
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;apiVersion&quot;: 2,
+  &quot;matches&quot;: [&quot;com.apple.finder&quot;],
+  &quot;permissions&quot;: [],
+  &quot;entry&quot;: &quot;main.js&quot;
+}</code></pre>
+<pre><code>// main.js
+globalThis.__switchlyPlugin = {
+  async render(ctx) {
+    const count = await ctx.storage.get(&quot;count&quot;) ?? 0;
+    return [{ slot: &quot;center&quot;, node: { type: &quot;surface&quot;, children: [
+      { type: &quot;text&quot;, value: `${ctx.app.name}: ${count}` },
+      { type: &quot;button&quot;, id: &quot;add&quot;, symbol: &quot;plus&quot;, label: &quot;增加计数&quot; }
+    ] } }];
+  },
+  async onAction(ctx, id) {
+    if (id !== &quot;add&quot;) return;
+    const count = await ctx.storage.get(&quot;count&quot;) ?? 0;
+    await ctx.storage.set(&quot;count&quot;, count + 1);
+    ctx.invalidate();
+  }
+};</code></pre>
+<h3>2. 用设置项控制展示</h3>
+<p>把下面的 settings 添加到案例 1 的 manifest 中，并用此入口替换 main.js。用户可在插件设置里关闭计数展示；未修改时使用 default。</p>
+<pre><code>// manifest.json 的 settings 字段
+&quot;settings&quot;: [{
+  &quot;key&quot;: &quot;showCount&quot;,
+  &quot;title&quot;: { &quot;en&quot;: &quot;Show count&quot;, &quot;zh-Hans&quot;: &quot;显示计数&quot; },
+  &quot;default&quot;: true
+}]</code></pre>
+<pre><code>// main.js
+globalThis.__switchlyPlugin = {
+  async render(ctx) {
+    const count = await ctx.storage.get(&quot;count&quot;) ?? 0;
+    const text = ctx.settings.showCount ? `计数：${count}` : &quot;计数已隐藏&quot;;
+    return [{ slot: &quot;center&quot;, node: { type: &quot;text&quot;, value: text } }];
+  }
+};</code></pre>
+<h3>3. 读取可选天气快照</h3>
+<p>在案例 1 的 manifest 中把 permissions 改为 ["weather.current"]，并用此入口替换 main.js。用户需要授权并开启在线天气；未授权、未配置或天气不可用时显示降级提示。插件读取宿主快照，不自行联网。</p>
+<pre><code>// main.js
+globalThis.__switchlyPlugin = {
+  render(ctx) {
+    const weather = ctx.weather.current();
+    const text = weather
+      ? `${weather.condition} · ${weather.temperature}°C`
+      : &quot;天气暂不可用&quot;;
+    return [{ slot: &quot;center&quot;, node: { type: &quot;text&quot;, value: text } }];
+  }
+};</code></pre>
+<p>保存后可使用上方 CLI 的 <code>validate</code> 校验插件目录，再通过本地文件夹安装，或使用<a href="#preview">独立预览工具</a>查看效果。<code>ctx.storage</code> 用于插件私有 JSON 数据，不能保存凭据；<code>ctx.invalidate()</code> 用于操作后请求重新渲染。</p>
+
+<h2 id="example">完整示例：Music 控制条</h2>
 <p>在 <code>../switchly-plugins/plugins/com.example.demo/</code> 开发，校验后用安装器选择本地目录；用户插件默认关闭，确认权限后才运行。</p>
 <pre><code>// manifest.json
 { "id": "com.example.demo", "name": { "en": "Demo" }, "version": "0.1.0",
@@ -203,7 +267,7 @@ node packages/plugin-cli/bin/switchly-plugin.js create &lt;目标目录&gt;</cod
 // main.js
 globalThis.__switchlyPlugin = {
   async render(ctx) {
-    const np = await ctx.media.nowPlaying();
+    const np = await ctx.media?.nowPlaying?.();
     if (!np) return [];
     return [{ slot: "center", node: { type: "surface", material: "glass", children: [
       { type: "vstack", spacing: "xs", align: "center", children: [
@@ -222,6 +286,7 @@ globalThis.__switchlyPlugin = {
   },
 
   async onAction(ctx, id, value) {
+    if (!ctx.media) return;
     if (id === "toggle")        await ctx.media.togglePlayPause();
     else if (id === "next")     await ctx.media.next();
     else if (id === "prev")     await ctx.media.previous();

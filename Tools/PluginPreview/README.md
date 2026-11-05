@@ -38,3 +38,10 @@
 - 宿主回归：`make build` 通过；`make test-unit` 执行 543 tests、8 skipped、0 failures。
 - 未完成：执行时用户本体仍在运行，为避免中断使用而未停止，因此没有做“宿主进程关闭后启动探针”的字面验收；macOS 12 与 x86_64 只完成部署目标编译/静态结论的范围内检查，未实机运行。
 - 补充验证：同日临时退出本体后再次运行探针，三种模式状态均为 0、`core_window_capture=PASS`；实际查看了 plain 与 glass 窗口图，随后重新启动原路径本体并清理临时图片。其他平台与权限限制仍未验证。
+
+
+## PV-T01 后台遮挡捕获
+
+运行 `./Tools/PluginPreview/run-t01.sh --background`。普通与玻璃窗口复用原 T01 内容，不激活、不获取 key，以 normal 层后置；蓝色合成窗口在浮动层完全覆盖目标。测试用 WindowServer 列表及 frame 检查覆盖关系，比较捕获前后的前台应用 PID，并检查截图中的 artwork、插件资产与 Scene 颜色。失败返回非零，不回退前台截图。此探针会短暂显示合成遮挡窗口，不等于无桌面干扰模式。
+
+产物仍放系统临时目录，脚本输出 evidence_root；需实际读图后清理该目录。默认不带参数的旧 T01 行为保留。后台验证只覆盖当前 GUI 会话，不证明无 WindowServer、旧系统、其他 Space 或正式自动化 run 已通过。

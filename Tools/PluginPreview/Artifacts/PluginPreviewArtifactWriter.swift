@@ -41,7 +41,8 @@ struct PluginPreviewArtifactWriter {
                 versions: identity.versions,
                 environment: identity.environment,
                 failure: nil,
-                steps: steps
+                steps: steps,
+                scenarioSource: identity.scenarioSource
             )
             written.append(try writeJSON(report, name: "report.json", directory: outputFD))
             return report
@@ -78,7 +79,8 @@ struct PluginPreviewArtifactWriter {
             versions: identity.versions,
             environment: identity.environment,
             failure: PluginPreviewArtifactFailure(failure),
-            steps: steps
+            steps: steps,
+            scenarioSource: identity.scenarioSource
         )
         _ = try writeJSON(report, name: "report.json", directory: outputFD)
         return report

@@ -94,6 +94,8 @@ private struct T01Probe {
     @MainActor
     private static func runWindow(mode: ProbeMode, fixtures: ProbeFixtures, outputDirectory: URL) throws {
         let app = NSApplication.shared
+        let background = CommandLine.arguments.contains("--background")
+        let frontBefore = NSWorkspace.shared.frontmostApplication?.processIdentifier
         app.setActivationPolicy(.accessory)
         app.appearance = NSAppearance(named: .darkAqua)
         app.finishLaunching()
@@ -113,7 +115,7 @@ private struct T01Probe {
         window.isOpaque = false
         window.hasShadow = true
         window.isReleasedWhenClosed = false
-        window.level = .floating
+        window.level = background ? .normal : .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentView = host
 
@@ -124,12 +126,36 @@ private struct T01Probe {
                 y: visible.midY - window.frame.height / 2
             ))
         }
-        window.makeKeyAndOrderFront(nil)
-        app.activate(ignoringOtherApps: true)
+        let cover = NSWindow(contentRect: window.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        cover.isReleasedWhenClosed = false
+        cover.backgroundColor = .blue
+        cover.isOpaque = true
+        cover.level = .floating
+        defer { cover.orderOut(nil); window.orderOut(nil) }
+        if background {
+            window.orderBack(nil)
+            cover.orderFront(nil)
+        } else {
+            window.makeKeyAndOrderFront(nil)
+            app.activate(ignoringOtherApps: true)
+        }
         RunLoop.main.run(until: Date().addingTimeInterval(1.5))
         window.displayIfNeeded()
         CATransaction.flush()
 
+        if background {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == frontBefore else {
+                throw ProbeError.failed("foreground changed during background capture")
+            }
+            print("background_frontmost_during=unchanged")
+            guard let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]],
+                  let coverIndex = windows.firstIndex(where: { ($0[kCGWindowNumber as String] as? Int) == cover.windowNumber }),
+                  let targetIndex = windows.firstIndex(where: { ($0[kCGWindowNumber as String] as? Int) == window.windowNumber }),
+                  coverIndex < targetIndex, cover.frame.contains(window.frame) else {
+                throw ProbeError.failed("target is not fully occluded")
+            }
+            print("background_occlusion=PASS")
+        }
         let screenshot = outputDirectory.appendingPathComponent("\(mode.rawValue)-window.png")
         try captureWindow(window, to: screenshot)
         let stats = try imageStats(at: screenshot)
@@ -143,6 +169,12 @@ private struct T01Probe {
         }
         guard stats.cyanPixels > 100 else {
             throw ProbeError.failed("window screenshot does not contain the Scene image fixture")
+        }
+        if background {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == frontBefore else {
+                throw ProbeError.failed("foreground changed after capture")
+            }
+            print("background_frontmost_after=unchanged")
         }
         print("window_capture=PASS")
         window.orderOut(nil)

@@ -135,7 +135,9 @@ targets:
       - Models/OnlineWeatherSettings.swift
       - Models/UsageStatistics.swift
       - Models/UsageStatisticsEfficiency.swift
+      - Models/WindowInfo.swift
       - Models/Workspace.swift
+      - Models/Plugins/PluginConsoleLine.swift
       - Models/Plugins/PluginGrant.swift
       - Models/Plugins/PluginManifest.swift
       - Models/Plugins/PluginScene.swift
@@ -144,6 +146,7 @@ targets:
       - Services/Plugins/PluginRegistry.swift
       - Services/Plugins/PluginPackageValidator.swift
       - Services/Plugins/PluginStorage.swift
+      - Utilities/AppIconCache.swift
       - Utilities/AppLogger.swift
       - Utilities/DesignTokens.swift
       - Utilities/MotionTokens.swift
@@ -154,6 +157,8 @@ targets:
       - Views/PluginOverlayView.swift
       - Views/PluginSceneView.swift
       - Views/PluginSceneDrawing.swift
+      - Views/ThumbnailLoadState.swift
+      - Views/DockWindowCard.swift
       - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
       - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
       - Tools/PluginPreview/Controller/PluginPreviewPipeIO.swift
@@ -161,6 +166,9 @@ targets:
       - Tools/PluginPreview/Controller/PluginPreviewWorkerSupervisor.swift
       - Tools/PluginPreview/Controller/PluginPreviewSession.swift
       - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Scenario/DefaultScenario.swift
+      - Tools/PluginPreview/Scenario/PreviewScenarioExporter.swift
+      - Tools/PluginPreview/Scenario/PluginPreviewInspect.swift
       - Tools/PluginPreview/Scenario/PluginPreviewStep.swift
       - Tools/PluginPreview/Artifacts/PluginPreviewArtifactModels.swift
       - Tools/PluginPreview/Artifacts/PluginPreviewArtifactBuilder.swift
@@ -168,8 +176,14 @@ targets:
       - Tools/PluginPreview/Artifacts/PluginPreviewArtifactWriter.swift
       - Tools/PluginPreview/Reload/PluginPreviewPackageWatcher.swift
       - Tools/PluginPreview/Entry/PreviewAppMain.swift
+      - Tools/PluginPreview/Entry/PreviewCommandLine.swift
       - Tools/PluginPreview/UI
       - path: Tools/PluginPreview/Resources/Assets.xcassets
+        buildPhase: resources
+      # 推导场景的内置合成 fixture；App 运行时复制进会话 workRoot。
+      - path: Tools/PluginPreview/Resources/PluginPreviewBuiltinMedia.json
+        buildPhase: resources
+      - path: Tools/PluginPreview/Resources/PluginPreviewBuiltinWeather.json
         buildPhase: resources
       - path: Resources/en.lproj
         buildPhase: resources
@@ -194,6 +208,7 @@ targets:
     type: tool
     platform: macOS
     sources:
+      - Models/Plugins/PluginConsoleLine.swift
       - Models/Plugins/PluginGrant.swift
       - Models/Plugins/PluginManifest.swift
       - Models/Plugins/PluginUINode.swift

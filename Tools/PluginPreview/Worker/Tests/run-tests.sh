@@ -11,6 +11,7 @@ trap cleanup EXIT
 
 cd "$repo_root"
 xcrun swiftc -swift-version 5 -D PLUGIN_PREVIEW_WORKER_TESTS \
+    Models/Plugins/PluginConsoleLine.swift \
     Models/Plugins/PluginManifest.swift \
     Models/Plugins/PluginGrant.swift \
     Models/Plugins/PluginUINode.swift \

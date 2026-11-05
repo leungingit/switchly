@@ -128,6 +128,8 @@ enum PluginPreviewSessionEvent: Equatable, Sendable {
     case action(generation: UInt64, actionID: String, value: Double?)
     case discarded(type: String, generation: UInt64, requestID: UInt64)
     case failure(PluginPreviewSessionError)
+    /// 仅 `capturesConsole` 的会话产生：一次响应带回的插件 console 行。
+    case console(generation: UInt64, lines: [PluginConsoleLine])
 }
 
 protocol PluginPreviewSessionWorker: Sendable {
@@ -173,6 +175,7 @@ actor PluginPreviewSession {
     private let worker: any PluginPreviewSessionWorker
     private let compatibility: PluginPreviewSessionCompatibility
     private let eventHandler: (@Sendable (PluginPreviewSessionEvent) -> Void)?
+    private let capturesConsole: Bool
 
     private var state: PluginPreviewSessionState = .idle
     private var generation: UInt64?
@@ -183,6 +186,7 @@ actor PluginPreviewSession {
     init(
         configuration: PluginPreviewProcessConfiguration,
         compatibility: PluginPreviewSessionCompatibility,
+        capturesConsole: Bool = false,
         eventHandler: (@Sendable (PluginPreviewSessionEvent) -> Void)? = nil
     ) {
         let supervisor = PluginPreviewWorkerSupervisor<PluginPreviewWorkerPayload>(
@@ -194,6 +198,7 @@ actor PluginPreviewSession {
         self.init(
             worker: PluginPreviewSupervisorWorker(supervisor: supervisor),
             compatibility: compatibility,
+            capturesConsole: capturesConsole,
             eventHandler: eventHandler
         )
     }
@@ -201,10 +206,12 @@ actor PluginPreviewSession {
     init(
         worker: any PluginPreviewSessionWorker,
         compatibility: PluginPreviewSessionCompatibility,
+        capturesConsole: Bool = false,
         eventHandler: (@Sendable (PluginPreviewSessionEvent) -> Void)? = nil
     ) {
         self.worker = worker
         self.compatibility = compatibility
+        self.capturesConsole = capturesConsole
         self.eventHandler = eventHandler
     }
 
@@ -443,6 +450,9 @@ actor PluginPreviewSession {
             throw PluginPreviewSessionError.notStarted
         }
         let requestID = try consumeRequestID()
+        var payload = payload
+        let wantsConsole = capturesConsole && Self.consoleRequestTypes.contains(type)
+        if wantsConsole { payload.includeConsole = true }
         let frame = PluginPreviewWorkerFrame(
             type: type,
             generation: generation,
@@ -461,6 +471,9 @@ actor PluginPreviewSession {
                 requestID: requestID,
                 generation: generation
             )
+            if wantsConsole, let lines = response.payload.consoleLines, !lines.isEmpty {
+                emit(.console(generation: generation, lines: lines))
+            }
             return response
         } catch {
             let mapped = mapError(error)
@@ -471,6 +484,10 @@ actor PluginPreviewSession {
             throw mapped
         }
     }
+
+    private static let consoleRequestTypes: Set<String> = [
+        PluginPreviewWorkerMessageType.render, PluginPreviewWorkerMessageType.action, PluginPreviewWorkerMessageType.advance,
+    ]
 
     private func validateResponse(
         _ response: PluginPreviewWorkerFrame,

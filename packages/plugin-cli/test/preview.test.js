@@ -94,6 +94,7 @@ test("dev/run 参数解析接受显式路径与等号形式", () => {
     json: true,
     previewTool: "./SwitchlyPluginPreview.app",
     scenario: "./scenario.json",
+    overrides: null,
     out: null,
     plugin: "./plugin",
   });
@@ -114,6 +115,258 @@ test("dev/run 参数解析接受显式路径与等号形式", () => {
     ]),
     /run 缺少 --out/,
   );
+});
+
+test("覆盖项解析：枚举、数字、key=value、可重复项与 fixture 形态", () => {
+  const parsed = parsePreviewArguments("dev", [
+    "./plugin",
+    "--preview-tool", "./preview.app",
+    "--locale", "zh-Hans",
+    "--appearance=dark",
+    "--glass",
+    "--reduce-motion",
+    "--width", "420",
+    "--grants", "weather.current,fs.read",
+    "--set", "show=false",
+    "--set", "mode=compact",
+    "--fixture", "media=./media.json",
+    "--fixture", "weather=./weather.json",
+    "--fixture", "fs=./fixture.json",
+    "--target-bundle-id", "com.example.target",
+    "--target-app-name", "Target",
+  ]);
+  assert.equal(parsed.scenario, null);
+  assert.deepEqual(parsed.overrides, {
+    locale: "zh-Hans",
+    appearance: "dark",
+    glass: true,
+    reduceMotion: true,
+    width: 420,
+    grants: ["weather.current", "fs.read"],
+    settings: [{ key: "show", value: "false" }, { key: "mode", value: "compact" }],
+    fixtures: [
+      { kind: "media", file: "./media.json" },
+      { kind: "weather", file: "./weather.json" },
+      { kind: "fs", file: "./fixture.json" },
+    ],
+    targetBundleID: "com.example.target",
+    targetAppName: "Target",
+  });
+
+  const base = ["./plugin", "--preview-tool", "./preview.app"];
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--locale", "fr"]),
+    /--locale 只接受 en 或 zh-Hans/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--appearance", "sepia"]),
+    /--appearance 只接受 light 或 dark/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--width", "0"]),
+    /--width 必须是大于 0 的点数/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--width", "abc"]),
+    /--width 必须是大于 0 的点数/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--set", "missing-equals"]),
+    /--set 需要 key=value/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--set", "=value"]),
+    /--set 的 key 不能为空/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "video"]),
+    /--fixture 需要 kind=<文件路径>/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "media"]),
+    /--fixture media 需要显式文件路径/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "weather"]),
+    /--fixture weather 需要显式文件路径/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "video=./video.json"]),
+    /--fixture 只接受 media、weather 或 fs/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "fs="]),
+    /--fixture fs= 需要文件路径/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "media="]),
+    /--fixture media= 需要文件路径/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--grants", "weather.current,"]),
+    /--grants 的权限列表不能有空项/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--grants", "a,a"]),
+    /--grants 的权限重复/);
+});
+
+test("覆盖项重复与布尔互斥被拒绝", () => {
+  const base = ["./plugin", "--preview-tool", "./preview.app"];
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--glass", "--no-glass"]),
+    /--glass 与 --no-glass 互斥/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--glass", "--glass"]),
+    /--glass 与 --no-glass 互斥/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--reduce-motion", "--no-reduce-motion"]),
+    /--reduce-motion 与 --no-reduce-motion 互斥/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--width", "300", "--width", "400"]),
+    /--width 不能重复/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--set", "show=true", "--set", "show=false"]),
+    /--set 的 key 重复：show/);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "media=./a.json", "--fixture", "media=./b.json"]),
+    /--fixture media 不能重复/);
+});
+
+test("--scenario 与覆盖项互斥，错误信息指出使用条件且退出码为 2", () => {
+  for (const override of [["--locale", "en"], ["--glass"], ["--width", "360"]]) {
+    try {
+      parsePreviewArguments("dev", [
+        "./plugin", "--preview-tool", "./preview.app", "--scenario", "./scenario.json", ...override,
+      ]);
+      assert.fail("应拒绝同时使用 --scenario 与覆盖项");
+    } catch (error) {
+      assert.equal(error.exitCode, 2);
+      assert.match(error.message, /覆盖项只在未提供 --scenario 时可用/);
+    }
+  }
+});
+
+test("inspect 参数解析只接受插件目录、--preview-tool 与 --json", () => {
+  assert.deepEqual(
+    parsePreviewArguments("inspect", ["./plugin", "--preview-tool", "./preview.app", "--json"]),
+    {
+      command: "inspect",
+      json: true,
+      previewTool: "./preview.app",
+      scenario: null,
+      overrides: null,
+      out: null,
+      plugin: "./plugin",
+    },
+  );
+  const base = ["./plugin", "--preview-tool", "./preview.app"];
+  assert.throws(() => parsePreviewArguments("inspect", [...base, "--scenario", "./s.json"]),
+    /inspect 不接受 --scenario/);
+  assert.throws(() => parsePreviewArguments("inspect", [...base, "--locale", "en"]),
+    /inspect 不接受覆盖项/);
+  assert.throws(() => parsePreviewArguments("inspect", [...base, "--out", "./out"]),
+    /inspect 不接受 --out/);
+});
+
+test("未提供 --scenario 时透传覆盖项，三种 fixture 文件均解析为绝对路径", async (t) => {
+  const fixture = await makeFixture(t);
+  const mediaFixture = path.join(fixture.root, "media.json");
+  const weatherFixture = path.join(fixture.root, "weather.json");
+  const fsFixture = path.join(fixture.root, "fixture.json");
+  await writeFile(mediaFixture, "{}");
+  await writeFile(weatherFixture, "{}");
+  await writeFile(fsFixture, "{}");
+  const result = invoke([
+    "dev",
+    fixture.plugin,
+    "--preview-tool", fixture.app,
+    "--locale", "zh-Hans",
+    "--appearance", "dark",
+    "--no-glass",
+    "--reduce-motion",
+    "--width", "420",
+    "--grants", "none",
+    "--set", "show=false",
+    "--fixture", `media=${mediaFixture}`,
+    "--fixture", `weather=${weatherFixture}`,
+    "--fixture", `fs=${fsFixture}`,
+    "--target-bundle-id", "com.example.target",
+    "--target-app-name", "Target",
+    "--json",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(await readFile(fixture.argsLog, "utf8")), [
+    "dev",
+    fixture.plugin,
+    "--locale", "zh-Hans",
+    "--appearance", "dark",
+    "--no-glass",
+    "--reduce-motion",
+    "--width", "420",
+    "--grants", "none",
+    "--set", "show=false",
+    "--fixture", `media=${mediaFixture}`,
+    "--fixture", `weather=${weatherFixture}`,
+    "--fixture", `fs=${fsFixture}`,
+    "--target-bundle-id", "com.example.target",
+    "--target-app-name", "Target",
+    "--json",
+  ]);
+});
+
+test("fixture 文件绝对路径在结果与诊断中脱敏", async (t) => {
+  const fixture = await makeFixture(t);
+  const mediaFixture = path.join(fixture.root, "media.json");
+  await writeFile(mediaFixture, "{}");
+  await writeFile(fixture.executable, `#!/usr/bin/env node
+const fs = require("node:fs");
+${fixture.versionPreamble}
+fs.writeFileSync(${JSON.stringify(fixture.argsLog)}, JSON.stringify(process.argv.slice(2)));
+process.stdout.write(${JSON.stringify(JSON.stringify({
+    schemaVersion: 1,
+    status: "passed",
+    paths: [mediaFixture],
+  }))});
+process.stderr.write(${JSON.stringify(mediaFixture)});
+`);
+  await chmod(fixture.executable, 0o755);
+
+  const result = invoke([
+    "dev",
+    fixture.plugin,
+    "--preview-tool", fixture.app,
+    "--fixture", `media=${mediaFixture}`,
+    "--json",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(parseSingleJSON(result.stdout).paths, ["<fixture-path>"]);
+  assert.match(result.stderr, /<fixture-path>/);
+  assert(!result.stdout.includes(fixture.root), "stdout 不应包含 fixture 路径");
+  assert(!result.stderr.includes(fixture.root), "stderr 不应包含 fixture 路径");
+});
+
+test("run 未提供 --scenario 时仍要求并透传 --out", async (t) => {
+  const fixture = await makeFixture(t);
+  const result = invoke([
+    "run",
+    fixture.plugin,
+    "--preview-tool", fixture.app,
+    "--glass",
+    "--out", fixture.out,
+    "--json",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(await readFile(fixture.argsLog, "utf8")), [
+    "run",
+    fixture.plugin,
+    "--glass",
+    "--out", fixture.out,
+    "--json",
+  ]);
+});
+
+test("--fixture 指向不存在的文件或目录时退出 2 且不启动预览工具", async (t) => {
+  const fixture = await makeFixture(t);
+  const missing = path.join(fixture.root, "missing.json");
+  for (const kind of ["media", "weather", "fs"]) {
+    const result = invoke([
+      "dev",
+      fixture.plugin,
+      "--preview-tool", fixture.app,
+      "--fixture", `${kind}=${missing}`,
+      "--json",
+    ]);
+
+    assert.equal(result.status, 2);
+    const output = parseSingleJSON(result.stdout);
+    assert.equal(output.error.code, "invalid-arguments");
+    assert.match(output.error.message, new RegExp(`--fixture ${kind} 的文件`));
+  }
+
+  const directory = path.join(fixture.root, "directory.json");
+  await mkdir(directory, { recursive: true });
+  const notFile = invoke([
+    "dev",
+    fixture.plugin,
+    "--preview-tool", fixture.app,
+    "--fixture", `media=${directory}`,
+    "--json",
+  ]);
+  assert.equal(notFile.status, 2);
+  assert.match(parseSingleJSON(notFile.stdout).error.message, /--fixture media 的文件/);
+
+  await assert.rejects(readFile(fixture.argsLog, "utf8"), { code: "ENOENT" });
 });
 
 test("dev 执行 App 内二进制并只转发一个已脱敏 JSON 结果", async (t) => {
@@ -443,4 +696,97 @@ test("兼容握手：兼容的工具正常运行，manifest 不可读时不阻�
   const result = runDev(fixture);
   assert.equal(result.status, 0);
   assert.equal(parseSingleJSON(result.stdout).status, "passed");
+});
+
+function inspectPayload() {
+  return {
+    schemaVersion: 1,
+    plugin: {
+      id: "com.example.demo",
+      name: { en: "Demo", "zh-Hans": "示例" },
+      version: "1",
+      apiVersion: 2,
+      matches: ["com.example.app"],
+      permissions: ["weather.current"],
+    },
+    defaultScenario: {
+      schemaVersion: 1,
+      id: "default",
+      environment: {
+        locale: "en", appearance: "light", glass: false, reduceMotion: true, contentWidthPoints: 360,
+      },
+      target: { bundleID: "com.example.app", appName: "Com.example.app" },
+      grants: ["weather.current"],
+      clock: { startEpochMs: 1700000000000, seed: 1 },
+    },
+    settings: [
+      { key: "show", kind: "toggle", default: true },
+      { key: "mode", kind: "select", default: "a", options: [{ value: "a" }, { value: "b" }] },
+      { key: "level", kind: "number", default: 3, min: 0, max: 10, step: 1 },
+    ],
+    fixtures: [
+      { kind: "media", needed: true, reason: "插件读取 media fixture" },
+      { kind: "weather", needed: false },
+    ],
+  };
+}
+
+function runInspect(fixture, extra = []) {
+  return invoke(["inspect", fixture.plugin, "--preview-tool", fixture.app, ...extra]);
+}
+
+test("inspect --json 原样输出预览工具的单个 JSON 对象", async (t) => {
+  const payload = inspectPayload();
+  const fixture = await makeFixture(t, { stdout: JSON.stringify(payload) });
+  const result = runInspect(fixture, ["--json"]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(parseSingleJSON(result.stdout), payload);
+  assert.deepEqual(JSON.parse(await readFile(fixture.argsLog, "utf8")), ["inspect", fixture.plugin]);
+});
+
+test("inspect 人类可读摘要覆盖插件、权限、设置、fixture、默认场景与下一步", async (t) => {
+  const fixture = await makeFixture(t, { stdout: JSON.stringify(inspectPayload()) });
+  const result = runInspect(fixture);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /插件：com\.example\.demo（示例） 版本 1（API 2）/);
+  assert.match(result.stdout, /匹配应用：com\.example\.app/);
+  assert.match(result.stdout, /权限：weather\.current/);
+  assert.match(result.stdout, /show（toggle，默认 true）/);
+  assert.match(result.stdout, /mode（select，默认 a；选项 a、b）/);
+  assert.match(result.stdout, /level（number，默认 3；范围 0–10；步长 1）/);
+  assert.match(result.stdout, /media（需用 --fixture media=<文件> 提供）：插件读取 media fixture/);
+  assert.doesNotMatch(result.stdout, /weather（需用/, "needed=false 的 fixture 不应列入所需项");
+  assert.match(result.stdout, /id=default，语言=en，外观=light，玻璃=关，减少动态效果=开，宽度=360pt/);
+  assert.match(result.stdout, /switchly-plugin run <插件目录> --preview-tool <App> --out <输出目录>/);
+});
+
+test("inspect 沿用版本握手：不兼容时不调用检查", async (t) => {
+  const fixture = await makeFixture(t, {
+    stdout: JSON.stringify(inspectPayload()),
+    version: { sdkContractHash: "sha256:stale" },
+  });
+  const result = runInspect(fixture, ["--json"]);
+
+  assert.equal(result.status, 4);
+  const output = parseSingleJSON(result.stdout);
+  assert.equal(output.error.code, "incompatible-preview-tool");
+  await assert.rejects(readFile(fixture.argsLog, "utf8"), { code: "ENOENT" });
+});
+
+test("inspect 的失败结果保留预览工具的状态与退出码映射", async (t) => {
+  const fixture = await makeFixture(t, {
+    stdout: JSON.stringify({
+      schemaVersion: 1,
+      status: "unsupported",
+      error: { code: "plugin-api-unsupported", message: "插件 API 版本不受支持" },
+    }),
+  });
+  const result = runInspect(fixture, ["--json"]);
+
+  assert.equal(result.status, 3);
+  const output = parseSingleJSON(result.stdout);
+  assert.equal(output.status, "unsupported");
+  assert.equal(output.error.code, "plugin-api-unsupported");
 });

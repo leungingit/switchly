@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression plugin-preview-package plugin-preview-toolkit-test plugin-preview-cleanroom
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-run plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression plugin-preview-package plugin-preview-toolkit-test plugin-preview-cleanroom
 
 .DEFAULT_GOAL := help
 
@@ -275,6 +275,13 @@ plugin-preview-worker: plugin-preview-generate ## Build the standalone preview w
 .PHONY: plugin-preview-build
 plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview app and worker targets
 	@echo "${GREEN}✅ Plugin preview build wiring complete${NC}"
+
+.PHONY: plugin-preview-run
+plugin-preview-run: plugin-preview-build ## Build and launch the standalone preview app (launcher window)
+	@# Same as `run`: `open` would only re-activate a running instance, so stop the old one first.
+	@-pkill -f "SwitchlyPluginPreview.app/Contents/MacOS" 2>/dev/null || true
+	@sleep 1
+	@open -n "$(PLUGIN_PREVIEW_DERIVED_DATA)/Build/Products/Debug/$(PLUGIN_PREVIEW_SCHEME).app"
 
 .PHONY: plugin-preview-contract-check
 plugin-preview-contract-check: ## Verify contract hash, renderer revision and shared-source guard
