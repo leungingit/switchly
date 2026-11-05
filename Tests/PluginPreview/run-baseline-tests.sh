@@ -10,7 +10,7 @@ FIXTURE="$ROOT/Tests/PluginPreview/Fixtures/native-input"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/switchly-baseline.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 failures=0
-cli() { node "$ROOT/packages/plugin-cli/bin/switchly-plugin.js" "$@"; }
+cli() { node "$ROOT/Plugins/cli/bin/switchly-plugin.js" "$@"; }
 
 # 用 steps 为空的确定时钟场景：夹具场景含原生点击步骤，这里只取其环境与时钟。
 python3 -I - "$FIXTURE/scenario.json" "$WORK" <<'PY'

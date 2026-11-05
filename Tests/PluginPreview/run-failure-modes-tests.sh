@@ -43,7 +43,7 @@ PY
 # 名称 插件 场景 期望退出码 期望状态 期望错误码（passed 用 -）
 expect_case() {
   local name="$1" plugin="$2" scn="$3" want_exit="$4" want_status="$5" want_code="$6" out code got
-  out="$(node "$ROOT/packages/plugin-cli/bin/switchly-plugin.js" run "$WORK/plugin-$plugin" --preview-tool "$APP" --scenario "$WORK/scn-$scn.json" --out "$WORK/o-$name" --json 2>/dev/null)"
+  out="$(node "$ROOT/Plugins/cli/bin/switchly-plugin.js" run "$WORK/plugin-$plugin" --preview-tool "$APP" --scenario "$WORK/scn-$scn.json" --out "$WORK/o-$name" --json 2>/dev/null)"
   code=$?
   got="$(printf '%s' "$out" | python3 -I -c '
 import json, sys
@@ -75,7 +75,7 @@ expect_case "插件死循环（被终止）"     loop        ok                 
 mkdir -p "$WORK/private-tmp"
 for pair in "good ok" "throws ok" "empty ok" "slotonly ok"; do
   set -- $pair
-  TMPDIR="$WORK/private-tmp" node "$ROOT/packages/plugin-cli/bin/switchly-plugin.js" run "$WORK/plugin-$1" --preview-tool "$APP" \
+  TMPDIR="$WORK/private-tmp" node "$ROOT/Plugins/cli/bin/switchly-plugin.js" run "$WORK/plugin-$1" --preview-tool "$APP" \
     --scenario "$WORK/scn-$2.json" --out "$WORK/o-tmp-$1" --json >/dev/null 2>&1
 done
 leftover="$(ls -A "$WORK/private-tmp")"

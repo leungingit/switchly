@@ -38,12 +38,12 @@ targets:
     type: application
     platform: macOS
     sources:
-      - App
-      - Models
-      - ViewModels
-      - Views
-      - Services
-      - Utilities
+      - Sources/App
+      - Sources/Models
+      - Sources/ViewModels
+      - Sources/Views
+      - Sources/Services
+      - Sources/Utilities
       - path: Resources/Assets.xcassets
         buildPhase: resources
       - path: Resources/en.lproj
@@ -121,44 +121,44 @@ targets:
         outputFiles:
           - "$(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/SwitchlyPluginPreviewWorker"
     sources:
-      - Models/AppSettings.swift
-      - Models/DockLayoutSpec.swift
-      - Models/Enums/GridBackground.swift
-      - Models/Enums/GridStyle.swift
-      - Models/Enums/NotificationStrategy.swift
-      - Models/Enums/PreviewHotspotEdge.swift
-      - Models/Enums/PreviewStrategy.swift
-      - Models/Enums/ShortcutPrefix.swift
-      - Models/Enums/ThumbnailSize.swift
-      - Models/MenuBarIcon.swift
-      - Models/MonitoredApp.swift
-      - Models/OnlineWeatherSettings.swift
-      - Models/UsageStatistics.swift
-      - Models/UsageStatisticsEfficiency.swift
-      - Models/WindowInfo.swift
-      - Models/Workspace.swift
-      - Models/Plugins/PluginConsoleLine.swift
-      - Models/Plugins/PluginGrant.swift
-      - Models/Plugins/PluginManifest.swift
-      - Models/Plugins/PluginScene.swift
-      - Models/Plugins/PluginUINode.swift
-      - Models/Plugins/SceneEvaluator.swift
-      - Services/Plugins/PluginRegistry.swift
-      - Services/Plugins/PluginPackageValidator.swift
-      - Services/Plugins/PluginStorage.swift
-      - Utilities/AppIconCache.swift
-      - Utilities/AppLogger.swift
-      - Utilities/DesignTokens.swift
-      - Utilities/MotionTokens.swift
-      - Utilities/GlassEffect.swift
-      - Utilities/NativeCrystalContainer.swift
-      - Utilities/ThemeApplier.swift
-      - Views/PluginSlotSurface.swift
-      - Views/PluginOverlayView.swift
-      - Views/PluginSceneView.swift
-      - Views/PluginSceneDrawing.swift
-      - Views/ThumbnailLoadState.swift
-      - Views/DockWindowCard.swift
+      - Sources/Models/AppSettings.swift
+      - Sources/Models/DockLayoutSpec.swift
+      - Sources/Models/Enums/GridBackground.swift
+      - Sources/Models/Enums/GridStyle.swift
+      - Sources/Models/Enums/NotificationStrategy.swift
+      - Sources/Models/Enums/PreviewHotspotEdge.swift
+      - Sources/Models/Enums/PreviewStrategy.swift
+      - Sources/Models/Enums/ShortcutPrefix.swift
+      - Sources/Models/Enums/ThumbnailSize.swift
+      - Sources/Models/MenuBarIcon.swift
+      - Sources/Models/MonitoredApp.swift
+      - Sources/Models/OnlineWeatherSettings.swift
+      - Sources/Models/UsageStatistics.swift
+      - Sources/Models/UsageStatisticsEfficiency.swift
+      - Sources/Models/WindowInfo.swift
+      - Sources/Models/Workspace.swift
+      - Sources/Models/Plugins/PluginConsoleLine.swift
+      - Sources/Models/Plugins/PluginGrant.swift
+      - Sources/Models/Plugins/PluginManifest.swift
+      - Sources/Models/Plugins/PluginScene.swift
+      - Sources/Models/Plugins/PluginUINode.swift
+      - Sources/Models/Plugins/SceneEvaluator.swift
+      - Sources/Services/Plugins/PluginRegistry.swift
+      - Sources/Services/Plugins/PluginPackageValidator.swift
+      - Sources/Services/Plugins/PluginStorage.swift
+      - Sources/Utilities/AppIconCache.swift
+      - Sources/Utilities/AppLogger.swift
+      - Sources/Utilities/DesignTokens.swift
+      - Sources/Utilities/MotionTokens.swift
+      - Sources/Utilities/GlassEffect.swift
+      - Sources/Utilities/NativeCrystalContainer.swift
+      - Sources/Utilities/ThemeApplier.swift
+      - Sources/Views/PluginSlotSurface.swift
+      - Sources/Views/PluginOverlayView.swift
+      - Sources/Views/PluginSceneView.swift
+      - Sources/Views/PluginSceneDrawing.swift
+      - Sources/Views/ThumbnailLoadState.swift
+      - Sources/Views/DockWindowCard.swift
       - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
       - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
       - Tools/PluginPreview/Controller/PluginPreviewPipeIO.swift
@@ -208,19 +208,19 @@ targets:
     type: tool
     platform: macOS
     sources:
-      - Models/Plugins/PluginConsoleLine.swift
-      - Models/Plugins/PluginGrant.swift
-      - Models/Plugins/PluginManifest.swift
-      - Models/Plugins/PluginUINode.swift
-      - Models/Plugins/PluginScene.swift
-      - Services/Plugins/PluginRegistry.swift
-      - Services/Plugins/PluginPackageValidator.swift
-      - Services/Plugins/PluginRuntime.swift
-      - Services/Plugins/PluginVirtualClock.swift
-      - Services/Plugins/PluginFileReader.swift
-      - Services/Plugins/PluginStorage.swift
-      - Services/Plugins/MediaBridge.swift
-      - Utilities/AppLogger.swift
+      - Sources/Models/Plugins/PluginConsoleLine.swift
+      - Sources/Models/Plugins/PluginGrant.swift
+      - Sources/Models/Plugins/PluginManifest.swift
+      - Sources/Models/Plugins/PluginUINode.swift
+      - Sources/Models/Plugins/PluginScene.swift
+      - Sources/Services/Plugins/PluginRegistry.swift
+      - Sources/Services/Plugins/PluginPackageValidator.swift
+      - Sources/Services/Plugins/PluginRuntime.swift
+      - Sources/Services/Plugins/PluginVirtualClock.swift
+      - Sources/Services/Plugins/PluginFileReader.swift
+      - Sources/Services/Plugins/PluginStorage.swift
+      - Sources/Services/Plugins/MediaBridge.swift
+      - Sources/Utilities/AppLogger.swift
       - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
       - Tools/PluginPreview/Scenario/PreviewScenario.swift
       - Tools/PluginPreview/Scenario/PluginPreviewStep.swift

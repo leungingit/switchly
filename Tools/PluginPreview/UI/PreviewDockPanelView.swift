@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// 模拟 Dock 的浮层：与本体 Dock 预览一致的薄面板壳 —— 标题头 + 窗口条 + 窗口卡片，
-/// 并按 `Views/DockPreviewView.swift` 的规则挂载插件槽位。
+/// 并按 `Sources/Views/DockPreviewView.swift` 的规则挂载插件槽位。
 ///
 /// 这里只组装共享组件（`DockWindowCard`、`PluginSlotSurface`、材质与动效令牌），
 /// 不复制卡片或插件渲染实现；窗口、缩略图、交通灯都是模拟数据。

@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--output', type=Path, default=ROOT / '.build' / 'Plugins')
     parser.add_argument('--empty', action='store_true', help='仅供明确的无预装开发验证')
     args = parser.parse_args()
-    lock = json.loads((ROOT / 'distribution' / 'bundled-plugins.lock.json').read_text())
+    lock = json.loads((ROOT / 'Plugins' / 'bundled-plugins.lock.json').read_text())
     selected = [] if args.empty else lock['plugins']
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='switchly-plugins-') as temporary:

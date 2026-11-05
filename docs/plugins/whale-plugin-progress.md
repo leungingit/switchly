@@ -24,9 +24,9 @@
 | M10 | 2026-10-30 | 原生 CALayer 小样已验证待机、展开、保持、收起、眨眼、浅深背景与减少动态效果静帧 | `swiftc` 编译；`--shots` 输出 `PASS staticFrames=9 reducedMotionAnimations=0`；九状态汇总与 24 帧运行时图层取样均已实际查看。属于独立小样，不能代表 Dock 集成通过 |
 | M11 | 2026-10-30 | 旧 HTML 横幅单独缩放，过渡帧与手分离；原生版由双手旋转后的握持点推导横幅位置与宽度 | 覆盖旧 HTML 动作可用判断；361 点最大横向误差 `1.1368683772161603e-13` 源图像素，只是模型空间几何验证 |
 | M12 | 2026-10-30 | 小样显式暂停、恢复、减少动态效果分支、关闭清理通过；进程资源采样较低 | `pauseDrift=0.0`，`layersDetached=true textureReferencesReleased=true`；启动 CPU 最高 5.2%，随后采样 0–0.6%，载入后内存 39–40 MB；两个角色同时播放。不包含 GPU / WindowServer，屏幕帧率未验 |
-| M13 | 2026-10-30 | 天气分支 `e63c3fc` 已有通用 Scene，使用 Canvas / TimelineView；与 CALayer 提案存在渲染路径和预算差异 | 依据该分支 `docs/scene-api-alignment.md`；后续沿现有引擎扩展，先明确纹理预算、后台解码、可见性和播放路径，不并行重写 |
+| M13 | 2026-10-30 | 天气分支 `e63c3fc` 已有通用 Scene，使用 Canvas / TimelineView；与 CALayer 提案存在渲染路径和预算差异 | 依据该分支 `docs/plugins/scene-api-alignment.md`；后续沿现有引擎扩展，先明确纹理预算、后台解码、可见性和播放路径，不并行重写 |
 | M14 | 2026-10-30 | 头饰顶部平切来自拆层工具头部裁剪余量不足，原图完整；小样已从源图补顶 | 源图区域 x=500..760、y=160..215；最终图已查看。正式流水线需修裁剪策略；不改远端工具代码来掩盖原始问题 |
-| M15 | 2026-10-30 | 现有 Scene 不能直接承载常驻立绘：只有一次性 `sprite`，减少动态效果时会跳过；需补通用静态图片能力 | 天气分支 `Models/Plugins/PluginScene.swift:338` 与 `Views/PluginSceneDrawing.swift:130`；`SceneAssets` 首次同步读图且无尺寸 / 内存预算。迁移前应复用该入口补能力，不能用无限延长精灵播放绕过静态图片缺口 |
+| M15 | 2026-10-30 | 现有 Scene 不能直接承载常驻立绘：只有一次性 `sprite`，减少动态效果时会跳过；需补通用静态图片能力 | 天气分支 `Sources/Models/Plugins/PluginScene.swift:338` 与 `Sources/Views/PluginSceneDrawing.swift:130`；`SceneAssets` 首次同步读图且无尺寸 / 内存预算。迁移前应复用该入口补能力，不能用无限延长精灵播放绕过静态图片缺口 |
 | M16 | 2026-10-30 | 鲸娘插件 v0 已在 scene 分支实现：`Resources/Plugins/com.switchly.whale`，三种动作（待机打盹 / 拉横幅 / 忙碌）由运行中、未读数决定；引擎新增 `image` 图层与纹理预算（D15） | 单测通过，浅深色快照已查看；会话数暂由设置项演示，`fs.read` 未做，真实 Dock 悬停、帧率与 GPU 成本未验 |
 
 原始尺寸估算为 1448×1086；最终小样使用 1280×1280 画布与裁剪素材。180pt 仅在独立小样中核验，不能将最初估算当作真实 Dock 测量。

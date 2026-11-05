@@ -32,11 +32,11 @@
 | 现状 | 证据 | 迁移处理 |
 | --- | --- | --- |
 | 三个插件已经是 manifest + JS + 资产 | `Resources/Plugins/com.switchly.music-controls`、`com.switchly.weather-gacha`、`com.switchly.whale` | 原包迁移，保留 ID 与行为 |
-| 内置与用户目录经过同一个 Registry | `Services/Plugins/PluginRegistry.swift` | 保留加载链，扩展安装记录与版本选择 |
-| 每插件 JSC VM、私有串行队列、按需实例化 | `Services/Plugins/PluginRuntime.swift`、`PluginHost.swift` | 保留第一期运行模型，修补预算及生命周期 |
-| manifest、UI、Scene 已有强类型解码与限额 | `Models/Plugins/*`、`Views/PluginSceneDrawing.swift` | 作为协议收敛基础；不要新造一套 Scene 引擎 |
+| 内置与用户目录经过同一个 Registry | `Sources/Services/Plugins/PluginRegistry.swift` | 保留加载链，扩展安装记录与版本选择 |
+| 每插件 JSC VM、私有串行队列、按需实例化 | `Sources/Services/Plugins/PluginRuntime.swift`、`PluginHost.swift` | 保留第一期运行模型，修补预算及生命周期 |
+| manifest、UI、Scene 已有强类型解码与限额 | `Sources/Models/Plugins/*`、`Sources/Views/PluginSceneDrawing.swift` | 作为协议收敛基础；不要新造一套 Scene 引擎 |
 | 文件能力按授权目录只读，并设调用与扫描预算 | `PluginFileReader.swift`、`PluginManifest.swift` | 保留限制，升级授权身份和目录范围绑定 |
-| 设置兼容与权限状态已经持久化 | `Models/AppSettings.swift`、`PluginGrant.swift` | 迁移旧键，继续通过 SettingsService 管理 |
+| 设置兼容与权限状态已经持久化 | `Sources/Models/AppSettings.swift`、`PluginGrant.swift` | 迁移旧键，继续通过 SettingsService 管理 |
 
 ### 2.2 需要解决的问题
 
@@ -89,14 +89,14 @@
 
 ```text
 switchly/
-  Models/Plugins/                 # 协议模型、安装状态、授权模型
-  Services/Plugins/               # Registry、Host、Runtime、安装及授权
-  Views/                         # 原生通用组件与管理页
-  plugin-api/                     # 拟新增：协议、能力清单、兼容规则
-  packages/plugin-sdk/            # 拟新增：生成类型、definePlugin、UI 构建器
-  packages/plugin-cli/            # 拟新增：开发和契约检查
-  packages/create-switchly-plugin/# 拟新增：最小模板
-  distribution/bundled-plugins.lock.json
+  Sources/Models/Plugins/                 # 协议模型、安装状态、授权模型
+  Sources/Services/Plugins/               # Registry、Host、Runtime、安装及授权
+  Sources/Views/                         # 原生通用组件与管理页
+  Plugins/api/                     # 拟新增：协议、能力清单、兼容规则
+  Plugins/sdk/            # 拟新增：生成类型、definePlugin、UI 构建器
+  Plugins/cli/            # 拟新增：开发和契约检查
+  Plugins/create-switchly-plugin/# 拟新增：最小模板
+  Plugins/bundled-plugins.lock.json
   Tests/...                      # 通用行为测试，无具体插件算法
 
 switchly-plugins/
@@ -171,7 +171,7 @@ SDK 与协议由宿主维护、发布，插件仓库只消费版本化 SDK；不
 
 ```text
 Application Support/Switchly/Plugins/
-  packages/<plugin-id>/<version>-<digest>/
+  Plugins/<plugin-id>/<version>-<digest>/
   staging/<transaction-id>/
   installed.json                 # 包记录与活动指针，原子写入
 ```
@@ -263,7 +263,7 @@ Application Support/Switchly/Plugins/
 
 ### 7.1 唯一契约来源
 
-建议 `plugin-api/` 保存版本化协议描述：manifest、Context、UI/Scene 数据结构、动作、错误、生命周期、权限、预算与 capability 状态。生成 JSON Schema、TypeScript 类型、公开文档和一致性测试数据；Swift 负责语义与安全校验，并对同一组正反例做互操作测试。
+建议 `Plugins/api/` 保存版本化协议描述：manifest、Context、UI/Scene 数据结构、动作、错误、生命周期、权限、预算与 capability 状态。生成 JSON Schema、TypeScript 类型、公开文档和一致性测试数据；Swift 负责语义与安全校验，并对同一组正反例做互操作测试。
 
 不要求一次写出能自动生成全部 Swift Runtime 的代码生成器。先定义最小契约格式与共享测试样本，防止“Schema 合法、Swift 拒绝”或相反；逐步生成机械部分。
 
@@ -400,7 +400,7 @@ Application Support/Switchly/Plugins/
 ## 12. 本次证据与交付自检
 
 - 已执行 `git status --short`（调研开始时为空），定向 `rg --files`、`rg -n` 与源码读取，核验以上实现路径；读取当前项目约定及通用交付清单。
-- 定向搜索未找到 SDK/CLI 的 `package.json`、TS 工程；`site/plugins.html` 亦注明 SDK/CLI 尚未发布。部分设计记录称 fs.read 未实现，但当前源码已有实现，本文按源码记录现状，不将旧进度文档当作当前事实。
+- 定向搜索未找到 SDK/CLI 的 `package.json`、TS 工程；`Website/plugins.html` 亦注明 SDK/CLI 尚未发布。部分设计记录称 fs.read 未实现，但当前源码已有实现，本文按源码记录现状，不将旧进度文档当作当前事实。
 - 已通过官方网页核对 Magpie、Raycast、VS Code 所引用机制；本文不对闭源内部实现作未经证实的判断。
 - 本次仅增加方案文档，未改 Swift、工程、权限、用户配置或插件包；构建、单测、当前界面截图与性能测试不属于本次执行证据，实施阶段必须另行完成。
 - 文档修改交付核验：内容与路径、Markdown 链接、`git diff --check`、最终 `git status --short`；具体命令结果在交付答复记录。无调试截图或临时脚本落库。

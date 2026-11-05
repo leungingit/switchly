@@ -19,12 +19,12 @@ xcrun swiftc \
     -swift-version 5 \
     -target "$arch-apple-macosx12.0" \
     -parse-as-library \
-    Models/Plugins/PluginScene.swift \
-    Models/Plugins/PluginUINode.swift \
-    Models/Plugins/PluginManifest.swift \
-    Services/Plugins/PluginRegistry.swift \
-    Services/Plugins/PluginPackageValidator.swift \
-    Utilities/AppLogger.swift \
+    Sources/Models/Plugins/PluginScene.swift \
+    Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginManifest.swift \
+    Sources/Services/Plugins/PluginRegistry.swift \
+    Sources/Services/Plugins/PluginPackageValidator.swift \
+    Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Controller/PluginPreviewProcessTypes.swift \
     Tools/PluginPreview/Controller/PluginPreviewPipeIO.swift \

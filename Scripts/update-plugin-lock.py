@@ -32,5 +32,5 @@ dirty = subprocess.run(['git', 'status', '--porcelain'], cwd=source_repository, 
 if head.returncode == 0 and dirty.returncode == 0 and not dirty.stdout.strip():
     revision = head.stdout.strip()
 lock = {'schemaVersion': 1, 'repository': 'leungingit/switchly-plugins', 'sourceRevision': revision, 'plugins': items}
-(ROOT / 'distribution' / 'bundled-plugins.lock.json').write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
+(ROOT / 'Plugins' / 'bundled-plugins.lock.json').write_text(json.dumps(lock, ensure_ascii=False, indent=2) + '\n')
 print('已显式锁定 ' + str(len(items)) + ' 个预装插件；来源提交：' + (revision or '本地未提交，发布前需重新锁定'))

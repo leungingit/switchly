@@ -30,8 +30,8 @@
 
 交付证据：
 
-- [脱敏结构化实验记录](research/desktop-grid/control-observations.json)：保留实际观察，不含窗口标题、显示器 UUID、用户应用名或截图。
-- [复现夹具与说明](research/desktop-grid/control-fixture/README.md)：编译到临时目录，所有测试通过控制按钮显式触发。
+- [脱敏结构化实验记录](../research/desktop-grid/control-observations.json)：保留实际观察，不含窗口标题、显示器 UUID、用户应用名或截图。
+- [复现夹具与说明](../research/desktop-grid/control-fixture/README.md)：编译到临时目录，所有测试通过控制按钮显式触发。
 - 原始日志及截图留在 `/tmp/switchly-grid-evaluation/`，没有加入仓库。临时文件可能被系统清理，不作为永久可用链接。
 
 ## 3. 窗口归属与生命周期
@@ -129,7 +129,7 @@ Bridged 路径使用 `SLSBridgedMoveWindowsToManagedSpaceOperation` 与内部异
 
 ## 9. R2 闭环切换实验（2026-10-21）
 
-目的：补上 §5 缺失的闭环证据。新探针 [switch-closed-loop-probe.m](research/desktop-grid/control-fixture/switch-closed-loop-probe.m) 在原桌面和目标桌面各放一个独立进程的夹具窗口（目标夹具用已验证的 bridged move 放置），对每次尝试同时记录五个信号：(1) 公开 `NSWorkspaceActiveSpaceDidChangeNotification`；(2) 夹具进程自报 `isOnActiveSpace` 与 occlusion；(3) `CGWindowListCopyWindowInfo(OnScreenOnly)` 中原桌面夹具消失、目标夹具出现；(4) 向前台夹具投递 F19 的输入路由；(5) SkyLight getter（仅辅助，不计成功）。成功要求 1–3 同时成立，且 4 适用时通过。原始结果与判定规则见 [r2-switch-observations.json](research/desktop-grid/r2-switch-observations.json)。
+目的：补上 §5 缺失的闭环证据。新探针 [switch-closed-loop-probe.m](../research/desktop-grid/control-fixture/switch-closed-loop-probe.m) 在原桌面和目标桌面各放一个独立进程的夹具窗口（目标夹具用已验证的 bridged move 放置），对每次尝试同时记录五个信号：(1) 公开 `NSWorkspaceActiveSpaceDidChangeNotification`；(2) 夹具进程自报 `isOnActiveSpace` 与 occlusion；(3) `CGWindowListCopyWindowInfo(OnScreenOnly)` 中原桌面夹具消失、目标夹具出现；(4) 向前台夹具投递 F19 的输入路由；(5) SkyLight getter（仅辅助，不计成功）。成功要求 1–3 同时成立，且 4 适用时通过。原始结果与判定规则见 [r2-switch-observations.json](../research/desktop-grid/r2-switch-observations.json)。
 
 ### 9.1 环境与前置条件
 
@@ -169,7 +169,7 @@ Bridged 路径使用 `SLSBridgedMoveWindowsToManagedSpaceOperation` 与内部异
 
 ## 10. R2 有权限补测（2026-10-21）
 
-目的：补测 §9 因缺权限或快捷键未启用而无法评估的路径（A、B2、信号 4、D）。原始数据、判定规则和逐次信号见 [r2b-switch-observations.json](research/desktop-grid/r2b-switch-observations.json)；驱动脚本见 [run-r2b.sh](research/desktop-grid/control-fixture/run-r2b.sh)。
+目的：补测 §9 因缺权限或快捷键未启用而无法评估的路径（A、B2、信号 4、D）。原始数据、判定规则和逐次信号见 [r2b-switch-observations.json](../research/desktop-grid/r2b-switch-observations.json)；驱动脚本见 [run-r2b.sh](../research/desktop-grid/control-fixture/run-r2b.sh)。
 
 ### 10.1 环境与约束
 
@@ -234,7 +234,7 @@ Bridged 路径使用 `SLSBridgedMoveWindowsToManagedSpaceOperation` 与内部异
 
 ## 11. 手势捕获可行性（R3）
 
-范围：在 macOS 27.0.1（arm64）上，普通进程能否拿到触控板四指原始触点，如何识别八方向，以及与系统四指手势的关系。只读检查，没有修改任何系统偏好、快捷键或 TCC，没有切换桌面。探针见 [gesture-probe.m](research/desktop-grid/control-fixture/gesture-probe.m)，构建见 `build-gesture-probe.sh`。标注：**实测**＝本机运行得到；**推断**＝来自资料或结构推理，未在本机验证。
+范围：在 macOS 27.0.1（arm64）上，普通进程能否拿到触控板四指原始触点，如何识别八方向，以及与系统四指手势的关系。只读检查，没有修改任何系统偏好、快捷键或 TCC，没有切换桌面。探针见 [gesture-probe.m](../research/desktop-grid/control-fixture/gesture-probe.m)，构建见 `build-gesture-probe.sh`。标注：**实测**＝本机运行得到；**推断**＝来自资料或结构推理，未在本机验证。
 
 ### 11.1 已验证事实（实测）
 

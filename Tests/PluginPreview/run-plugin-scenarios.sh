@@ -37,7 +37,7 @@ for scenario in sorted(glob.glob(os.path.join(root, "**", "*.json"), recursive=T
 PY
 
 run_once() { # 名称 插件目录 场景
-  node "$ROOT/packages/plugin-cli/bin/switchly-plugin.js" run "$2" --preview-tool "$APP" --scenario "$3" --out "$WORK/$1" --json >"$WORK/$1.json" 2>/dev/null
+  node "$ROOT/Plugins/cli/bin/switchly-plugin.js" run "$2" --preview-tool "$APP" --scenario "$3" --out "$WORK/$1" --json >"$WORK/$1.json" 2>/dev/null
   local code=$?
   if [ "$code" -eq 4 ]; then echo "SKIP: 预览环境不可用（无图形会话或无屏幕录制授权）" >&2; exit 77; fi
   return "$code"

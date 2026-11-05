@@ -69,7 +69,7 @@ jobs:
 
       - name: Read external plugin revision
         id: plugin-lock
-        run: python3 -c 'import json, os; d=json.load(open("distribution/bundled-plugins.lock.json")); print("ref=" + (d.get("sourceRevision") or ""), file=open(os.environ["GITHUB_OUTPUT"], "a"))'
+        run: python3 -c 'import json, os; d=json.load(open("Plugins/bundled-plugins.lock.json")); print("ref=" + (d.get("sourceRevision") or ""), file=open(os.environ["GITHUB_OUTPUT"], "a"))'
 
       - name: 检查私有插件仓库读取凭据
         env:

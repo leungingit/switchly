@@ -268,7 +268,7 @@
 
 | # | 设计稿 / 原型 | 本文处理 |
 | --- | --- | --- |
-| 1 | HANDOFF §2 把 `Views/OnboardingView.swift` 写成“新引导窗口” | 该文件已存在（首启权限引导）。九宫格前置条件引导应扩展它或新增独立视图，不得再创建一个同名文件 |
+| 1 | HANDOFF §2 把 `Sources/Views/OnboardingView.swift` 写成“新引导窗口” | 该文件已存在（首启权限引导）。九宫格前置条件引导应扩展它或新增独立视图，不得再创建一个同名文件 |
 | 2 | D21 要求“单页纵向分区”，现有 `PreferencesView` 是四个标签页 | 九宫格分区按单页纵向实现；是否改造整个设置窗口为单页需另行确认，本文不擅自改既有标签页结构 |
 | 3 | 设置轴含独立 `rm`（0/1） | 原生复用系统“减少动态效果”偏好（`MotionTokens.reduceMotion`），不新增 app 内开关，避免与系统设置重复 |
 | 4 | `tokens.css` 里样式 B 的最大宽为 940px，HANDOFF 与资产规范写 900 | 以 900pt 为准；940 视为原型遗留值，实施时不采用 |
@@ -279,6 +279,6 @@
 ## 14. 验收边界
 
 - 本文是设计契约，不是实现证据。原型截图、无头浏览器结果不能替代原生材质、AX 枚举、真实桌面切换与多显示器验证。
-- 实施验收以 `make build`、`make test-unit`、`./verify.sh` 为门禁，并按 [manual-checks](../.taste-design/work/qa/manual-checks.md) 在目标 Mac 上逐项人工确认。
+- 实施验收以 `make build`、`make test-unit`、`./verify.sh` 为门禁，并按 [manual-checks](../../.taste-design/work/qa/manual-checks.md) 在目标 Mac 上逐项人工确认。
 - 未执行或无法执行的项目必须写明原因，不得报告为通过。
 - 原生行为证据、截图与性能数据随实施 PR 提交；过程截图放系统临时目录，不入库。

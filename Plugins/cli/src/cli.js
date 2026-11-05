@@ -65,7 +65,7 @@ async function loadCapabilities() {
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     // 源码检出首次调用尚未 prepack；发行包始终带 contract。
-    return JSON.parse(await readFile(new URL("../../../plugin-api/capabilities.json", import.meta.url), "utf8"));
+    return JSON.parse(await readFile(new URL("../../api/capabilities.json", import.meta.url), "utf8"));
   }
 }
 

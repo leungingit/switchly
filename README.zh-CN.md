@@ -22,7 +22,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT 开源协议"></a>
 </p>
 
-![Switchly 窗口预览与选择流程示意](docs/images/hero-zh.svg)
+![Switchly 窗口预览与选择流程示意](docs/assets/images/hero-zh.svg)
 
 *上图为使用示例内容绘制的功能示意，非实机截图。本文介绍当前源码中的能力，已发布版本可能有所不同。*
 
@@ -34,7 +34,7 @@
 
 ## 三种方式，回到手上的事
 
-![预览面板、Dock 悬停与工作区三种使用方式示意](docs/images/workflow-zh.svg)
+![预览面板、Dock 悬停与工作区三种使用方式示意](docs/assets/images/workflow-zh.svg)
 
 ### 切换之前，先看见窗口
 
@@ -58,7 +58,7 @@ Dock 卡片可选择横向、纵向或网格布局，窗口较多时可以滚动
 
 ## Dock 预览插件
 
-![Dock 预览中的内置音乐插件：封面、曲目、播放与喜欢控制](site/images/shots/music.png)
+![Dock 预览中的内置音乐插件：封面、曲目、播放与喜欢控制](Website/images/shots/music.png)
 
 *图为使用示例内容由当前源码渲染，非实机截图。*
 
@@ -66,15 +66,15 @@ Dock 卡片可选择横向、纵向或网格布局，窗口较多时可以滚动
 
 在「偏好设置 → 插件」中搜索和筛选插件、查看详情与权限、安装本地文件夹、重新加载或卸载用户插件。用户插件默认关闭，更新后需要重新授权，不能覆盖同 ID 的预装插件。插件不能直接联网或启动进程；读取目录需要显式授权。
 
-预装插件源码与素材位于独立的 [switchly-plugins 仓库](https://github.com/leungingit/switchly-plugins)，App 使用哈希锁定的预装制品，支持离线使用。本地 SDK 和 CLI 尚未发布到 npm；详见 [API 参考](docs/plugin-api-reference.md)和[发展路线](docs/plugin-api-roadmap.md)。
+预装插件源码与素材位于独立的 [switchly-plugins 仓库](https://github.com/leungingit/switchly-plugins)，App 使用哈希锁定的预装制品，支持离线使用。本地 SDK 和 CLI 尚未发布到 npm；详见 [API 参考](docs/plugins/plugin-api-reference.md)和[发展路线](docs/plugins/plugin-api-roadmap.md)。
 
 ### 独立预览插件
 
-开发者无需运行 Switchly 本体，即可使用独立预览 App 和合成数据查看插件；它复用本体的 Runtime、解码器和渲染代码。启动器提供模拟 Dock，场景支持执行动作、导出截图和报告、比较视觉基线。默认场景和启动器改进仍在开发中，工具包目前是本地候选，尚未发布到 npm。可用 `make plugin-preview-package` 构建，具体用法与边界见[使用指南](docs/plugin-preview-guide.md)和[覆盖矩阵](docs/plugin-preview-coverage.md)。真实 Dock、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。
+开发者无需运行 Switchly 本体，即可使用独立预览 App 和合成数据查看插件；它复用本体的 Runtime、解码器和渲染代码。启动器提供模拟 Dock，场景支持执行动作、导出截图和报告、比较视觉基线。默认场景和启动器改进仍在开发中，工具包目前是本地候选，尚未发布到 npm。可用 `make plugin-preview-package` 构建，具体用法与边界见[使用指南](docs/plugins/plugin-preview-guide.md)和[覆盖矩阵](docs/plugins/plugin-preview-coverage.md)。真实 Dock、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。
 
 ## 九宫格桌面：所有桌面，一眼看全
 
-![九宫格桌面：macOS 桌面的 3×3 总览与对应手势](docs/images/desktop-grid-zh.svg)
+![九宫格桌面：macOS 桌面的 3×3 总览与对应手势](docs/assets/images/desktop-grid-zh.svg)
 
 *示意图使用虚构内容，非产品实拍截图。*
 
@@ -105,7 +105,7 @@ Dock 卡片可选择横向、纵向或网格布局，窗口较多时可以滚动
 <details>
 <summary><strong>看看原生偏好设置</strong></summary>
 
-![Switchly 原生偏好设置，展示窗口来源、缩略图大小、预览交互与指针触发选项](docs/images/preferences-source-render.png)
+![Switchly 原生偏好设置，展示窗口来源、缩略图大小、预览交互与指针触发选项](docs/assets/images/preferences-source-render.png)
 
 *此图来自外观评审时对原生 SwiftUI 源码的渲染，非桌面实拍。用于展示布局与控件，不代表真实壁纸透射效果，也未展示全部设置。*
 
@@ -162,9 +162,9 @@ shasum -a 256 -c Switchly-<version>.zip.sha256
 - **自行控制**：可删除 `~/Library/Caches/Switchly/Thumbnails/` 清空磁盘预览。读取时拒绝过期图片，启动与写入时也会清理；Switchly 关闭期间过期的文件在下次启动清理。
 - **使用统计**：次数与节省时间估算仅保存在本机，可在应用中清除，不上传。
 
-缓存图片可能包含窗口内容，未进行额外加密。完整存储与保留规则见[隐私政策](PRIVACY_POLICY.md)和[缩略图缓存说明](docs/thumbnail-cache.md)。
+缓存图片可能包含窗口内容，未进行额外加密。完整存储与保留规则见[隐私政策](PRIVACY_POLICY.md)和[缩略图缓存说明](docs/engineering/thumbnail-cache.md)。
 
-设计与界面开发遵循[设计系统](docs/design-system.md)和[界面工程约束](docs/ui-guidelines.md)。
+设计与界面开发遵循[设计系统](docs/product/design-system.md)和[界面工程约束](docs/product/ui-guidelines.md)。
 
 ## 从源码构建
 
@@ -200,7 +200,7 @@ make build SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
 make dist SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 ```
 
-发布自动化在必需 secrets 配置完整时使用 Developer ID 签名与公证，否则采用临时签名。详见[发布指南](docs/RELEASING.md)。
+发布自动化在必需 secrets 配置完整时使用 Developer ID 签名与公证，否则采用临时签名。详见[发布指南](docs/engineering/RELEASING.md)。
 
 </details>
 
@@ -208,7 +208,7 @@ make dist SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 
 遇到无法聚焦的窗口，或想到更顺畅的操作方式？欢迎[提交 Issue](https://github.com/leungingit/switchly/issues)，附上 macOS 版本、芯片、受影响应用与复现步骤。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
 
-官网与插件 API 页面位于 `site/`，可用 `mise run pages:serve` 本地预览。参与开发可先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md)，以及 MVVM 目录 `App/`、`Models/`、`ViewModels/`、`Views/`、`Services/` 和 `Utilities/`。发布前执行 `./verify.sh` 检查工具链、版本、跟踪产物与隐私卫生。发布步骤见 [docs/RELEASING.md](docs/RELEASING.md)，历史变更见 [CHANGELOG.md](CHANGELOG.md)。
+官网与插件 API 页面位于 `Website/`，可用 `mise run pages:serve` 本地预览。参与开发可先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md)，以及 MVVM 目录 `Sources/App/`、`Sources/Models/`、`Sources/ViewModels/`、`Sources/Views/`、`Sources/Services/` 和 `Sources/Utilities/`。发布前执行 `./verify.sh` 检查工具链、版本、跟踪产物与隐私卫生。发布步骤见 [docs/engineering/RELEASING.md](docs/engineering/RELEASING.md)，历史变更见 [CHANGELOG.md](CHANGELOG.md)；`docs/` 下的文档按主题分目录，入口见[文档索引](docs/README.md)。
 
 采用 [MIT 开源协议](LICENSE)。
 

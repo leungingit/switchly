@@ -239,10 +239,10 @@ Dock 的“所有桌面”表示同一应用在多个桌面可见，不是复制
 
 本次只做调研与说明，不修改现有 Swift 实现。当前证据：
 
-- `Models/Workspace.swift` 保存应用分组、快捷键与排序，不表示原生 Space；`Views/WorkspacesView.swift` 中的 ViewModel 也只编辑这些配置。
-- `Services/WindowMonitorService.swift` 的 `getOnScreenWindows()` 使用 `.optionOnScreenOnly`，`getAllWindows()` 额外补充最小化窗口；不能当作覆盖全部 Spaces 的桌面索引。`isOnCurrentSpace` 布尔值不包含 Space 身份，也不能区分多个桌面的成员关系。
+- `Sources/Models/Workspace.swift` 保存应用分组、快捷键与排序，不表示原生 Space；`Sources/Views/WorkspacesView.swift` 中的 ViewModel 也只编辑这些配置。
+- `Sources/Services/WindowMonitorService.swift` 的 `getOnScreenWindows()` 使用 `.optionOnScreenOnly`，`getAllWindows()` 额外补充最小化窗口；不能当作覆盖全部 Spaces 的桌面索引。`isOnCurrentSpace` 布尔值不包含 Space 身份，也不能区分多个桌面的成员关系。
 - 现有 ThumbnailService 提供按 owner 注册的刷新兴趣、分层缓存及捕获并发限制；新网格应复用这些设施。离屏窗口能否得到新图必须实测，不能用缓存伪装实时。
-- 现有 `docs/performance-review-2026-10-20.md` 明确未进行 Instruments 实机采样；其自动化验证不能证明 9 桌面负载已通过。本次未重新运行其中的测试。
+- 现有 `docs/engineering/performance-review-2026-10-20.md` 明确未进行 Instruments 实机采样；其自动化验证不能证明 9 桌面负载已通过。本次未重新运行其中的测试。
 
 建议后续新增职责明确的 `DesktopGridViewModel` 与服务协议，将 Space 枚举/能力检测/系统操作放在 Services，映射与配置放在 Models，面板只展示和传递意图。名称与现有 Workspace 区分是必要的领域边界，不是复制已有应用分组服务。能力按 read/switch/create/moveWindow 等逐项声明，带具体不支持原因，避免一个笼统的“已授权”布尔值。
 

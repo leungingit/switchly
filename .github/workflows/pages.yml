@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "site/**"
-      - "docs/images/**"
+      - "Website/**"
+      - "docs/assets/images/**"
       - "mise.toml"
       - ".github/workflows/pages.yml"
   workflow_dispatch:

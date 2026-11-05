@@ -1,6 +1,6 @@
 # 插件独立预览内部契约
 
-日期：2026-11-03（2026-11-04 增补默认场景、覆盖项、inspect 与 GUI 启动器；同日增补内置合成 fixture、fixture 来源与缺数据提示；2026-11-05 明确透明标题栏内的启动器顶部安全区）。版本：契约 v1（工具版本 0.1.0；本次为新增能力，场景 Schema 不变）。本文是预览工具内部各部分之间的合同；**可执行的权威检查**是 `plugin-api/preview-*.schema.json`、`Tools/PluginPreview/` 下的测试与 `Tests/PluginPreview/` 下的回归脚本。契约文件变化时，`Tools/PluginPreview/contract-hash.sh --check` 必须同步更新（见第 7 节）。面向使用者的说明见 [使用指南](plugin-preview-guide.md)。
+日期：2026-11-03（2026-11-04 增补默认场景、覆盖项、inspect 与 GUI 启动器；同日增补内置合成 fixture、fixture 来源与缺数据提示；2026-11-05 明确透明标题栏内的启动器顶部安全区）。版本：契约 v1（工具版本 0.1.0；本次为新增能力，场景 Schema 不变）。本文是预览工具内部各部分之间的合同；**可执行的权威检查**是 `Plugins/api/preview-*.schema.json`、`Tools/PluginPreview/` 下的测试与 `Tests/PluginPreview/` 下的回归脚本。契约文件变化时，`Tools/PluginPreview/contract-hash.sh --check` 必须同步更新（见第 7 节）。面向使用者的说明见 [使用指南](plugin-preview-guide.md)。
 
 ## 1. 边界
 
@@ -190,7 +190,7 @@ CLI 侧为 `switchly-plugin inspect <插件目录> --preview-tool <App> [--json]
 - **触发与计时**：鼠标真实悬停目标应用图标后延迟 0.4 秒显示浮层；指针离开时保留 0.3 秒宽限再隐藏；在图标之间切换时立即更新，不重新等待显示延迟。计时只作用于模拟 Dock，不证明本体 Dock 的触发延迟与宽限行为。
 - **定位**：浮层从目标图标上方居中弹出，并限制在右栏可见范围内；右栏空间不足时不越出右栏。
 - **浮层结构**：与本体 Dock 预览一致的“面板壳（标题头 + 窗口条）”加目标应用的模拟窗口卡片。窗口卡片使用固定示例标题与占位缩略图，交通灯按钮只作展示（close/minimize/zoom 不可操作，也不调用 AX）。
-- **槽位挂载（以 `Views/DockPreviewView.swift` 为准）**：
+- **槽位挂载（以 `Sources/Views/DockPreviewView.swift` 为准）**：
   - `center`：挂载在窗口条之后、窗口卡片区下方，是一个独立的插件卡片；窗口为空且存在 center 内容时替代空状态。它不在单张窗口卡片内部。
   - `bottomBar`：覆盖首张窗口卡片缩略图的底部，只挂到第一张卡。
   - `topTrailing`、`titleAccessory`：本体 Dock 尚未接入这两个槽位；模拟 Dock 不展示其内容，也不因此改变“只渲染未接入槽位”的既有判定（契约 §1）。
@@ -215,7 +215,7 @@ CLI 侧为 `switchly-plugin inspect <插件目录> --preview-tool <App> [--json]
 
 | 项 | 常量位置 | 校验 |
 | --- | --- | --- |
-| 契约哈希：`plugin-api/` 下 6 个契约文件 | `PluginPreviewContract.sdkContractHash` | `Tools/PluginPreview/contract-hash.sh --check` |
+| 契约哈希：`Plugins/api/` 下 6 个契约文件 | `PluginPreviewContract.sdkContractHash` | `Tools/PluginPreview/contract-hash.sh --check` |
 | 渲染器 revision：12 个共享渲染源文件 | `PluginPreviewContract.rendererRevision` | `Tools/PluginPreview/renderer-revision.sh --check` |
 | 共享源码守卫 | — | `Tools/PluginPreview/shared-source-check.sh` |
 

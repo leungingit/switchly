@@ -9,12 +9,12 @@ BIN="$BUILD_ROOT/PluginPreviewFrameCodecTests"
 ARCH="$(uname -m)"
 
 SOURCES=(
-  "$ROOT/Models/Plugins/PluginScene.swift"
-  "$ROOT/Models/Plugins/PluginUINode.swift"
-  "$ROOT/Models/Plugins/PluginManifest.swift"
-  "$ROOT/Services/Plugins/PluginRegistry.swift"
-  "$ROOT/Services/Plugins/PluginPackageValidator.swift"
-  "$ROOT/Utilities/AppLogger.swift"
+  "$ROOT/Sources/Models/Plugins/PluginScene.swift"
+  "$ROOT/Sources/Models/Plugins/PluginUINode.swift"
+  "$ROOT/Sources/Models/Plugins/PluginManifest.swift"
+  "$ROOT/Sources/Services/Plugins/PluginRegistry.swift"
+  "$ROOT/Sources/Services/Plugins/PluginPackageValidator.swift"
+  "$ROOT/Sources/Utilities/AppLogger.swift"
   "$ROOT/Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift"
   "$ROOT/Tools/PluginPreview/Protocol/Tests/PluginPreviewFrameCodecTests.swift"
 )

@@ -15,7 +15,7 @@
 
 **非目标（初期）**
 
-- 不提供在线插件市场或自动更新（涉及网络，与 [PRIVACY_POLICY.md](../PRIVACY_POLICY.md) 冲突，需单独决策）。
+- 不提供在线插件市场或自动更新（涉及网络，与 [PRIVACY_POLICY.md](../../PRIVACY_POLICY.md) 冲突，需单独决策）。
 - 不允许插件渲染任意 HTML / 自绘像素。
 - 不覆盖预览网格、Workspace 栏，仅 Dock 预览（后续可扩展）。
 
@@ -50,12 +50,12 @@
        manifest.json + main.js (由 SDK 打包产出)
 ```
 
-分层遵循 [AGENTS.md](../AGENTS.md) §3：
+分层遵循 [AGENTS.md](../../AGENTS.md) §3：
 
-- `Services/Plugins/`：`PluginRegistry`、`PluginRuntime`、各 Bridge，均以 `protocol` 定义并注入。
-- `Models/Plugins/`：`PluginManifest`、`PluginUINode`（UI 树）、`PluginCapability` 枚举。
-- `ViewModels/`：Dock 预览 ViewModel 持有插件渲染状态，负责节流与取消。
-- `Views/`：`PluginOverlayView` 只负责把 `PluginUINode` 渲染成原生控件。
+- `Sources/Services/Plugins/`：`PluginRegistry`、`PluginRuntime`、各 Bridge，均以 `protocol` 定义并注入。
+- `Sources/Models/Plugins/`：`PluginManifest`、`PluginUINode`（UI 树）、`PluginCapability` 枚举。
+- `Sources/ViewModels/`：Dock 预览 ViewModel 持有插件渲染状态，负责节流与取消。
+- `Sources/Views/`：`PluginOverlayView` 只负责把 `PluginUINode` 渲染成原生控件。
 
 ### 3.2 插件包格式
 
@@ -426,7 +426,7 @@ render: async (ctx) => {
 
 > §8 的「Scene API 提案」（D10 / D11，均待确认）与本节的实现已于 2026-10-30 合入同一分支；两边的字段命名、预算与未实现项差异见 [scene-api-alignment.md](scene-api-alignment.md)，统一前以 §9 的实际实现为准。
 >
-> 实现：`Models/Plugins/PluginScene.swift`（解码即校验）、`SceneEvaluator.swift`（纯函数求值）、`Views/PluginSceneDrawing.swift`（Canvas 绘制）、`PluginSceneView.swift`（时间线、悬停与点击）。
+> 实现：`Sources/Models/Plugins/PluginScene.swift`（解码即校验）、`SceneEvaluator.swift`（纯函数求值）、`Sources/Views/PluginSceneDrawing.swift`（Canvas 绘制）、`PluginSceneView.swift`（时间线、悬停与点击）。
 
 ### 9.1 为什么不是逐帧 JS
 

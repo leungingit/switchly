@@ -5,7 +5,7 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP="$ROOT/DerivedData/PluginPreview/Build/Products/Debug/SwitchlyPluginPreview.app"
-CLI="$ROOT/packages/plugin-cli/bin/switchly-plugin.js"
+CLI="$ROOT/Plugins/cli/bin/switchly-plugin.js"
 FIXTURE="$ROOT/Tests/PluginPreview/Fixtures/native-input"
 [ -d "$APP" ] || { echo "SKIP: 预览 App 未构建（先运行 make plugin-preview-build）" >&2; exit 77; }
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/switchly-native-input.XXXXXX")"

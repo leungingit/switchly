@@ -33,7 +33,7 @@
 
 本机命令实际报告：`macOS 27.0.1 (26A434)`、`arm64`、SIP enabled；按原样记录，未将其推定为 macOS 26 的兼容测试。Xcode 路径为 `/Applications/Xcode.app/Contents/Developer`。
 
-探针：[`space-readonly-probe.m`](research/desktop-grid/space-readonly-probe.m)。动态加载系统 SkyLight，调用：
+探针：[`space-readonly-probe.m`](../research/desktop-grid/space-readonly-probe.m)。动态加载系统 SkyLight，调用：
 
 - `SLSCopyManagedDisplaySpaces`：读取显示器与桌面快照；
 - `SLSManagedDisplayGetCurrentSpace`：逐显示器读取当前桌面；
@@ -116,11 +116,11 @@ cat "$probe_dir/result.json" "$probe_dir/result-hardened.json"
 
 | 现有设施 | 代码证据 | 适配判断 |
 | --- | --- | --- |
-| Workspace 应用分组 | `Models/Workspace.swift:10–33`；`README.md` 的 Workspaces 说明 | 保留原语义；不能当作真实 Space 数据层 |
-| 当前可见窗口 | `Services/WindowMonitorService.swift:121–160` | 基于屏幕可见 CG 列表，当前路径将标志设 true；需另建 Space 成员关系 |
-| 窗口模型 | `Models/WindowInfo.swift:17` | `isOnCurrentSpace` 不足以表达多屏及多 Space 归属；采用独立归属快照与既有窗口匹配 |
-| 设置 | `Services/SettingsService.swift:10–19,46–75` | 复用持久化、旧键兼容、缓存与通知；新字段用默认值解码 |
-| 缩略图 | `Services/ThumbnailService.swift` 的 owner 刷新与缓存路径 | 复用捕获预算；先做图标版，不因离屏无图阻止导航 |
+| Workspace 应用分组 | `Sources/Models/Workspace.swift:10–33`；`README.md` 的 Workspaces 说明 | 保留原语义；不能当作真实 Space 数据层 |
+| 当前可见窗口 | `Sources/Services/WindowMonitorService.swift:121–160` | 基于屏幕可见 CG 列表，当前路径将标志设 true；需另建 Space 成员关系 |
+| 窗口模型 | `Sources/Models/WindowInfo.swift:17` | `isOnCurrentSpace` 不足以表达多屏及多 Space 归属；采用独立归属快照与既有窗口匹配 |
+| 设置 | `Sources/Services/SettingsService.swift:10–19,46–75` | 复用持久化、旧键兼容、缓存与通知；新字段用默认值解码 |
+| 缩略图 | `Sources/Services/ThumbnailService.swift` 的 owner 刷新与缓存路径 | 复用捕获预算；先做图标版，不因离屏无图阻止导航 |
 | 签名与工程 | `project.yml` 的 hardened runtime 与空 entitlements | 生产服务仍需在真实 bundle 验证，不新增 sandbox 或不必要权限 |
 
 建议将系统能力封装在 `NativeSpacesServiceProtocol` 后，单独维护 `SpaceSnapshot` / `DesktopGridMapping`；上层 ViewModel 使用能力标志与失败原因。私有 API 签名、系统版本判断和回退集中到同一服务后端，不分散在 View、快捷键或现有 Workspace 中。

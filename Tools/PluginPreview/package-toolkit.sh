@@ -37,15 +37,15 @@ leak="$(find "$stage" \( -name '*.swift' -o -name '*.xcconfig' -o -name '*.pbxpr
 
 # CLI：npm pack 会先执行 prepack 复制随包契约；tarball 只含 bin/src/contract/scripts。
 # 注意：npm pack 打包的是当前目录的包，--prefix 不会改变它，必须在包目录内执行。
-tgz="$(cd "$root/packages/plugin-cli" && npm pack --pack-destination "$stage" --silent 2>/dev/null | tail -1)"
+tgz="$(cd "$root/Plugins/cli" && npm pack --pack-destination "$stage" --silent 2>/dev/null | tail -1)"
 [ -n "$tgz" ] && [ -f "$stage/$tgz" ] || { echo "CLI 打包失败" >&2; rm -rf "$stage"; exit 1; }
 
 archs="$(lipo -archs "$exe")"
 min_os="$(vtool -show-build "$exe" 2>/dev/null | awk '/minos/ {print $2; exit}')"
-cli_version="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$root/packages/plugin-cli/package.json")"
+cli_version="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$root/Plugins/cli/package.json")"
 # 漂移检查：CLI 与预览工具必须同版本发布，否则工具包的「配套」语义失效。
 if [ "$cli_version" != "$tool_version" ]; then
-  echo "CLI 版本 $cli_version 与预览工具版本 $tool_version 不一致；请同步 packages/plugin-cli/package.json 与 PluginPreviewContract.toolVersion。" >&2
+  echo "CLI 版本 $cli_version 与预览工具版本 $tool_version 不一致；请同步 Plugins/cli/package.json 与 PluginPreviewContract.toolVersion。" >&2
   rm -rf "$stage"; exit 1
 fi
 cli_sha="$(shasum -a 256 "$stage/$tgz" | cut -d' ' -f1)"

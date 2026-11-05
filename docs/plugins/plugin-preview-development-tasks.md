@@ -16,10 +16,10 @@
 | --- | --- | --- | --- |
 | 契约与集成 | 主控 | 本文、方案、契约说明、集成测试与正式台账 | 最终接口、架构和验收判断由主控负责 |
 | 工程与构建 | 工程执行者 | `project.yml`、`Makefile`、新增工程脚本 | 统一处理所有 target/source/resource 接线；其他执行者仅提交接线需求 |
-| 公共校验 | 契约执行者 | `plugin-api/`、CLI 校验模块、外仓校验接入 | 不修改 CLI dev/run 调度；保留外仓更严格资产策略 |
-| Runtime 与 fixture | Runtime 执行者 | `Services/Plugins/` 必要注入点、预览 fake 与 worker | 不启动真实系统服务，不改正式宿主执行模式 |
-| 原生渲染 | 原生执行者 | `Views/`、共享视觉实现必要修改、新增预览 GUI | 保持原生渲染与本体视觉契约一致 |
-| 控制器与 CLI | 工具执行者 | 预览控制器、`packages/plugin-cli/` 的 dev/run 接入 | 不重复实现 Runtime、Schema 或渲染逻辑 |
+| 公共校验 | 契约执行者 | `Plugins/api/`、CLI 校验模块、外仓校验接入 | 不修改 CLI dev/run 调度；保留外仓更严格资产策略 |
+| Runtime 与 fixture | Runtime 执行者 | `Sources/Services/Plugins/` 必要注入点、预览 fake 与 worker | 不启动真实系统服务，不改正式宿主执行模式 |
+| 原生渲染 | 原生执行者 | `Sources/Views/`、共享视觉实现必要修改、新增预览 GUI | 保持原生渲染与本体视觉契约一致 |
+| 控制器与 CLI | 工具执行者 | 预览控制器、`Plugins/cli/` 的 dev/run 接入 | 不重复实现 Runtime、Schema 或渲染逻辑 |
 | 插件场景 | 外仓执行者 | 外仓 `preview/`、fixture、专属测试与文档 | 不把插件业务写回宿主 |
 
 规划中的预览专用 Swift 文件统一置于 `Tools/PluginPreview/`，按 `Worker/`、`Controller/`、`UI/`、`Fixtures/` 分写入范围；这不是另建一份 Runtime 或 Renderer。若 T01 证明需不同目录，由 T02 统一冻结。
@@ -88,7 +88,7 @@
 
 **T03 — 公共校验收敛与场景 Schema**
 
-- 范围：`plugin-api/`、公共 CLI 校验及外仓 `scripts/validate.mjs` 接入。
+- 范围：`Plugins/api/`、公共 CLI 校验及外仓 `scripts/validate.mjs` 接入。
 - 工作：实现 T02 场景/报告/fixture 约束与版本校验；外仓消费公共插件规则，保留资产和双语等更严格仓库策略；禁止 fixture 伪造 supported 状态。
 - 交付：共享正反样本、可独立消费的校验制品、兼容性测试。
 - 验收：`string` 等不支持设置按宿主契约拒绝；合法 toggle/select/number 一致通过；权限、路径、符号链接、体积和非法 JSON 在相应层拒绝。外仓独立演练用本地包制品，不依赖宿主源码路径。
@@ -272,7 +272,7 @@
 执行记录 PT-05（2026-11-03）：为验证本体关闭场景，短暂退出 `build/Switchly.app`，确认没有匹配的宿主进程后执行 `./Tools/PluginPreview/run-t01.sh`，输出 `offscreen_status=0`、`plain_status=0`、`glass_status=0`、`core_window_capture=PASS`；主控读取普通及玻璃窗口截图，控件、Scene 和图片均可见。测试结束已重新启动同一路径应用并核实进程存在，临时截图已清理。此记录补齐 PT-03 的本体关闭项；仍不证明 macOS 12、Intel、无图形会话或无屏幕录制授权下的截图能力。T02 尚未冻结，G0 尚未放行。
 
 执行记录 PT-06（2026-11-03）：P0b 核心路径联通取证，**G1 仍未放行**。
-- 构建与门禁：`make plugin-preview-build` 成功；`make build` 成功；`make test-unit` 为 545 项、8 跳过、0 失败；`packages/plugin-cli` 的 `npm test` 25 项通过；预览各子测试（协议 8、监督 7、会话 5、产物、整包监听、场景路径、worker）全部通过；外仓经 `npm pack` 离线包执行 `validator:prepare` 后，`npm test` 32 项通过、`npm run build` 生成 3 个插件。
+- 构建与门禁：`make plugin-preview-build` 成功；`make build` 成功；`make test-unit` 为 545 项、8 跳过、0 失败；`Plugins/cli` 的 `npm test` 25 项通过；预览各子测试（协议 8、监督 7、会话 5、产物、整包监听、场景路径、worker）全部通过；外仓经 `npm pack` 离线包执行 `validator:prepare` 后，`npm test` 32 项通过、`npm run build` 生成 3 个插件。
 - run 联通（CLI→App→worker→窗口截图）：音乐 `playing-zh`、天气 `with-fixture-zh-wide`、鲸娘 `unread-en` 均 `status=passed`、退出码 0，stdout 仅一个 JSON 对象，stderr 仅固定诊断，产物含 report/preview.png/ui-tree/actions。主控读取三张截图：音乐卡的封面、标题、上一首/暂停/下一首可见；天气 Scene 的图标、五线谱与数字可见；鲸娘立绘与星标可见。
 - dev 热重载（T10 部分）：对临时插件副本连续两次保存，各触发一次 `preview reload requested` 并换代，始终只有一个 worker；SIGINT 后无残留预览进程。临时目录已清理。
 - 仍未满足：T02 未冻结（`sdkContractHash` 仍为 `unfrozen`）；T12 要求的无 GUI 分支、通用控件交互经原生输入、冷启动/重载/退出基线尚无证据；macOS 12、Intel、无屏幕录制授权未验。T13–T21（P1 时钟/步骤/输入/基线，P2 离线包/CI/文档）尚未开始。
@@ -287,14 +287,14 @@
 - 性能基线（`Tests/PluginPreview/measure-baseline.sh`，Apple M4 Pro / macOS 27.0.1 / 24 GiB，仅记录，不设阈值）：`run` 端到端 5 次，首次 3858 ms，其余 1213–1234 ms（中位 1234）；`dev` 重载延迟（保存→新一代就绪，含整包校验）5 次 329–364 ms（中位 359）；`dev` 静止 10 s：预览 App 平均 CPU 0.6%、RSS 102 MiB，worker 平均 CPU 0.0%、RSS 15 MiB；SIGINT 后 CLI 88 ms 退出，无残留后代进程。
 - 读图（T08/T12 眼见为实）：本轮逐张读过音乐长标题窄宽、音乐空状态、天气回退、鲸娘忙碌（深色玻璃）、音乐无封面宽屏，以及先前的音乐/天气/鲸娘主场景、固定时钟前后的天气 Scene、差异图与原生输入夹具。**观察到**：音乐卡片在 240 pt 窄宽度下溢出（标题被右边缘截断、右上角图标被裁），这是渲染器/插件布局在窄宽度下的行为（预览与本体共用渲染代码），不是预览工具缺陷；未改动，记为后续事项。
 - 双语：预览窗口 19 个文案键在 `en` 与 `zh-Hans` 的 `Localizable.strings` 中均存在，无未翻译项。
-- 门禁实际输出：`make plugin-preview-contract-check`（契约哈希、渲染器 revision、共享源码守卫一致）；`make build` 成功；`make test-unit` 551 项、8 跳过、0 失败；`npm --prefix packages/plugin-cli test` 37 项通过；外仓 `npm test` 32 项、`npm run build` 3 个插件；预览 swiftc 子测试全部通过；`make plugin-preview-regression`：native-input、baseline、dev-lifecycle、failure-modes、plugin-scenarios(14) 全部 passed；工具包验收、干净环境演练、指南命令校验在重建的最终工具包上通过。
+- 门禁实际输出：`make plugin-preview-contract-check`（契约哈希、渲染器 revision、共享源码守卫一致）；`make build` 成功；`make test-unit` 551 项、8 跳过、0 失败；`npm --prefix Plugins/cli test` 37 项通过；外仓 `npm test` 32 项、`npm run build` 3 个插件；预览 swiftc 子测试全部通过；`make plugin-preview-regression`：native-input、baseline、dev-lifecycle、failure-modes、plugin-scenarios(14) 全部 passed；工具包验收、干净环境演练、指南命令校验在重建的最终工具包上通过。
 - 仍未验证（不视为通过）：macOS 12、原生 Intel 硬件、无图形会话的真实 App 分支（仅验证了桩与退出码逻辑）、带屏幕录制授权的 GitHub runner（CI 工作流仅做了语法与 action 版本核对，未在 GitHub 上运行）、滑块/hover/键盘焦点、窗口隐藏/最小化联动的自动化、fixture 更新步骤；工具包未做 Developer ID 签名与公证。
 - G0–G3 结论：G0 通过；G1 通过（含上述未验项）；G2 通过；G3 以「本地候选」通过——可独立使用的本地工具包、文档、验收记录均已就绪，公开发布、推送、PR、版本号变更与 npm 发布均未执行，需用户另行授权。
 
 执行记录 PT-11（2026-11-03）：用户裁决「接受为本地候选完成」。含义：T00–T21 在本机可验证范围内完成；PT-10「仍未验证」清单（macOS 12、原生 Intel、无图形会话真实分支、GitHub runner/CI 实跑、滑块/hover/键盘焦点、隐藏/最小化联动自动化、fixture 更新步骤、Developer ID 签名与公证）继续保持未验证，不视为通过，也不视为已放弃。`switchly-preview-*` 临时目录遗留成因未查清（正常结束与管道提前关闭两条路径对照实验均无遗留），已清理。不 push、不提 PR、不发布；会话前遗留的 4 个未提交改动未审查、未纳入。
 
 执行记录 PT-12（2026-11-04）：预览 App 统一入口改造（默认场景、覆盖项、`inspect`、GUI 启动器）文档契约先行。状态：**进行中**。
-- 改动文件（仅文档）：`docs/plugin-preview-contract.md` 新增 2.1 默认场景推导、2.2 覆盖项与互斥规则、2.3 fixture 显式文件选择、3.1 `scenarioSource`、3.2 `inspect`、3.3 GUI 启动器与自定义模式，并更新 §8 当前限制；`docs/plugin-preview-guide.md` 快速开始改为无需场景文件（create → validate → inspect → run 覆盖项），新增 4.1 默认场景与覆盖项、11 GUI 使用、12 Agent 无 GUI 流程，场景文件降为进阶/回归用，更新视觉基线与已知限制；`docs/plugin-preview-coverage.md` 新增第 6 节“2026-11-04 改造（进行中，无验证结论）”；本记录。未改代码、脚本或外仓。
+- 改动文件（仅文档）：`docs/plugins/plugin-preview-contract.md` 新增 2.1 默认场景推导、2.2 覆盖项与互斥规则、2.3 fixture 显式文件选择、3.1 `scenarioSource`、3.2 `inspect`、3.3 GUI 启动器与自定义模式，并更新 §8 当前限制；`docs/plugins/plugin-preview-guide.md` 快速开始改为无需场景文件（create → validate → inspect → run 覆盖项），新增 4.1 默认场景与覆盖项、11 GUI 使用、12 Agent 无 GUI 流程，场景文件降为进阶/回归用，更新视觉基线与已知限制；`docs/plugins/plugin-preview-coverage.md` 新增第 6 节“2026-11-04 改造（进行中，无验证结论）”；本记录。未改代码、脚本或外仓。
 - 验证：按 `Tests/PluginPreview/run-guide-check.sh` 的提取规则从指南取出 `quickstart` 与 `agent-loop` 块，`bash -n` 均通过；参数名与规格 `/tmp/switchly-preview-redesign/spec.md` 逐项校对；`git diff --check` 通过。
 - 限制：未执行任何运行时回归，不宣称默认场景、覆盖项、`inspect`、GUI 启动器或导出场景已验证。实现落地后以 `Tests/PluginPreview/` 实际结果替换覆盖矩阵第 6 节；在此之前状态保持“实现中”。
 - 2026-11-04 追加（用户裁决 A+B；仍为文档先行，状态保持**进行中**）：
@@ -307,7 +307,7 @@
 - 2026-11-04 追加（启动器两栏改版与模拟 Dock；仍为文档先行，状态保持**进行中**）：
   - 无参启动器窗口改为左右两栏：左栏为不透明控制区（插件选择/打开/拖入/最近使用、默认/自定义模式、场景设置、fixture、导出场景、诊断）；右栏为透明背景的模拟 Dock（底部图标 + 悬停浮层），窗口 `<900 pt` 时纵向堆叠。
   - 模拟 Dock：目标应用图标按 `manifest.matches` 首项（自定义模式按 `target.bundleID`）解析系统图标，失败用占位图标；另 1–2 个固定占位图标，仅目标图标响应悬停。显示延迟 0.4 s、离开宽限 0.3 s、图标切换即时；浮层从图标上方居中弹出并限制在右栏内。浮层为面板壳（标题头 + 窗口条）+ 模拟窗口卡片（固定示例标题、占位缩略图、交通灯仅展示不可操作），插件动作在浮层内真实走会话。
-  - 槽位挂载以 `Views/DockPreviewView.swift` 核对：`center` 挂在窗口条之后/窗口卡片区下方（独立卡片，不在单张卡内），`bottomBar` 覆盖首张窗口卡缩略图底部，`topTrailing`/`titleAccessory` 本体未接入、模拟 Dock 不展示内容。此处纠正需求描述中“center 在窗口卡片区”的表述：实现与本体的实际挂载位置为准。
+  - 槽位挂载以 `Sources/Views/DockPreviewView.swift` 核对：`center` 挂在窗口条之后/窗口卡片区下方（独立卡片，不在单张卡内），`bottomBar` 覆盖首张窗口卡缩略图底部，`topTrailing`/`titleAccessory` 本体未接入、模拟 Dock 不展示内容。此处纠正需求描述中“center 在窗口卡片区”的表述：实现与本体的实际挂载位置为准。
   - 范围声明：仅启动器窗口改版；`dev`/`run` 窗口、截图路径（离屏 `PluginSlotSurface` 平铺）、可访问树匹配、退出码与基线身份不变。模拟 Dock 不验证真实 AX 悬停、Dock 命中、跨屏、真实缩略图或桌面玻璃合成；透明右栏下玻璃外观依赖桌面背景，不得作为视觉基线。
   - 同步文档：契约 3.3 改写并新增 3.5「模拟 Dock 与悬停」、§8 当前限制；使用指南 §1 能做/不能做表、§11 两栏布局与模拟 Dock、边界声明与 §14；覆盖矩阵 §6 新增「两栏启动器与模拟 Dock」「透明右栏」计划项（状态“实现中”）。
   - 验证：静态检查链接与措辞；从指南提取的 `quickstart` 与 `agent-loop` 块 `bash -n` 通过；`git diff --check` 通过。未改代码、脚本或外仓；未运行任何运行时回归，不宣称两栏布局、模拟 Dock 悬停/定位/槽位挂载或透明右栏已验证。

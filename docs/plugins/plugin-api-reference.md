@@ -1,6 +1,6 @@
 # Switchly 插件 API 参考
 
-> 更新日期：2026-11-02。本文以当前宿主的 Swift 解码、运行时、资源读取与包校验实现为准。机器可读能力清单见 [`plugin-api/capabilities.json`](../plugin-api/capabilities.json)，manifest Schema 见 [`plugin-api/manifest.schema.json`](../plugin-api/manifest.schema.json)。
+> 更新日期：2026-11-02。本文以当前宿主的 Swift 解码、运行时、资源读取与包校验实现为准。机器可读能力清单见 [`Plugins/api/capabilities.json`](../../Plugins/api/capabilities.json)，manifest Schema 见 [`Plugins/api/manifest.schema.json`](../../Plugins/api/manifest.schema.json)。
 
 ## 1. 当前兼容状态
 
@@ -44,8 +44,8 @@
 
 SDK 与 CLI 的源码位于本仓库：
 
-- `packages/plugin-sdk/`
-- `packages/plugin-cli/`
+- `Plugins/sdk/`
+- `Plugins/cli/`
 
 两者均为零外部依赖的本地工作区包。当前没有发布到 npm，不应在文档或安装说明中写成可从 npm 安装。
 
@@ -271,7 +271,7 @@ export default definePlugin({
 `make plugin-verifier` 生成 `.build/tools/switchly-plugin-verify`，编译的是 App 实际 Runtime、包校验和 UI/Scene 解码器，不复制一个 JS 模拟实现。可将二进制与 CLI 包交给外部插件开发者，后者不需要宿主源码。
 
 ```sh
-node packages/plugin-cli/bin/switchly-plugin.js verify ../switchly-plugins/plugins/com.switchly.music-controls --host .build/tools/switchly-plugin-verify
+node Plugins/cli/bin/switchly-plugin.js verify ../switchly-plugins/plugins/com.switchly.music-controls --host .build/tools/switchly-plugin-verify
 ```
 
 工具只连接假媒体/天气与临时 storage，不授权真实 fs.read；只验证入口执行和初次 render 的宿主互操作，不能代替系统权限、文件锁、媒体动作或真实 Dock 验收。CLI 将整个校验进程限制在 5 秒并可终止，同进程 App Runtime 本身仍没有硬隔离。CLI 的 create、validate、build、verify 均为本地命令，npm 包尚未发布。
@@ -660,7 +660,7 @@ Scene 总预算：
 
 ## 10. SDK
 
-`packages/plugin-sdk/` 是零外部依赖的本地包：
+`Plugins/sdk/` 是零外部依赖的本地包：
 
 - `definePlugin(plugin)`：校验 `render` / 可选 `onAction`，注册 `globalThis.__switchlyPlugin` 并返回原对象。
 - `ui.hstack/vstack/zstack`
@@ -694,15 +694,15 @@ SDK 不提供 Node、DOM 或网络 polyfill。宿主只执行最终入口 JavaSc
 
 ## 11. CLI
 
-`packages/plugin-cli/` 同样零外部依赖，可执行：
+`Plugins/cli/` 同样零外部依赖，可执行：
 
 ```sh
-node packages/plugin-cli/bin/switchly-plugin.js api describe --json
-node packages/plugin-cli/bin/switchly-plugin.js validate <插件目录>
-node packages/plugin-cli/bin/switchly-plugin.js validate <插件目录> --json
-node packages/plugin-cli/bin/switchly-plugin.js build <插件目录>
-node packages/plugin-cli/bin/switchly-plugin.js build <插件目录> --out <输出根目录>
-node packages/plugin-cli/bin/switchly-plugin.js create <目标目录>
+node Plugins/cli/bin/switchly-plugin.js api describe --json
+node Plugins/cli/bin/switchly-plugin.js validate <插件目录>
+node Plugins/cli/bin/switchly-plugin.js validate <插件目录> --json
+node Plugins/cli/bin/switchly-plugin.js build <插件目录>
+node Plugins/cli/bin/switchly-plugin.js build <插件目录> --out <输出根目录>
+node Plugins/cli/bin/switchly-plugin.js create <目标目录>
 ```
 
 `validate` 检查：
@@ -727,12 +727,12 @@ node packages/plugin-cli/bin/switchly-plugin.js create <目标目录>
 
 `create` 不依赖外部模板或网络，会生成最小 `manifest.json`、`main.js` 和双语 locale，并立即运行同一套 `validate`。可用 `--id`、`--name`、`--match` 指定插件 ID、显示名和目标 bundle ID。
 
-CLI 的 `prepack` 会把权威 `plugin-api/capabilities.json` 与 `manifest.schema.json` 复制到包内 `contract/`；发布后的 `api describe --json` 只读取包内 contract，不依赖本仓库相对路径。
+CLI 的 `prepack` 会把权威 `Plugins/api/capabilities.json` 与 `manifest.schema.json` 复制到包内 `contract/`；发布后的 `api describe --json` 只读取包内 contract，不依赖本仓库相对路径。
 
 测试：
 
 ```sh
-node --test packages/plugin-sdk/test/sdk.test.js packages/plugin-cli/test/cli.test.js
+node --test Plugins/sdk/test/sdk.test.js Plugins/cli/test/cli.test.js
 ```
 
 ## 12. 安装、覆盖与更新

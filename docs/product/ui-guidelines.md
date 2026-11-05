@@ -1,6 +1,6 @@
 # Switchly 界面工程约束
 
-本文约束 SwiftUI / AppKit 界面的实现和验收，与 [设计系统](design-system.md) 及根目录 [AGENTS.md](../AGENTS.md) 配套。Switchly 是本地原生 macOS 应用；这里的界面约束不引入 Web 前后端或网页响应式框架。
+本文约束 SwiftUI / AppKit 界面的实现和验收，与 [设计系统](design-system.md) 及根目录 [AGENTS.md](../../AGENTS.md) 配套。Switchly 是本地原生 macOS 应用；这里的界面约束不引入 Web 前后端或网页响应式框架。
 
 ## 实现边界
 
@@ -56,7 +56,7 @@ Swift 改动先执行 `make build` 和 `make test-unit`，再按风险验证实�
 
 迁移前的设计 QA 主要依据原生源码离屏渲染；真实壁纸透射、Dock 贴靠、多显示器与全屏空间、反复开关的资源占用仍需真实桌面证据。历史三预设的 RGB / 对比度测量与旧参数绑定，不代表当前任意自定义材质都达标。
 
-仓库保留的 [偏好设置源码渲染图](images/preferences-source-render.png) 仅供了解布局；README 主图和功能图是插画。此次文档迁移不新增视觉或系统行为验收结论。
+仓库保留的 [偏好设置源码渲染图](../assets/images/preferences-source-render.png) 仅供了解布局；README 主图和功能图是插画。此次文档迁移不新增视觉或系统行为验收结论。
 
 ## 文档与临时材料
 

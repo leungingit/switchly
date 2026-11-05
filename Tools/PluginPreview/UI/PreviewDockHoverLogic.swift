@@ -11,10 +11,10 @@ import Foundation
 /// 时间全部由调用方注入，内部不创建 Timer；UI 层根据 `nextDeadline` 安排一次
 /// `tick(now:)` 即可，测试可直接快进。
 struct PreviewDockHoverState: Equatable {
-    /// 显示延迟：来源 `Models/AppSettings.swift` 的 `dockPreviewHoverDelay`
-    /// 默认值 0.4s，宿主 `Services/DockHoverMonitor.swift` 用该设置安排显示计时。
+    /// 显示延迟：来源 `Sources/Models/AppSettings.swift` 的 `dockPreviewHoverDelay`
+    /// 默认值 0.4s，宿主 `Sources/Services/DockHoverMonitor.swift` 用该设置安排显示计时。
     static let showDelay: TimeInterval = 0.4
-    /// 隐藏宽限：来源 `Services/DockHoverMonitor.swift` 离开图标与浮层后的 0.3s 计时。
+    /// 隐藏宽限：来源 `Sources/Services/DockHoverMonitor.swift` 离开图标与浮层后的 0.3s 计时。
     static let hideGrace: TimeInterval = 0.3
 
     /// 当前浮层展示的图标；nil 表示浮层不可见。

@@ -25,7 +25,7 @@ base = json.load(open(sys.argv[1]))
 json.dump(dict(base, id="dev-lifecycle", steps=[]), open(sys.argv[2], "w"))
 PY
 LOG="$WORK/dev.err"
-node "$ROOT/packages/plugin-cli/bin/switchly-plugin.js" dev "$WORK/plugin" --preview-tool "$APP" --scenario "$WORK/scenario.json" >"$WORK/dev.out" 2>"$LOG" &
+node "$ROOT/Plugins/cli/bin/switchly-plugin.js" dev "$WORK/plugin" --preview-tool "$APP" --scenario "$WORK/scenario.json" >"$WORK/dev.out" 2>"$LOG" &
 DEV_PID=$!
 
 count() { grep -c "$1" "$LOG" 2>/dev/null || true; }

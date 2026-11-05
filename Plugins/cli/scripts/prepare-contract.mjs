@@ -17,7 +17,7 @@ const files = [
 
 await mkdir(contractDirectory, { recursive: true });
 for (const file of files) {
-  const source = path.join(repositoryRoot, "plugin-api", file);
+  const source = path.join(repositoryRoot, "Plugins/api", file);
   const destination = path.join(contractDirectory, file);
   try {
     await copyFile(source, destination);

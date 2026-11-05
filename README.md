@@ -22,7 +22,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-![Illustration of Switchly’s visual window selection workflow](docs/images/hero-en.svg)
+![Illustration of Switchly’s visual window selection workflow](docs/assets/images/hero-en.svg)
 
 *Feature illustration with sample content, not a live screenshot. The images describe the current source tree; released versions may differ.*
 
@@ -32,7 +32,7 @@ You know the window you want. It’s the document behind the browser, the other 
 
 ## Three ways back to your work
 
-![Three illustrated workflows: preview panel, Dock hover, and workspaces](docs/images/workflow-en.svg)
+![Three illustrated workflows: preview panel, Dock hover, and workspaces](docs/assets/images/workflow-en.svg)
 
 ### See the window before you switch
 
@@ -56,7 +56,7 @@ Workspaces organize app groups and access to their windows; they do not create m
 
 ## Dock preview plugins
 
-![Built-in Music plugin on the Dock preview: cover, track, playback and Love controls](site/images/shots/music.png)
+![Built-in Music plugin on the Dock preview: cover, track, playback and Love controls](Website/images/shots/music.png)
 
 *Rendered from the current source with sample content, not a live screenshot.*
 
@@ -64,15 +64,15 @@ Add useful controls directly to Dock previews. The built-in Music plugin shows p
 
 Manage built-in and locally installed plugins in **Preferences → Plugins**. Search and filter the list, inspect details and permissions, reload plugins, or remove user-installed packages. User plugins start disabled, require renewed authorization after an update, and cannot replace a built-in plugin with the same ID. Plugins have no direct network or process access; read-only folder access requires explicit permission.
 
-Built-in plugin source and assets live in the separate [switchly-plugins repository](https://github.com/leungingit/switchly-plugins); the app bundles hash-locked artifacts for offline use. The local SDK and CLI are not published to npm. See the [API reference](docs/plugin-api-reference.md) and [roadmap](docs/plugin-api-roadmap.md).
+Built-in plugin source and assets live in the separate [switchly-plugins repository](https://github.com/leungingit/switchly-plugins); the app bundles hash-locked artifacts for offline use. The local SDK and CLI are not published to npm. See the [API reference](docs/plugins/plugin-api-reference.md) and [roadmap](docs/plugins/plugin-api-roadmap.md).
 
 ### Preview plugins independently
 
-Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugin-preview-guide.md) and [coverage matrix](docs/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.
+Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/plugin-preview-guide.md) and [coverage matrix](docs/plugins/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.
 
 ## Desktop Grid: all your desktops, one glance away
 
-![Desktop Grid: a 3×3 overview of macOS desktops and the gestures that drive it](docs/images/desktop-grid-en.svg)
+![Desktop Grid: a 3×3 overview of macOS desktops and the gestures that drive it](docs/assets/images/desktop-grid-en.svg)
 
 *Illustration with sample content, not a live screenshot.*
 
@@ -103,7 +103,7 @@ English and Simplified Chinese are built in. Animations respect the system **Red
 <details>
 <summary><strong>A look at the native preferences</strong></summary>
 
-![Switchly native preferences showing window source, thumbnail size, preview interaction, and pointer trigger settings](docs/images/preferences-source-render.png)
+![Switchly native preferences showing window source, thumbnail size, preview interaction, and pointer trigger settings](docs/assets/images/preferences-source-render.png)
 
 *Rendered from native SwiftUI source during the appearance review, rather than captured from a live desktop. This image shows layout and controls; it does not demonstrate live backdrop blur or the complete set of settings.*
 
@@ -160,9 +160,9 @@ Window contents are personal. Switchly processes them locally, with no account, 
 - **Control:** delete `~/Library/Caches/Switchly/Thumbnails/` to clear disk previews. Expired files are rejected on read; cleanup also runs at launch and on writes. Files that expire while Switchly is closed are cleaned at the next launch.
 - **Usage statistics:** local counts and estimated savings, with a clear action in the app. Nothing is uploaded.
 
-Cached images can contain window content and are not additionally encrypted. See the [privacy policy](PRIVACY_POLICY.md) and [thumbnail cache details](docs/thumbnail-cache.md) for storage and retention behavior.
+Cached images can contain window content and are not additionally encrypted. See the [privacy policy](PRIVACY_POLICY.md) and [thumbnail cache details](docs/engineering/thumbnail-cache.md) for storage and retention behavior.
 
-Design and interface work follows the [design system](docs/design-system.md) and [UI engineering guidelines](docs/ui-guidelines.md).
+Design and interface work follows the [design system](docs/product/design-system.md) and [UI engineering guidelines](docs/product/ui-guidelines.md).
 
 ## Build from source
 
@@ -198,7 +198,7 @@ make build SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
 make dist SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 ```
 
-Release automation uses Developer ID signing and notarization when the required secrets are configured, and ad-hoc signing otherwise. See [the release guide](docs/RELEASING.md).
+Release automation uses Developer ID signing and notarization when the required secrets are configured, and ad-hoc signing otherwise. See [the release guide](docs/engineering/RELEASING.md).
 
 </details>
 
@@ -206,7 +206,7 @@ Release automation uses Developer ID signing and notarization when the required 
 
 Found a window that will not focus, or have an idea for a smoother workflow? [Open an issue](https://github.com/leungingit/switchly/issues) with your macOS version, chip, affected app, and reproduction steps. Please follow [SECURITY.md](SECURITY.md) for private security reports.
 
-The website and plugin API pages live in `site/`; preview them with `mise run pages:serve`. Contributors can start with [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and the MVVM directories: `App/`, `Models/`, `ViewModels/`, `Views/`, `Services/`, and `Utilities/`. Before publishing, `./verify.sh` checks toolchain, versions, tracked artifacts, and privacy hygiene. Release procedures live in [docs/RELEASING.md](docs/RELEASING.md); changes live in [CHANGELOG.md](CHANGELOG.md).
+The website and plugin API pages live in `Website/`; preview them with `mise run pages:serve`. Contributors can start with [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md), and the MVVM directories: `Sources/App/`, `Sources/Models/`, `Sources/ViewModels/`, `Sources/Views/`, `Sources/Services/`, and `Sources/Utilities/`. Before publishing, `./verify.sh` checks toolchain, versions, tracked artifacts, and privacy hygiene. Release procedures live in [docs/engineering/RELEASING.md](docs/engineering/RELEASING.md); changes live in [CHANGELOG.md](CHANGELOG.md). Everything under `docs/` is indexed by area in the [documentation index](docs/README.md).
 
 [MIT licensed](LICENSE).
 

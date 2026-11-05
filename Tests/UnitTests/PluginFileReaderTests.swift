@@ -244,8 +244,8 @@ final class PluginFileReaderTests: XCTestCase {
         process.currentDirectoryURL = repositoryRoot
         process.arguments = [
             "swiftc", "-swift-version", "5", "-D", "PLUGIN_FIXTURE_SMOKE",
-            "Models/Plugins/PluginManifest.swift",
-            "Services/Plugins/PluginFileReader.swift",
+            "Sources/Models/Plugins/PluginManifest.swift",
+            "Sources/Services/Plugins/PluginFileReader.swift",
             "Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift",
             "Tools/PluginPreview/Fixtures/PluginFixtureFileReaderSmoke.swift",
             "-o", temporary.appendingPathComponent("fixture-fs-smoke").path,

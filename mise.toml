@@ -159,7 +159,7 @@ description = "构建独立插件验证器"
 run = "make plugin-verifier"
 
 [tasks."pages:build"]
-description = "组装 _site/（site/ 页面与截图 + 九宫格示意图 + 应用图标）"
+description = "组装 _site/（Website/ 页面与截图 + 九宫格示意图 + 应用图标）"
 run = "Scripts/pages.sh build"
 
 [tasks."pages:check"]
@@ -172,7 +172,7 @@ description = "一次性：把仓库 Pages 来源设为 GitHub Actions（需 gh 
 run = "Scripts/pages.sh enable"
 
 [tasks."pages:deploy"]
-description = "触发 Pages 工作流并等待结果（先把 site/ 等改动推到 main）"
+description = "触发 Pages 工作流并等待结果（先把 Website/ 等改动推到 main）"
 run = "Scripts/pages.sh deploy"
 
 [tasks."pages:serve"]

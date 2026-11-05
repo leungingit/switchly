@@ -10,7 +10,7 @@ root=$PWD
 : "${SCENARIO:?请设置 SCENARIO=<场景.json>}"
 app=${PREVIEW_APP:-$root/DerivedData/PluginPreview/Build/Products/Debug/SwitchlyPluginPreview.app}
 [ -d "$app" ] || { echo "未找到预览 App：$app（先执行 mise run preview:app，或设置 PREVIEW_APP）" >&2; exit 4; }
-cli=(node "$root/packages/plugin-cli/bin/switchly-plugin.js")
+cli=(node "$root/Plugins/cli/bin/switchly-plugin.js")
 
 case "${1:-}" in
   dev) exec "${cli[@]}" dev "$PLUGIN" --preview-tool "$app" --scenario "$SCENARIO" ;;

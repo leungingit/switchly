@@ -230,12 +230,12 @@ update-plugin-lock: ## Explicitly accept external plugin artifacts into the prei
 
 .PHONY: verify-plugin-release
 verify-plugin-release: ## Require an immutable external source revision before release builds
-	@python3 -c 'import json,re; d=json.load(open("distribution/bundled-plugins.lock.json")); assert re.fullmatch("[0-9a-f]{40}", d.get("sourceRevision") or ""), "发布前请先提交外仓，再执行 make update-plugin-lock 锁定来源提交"'
+	@python3 -c 'import json,re; d=json.load(open("Plugins/bundled-plugins.lock.json")); assert re.fullmatch("[0-9a-f]{40}", d.get("sourceRevision") or ""), "发布前请先提交外仓，再执行 make update-plugin-lock 锁定来源提交"'
 
 .PHONY: plugin-verifier
 plugin-verifier: ## Build the standalone verifier using the real JSC runtime and decoders
 	@mkdir -p .build/tools
-	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Services/Plugins/PluginRuntime.swift Services/Plugins/PluginVirtualClock.swift Services/Plugins/PluginFileReader.swift Services/Plugins/PluginStorage.swift Services/Plugins/MediaBridge.swift Utilities/AppLogger.swift
+	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Sources/Models/Plugins/PluginManifest.swift Sources/Models/Plugins/PluginUINode.swift Sources/Models/Plugins/PluginScene.swift Sources/Services/Plugins/PluginRegistry.swift Sources/Services/Plugins/PluginPackageValidator.swift Sources/Services/Plugins/PluginRuntime.swift Sources/Services/Plugins/PluginVirtualClock.swift Sources/Services/Plugins/PluginFileReader.swift Sources/Services/Plugins/PluginStorage.swift Sources/Services/Plugins/MediaBridge.swift Sources/Utilities/AppLogger.swift
 
 # T04: build wiring for the independent preview. Generation intentionally
 # skips prepare-plugins and the targets carry no host resources, services, or

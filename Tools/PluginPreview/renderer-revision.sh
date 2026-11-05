@@ -6,18 +6,18 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 files=(
-  Models/Plugins/PluginScene.swift
-  Models/Plugins/PluginUINode.swift
-  Models/Plugins/SceneEvaluator.swift
-  Utilities/DesignTokens.swift
-  Utilities/GlassEffect.swift
-  Utilities/MotionTokens.swift
-  Utilities/NativeCrystalContainer.swift
-  Utilities/ThemeApplier.swift
-  Views/PluginOverlayView.swift
-  Views/PluginSceneDrawing.swift
-  Views/PluginSceneView.swift
-  Views/PluginSlotSurface.swift
+  Sources/Models/Plugins/PluginScene.swift
+  Sources/Models/Plugins/PluginUINode.swift
+  Sources/Models/Plugins/SceneEvaluator.swift
+  Sources/Utilities/DesignTokens.swift
+  Sources/Utilities/GlassEffect.swift
+  Sources/Utilities/MotionTokens.swift
+  Sources/Utilities/NativeCrystalContainer.swift
+  Sources/Utilities/ThemeApplier.swift
+  Sources/Views/PluginOverlayView.swift
+  Sources/Views/PluginSceneDrawing.swift
+  Sources/Views/PluginSceneView.swift
+  Sources/Views/PluginSlotSurface.swift
 )
 revision=$(for f in "${files[@]}"; do (cd "$root" && shasum -a 256 "$f"); done | shasum -a 256 | cut -d' ' -f1)
 revision="sha256:$revision"

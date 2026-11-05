@@ -12,7 +12,7 @@
 | 工作包 | 所有者 | 文件范围 | 状态 |
 | --- | --- | --- | --- |
 | W1 三插件外仓与独立测试 | Magpie worker | 外仓 plugins/scripts/tests/文档 | 已完成本轮范围 |
-| W2 SDK/CLI/API参考 | Magpie worker | plugin-api/packages/API参考/网站 | 已完成本轮范围 |
+| W2 SDK/CLI/API参考 | Magpie worker | Plugins/api/packages/API参考/网站 | 已完成本轮范围 |
 | W3 管理页与天气解耦 | Magpie worker | 插件管理与天气设置 Views | 已完成本轮范围 |
 | W4 生命周期与动作隔离 | Magpie worker | Runtime/OverlayModel/OverlayView/回归测试 | 已完成本轮范围 |
 | W5 制品接线、安装校验、跨仓集成 | 主控 | Registry/Host/工程/构建/通用测试 | 已完成本轮范围 |
@@ -61,7 +61,7 @@
 
 - 外仓远端提交为 `d1de39c22a8b5e131879d00b761c346dac949a41`，预装来源提交已锁定，发行前置检查通过。
 - 原工作区另有全局说明气泡改动；本次 PR 在独立检出中准备，排除其五个页面、全局 helper 及共享文件中的对应替换，不覆盖原工作区内容。
-- 修复旧 `Packages/` 忽略规则对小写 SDK/CLI `packages/` 的误匹配，确保源码进入提交，生成 contract 与 node_modules 仍忽略。
+- 修复旧 `Packages/` 忽略规则对小写 SDK/CLI `Plugins/` 的误匹配，确保源码进入提交，生成 contract 与 node_modules 仍忽略。
 - 独立检出：`make generate`、`make build`、`make test-unit` 通过；539 项、8 项按条件跳过、0 失败。本次没有启用额外截图环境变量，较前轮多跳过原生视图取证测试；此前实际看图记录保留。
 - SDK 6 项（含 tsc）和 CLI 12 项通过；外仓 21 项业务/包测试通过。远端 CI 在 PR 创建后另行查看，不提前报告通过。
 

@@ -25,13 +25,13 @@
 | worker（fixture 预算、流隔离、虚拟时钟 `advance` 正反用例） | `bash Tools/PluginPreview/Worker/Tests/run-tests.sh` | 通过 | — |
 | 产物与报告（steps trace、失败报告、不覆盖输出） | `bash Tools/PluginPreview/Artifacts/run-tests.sh` | 通过 | — |
 | 虚拟时钟 Runtime（Date/Math.random/定时器、有界触发、默认路径不变） | `make test-unit`（`PluginVirtualClockTests`） | 551 项，8 跳过，0 失败 | — |
-| CLI 参数、结果对象、信号转发、baseline | `npm --prefix packages/plugin-cli test` | 33 项通过 | — |
+| CLI 参数、结果对象、信号转发、baseline | `npm --prefix Plugins/cli test` | 33 项通过 | — |
 | 外仓场景契约与校验 | 外仓 `npm test` | 32 项通过 | 需先用离线 CLI 包执行 `validator:prepare` |
 | 原生输入（按钮/禁用/开关/Scene 命中区域） | `make plugin-preview-native-test` | 正向 + 4 个负向通过 | 滑块、hover、键盘、系统级鼠标事件 |
 | 视觉基线（一致、差异检出、玻璃拒绝） | `make plugin-preview-baseline-test` | 通过 | 环境不兼容的组合只验证了拒绝逻辑（JS 测试），未在第二台机器上实测 |
 | dev 生命周期（重载、损坏保留旧画面、恢复、SIGINT 后无残留） | `bash Tests/PluginPreview/run-dev-lifecycle-tests.sh` | 通过 | 隐藏/最小化触发 suspend/resume 未自动化 |
 | 失败模式（12 种常见错误得到稳定且可区分的状态+错误码+退出码；死循环 worker 被回收） | `bash Tests/PluginPreview/run-failure-modes-tests.sh` | 12/12 通过 | 表中未列出的错误回落到 `preview-failed` |
-| 版本握手（`--version-json`；契约/协议/场景/工具/插件 API 不配套时启动前拒绝） | `npm --prefix packages/plugin-cli test`、工具包验收 | 通过；JS 与 Swift 契约哈希一致（真实 App 对比） | — |
+| 版本握手（`--version-json`；契约/协议/场景/工具/插件 API 不配套时启动前拒绝） | `npm --prefix Plugins/cli test`、工具包验收 | 通过；JS 与 Swift 契约哈希一致（真实 App 对比） | — |
 | 离线工具包（Release、ad-hoc、清单、SHA256SUMS；无 Xcode/无网络/空 HOME 运行） | `make plugin-preview-toolkit-test` | 通过（沙箱经 curl 验证确实阻断网络）；arm64 与 x86_64（Rosetta）实测 | 原生 Intel、macOS 12 未验；未公证 |
 | 干净环境演练（只有插件仓库 + 工具包；validate→run→读报告/截图→基线→改动检出→恢复通过；产物不含本机路径） | `make plugin-preview-cleanroom` | 通过 | 外仓为私有仓库，CI 未接入此项（本地/手动） |
 | 使用指南中的命令（`quickstart`、`agent-loop` 块原样提取执行） | `bash Tests/PluginPreview/run-guide-check.sh <工具包>` | 通过 | 其余示例命令以回归脚本为准 |

@@ -20,18 +20,18 @@ xcrun swiftc \
     -swift-version 5 \
     -target "$arch-apple-macosx12.0" \
     -parse-as-library \
-    Models/Plugins/PluginManifest.swift \
-    Models/Plugins/PluginGrant.swift \
-    Models/Plugins/PluginUINode.swift \
-    Models/Plugins/PluginScene.swift \
-    Services/Plugins/PluginRegistry.swift \
-    Services/Plugins/PluginPackageValidator.swift \
-    Services/Plugins/PluginRuntime.swift \
-    Services/Plugins/PluginVirtualClock.swift \
-    Services/Plugins/PluginFileReader.swift \
-    Services/Plugins/PluginStorage.swift \
-    Services/Plugins/MediaBridge.swift \
-    Utilities/AppLogger.swift \
+    Sources/Models/Plugins/PluginManifest.swift \
+    Sources/Models/Plugins/PluginGrant.swift \
+    Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginScene.swift \
+    Sources/Services/Plugins/PluginRegistry.swift \
+    Sources/Services/Plugins/PluginPackageValidator.swift \
+    Sources/Services/Plugins/PluginRuntime.swift \
+    Sources/Services/Plugins/PluginVirtualClock.swift \
+    Sources/Services/Plugins/PluginFileReader.swift \
+    Sources/Services/Plugins/PluginStorage.swift \
+    Sources/Services/Plugins/MediaBridge.swift \
+    Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Scenario/PreviewScenario.swift \
     Tools/PluginPreview/Scenario/PluginPreviewStep.swift \
@@ -47,13 +47,13 @@ xcrun swiftc \
     -swift-version 5 \
     -target "$arch-apple-macosx12.0" \
     -parse-as-library \
-    Models/Plugins/PluginScene.swift \
-    Models/Plugins/PluginUINode.swift \
-    Models/Plugins/PluginManifest.swift \
-    Services/Plugins/PluginRegistry.swift \
-    Services/Plugins/PluginPackageValidator.swift \
-    Services/Plugins/PluginStorage.swift \
-    Utilities/AppLogger.swift \
+    Sources/Models/Plugins/PluginScene.swift \
+    Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginManifest.swift \
+    Sources/Services/Plugins/PluginRegistry.swift \
+    Sources/Services/Plugins/PluginPackageValidator.swift \
+    Sources/Services/Plugins/PluginStorage.swift \
+    Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift \
     Tools/PluginPreview/Controller/PluginPreviewProcessTypes.swift \

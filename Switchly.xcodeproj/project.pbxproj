@@ -564,7 +564,8 @@
 				4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */,
 				CF7EA3A19E6A80B39EA1CDF1 /* StatusBarViewModel.swift */,
 			);
-			path = ViewModels;
+			name = ViewModels;
+			path = Sources/ViewModels;
 			sourceTree = "<group>";
 		};
 		09979891D566F9B3CA48986B /* UITests */ = {
@@ -707,7 +708,8 @@
 				A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */,
 				F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */,
 			);
-			path = Views;
+			name = Views;
+			path = Sources/Views;
 			sourceTree = "<group>";
 		};
 		54794EBE8098747095FB466C /* UI */ = {
@@ -804,7 +806,8 @@
 				D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */,
 				F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */,
 			);
-			path = App;
+			name = App;
+			path = Sources/App;
 			sourceTree = "<group>";
 		};
 		873422988C164751A18E372A /* Resources */ = {
@@ -931,7 +934,8 @@
 				70EECBABDCC48455985B5E3C /* WindowSwitchService.swift */,
 				809E754611EEA603E87A9C45 /* Plugins */,
 			);
-			path = Services;
+			name = Services;
+			path = Sources/Services;
 			sourceTree = "<group>";
 		};
 		DDE670B7C49F038A60DA7DC3 /* Utilities */ = {
@@ -954,7 +958,8 @@
 				7FCE7362D3D2B1B5ED72BDE3 /* WindowSwitchFeedback.swift */,
 				A49CFADAD909F280F349847B /* WindowSystemIdentity.swift */,
 			);
-			path = Utilities;
+			name = Utilities;
+			path = Sources/Utilities;
 			sourceTree = "<group>";
 		};
 		E41AA27517B43F1E11CED266 /* Reload */ = {
@@ -983,7 +988,8 @@
 				9A6616176837D35F1D02BB2C /* Enums */,
 				D893ABD3EC37F9FE0EB0A155 /* Plugins */,
 			);
-			path = Models;
+			name = Models;
+			path = Sources/Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

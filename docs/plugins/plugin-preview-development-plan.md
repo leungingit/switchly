@@ -16,12 +16,12 @@
 
 | 当前基础 | 可复用内容 | 缺口 |
 | --- | --- | --- |
-| `packages/plugin-cli/src/cli.js` | `create/validate/build/verify/api describe`；build 校验后复制，不转译 | 没有可视窗口、watch 或场景执行入口 |
-| `packages/plugin-sdk` | 注册函数、UI 构造器、Context 与 Scene 类型 | 当前 private、0.0.0、未发布；ESM 仍需开发端形成 JSC 单入口 |
+| `Plugins/cli/src/cli.js` | `create/validate/build/verify/api describe`；build 校验后复制，不转译 | 没有可视窗口、watch 或场景执行入口 |
+| `Plugins/sdk` | 注册函数、UI 构造器、Context 与 Scene 类型 | 当前 private、0.0.0、未发布；ESM 仍需开发端形成 JSC 单入口 |
 | `Tools/PluginVerifier.swift`、`make plugin-verifier` | 独立进程、真实 PluginRuntime/JSC、真实 UI/Scene 解码、安全 fake | 只执行首次 render，没有可视化、动作重放和完整 fixture 注入 |
 | 外仓 `test-support/plugin-harness.mjs` | Node VM、可控 Timer、真实插件业务测试与树断言 | 不能证明 JSC、SwiftUI、Canvas、资产和原生输入正确 |
-| `Views/PluginOverlayView.swift` | 原生声明式控件、动作回调、普通图片与 Scene 接入 | 依赖共享视觉类型，需要明确最小构建依赖闭包 |
-| `Views/PluginSceneView.swift`、`PluginSceneDrawing.swift` | 原生 Canvas、动画、局部 hover/hit test | Date、TimelineView、settle timer 等尚无统一可注入时钟 |
+| `Sources/Views/PluginOverlayView.swift` | 原生声明式控件、动作回调、普通图片与 Scene 接入 | 依赖共享视觉类型，需要明确最小构建依赖闭包 |
+| `Sources/Views/PluginSceneView.swift`、`PluginSceneDrawing.swift` | 原生 Canvas、动画、局部 hover/hit test | Date、TimelineView、settle timer 等尚无统一可注入时钟 |
 | `Tests/UnitTests/PluginAssetBudgetTests.swift` | NSHostingView/窗口、ImageRenderer、真实像素验证范式 | 单个图片用例不能证明所有材质和视图都能离屏截图 |
 
 需优先处理的契约差异：
@@ -189,7 +189,7 @@ CI 分层：Linux/通用 Node job 跑静态校验与业务测试；macOS JSC job
 
 | 阶段 | 工作项与拟修改范围 | 退出标准 | 估算 |
 | --- | --- | --- | --- |
-| P0a 可行性与契约 | `plugin-api/` 新增开发场景 schema；梳理共享依赖；`project.yml` 配预览 target；核查截图与窗口 API | 真实控件、Scene、图片各一例从独立进程显示；明确 macOS/GUI/截图能力矩阵；修正外仓校验漂移 | 2–3 日 |
+| P0a 可行性与契约 | `Plugins/api/` 新增开发场景 schema；梳理共享依赖；`project.yml` 配预览 target；核查截图与窗口 API | 真实控件、Scene、图片各一例从独立进程显示；明确 macOS/GUI/截图能力矩阵；修正外仓校验漂移 | 2–3 日 |
 | P0b 可用 MVP | Preview App/worker；CLI dev/run；初始 fake、主题语言、基本动作、watch、错误展示、PNG/tree/report | 三个现有插件均可在本体未运行时预览；死循环只终止 worker；失败不伪装新成功画面 | 4–6 日 |
 | P1 可回归工具 | 公共时间源/随机源、fixture 状态机、场景步骤、动作/原生输入区分、trace、基线与兼容诊断 | 相同环境同场景可复现；权限/生命周期/错误用例通过；人工读取截图验证 | 4–6 日 |
 | P2 独立交付 | 版本化 tarball、签名分发流程、干净环境演练、macOS CI、开发文档与Agent示例 | 只有插件仓库和发行工具也能完成 build→run→看图→修复→重跑；本体集成回归无新增失败 | 2–4 日 |
@@ -227,13 +227,13 @@ CI 分层：Linux/通用 Node job 跑静态校验与业务测试；macOS JSC job
 
 | 源文件 | 已确认的职责与依赖 | 后续归属 |
 | --- | --- | --- |
-| `Models/Plugins/PluginManifest.swift`、`PluginUINode.swift`、`PluginScene.swift` | manifest、四槽位、声明式节点和 Scene 的宿主模型与解码规则 | 复用同一源码；场景协议不得取代宿主解码 |
-| `Services/Plugins/PluginRuntime.swift` | JSC、受控 timer、动作和能力注入；授权与 manifest 取交集；默认减少动态效果读取系统设置 | worker 复用；预览必须显式注入合成依赖 |
-| `Services/Plugins/PluginFileReader.swift` | 文件系统配额、路径与敏感目录检查；Runtime 当前依赖具体类型 | 为合成文件系统增加最小协议注入点，正式实现保持原规则 |
+| `Sources/Models/Plugins/PluginManifest.swift`、`PluginUINode.swift`、`PluginScene.swift` | manifest、四槽位、声明式节点和 Scene 的宿主模型与解码规则 | 复用同一源码；场景协议不得取代宿主解码 |
+| `Sources/Services/Plugins/PluginRuntime.swift` | JSC、受控 timer、动作和能力注入；授权与 manifest 取交集；默认减少动态效果读取系统设置 | worker 复用；预览必须显式注入合成依赖 |
+| `Sources/Services/Plugins/PluginFileReader.swift` | 文件系统配额、路径与敏感目录检查；Runtime 当前依赖具体类型 | 为合成文件系统增加最小协议注入点，正式实现保持原规则 |
 | `Tools/PluginVerifier.swift`、`Makefile` 的 `plugin-verifier` | 独立编译真实 Runtime/解码器，使用假媒体与临时 storage，禁用 fs 权限；只验证首次 render | worker 可参考依赖与隔离方式，不复制执行器 |
-| `Views/PluginOverlayView.swift`、`PluginSceneView.swift`、`PluginSceneDrawing.swift` | 原生控件、Scene、资产和交互渲染；依赖设计令牌、材质及当前时间/减少动态效果 | 同源共享；具体闭包和截图能力待 T01 证实 |
-| `Views/DockPreviewView.swift` | `DockPluginSlotView` 实际接入 `center`、`bottomBar`；数据与设置依赖宿主模型 | 共享表面应避免装配宿主生命周期或整个设置服务 |
-| `packages/plugin-cli/src/validate.js`、`plugin-api/manifest.schema.json`、外仓 `scripts/validate.mjs` | CLI 设置类型为 `toggle/select/number`，外仓当前为 `number/select/string`；另有外仓资产及双语规则 | T03 收敛公共校验，保留仓库专属严格规则 |
+| `Sources/Views/PluginOverlayView.swift`、`PluginSceneView.swift`、`PluginSceneDrawing.swift` | 原生控件、Scene、资产和交互渲染；依赖设计令牌、材质及当前时间/减少动态效果 | 同源共享；具体闭包和截图能力待 T01 证实 |
+| `Sources/Views/DockPreviewView.swift` | `DockPluginSlotView` 实际接入 `center`、`bottomBar`；数据与设置依赖宿主模型 | 共享表面应避免装配宿主生命周期或整个设置服务 |
+| `Plugins/cli/src/validate.js`、`Plugins/api/manifest.schema.json`、外仓 `scripts/validate.mjs` | CLI 设置类型为 `toggle/select/number`，外仓当前为 `number/select/string`；另有外仓资产及双语规则 | T03 收敛公共校验，保留仓库专属严格规则 |
 
 当前 `PluginRuntime` 将 `window.focus` 与 AppleScript 标为不支持；能力状态区分 supported、granted 和 available。正式宿主的真实媒体、天气、用户目录、Dock 和 AX 服务不能由预览进程默认装配。`PluginSceneView` 当前使用 `Date`、`MotionTokens.reduceMotion`，确定性时钟尚未覆盖。
 
