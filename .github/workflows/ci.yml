@@ -50,6 +50,13 @@ jobs:
           path: .build/plugin-source
           persist-credentials: false
 
+      - name: Prepare plugin validator (offline CLI package)
+        run: |
+          pack_dir="$RUNNER_TEMP/plugin-cli-pack"
+          mkdir -p "$pack_dir"
+          (cd Plugins/cli && npm pack --pack-destination "$pack_dir")
+          npm --prefix .build/plugin-source run validator:prepare -- "$pack_dir"/switchly-plugin-cli-*.tgz
+
       - name: Build external plugin artifacts
         run: npm --prefix .build/plugin-source run build
 

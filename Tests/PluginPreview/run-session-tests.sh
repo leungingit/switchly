@@ -21,6 +21,7 @@ xcrun swiftc \
     -target "$arch-apple-macosx12.0" \
     -parse-as-library \
     Sources/Models/Plugins/PluginManifest.swift \
+    Sources/Models/Plugins/PluginConsoleLine.swift \
     Sources/Models/Plugins/PluginGrant.swift \
     Sources/Models/Plugins/PluginUINode.swift \
     Sources/Models/Plugins/PluginScene.swift \
@@ -55,6 +56,7 @@ xcrun swiftc \
     Sources/Services/Plugins/PluginStorage.swift \
     Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
+    Sources/Models/Plugins/PluginConsoleLine.swift \
     Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift \
     Tools/PluginPreview/Controller/PluginPreviewProcessTypes.swift \
     Tools/PluginPreview/Controller/PluginPreviewPipeIO.swift \

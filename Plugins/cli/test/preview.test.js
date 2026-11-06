@@ -542,7 +542,8 @@ test("预览进程非零退出返回 failed，JSON stdout 仍只有一个对象"
   assert.match(result.stderr, /process failure/);
 });
 
-test("预览二进制无法执行时返回环境错误且 stdout 仍只有一个对象", async (t) => {
+// Linux 的 execvp 会把无 shebang 的文本回退给 /bin/sh 执行，无法稳定复现“无法执行”；预览工具只运行在 macOS。
+test("预览二进制无法执行时返回环境错误且 stdout 仍只有一个对象", { skip: process.platform !== "darwin" }, async (t) => {
   const fixture = await makeFixture(t);
   await writeFile(fixture.executable, "not an executable format");
   await chmod(fixture.executable, 0o755);
