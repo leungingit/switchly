@@ -168,6 +168,13 @@ export function parsePreviewArguments(command, args) {
       continue;
     }
 
+    if (arg === "--background") {
+      if (command !== "run" || options.background) throw argumentError("--background 仅供 run 使用且只能提供一次。");
+      options.background = true;
+      index += 1;
+      continue;
+    }
+
     if (arg === "--glass" || arg === "--no-glass") {
       if (seen.has("glass")) {
         throw argumentError("--glass 与 --no-glass 互斥且只能使用一次；请只保留其中一个。");
@@ -437,6 +444,7 @@ async function resolvePreviewRequest(options) {
     out,
     previewTool: previewTool.appDirectory,
     executable: previewTool.executable,
+    background: options.background,
   };
 }
 
@@ -465,6 +473,7 @@ function appArguments(request) {
   if (request.scenario) args.push("--scenario", request.scenario);
   else if (request.overrides) appendOverrides(args, request.overrides);
   if (request.command === "run") args.push("--out", request.out);
+  if (request.background) args.push("--background");
   if (request.json) args.push("--json");
   return args;
 }

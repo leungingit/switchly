@@ -25,7 +25,7 @@ const help = `Switchly 插件 CLI
   switchly-plugin create <目标目录> [--id <插件ID>] [--name <名称>] [--match <bundleID>] [--json]
   switchly-plugin inspect <插件目录> --preview-tool <App> [--json]
   switchly-plugin dev <插件目录> --preview-tool <App> [--scenario <场景> | 覆盖项…] [--json]
-  switchly-plugin run <插件目录> --preview-tool <App> [--scenario <场景> | 覆盖项…] --out <输出目录> [--json]
+switchly-plugin run <插件目录> --preview-tool <App> [--scenario <场景> | 覆盖项…] --out <输出目录> [--background] [--json]
   switchly-plugin baseline accept <run输出目录> --baseline-dir <基线目录> [--replace] [--json]
   switchly-plugin baseline compare <run输出目录> --baseline-dir <基线目录> --out <差异输出目录> [--tolerance 0-255] [--json]
 

@@ -22,8 +22,8 @@ json.dump(dict(base, id="baseline-glass", steps=[], environment=dict(base["envir
 PY
 cp -R "$FIXTURE/plugin" "$WORK/plugin"
 
-run_preview() { # name scenario
-  cli run "$WORK/plugin" --preview-tool "$APP" --scenario "$2" --out "$WORK/$1" --json >"$WORK/$1.json" 2>/dev/null
+run_preview() { # name scenario [plugin]
+  cli run "${3:-$WORK/plugin}" --preview-tool "$APP" --scenario "$2" --out "$WORK/$1" --background --json >"$WORK/$1.json" 2>/dev/null
   local code=$?
   if [ "$code" -eq 4 ]; then echo "SKIP: 预览环境不可用（无图形会话或无屏幕录制授权）" >&2; exit 77; fi
   return "$code"
@@ -49,7 +49,19 @@ ok = r["failure"]["code"] in ("visual-diff", "size-changed") and r["packageChang
 sys.exit(0 if ok else 1)' "$WORK/c3.json"; check "报告标明视觉差异且包哈希已变" 0 $?
 [ -s "$WORK/c3/diff.png" ] || [ "$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["failure"]["code"])' "$WORK/c3.json")" = "size-changed" ]; check "有差异图（或明确的尺寸变化）" 0 $?
 
-run_preview g1 "$WORK/glass.json"
+cp -R "$WORK/plugin" "$WORK/glass-plugin"
+python3 -I - "$WORK/glass-plugin/main.js" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+code = path.read_text()
+assert code.count('node: { type: "vstack"') == 1 and code.count('    ] } }];') == 1
+code = code.replace('node: { type: "vstack"', 'node: { type: "surface", material: "glass", children: [{ type: "vstack"')
+code = code.replace('    ] } }];', '    ] }] } }];')
+path.write_text(code)
+PY
+run_preview g1 "$WORK/glass.json" "$WORK/glass-plugin"; check "玻璃表面截图成功" 0 $?
+cmp -s "$WORK/r3/preview.png" "$WORK/g1/preview.png"; check "玻璃表面产生不同像素" 1 $?
 cli baseline accept "$WORK/g1" --baseline-dir "$WORK/baselines-glass" --json >/dev/null 2>&1; check "玻璃截图不能作为基线（退出 1）" 1 $?
 
 [ "$failures" -eq 0 ] && echo "SUMMARY baseline passed" || { echo "SUMMARY baseline failed=$failures"; exit 1; }

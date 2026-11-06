@@ -19,6 +19,7 @@
 
 - macOS 12 或更新；Node.js 18 或更新。
 - `run` 需要截图：图形会话 + 系统设置里授予运行预览的终端/应用「屏幕录制」权限。不可用时命令返回环境错误（退出码 4），**不会**伪造通过。
+- Agent 仅需截图或业务步骤时，可给 `run` 加 `--background`：预览 App 不激活，也不打开工作台窗口；截图窗口后置且不获取 key。该模式下含 `nativeClick` 的场景返回 `unsupported`（退出码 3），原生输入仍需在专用 GUI 环境验证。该模式仍需要图形会话及屏幕录制权限。
 - 不需要 Xcode，不需要联网，不需要 Switchly 本体在运行。
 
 ## 3. 取得并安装工具包
@@ -59,7 +60,7 @@ npx --no-install switchly-plugin inspect ./hello --preview-tool "$KIT/SwitchlyPl
 node -e 'const d = JSON.parse(require("fs").readFileSync("inspect.json", "utf8")); if (d.defaultScenario?.id !== "default" || d.defaultScenario.target.bundleID !== "com.example.app") { console.error(d); process.exit(1); } console.log("default scenario:", d.defaultScenario.id, d.defaultScenario.target.bundleID);'
 
 # 覆盖项直接运行：中文、深色；不需要 --scenario。
-npx --no-install switchly-plugin run ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" --locale zh-Hans --appearance dark --out out --json > result.json
+npx --no-install switchly-plugin run ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" --locale zh-Hans --appearance dark --out out --background --json > result.json
 node -e 'const r = JSON.parse(require("fs").readFileSync("result.json", "utf8")); if (r.status !== "passed" || r.scenarioSource !== "derived") { console.error(r); process.exit(1); } console.log("status:", r.status, "source:", r.scenarioSource);'
 ```
 
@@ -232,11 +233,11 @@ switchly-plugin dev ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" --sc
 
 **导出场景**：点「导出为场景文件…」，选择保存位置。当前草稿写成合法场景 JSON；显式 fixture 与内置样例都作为文件复制到同一目录并用相对路径引用；写出后用 `PreviewScenario.decode` 回读校验。导出的文件可直接交给 `--scenario`，此时 `scenarioSource` 为 `file`，且不再依赖预览 App 资源。
 
-**边界**：本轮只改启动器窗口。`dev`/`run` 命令的窗口、截图路径（离屏 `PluginSlotSurface` 平铺）、可访问树匹配、退出码与基线身份完全不变；启动器里的模拟 Dock 只复用宿主渲染与插件会话，不替代真实 Dock 验证——真实 AX 悬停、跨屏、真实缩略图与桌面玻璃合成仍由本体承担。GUI 启动器、两栏布局、模拟 Dock 悬停与浮层、拖入目录、最近使用、fixture 的内置/覆盖/清除、缺数据提示、导出流程与可访问标签在本次改造中**实现中**，以 `Tests/PluginPreview/` 回归为准。
+**边界**：启动器改造当时只改启动器窗口；后续 PV-D06 新增显式 `run --background`，默认 `dev`/`run` 行为与基线身份未变。启动器里的模拟 Dock 只复用宿主渲染与插件会话，不替代真实 Dock 验证——真实 AX 悬停、跨屏、真实缩略图与桌面玻璃合成仍由本体承担。GUI 启动器、两栏布局、模拟 Dock 悬停与浮层、拖入目录、最近使用、fixture 的内置/覆盖/清除、缺数据提示、导出流程与可访问标签在本次改造中**实现中**，以 `Tests/PluginPreview/` 回归为准。
 
 ## 12. Agent 无 GUI 流程
 
-Agent 不需要打开 GUI 启动器，也不必人工点选；但 `run` 仍需要图形会话与屏幕录制授权（`inspect` 不需要）。
+Agent 不需要打开 GUI 启动器，也不必人工点选；以下截图流程显式使用 `--background`，仍需要图形会话与屏幕录制授权（`inspect` 不需要）。需要 `nativeClick` 时改在独立 GUI runner 运行默认 `run`。
 
 1. **查看默认输入**：`inspect` 输出插件信息、推导场景、设置项和 fixture 的 `needed`/`reason`/`source`。`source: builtin` 表示 media/weather 会自动使用内置样例；`fs.read` 即使 `needed: true` 也通常是 `source: none`，需要显式文件。据此决定要不要覆盖。
    ```sh
@@ -245,7 +246,7 @@ Agent 不需要打开 GUI 启动器，也不必人工点选；但 `run` 仍需�
 2. **直接运行**：用覆盖项表达环境差异，`--json` 只解析 stdout 的单个对象。声明了媒体/天气权限的插件默认即可运行（内置样例）；`fs.read` 需要额外加 `--fixture fs=<文件>`，文件内容要匹配插件自身的目录结构。
    ```sh
    switchly-plugin run ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" \
-     --locale zh-Hans --appearance dark --out out-agent --json > result.json
+     --locale zh-Hans --appearance dark --out out-agent --background --json > result.json
    ```
 3. **读产物**：先看 `result.json` 的 `status`/`scenarioSource`，再读 `out-agent/report.json`（环境指纹与 trace），**打开 `out-agent/preview.png`** 判断画面；`ui-tree.json` 与 `actions.json` 用于核对声明式树和可用动作。
 4. **分流失败**：退出码 1 读 `error.code` 或 `report.json.failure.code`，按 §7 修复后换新的空 `--out` 重跑；若 `plugin-script-error` 且提示“该插件需要 <kind> fixture…”，优先补齐对应 fixture（默认模式加 `--fixture <kind>=<文件>`；显式场景则改场景文件的 `fixtures`）再重跑。3 是能力边界，不重试；4 是环境问题，停止并报告，不能当成通过。
@@ -279,7 +280,7 @@ JSON
 
 run_preview() { # 输出目录名
   npx --no-install switchly-plugin run ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" \
-    --scenario scenario.json --out "$1" --json 2>/dev/null
+    --scenario scenario.json --out "$1" --background --json 2>/dev/null
 }
 
 # 故意让断言失败：示例插件不会渲染这段文字。

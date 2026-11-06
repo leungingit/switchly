@@ -156,7 +156,11 @@ private enum PreviewAppMain {
         let app = NSApplication.shared
         let delegate = PreviewAppDelegate(invocation: invocation, output: output)
         app.delegate = delegate
-        app.setActivationPolicy(.regular)
+        if case .preview(let arguments) = invocation, arguments.background {
+            app.setActivationPolicy(.accessory)
+        } else {
+            app.setActivationPolicy(.regular)
+        }
         app.run()
         exit(delegate.exitCode)
     }
@@ -252,6 +256,13 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     func applicationDidFinishLaunching(_ notification: Notification) {
         installSignalHandlers()
         guard NSScreen.main != nil else { finish(status: "environment-error", code: 4, reason: "gui-unavailable"); return }
+        state.actionHandler = { [weak self] pluginID, actionID, value in self?.perform(pluginID: pluginID, id: actionID, value: value) }
+        state.reloadHandler = { [weak self] in self?.requestReload(force: true, reset: false) }
+        state.resetHandler = { [weak self] in self?.requestReload(force: true, reset: true) }
+        if arguments?.background == true {
+            Task { await start() }
+            return
+        }
         let content: NSView
         let windowSize: NSSize
         if isLauncher {
@@ -295,9 +306,6 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         NSApp.activate(ignoringOtherApps: true)
         window = panel
         debugModel.onVisibilityChange = { [weak self] visible in self?.resizeWindowForDebugPanel(visible: visible) }
-        state.actionHandler = { [weak self] pluginID, actionID, value in self?.perform(pluginID: pluginID, id: actionID, value: value) }
-        state.reloadHandler = { [weak self] in self?.requestReload(force: true, reset: false) }
-        state.resetHandler = { [weak self] in self?.requestReload(force: true, reset: true) }
         // 无参数启动器只显示空状态，插件选择后由启动器模型触发会话重建。
         if !isLauncher { Task { await start() } }
     }
@@ -342,6 +350,12 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
                 scenario = prepared.scenario
             }
             self.scenario = scenario
+            if arguments.background && scenario.typedSteps.contains(where: {
+                if case .nativeClick = $0 { return true }
+                return false
+            }) {
+                throw PreviewScenario.Failure.unsupportedSteps
+            }
             applyEnvironment(scenario)
             if arguments.command == "dev" {
                 let watcher = PluginPreviewPackageWatcher(directory: pluginURL) { [weak self] in
@@ -711,7 +725,11 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         captureWindow.isReleasedWhenClosed = false
         captureWindow.contentView = host
         captureWindow.center()
-        captureWindow.makeKeyAndOrderFront(nil)
+        if arguments?.background == true {
+            captureWindow.orderBack(nil)
+        } else {
+            captureWindow.makeKeyAndOrderFront(nil)
+        }
         defer { captureWindow.orderOut(nil); captureWindow.contentView = nil }
         try await Task.sleep(nanoseconds: 500_000_000)
         captureWindow.displayIfNeeded()

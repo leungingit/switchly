@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": "leungingit/switchly-plugins",
-  "sourceRevision": "720933b5d0895ec1e0fa5de75053c828492e4ff6",
+  "sourceRevision": "d14ca2cd19dc858e4e62a5c1b0093ac41c4a73e7",
   "plugins": [
     {
       "id": "com.switchly.music-controls",

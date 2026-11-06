@@ -17,6 +17,7 @@ struct PluginPreviewCommandArguments: Equatable {
     let overrides: PreviewScenarioOverrides
     let output: URL?
     let json: Bool
+    let background: Bool
 }
 
 enum PluginPreviewCommandLineError: Error, Equatable {
@@ -36,6 +37,7 @@ enum PluginPreviewCommandLine {
         var scenario: URL?
         var output: URL?
         var json = false
+        var background = false
         var overrides = PreviewScenarioOverrides()
         var seen = Set<String>()
         var settingKeys = Set<String>()
@@ -48,6 +50,10 @@ enum PluginPreviewCommandLine {
             case "--json":
                 guard !json else { throw PluginPreviewCommandLineError.invalidArguments }
                 json = true
+                index += 1
+            case "--background":
+                guard first == "run", !background else { throw PluginPreviewCommandLineError.invalidArguments }
+                background = true
                 index += 1
             case "--scenario", "--out",
                  "--locale", "--appearance", "--width", "--grants", "--set", "--fixture",
@@ -137,7 +143,8 @@ enum PluginPreviewCommandLine {
             scenario: scenario,
             overrides: overrides,
             output: output,
-            json: json
+            json: json,
+            background: background
         ))
     }
 

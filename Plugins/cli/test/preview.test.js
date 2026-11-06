@@ -117,6 +117,14 @@ test("dev/run 参数解析接受显式路径与等号形式", () => {
   );
 });
 
+test("后台截图参数仅允许 run 显式选择", () => {
+  const base = ["./plugin", "--preview-tool", "./preview.app"];
+  const run = parsePreviewArguments("run", [...base, "--out", "./out", "--background"]);
+  assert.equal(run.background, true);
+  assert.throws(() => parsePreviewArguments("dev", [...base, "--background"]), /--background 仅供 run/);
+  assert.throws(() => parsePreviewArguments("run", [...base, "--out", "./out", "--background", "--background"]), /--background 仅供 run/);
+});
+
 test("覆盖项解析：枚举、数字、key=value、可重复项与 fixture 形态", () => {
   const parsed = parsePreviewArguments("dev", [
     "./plugin",

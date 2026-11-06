@@ -70,6 +70,8 @@ Built-in plugin source and assets live in the separate [switchly-plugins reposit
 
 Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/plugin-preview-guide.md) and [coverage matrix](docs/plugins/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.
 
+Agent 截图可为 `switchly-plugin run` 显式添加 `--background`，避免预览 App 激活和工作台窗口抢焦点；该模式仍需图形会话与屏幕录制授权，包含 `nativeClick` 的场景返回 `unsupported`。原生输入应在独立 GUI 环境验证，详见[预览指南](docs/plugins/plugin-preview-guide.md)。
+
 ## Desktop Grid: all your desktops, one glance away
 
 ![Desktop Grid: a 3×3 overview of macOS desktops and the gestures that drive it](docs/assets/images/desktop-grid-en.svg)

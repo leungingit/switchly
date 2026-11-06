@@ -86,6 +86,8 @@ fixture 来源分为三类：
 
 `run` 和 `dev` 接受插件目录、`--preview-tool <App>`、可选的 `--scenario`；未给 `--scenario` 时使用 2.1 的推导场景，并允许 2.2 的覆盖项。`run` 另需 `--out`（必须是空目录，不覆盖），可选 `--json`。JSON 模式 stdout 只输出一个结果对象，诊断在 stderr，且只含固定诊断（不含 fixture、渲染内容或私密路径）。
 
+`run --background` 是显式选择的后台截图模式：预览 App 不激活、不创建工作台窗口；截图表面以非 key 窗口后置，按窗口 ID 捕获。该模式仍需要 GUI 会话与屏幕录制授权，截图失败返回环境错误，不回退到前台。含 `nativeClick` 的场景在执行前返回 `unsupported`（退出码 3、固定码 `unsupported`），因为该步骤需要工作台可访问树；其余步骤与产物契约不变。`dev` 和 `inspect` 不接受此参数。默认 `run` 的原生输入行为暂时保持原状，自动化调用者须显式传入 `--background` 才能使用后台路径。
+
 | 退出码 | `status` | 含义 |
 | --- | --- | --- |
 | 0 | `passed` | 渲染与步骤通过，产物完整 |

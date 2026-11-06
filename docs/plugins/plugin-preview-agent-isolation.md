@@ -1,6 +1,6 @@
 # 插件预览的 Agent 验证隔离方案
 
-日期：2026-11-03。状态：方案建议；本次仅接入预览 App 图标，以下隔离行为尚未实现，不覆盖现有截图契约。
+日期：2026-11-03。状态：PV-T01 已验证；PV-T02 的显式后台截图路径已接入，原生输入隔离未完成；PV-T03 待独立环境。
 
 ## PV-D01：分开处理不抢焦点、不遮挡与桌面隔离
 
@@ -26,10 +26,10 @@
 ## 后续任务与可检查验收
 
 1. **PV-T01（当前环境验证通过，见 PV-D04）— 后台截图探针**：先复用 T01 渲染内容，分别测试普通与玻璃材质在非 key、后置且被遮挡时的捕获。以合成背景窗口避免捕获用户内容。记录运行前、中、后的前台应用是否变化；检查 PNG 的控件、图片、Scene 和尺寸。验证失败明确返回环境错误，不自动回退到抢前台截图。
-2. **PV-T02（依赖 PV-T01，待实施）— 分离 dev/run 窗口策略**：dev 保留显式打开的交互窗口；自动化 run 不主动激活 App，不展示工作台，只创建经验证所需的渲染表面。进程内可访问性 press 独立验证，不把它表述为全局鼠标键盘测试。参数、报告和错误语义先同步契约，再实现与 CLI 测试。
+2. **PV-T02（部分完成，见 PV-D06）— 分离 dev/run 窗口策略**：dev 保留显式打开的交互窗口；`run --background` 不主动激活 App，不展示工作台，只创建截图表面。含 `nativeClick` 的场景明确返回 unsupported；进程内可访问性 press 尚未获得无干扰验证，不把它表述为全局鼠标键盘测试。
 3. **PV-T03（待环境选型）— 独立 GUI runner**：提供固定系统、分辨率、缩放与合成桌面背景，单次运行单个视觉任务；输出既有 report.json、preview.png、ui-tree.json、actions.json。宿主侧实测运行期间无前台变化、无弹窗覆盖，另验 runner 内截图和输入。保留正式宿主 Dock/AX/跨屏的实机验收。
 
-上述任务尚未执行，不将方案或静态代码检查计为隔离验证通过。
+上述状态以各条实测记录为准，不将方案或静态代码检查计为隔离验证通过。
 
 ## PV-D02：预览 App 独立图标
 
@@ -66,4 +66,16 @@ PV-T01 在上述环境的普通与玻璃共享渲染捕获验证通过。前台�
 
 已撤回本轮所有运行态和候选契约改动，重新构建退出 0，并复跑原实现原生输入：positive/disabled-click/not-disabled/missing/wrong-action 五项全部 PASS。PV-T02 未完成、不放行；正式 run 仍为原行为，既有 PV-T01 改动保留。本轮临时构建日志已清理。
 
-下一排查应对相同内容、相同窗口依次单独改变 activation policy、是否激活、是否 key、ordering、occlusion，记录可访问树节点数及生命周期；每个变量独立对照，先定位触发条件再改实现。此项未执行；PV-T03 的独立 GUI runner 仍可承载现有原生输入验证，但尚无已验环境。
+下一排查应对相同内容、相同窗口依次单独改变 activation policy、是否激活、是否 key、ordering、occlusion，记录可访问树节点数及生命周期；每个变量独立对照，先定位触发条件再改实现。此项未执行；PV-T03 的独立 GUI runner 仍可承载现有原生输入验证，但尚无已验环境。本条关于“尚无后台 `run` 路径”的状态被 PV-D06 取代；nativeClick 失败结论保留。
+
+## PV-D06：显式后台截图路径（2026-11-05）
+
+本条更新 PV-D05 的“PV-T02 尚未接入”状态，保留其 nativeClick 失败结论。`run --background` 使用 accessory 激活策略，不创建工作台窗口；截图表面 `orderBack`，不调用 `makeKeyAndOrderFront` 或 `activate`。含 `nativeClick` 的场景在执行前返回 `unsupported`，不以业务动作直调冒充原生输入；默认 `run` 与 `dev` 的原行为保留。参数及错误语义见 [预览契约](plugin-preview-contract.md) §3。
+
+环境为 arm64、macOS 27.2.0、GUI 会话、显示缩放 2、已有屏幕录制授权。`make plugin-preview-app`、`make plugin-preview-worker`、`make build` 退出 0；`make test-unit` 退出 0，xcresult 汇总 543 passed、8 skipped、0 failed；`node --test Plugins/cli/test/preview.test.js` 28 项通过。`Tests/PluginPreview/run-baseline-tests.sh` 的首次截图、重复截图差异 0、插件内容变化检出、真实玻璃表面截图与玻璃基线拒绝均通过。单独执行 `run --background`：普通截图退出 0、报告 `passed`、PNG 存在；`expectText → action(go) → expectText` 三步全部 passed；含 nativeClick 的原夹具退出 3，报告 `unsupported/unsupported`；普通截图调用前后采样的前台 PID 均为 1397。主控实际读取普通截图，文字及三个原生控件可见。
+
+玻璃核验中，原夹具只含 vstack，无玻璃表面；将其场景环境改成 glass 后，PNG 与普通图 SHA-256 完全一致，不能当作真实玻璃覆盖。随后在系统临时目录复制该夹具并以真实 `surface(material: glass)` 包裹相同控件，`run --background` 退出 0，主控读图确认浅蓝玻璃底层、文字和按钮可见。回归脚本已加入真实玻璃表面与普通截图像素差异检查。此证据覆盖当前环境的截图结果，不覆盖跨 Space、无 GUI、无授权、连续焦点事件、遮挡边界或原生输入隔离。
+
+`make plugin-preview-package` 退出 0，契约哈希、渲染器 revision 和共享源码守卫通过。首次执行 `Tests/PluginPreview/run-guide-check.sh` 因脚本仍指向旧的 `docs/plugin-preview-guide.md` 路径而退出 1；修正为 `docs/plugins/plugin-preview-guide.md` 后重跑，quickstart 与 agent-loop 原样执行均 PASS，结尾为 `SUMMARY guide passed`。`./verify.sh` 为 `PASS 0 check(s) failed, 2 warning(s)`（工作区改动与已有超长 Swift 文件）；`git diff --check` 通过。
+
+本机 `prlctl list -a -o name,status` 仅列出已暂停的 Windows 11，`limactl list --json` 无实例，当前无可用的 macOS GUI runner。下一步仍需在独立 GUI 环境对同一工作台逐项测试 activation policy、激活、key、ordering、occlusion 与可访问树节点数，之后才可判断 nativeClick 是否能走后台路径；PV-T03 尚未放行。

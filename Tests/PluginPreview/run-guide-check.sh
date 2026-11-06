@@ -1,5 +1,5 @@
 #!/bin/bash
-# 文档即被执行的命令：从 docs/plugin-preview-guide.md 原样提取 ```bash quickstart 与 ```bash agent-loop 两个块，
+# 文档即被执行的命令：从 docs/plugins/plugin-preview-guide.md 原样提取 ```bash quickstart 与 ```bash agent-loop 两个块，
 # 在解包后的工具包上、干净环境（无 Xcode、禁网沙箱）中依次执行。
 # 用法：run-guide-check.sh <switchly-plugin-preview-toolkit-<版本>.tar.gz>
 # 需要图形会话与屏幕录制授权。退出码：0 通过；1 失败；77 环境不可用。
@@ -7,7 +7,7 @@ set -uo pipefail
 [ $# -eq 1 ] && [ -f "$1" ] || { echo "用法：$0 <工具包.tar.gz>" >&2; exit 2; }
 TARBALL="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-GUIDE="$ROOT/docs/plugin-preview-guide.md"
+GUIDE="$ROOT/docs/plugins/plugin-preview-guide.md"
 NODE_DIR="$(dirname "$(command -v node)")"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/switchly-guide.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
