@@ -88,6 +88,10 @@ secrets/
 *.log
 build_log/
 
+## ── Local mise configuration ─────────────────────────────────
+/mise.local.toml
+/.mise.local.toml
+
 ## ── Editors & IDEs ───────────────────────────────────────────
 .idea/
 .vscode/
