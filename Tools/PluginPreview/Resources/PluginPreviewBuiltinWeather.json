@@ -1,0 +1,6 @@
+{
+  "condition": "cloudy",
+  "temperature": 16.5,
+  "wind": 22,
+  "source": "online"
+}

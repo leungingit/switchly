@@ -38,12 +38,12 @@ targets:
     type: application
     platform: macOS
     sources:
-      - App
-      - Models
-      - ViewModels
-      - Views
-      - Services
-      - Utilities
+      - Sources/App
+      - Sources/Models
+      - Sources/ViewModels
+      - Sources/Views
+      - Sources/Services
+      - Sources/Utilities
       - path: Resources/Assets.xcassets
         buildPhase: resources
       - path: Resources/en.lproj
@@ -102,3 +102,139 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: Switchly
+
+  # T04 build wiring only. These targets intentionally contain no host
+  # resources, services, app lifecycle, or entitlements. The minimal entry
+  # points live under Tools/PluginPreview/Entry until T06/T08 freeze their
+  # real protocol and window implementations.
+  SwitchlyPluginPreview:
+    type: application
+    platform: macOS
+    dependencies:
+      - target: SwitchlyPluginPreviewWorker
+    postBuildScripts:
+      - name: Bundle preview worker
+        script: |
+          cp "${BUILT_PRODUCTS_DIR}/SwitchlyPluginPreviewWorker" "${TARGET_BUILD_DIR}/${EXECUTABLE_FOLDER_PATH}/SwitchlyPluginPreviewWorker"
+        inputFiles:
+          - "$(BUILT_PRODUCTS_DIR)/SwitchlyPluginPreviewWorker"
+        outputFiles:
+          - "$(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/SwitchlyPluginPreviewWorker"
+    sources:
+      - Sources/Models/AppSettings.swift
+      - Sources/Models/DockLayoutSpec.swift
+      - Sources/Models/Enums/GridBackground.swift
+      - Sources/Models/Enums/GridStyle.swift
+      - Sources/Models/Enums/NotificationStrategy.swift
+      - Sources/Models/Enums/PreviewHotspotEdge.swift
+      - Sources/Models/Enums/PreviewStrategy.swift
+      - Sources/Models/Enums/ShortcutPrefix.swift
+      - Sources/Models/Enums/ThumbnailSize.swift
+      - Sources/Models/MenuBarIcon.swift
+      - Sources/Models/MonitoredApp.swift
+      - Sources/Models/OnlineWeatherSettings.swift
+      - Sources/Models/UsageStatistics.swift
+      - Sources/Models/UsageStatisticsEfficiency.swift
+      - Sources/Models/WindowInfo.swift
+      - Sources/Models/Workspace.swift
+      - Sources/Models/Plugins/PluginConsoleLine.swift
+      - Sources/Models/Plugins/PluginGrant.swift
+      - Sources/Models/Plugins/PluginManifest.swift
+      - Sources/Models/Plugins/PluginScene.swift
+      - Sources/Models/Plugins/PluginUINode.swift
+      - Sources/Models/Plugins/SceneEvaluator.swift
+      - Sources/Services/Plugins/PluginRegistry.swift
+      - Sources/Services/Plugins/PluginPackageValidator.swift
+      - Sources/Services/Plugins/PluginStorage.swift
+      - Sources/Utilities/AppIconCache.swift
+      - Sources/Utilities/AppLogger.swift
+      - Sources/Utilities/DesignTokens.swift
+      - Sources/Utilities/MotionTokens.swift
+      - Sources/Utilities/GlassEffect.swift
+      - Sources/Utilities/NativeCrystalContainer.swift
+      - Sources/Utilities/ThemeApplier.swift
+      - Sources/Views/PluginSlotSurface.swift
+      - Sources/Views/PluginOverlayView.swift
+      - Sources/Views/PluginSceneView.swift
+      - Sources/Views/PluginSceneDrawing.swift
+      - Sources/Views/ThumbnailLoadState.swift
+      - Sources/Views/DockWindowCard.swift
+      - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
+      - Tools/PluginPreview/Controller/PluginPreviewPipeIO.swift
+      - Tools/PluginPreview/Controller/PluginPreviewProcessTypes.swift
+      - Tools/PluginPreview/Controller/PluginPreviewWorkerSupervisor.swift
+      - Tools/PluginPreview/Controller/PluginPreviewSession.swift
+      - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Scenario/DefaultScenario.swift
+      - Tools/PluginPreview/Scenario/PreviewScenarioExporter.swift
+      - Tools/PluginPreview/Scenario/PluginPreviewInspect.swift
+      - Tools/PluginPreview/Scenario/PluginPreviewStep.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewArtifactModels.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewArtifactBuilder.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewPackageHasher.swift
+      - Tools/PluginPreview/Artifacts/PluginPreviewArtifactWriter.swift
+      - Tools/PluginPreview/Reload/PluginPreviewPackageWatcher.swift
+      - Tools/PluginPreview/Entry/PreviewAppMain.swift
+      - Tools/PluginPreview/Entry/PreviewCommandLine.swift
+      - Tools/PluginPreview/UI
+      - path: Tools/PluginPreview/Resources/Assets.xcassets
+        buildPhase: resources
+      # 推导场景的内置合成 fixture；App 运行时复制进会话 workRoot。
+      - path: Tools/PluginPreview/Resources/PluginPreviewBuiltinMedia.json
+        buildPhase: resources
+      - path: Tools/PluginPreview/Resources/PluginPreviewBuiltinWeather.json
+        buildPhase: resources
+      - path: Resources/en.lproj
+        buildPhase: resources
+      - path: Resources/zh-Hans.lproj
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.switchly.pluginpreview
+        PRODUCT_MODULE_NAME: SwitchlyPluginPreview
+        PRODUCT_NAME: SwitchlyPluginPreview
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Switchly Plugin Preview
+        ASSETCATALOG_COMPILER_APPICON_NAME: PreviewAppIcon
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_LSUIElement: YES
+        CODE_SIGN_ENTITLEMENTS: ""
+        SKIP_INSTALL: YES
+    scheme:
+      gatherCoverageData: false
+
+  SwitchlyPluginPreviewWorker:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/Models/Plugins/PluginConsoleLine.swift
+      - Sources/Models/Plugins/PluginGrant.swift
+      - Sources/Models/Plugins/PluginManifest.swift
+      - Sources/Models/Plugins/PluginUINode.swift
+      - Sources/Models/Plugins/PluginScene.swift
+      - Sources/Services/Plugins/PluginRegistry.swift
+      - Sources/Services/Plugins/PluginPackageValidator.swift
+      - Sources/Services/Plugins/PluginRuntime.swift
+      - Sources/Services/Plugins/PluginVirtualClock.swift
+      - Sources/Services/Plugins/PluginFileReader.swift
+      - Sources/Services/Plugins/PluginStorage.swift
+      - Sources/Services/Plugins/MediaBridge.swift
+      - Sources/Utilities/AppLogger.swift
+      - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
+      - Tools/PluginPreview/Scenario/PreviewScenario.swift
+      - Tools/PluginPreview/Scenario/PluginPreviewStep.swift
+      - Tools/PluginPreview/Fixtures/PluginFixtureFileReader.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerProtocol.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerFixtures.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerSession.swift
+      - Tools/PluginPreview/Worker/PluginPreviewWorkerService.swift
+      - Tools/PluginPreview/Entry/PreviewWorkerMain.swift
+    settings:
+      base:
+        PRODUCT_MODULE_NAME: SwitchlyPluginPreviewWorker
+        PRODUCT_NAME: SwitchlyPluginPreviewWorker
+        CODE_SIGN_ENTITLEMENTS: ""
+        SKIP_INSTALL: YES
+    scheme:
+      gatherCoverageData: false

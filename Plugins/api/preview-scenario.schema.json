@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchly.local/plugin-api/preview-scenario.schema.json",
+  "title": "Switchly 插件预览场景（开发中）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "environment", "target"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "environment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["locale", "appearance", "glass", "reduceMotion", "contentWidthPoints"],
+      "properties": {
+        "locale": { "enum": ["en", "zh-Hans"] },
+        "appearance": { "enum": ["light", "dark"] },
+        "glass": { "type": "boolean" },
+        "reduceMotion": { "type": "boolean" },
+        "contentWidthPoints": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["bundleID", "appName"],
+      "properties": {
+        "bundleID": { "type": "string", "minLength": 1 },
+        "appName": { "type": "string", "minLength": 1 },
+        "titleSummary": { "type": "string" },
+        "lastActiveAt": { "type": ["number", "null"] }
+      }
+    },
+    "fixtures": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "media": { "$ref": "#/$defs/relativePath" },
+        "weather": { "$ref": "#/$defs/relativePath" },
+        "fs": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "clock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["startEpochMs", "seed"],
+      "properties": {
+        "startEpochMs": { "type": "number", "minimum": 0 },
+        "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+      }
+    },
+    "grants": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "settings": { "type": "object", "additionalProperties": { "type": ["boolean", "number", "string"] } },
+    "storageSeed": { "type": "object" },
+    "steps": {
+      "type": "array", "maxItems": 64,
+      "items": {
+        "oneOf": [
+          { "type": "object", "additionalProperties": false, "required": ["type", "ms"],
+            "properties": { "type": { "const": "advance" }, "ms": { "type": "number", "minimum": 0, "maximum": 86400000 } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "id"],
+            "properties": { "type": { "const": "action" }, "id": { "type": "string", "minLength": 1, "maxLength": 128 }, "value": { "type": "number" } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "contains"],
+            "properties": { "type": { "const": "expectText" }, "contains": { "type": "string", "minLength": 1, "maxLength": 256 } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "label"],
+            "properties": { "type": { "const": "nativeClick" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+                            "expectAction": { "type": "string", "minLength": 1, "maxLength": 128 }, "expectDisabled": { "type": "boolean" } } }
+        ]
+      },
+      "description": "advance 需要场景声明 clock；action 是业务动作（直接调用 onAction，不经原生输入）；nativeClick 经可访问树按标签 press 并核对路由动作，expectDisabled 与 expectAction 互斥。"
+    }
+  },
+  "$defs": {
+    "relativePath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\u0000]*[^/\\u0000]$" }
+  }
+}

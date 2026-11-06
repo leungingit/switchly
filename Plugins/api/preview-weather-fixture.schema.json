@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchly.local/plugin-api/preview-weather-fixture.schema.json",
+  "title": "Switchly 预览天气 fixture（开发中）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["condition", "temperature", "wind", "source"],
+  "properties": {
+    "condition": { "type": "string", "minLength": 1 },
+    "temperature": { "type": "number" },
+    "wind": { "type": "number", "minimum": 0 },
+    "source": { "const": "online" }
+  }
+}

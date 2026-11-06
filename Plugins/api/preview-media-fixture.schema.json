@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchly.local/plugin-api/preview-media-fixture.schema.json",
+  "title": "Switchly 预览媒体 fixture（开发中）",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nowPlaying": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["playing", "title", "artist", "album", "position", "duration", "progress", "liked", "canLike"],
+          "properties": {
+            "playing": { "type": "boolean" },
+            "title": { "type": "string" },
+            "artist": { "type": "string" },
+            "album": { "type": "string" },
+            "position": { "type": "number", "minimum": 0 },
+            "duration": { "type": "number", "minimum": 0 },
+            "progress": { "type": "number", "minimum": 0, "maximum": 1 },
+            "liked": { "type": "boolean" },
+            "canLike": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "library": {
+      "type": "array", "maxItems": 1000,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["persistentID", "title", "artist", "bpm"],
+        "properties": {
+          "persistentID": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "artist": { "type": "string", "minLength": 1 },
+          "bpm": { "type": "number", "minimum": 0 },
+          "genres": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "artworkBase64": { "type": "string", "contentEncoding": "base64" }
+  }
+}

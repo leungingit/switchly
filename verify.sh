@@ -97,7 +97,8 @@ fi
 section "2. Project layout"
 # ─────────────────────────────────────────────────────────────────────────────
 
-for dir in App Models ViewModels Views Services Utilities Resources Supporting Tests Scripts; do
+for dir in Sources/App Sources/Models Sources/ViewModels Sources/Views Sources/Services Sources/Utilities \
+           Resources Supporting Tests Scripts Tools Plugins/api Plugins/sdk Plugins/cli Website docs; do
   if [ -d "$dir" ]; then
     pass "$dir/"
   else
@@ -111,11 +112,11 @@ required=(
   Resources/Info.plist
   Resources/Assets.xcassets/AppIcon.appiconset/Contents.json
   Supporting/Switchly.entitlements
-  App/SwitchlyApp.swift
-  App/AppDelegate.swift
-  Services/AccessibilityService.swift
-  Services/WindowSwitchService.swift
-  Utilities/WindowMatchRules.swift
+  Sources/App/SwitchlyApp.swift
+  Sources/App/AppDelegate.swift
+  Sources/Services/AccessibilityService.swift
+  Sources/Services/WindowSwitchService.swift
+  Sources/Utilities/WindowMatchRules.swift
   Tests/UnitTests/WindowMatchRulesTests.swift
   Switchly.xcodeproj/project.pbxproj
   Switchly.xcodeproj/xcshareddata/xcschemes/Switchly.xcscheme
@@ -241,10 +242,10 @@ fi
 section "5. Code hygiene"
 # ─────────────────────────────────────────────────────────────────────────────
 
-swift_count="$(find App Models ViewModels Views Services Utilities Tests Scripts -name '*.swift' 2>/dev/null | wc -l | tr -d ' ')"
+swift_count="$(find Sources Tests Scripts -name '*.swift' 2>/dev/null | wc -l | tr -d ' ')"
 pass "$swift_count Swift files"
 
-oversized="$(find App Models ViewModels Views Services Utilities -name '*.swift' -exec wc -l {} + 2>/dev/null \
+oversized="$(find Sources -name '*.swift' -exec wc -l {} + 2>/dev/null \
   | awk '$1 > 500 && $2 != "total" { print "      " $2 " (" $1 " lines)" }')"
 if [ -z "$oversized" ]; then
   pass "all source files are within the 500-line guideline"
@@ -253,7 +254,7 @@ else
   printf '%s\n' "$oversized"
 fi
 
-todo_count="$(grep -rcE '\b(TODO|FIXME|XXX)\b' App Models ViewModels Views Services Utilities --include='*.swift' 2>/dev/null \
+todo_count="$(grep -rcE '\b(TODO|FIXME|XXX)\b' Sources --include='*.swift' 2>/dev/null \
   | awk -F: '{ s += $2 } END { print s + 0 }')"
 if [ "$todo_count" -eq 0 ]; then
   pass "no TODO / FIXME markers in source"

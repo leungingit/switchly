@@ -4,7 +4,7 @@
 
 ## 实施更新
 
-本方案已在当前 PR 中落实。原始诊断保留如下，当前契约以 [设计系统](../design-system.md) 为准。
+本方案已在当前 PR 中落实。原始诊断保留如下，当前契约以 [设计系统](../product/design-system.md) 为准。
 
 - 外观集中到独立标签页；基础为主题、透明 / 磨砂 / 关闭材质、共享密度、染色，高级项包含卡片分隔和衬底。
 - macOS 26+ 的透明 / 磨砂路径分别使用公开 `NSGlassEffectView` 的 `.clear` / `.regular`，生产视图放入其 `contentView`；旧系统降级。旧的独立明暗底色只保留解码，不再覆盖文字主题。
@@ -20,7 +20,7 @@
 
 | 未取得焦点，仍为原生 clear | 取得焦点，仍为原生 clear |
 | --- | --- |
-| ![同一原生 clear 玻璃未取得焦点](../images/glass-clear-inactive.png) | ![同一原生 clear 玻璃取得焦点](../images/glass-clear-active.png) |
+| ![同一原生 clear 玻璃未取得焦点](../assets/images/glass-clear-inactive.png) | ![同一原生 clear 玻璃取得焦点](../assets/images/glass-clear-active.png) |
 
 以上是独立原生 API 诊断截图，背景为生成的示例文字，不是生产 Dock 截图，不包含用户窗口内容。可运行 `swift Scripts/capture-glass-activation.swift --capture /tmp/switchly-glass-activation` 重现；该工具会暂时显示窗口并切换焦点，捕获前检查真实焦点状态和窗口几何。首次使用无效的不可聚焦背景窗口时，状态断言正确拒绝截图；改用可聚焦背景后通过。
 
@@ -54,15 +54,15 @@ Dock 的材质容器已使用共享实现，但设置原先由临时 SwiftUI 视
 
 | 亮色透明 · 无叠层 | 暗色磨砂 · 强自定义 |
 | --- | --- |
-| ![亮色原生透明与常驻组边框](../images/glass-titlebar-clear-light.png) | ![暗色磨砂标题栏与面板连续覆盖](../images/glass-titlebar-frosted-dark.png) |
+| ![亮色原生透明与常驻组边框](../assets/images/glass-titlebar-clear-light.png) | ![暗色磨砂标题栏与面板连续覆盖](../assets/images/glass-titlebar-frosted-dark.png) |
 
 ### 磨砂后续修正
 
 用户反馈磨砂仍有灰黑底，确认其仍走旧 `.popover` 路径。macOS 26+ 改用原生 `.regular`，与透明模式共享内容容器、染色和密度。暗色原生磨砂仍有系统阅读压暗，不承诺完全无色；macOS 12–25 保留旧材质降级。本次又完成了边缘与范围修正，最新测试与截图见下一节。
 
-![亮色磨砂，生产视图测试宿主与合成背景](../images/glass-frosted-light.png)
+![亮色磨砂，生产视图测试宿主与合成背景](../assets/images/glass-frosted-light.png)
 
-![暗色磨砂，生产视图测试宿主与合成背景](../images/glass-frosted-dark.png)
+![暗色磨砂，生产视图测试宿主与合成背景](../assets/images/glass-frosted-dark.png)
 
 ### 边缘与调节范围后续修正
 
@@ -85,9 +85,9 @@ Dock 的材质容器已使用共享实现，但设置原先由临时 SwiftUI 视
 
 以下为测试宿主在屏幕上运行共享生产材质、卡片和缩略图衬底绘制后的端点对照；每行固定其他参数，左侧下限、右侧上限，蓝底是合成背景。它是材质验收样例，不是设置页或真实窗口缩略图截图。
 
-![亮色磨砂端点对照](../images/glass-control-endpoints-light.png)
+![亮色磨砂端点对照](../assets/images/glass-control-endpoints-light.png)
 
-![暗色磨砂端点对照](../images/glass-control-endpoints-dark.png)
+![暗色磨砂端点对照](../assets/images/glass-control-endpoints-dark.png)
 
 ### 验证证据
 
@@ -97,11 +97,11 @@ Dock 的材质容器已使用共享实现，但设置原先由临时 SwiftUI 视
 
 | 浅色外观 | 深色外观 |
 | --- | --- |
-| ![浅色透明外观](../images/glass-appearance-light.png) | ![深色透明外观](../images/glass-appearance-dark.png) |
+| ![浅色透明外观](../assets/images/glass-appearance-light.png) | ![深色透明外观](../assets/images/glass-appearance-dark.png) |
 
-![深色预览，示例窗口](../images/glass-preview-dark.png)
+![深色预览，示例窗口](../assets/images/glass-preview-dark.png)
 
-![深色 Dock 预览，示例窗口](../images/glass-dock-dark.png)
+![深色 Dock 预览，示例窗口](../assets/images/glass-dock-dark.png)
 
 视觉检查使用屏幕区域合成截图；单独窗口截图会失去背后的采样背景。可选择性复现：`TEST_RUNNER_SWITCHLY_CAPTURE_GLASS=1 make test-unit`。普通 `make test-unit` 会跳过桌面截图项，避免 CI 弹窗和截图权限依赖。
 

@@ -12,8 +12,9 @@ Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具，�
 - [CONTRIBUTING.md](CONTRIBUTING.md)：开发、设置兼容、日志、测试约定。其 Xcode 15+ 描述已落后于 README 和当前 SDK 要求，构建采用 Xcode 26+。
 - [project.yml](project.yml)、[Makefile](Makefile)：工程配置与可执行命令的真源。
 - [PRIVACY_POLICY.md](PRIVACY_POLICY.md)：本地处理与隐私边界。
-- [docs/RELEASING.md](docs/RELEASING.md)、[CHANGELOG.md](CHANGELOG.md)：发布流程与变更记录。
-- 涉及视觉方向时，阅读 [docs/design-system.md](docs/design-system.md) 与 [docs/ui-guidelines.md](docs/ui-guidelines.md)，并对照当前共享视觉实现；用户确认的设计意图、当前实现及历史差异已迁入正式文档，过程草稿不能自动覆盖。
+- [docs/README.md](docs/README.md)：文档索引；新增文档按 `docs/product`、`docs/engineering`、`docs/plugins`、`docs/research`、`docs/reviews` 归档，不再堆在 `docs/` 顶层。
+- [docs/engineering/RELEASING.md](docs/engineering/RELEASING.md)、[CHANGELOG.md](CHANGELOG.md)：发布流程与变更记录。
+- 涉及视觉方向时，阅读 [docs/product/design-system.md](docs/product/design-system.md) 与 [docs/product/ui-guidelines.md](docs/product/ui-guidelines.md)，并对照当前共享视觉实现；用户确认的设计意图、当前实现及历史差异已迁入正式文档，过程草稿不能自动覆盖。
 
 文档与代码不一致时，先查清真实行为和用户意图，明确应修正哪一方，再同步相关内容。不得通过只改文档掩盖实现缺陷，也不得静默改变既有契约。
 
@@ -33,12 +34,12 @@ Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具，�
 
 | 目录 | 职责与约束 |
 | --- | --- |
-| `App/` | 生命周期、菜单栏、服务装配与跨模块协调；避免继续堆积可独立测试的业务逻辑 |
-| `Models/` | 数据结构、枚举、设置与业务规则；不得依赖 Views / ViewModels 或驱动界面生命周期 |
-| `ViewModels/` | 交互状态、筛选、服务编排；通过服务协议注入依赖，避免直接操作 AX / CG 底层窗口接口 |
-| `Views/` | SwiftUI 视图、AppKit 面板与展示桥接；负责展示和输入，不直接编码持久化、窗口枚举或截图业务 |
-| `Services/` | AX 权限与窗口操作、窗口监控、缩略图、快捷键、设置、统计；不得反向依赖具体 Views / ViewModels |
-| `Utilities/` | 共享设计、动效、日志、图标缓存和窗口匹配工具；保持职责明确，避免成为业务杂物箱 |
+| `Sources/App/` | 生命周期、菜单栏、服务装配与跨模块协调；避免继续堆积可独立测试的业务逻辑 |
+| `Sources/Models/` | 数据结构、枚举、设置与业务规则；不得依赖 Views / ViewModels 或驱动界面生命周期 |
+| `Sources/ViewModels/` | 交互状态、筛选、服务编排；通过服务协议注入依赖，避免直接操作 AX / CG 底层窗口接口 |
+| `Sources/Views/` | SwiftUI 视图、AppKit 面板与展示桥接；负责展示和输入，不直接编码持久化、窗口枚举或截图业务 |
+| `Sources/Services/` | AX 权限与窗口操作、窗口监控、缩略图、快捷键、设置、统计；不得反向依赖具体 Views / ViewModels |
+| `Sources/Utilities/` | 共享设计、动效、日志、图标缓存和窗口匹配工具；保持职责明确，避免成为业务杂物箱 |
 | `Resources/` | Info.plist、资源和双语文案 |
 | `Tests/` | 单元、快照与 UI 测试；系统行为仍需真实运行验证 |
 
@@ -49,7 +50,7 @@ Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具，�
 
 ## 4. 界面与视觉约束
 
-- 间距、圆角、细边框复用 `Utilities/DesignTokens.swift`；动画复用 `MotionTokens.swift`；玻璃、卡片与面板材质复用 `GlassEffect.swift`，macOS 26+ 原生透明容器复用 `NativeCrystalContainer.swift`；主题应用复用 `ThemeApplier.swift`。
+- 间距、圆角、细边框复用 `Sources/Utilities/DesignTokens.swift`；动画复用 `MotionTokens.swift`；玻璃、卡片与面板材质复用 `GlassEffect.swift`，macOS 26+ 原生透明容器复用 `NativeCrystalContainer.swift`；主题应用复用 `ThemeApplier.swift`。
 - 新增共用视觉值集中到对应令牌或材质实现。优先系统语义色，避免在各个 View 中新增散落的 Hex / RGB、阴影、透明度或动画时长；已有局部值仅在任务涉及时收敛。
 - 保留 Switchly 已有视觉语言。参考其他仓库的是工程约束，不移植其白卡、四角括号、禁用全部阴影或特定字体等产品风格。
 - 透明度必须同时检查 NSWindow / NSPanel 背景与 SwiftUI 内容背景，不能仅让窗口透明却保留不透明内容层。
@@ -96,13 +97,14 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 ./verify.sh        # 工具链、工程、版本、跟踪文件与隐私卫生检查
 ```
 
+- `mise.toml` 是上述命令与官网 Pages 任务的统一入口（`mise tasks` 查看，`mise run app:build`、`test:test-unit`、`pages:serve` 等）；复杂逻辑留在 Makefile 或 `Scripts/`（如 `Scripts/pages.sh`），mise 内不写大段 shell。
 - Debug 产物为 `DerivedData/Build/Products/Debug/Switchly.app`；`make build-release` 不会自动更新 `build/`，分发副本由 `make dist` 或 `build.sh` 生成。
 - Swift 代码修改后运行 `make build` 与 `make test-unit`，并补充与风险相称的回归测试；优先覆盖窗口归属、设置旧数据解码、取消、缓存失效和错误分支，不写只复述实现的测试。
 - UI 修改必须实际运行并查看相关界面截图，检查布局、遮挡、材质、交互和所涉及的主题状态；不能只凭编译、文本存在断言或未查看的快照宣称视觉通过。几何变化应验证真实边界、间距或重叠情况。
 - AX 枚举、同应用切窗、最小化恢复、跨屏定位、Dock 悬停等系统行为需要真实场景验证。单元测试或 UI 测试骨架不能替代系统集成证据。
 - 仓库当前没有 `make guardrails` 或 `make ui-preview` 目标，不照搬其他仓库命令，也不声称存在未实现的门禁。
 - 纯文档修改检查内容、链接、命令和差异即可，无需构建。环境或权限限制导致无法验证时，明确写出未执行项与原因，不能报告通过。
-- 发布、版本修改、打标签按 `docs/RELEASING.md` 执行；`Resources/Info.plist` 是版本真源。不要在普通修复中顺手运行 `make release-*`、`make clean` 或修改版本。
+- 发布、版本修改、打标签按 `docs/engineering/RELEASING.md` 执行；`Resources/Info.plist` 是版本真源。不要在普通修复中顺手运行 `make release-*`、`make clean` 或修改版本。
 
 ## 8. 交付自检
 
@@ -121,7 +123,7 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 ## 9. 插件外仓与公开契约（2026-11-02）
 
 - 插件 JS、资产、专属文案与算法测试唯一来源为相邻 `switchly-plugins` 仓库；禁止重新写回宿主 `Resources/Plugins` 或添加按插件 ID 的业务分支。
-- 宿主公开 API 真源见 `plugin-api/` 与 `docs/plugin-api-reference.md`。`packages/plugin-sdk`、`packages/plugin-cli` 是未发布的本地工具包；CLI `build` 仅校验与复制，不冒充 TS 转译。
+- 宿主公开 API 真源见 `Plugins/api/` 与 `docs/plugins/plugin-api-reference.md`。`Plugins/sdk`、`Plugins/cli` 是未发布的本地工具包；CLI `build` 仅校验与复制，不冒充 TS 转译。
 - 先在外仓 `npm test`、`npm run build`，再宿主 `make prepare-plugins` / `make build`。工程使用忽略的 `.build/Plugins` 制品；`make generate`、build、test 会先校验锁文件，完全不联网。
 - `make update-plugin-lock` 是显式接受新制品的入口，审查逐文件哈希与来源提交；禁止让普通构建自动刷新锁文件。发行前外仓必须提交并锁定不可变 revision，再运行 `make verify-plugin-release`。
 - 用户目录安装与 Registry 复用 `PluginPackageValidator`，用户更新重新授权；当前没有发布者签名验证，因此继续拒绝覆盖预装 ID。不可提前宣称在线市场、独立更新信任或硬隔离完成。

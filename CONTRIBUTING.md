@@ -115,12 +115,12 @@ denied the app still works, falling back to app icons plus window titles.
 ## Project layout
 
 ```
-App/           app entry point (SwitchlyApp, AppDelegate)
-Models/        data models and enums
-ViewModels/    view models (MVVM)
-Views/         SwiftUI / AppKit views
-Services/      accessibility, window monitoring, thumbnails, shortcuts, settings
-Utilities/     logging, theming, window-match rules
+Sources/App/           app entry point (SwitchlyApp, AppDelegate)
+Sources/Models/        data models and enums
+Sources/ViewModels/    view models (MVVM)
+Sources/Views/         SwiftUI / AppKit views
+Sources/Services/      accessibility, window monitoring, thumbnails, shortcuts, settings
+Sources/Utilities/     logging, theming, window-match rules
 Resources/     Info.plist, asset catalog, localizations
 Supporting/    entitlements
 Tests/         UnitTests (real coverage) and UITests (skeleton)
@@ -143,7 +143,7 @@ Scripts/       one-off tooling
 - Log significant operations through `AppLogger` using `key=value` pairs.
   Do not remove existing log statements.
 - Prefer explaining *why* in comments. The window-matching code in
-  `Utilities/WindowMatchRules.swift` and `Services/AccessibilityService.swift`
+  `Sources/Utilities/WindowMatchRules.swift` and `Sources/Services/AccessibilityService.swift`
   documents hard-won platform behaviour — keep those notes accurate.
 - No new third-party dependencies unless there is a strong reason; discuss in an
   issue first.
@@ -180,7 +180,7 @@ to follow.
 Some behaviour cannot be covered by unit tests (AX/CG layer ordering, overlay
 surfaces, focus verification). For those, run the app and describe exactly what
 you observed, including the concrete window IDs and titles. See
-[`Utilities/WindowMatchRules.swift`](Utilities/WindowMatchRules.swift) for the
+[`Sources/Utilities/WindowMatchRules.swift`](Sources/Utilities/WindowMatchRules.swift) for the
 kind of evidence that is expected in a pull request.
 
 ---
@@ -214,7 +214,7 @@ plist, commits, and tags `vX.Y.Z`. It never pushes.
 
 The complete procedure — SemVer rules, every target, what the release workflow
 does with a tag, signing secrets, and rollback — is in
-[docs/RELEASING.md](docs/RELEASING.md).
+[docs/engineering/RELEASING.md](docs/engineering/RELEASING.md).
 
 ```bash
 # 1. Describe what changed under "## [Unreleased]" in CHANGELOG.md
@@ -259,11 +259,11 @@ By contributing you agree that your contributions are licensed under the
 
 ## 插件开发与跨仓验证
 
-插件源码和业务测试只放在相邻的 `switchly-plugins` 仓库，宿主的公开能力以 [API 参考](docs/plugin-api-reference.md) 为准。构建需要 Node.js 20+ 和 Python 3；运行 App 不需要 Node 或 Python。外仓执行 `npm test && npm run build`，宿主执行 `make prepare-plugins`，按 `distribution/bundled-plugins.lock.json` 校验每个文件的 SHA-256。自定义制品路径用 `SWITCHLY_PLUGIN_SOURCE`；构建不联网、不自动更新锁文件。
+插件源码和业务测试只放在相邻的 `switchly-plugins` 仓库，宿主的公开能力以 [API 参考](docs/plugins/plugin-api-reference.md) 为准。构建需要 Node.js 20+ 和 Python 3；运行 App 不需要 Node 或 Python。外仓执行 `npm test && npm run build`，宿主执行 `make prepare-plugins`，按 `Plugins/bundled-plugins.lock.json` 校验每个文件的 SHA-256。自定义制品路径用 `SWITCHLY_PLUGIN_SOURCE`；构建不联网、不自动更新锁文件。
 
 变更预装版本或增添插件时，先审核外仓源码与资产，再构建并显式执行 `make update-plugin-lock`，审查 lock 差异；发布构建要求来源是已提交且干净的外仓提交。开发期可使用未提交的本地制品，但不能据此发布。`make build PLUGIN_FLAGS=--empty` 用于无预装独立构建验证，验证后执行正常 `make build` 恢复制品。
 
-本地 SDK：`npm --prefix packages/plugin-sdk test`；CLI：`npm --prefix packages/plugin-cli test`。使用 `node packages/plugin-cli/bin/switchly-plugin.js --help` 查看真实命令。CLI 的 `build` 校验后复制单入口 JS，不负责 TypeScript 转译。发布前的类型消费验证需要 TypeScript 编译器，包自身无运行依赖。
+本地 SDK：`npm --prefix Plugins/sdk test`；CLI：`npm --prefix Plugins/cli test`。使用 `node Plugins/cli/bin/switchly-plugin.js --help` 查看真实命令。CLI 的 `build` 校验后复制单入口 JS，不负责 TypeScript 转译。发布前的类型消费验证需要 TypeScript 编译器，包自身无运行依赖。
 
 `make plugin-verifier` 构建独立真实 JSC 验证工具；CLI 的 `verify <插件目录> --host <工具路径>` 在单独可终止进程内验证入口与 render，使用假系统能力，不读取真实授权目录。
 

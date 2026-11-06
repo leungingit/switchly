@@ -1,54 +1,189 @@
-# GitHub Pages 静态站（site/）的构建与发布任务。
-# 发布走 .github/workflows/pages.yml；本地只负责构建、预览与触发。
+# Switchly 任务入口：`mise tasks` 查看全部，`mise run <任务名>` 执行。
+# 复杂逻辑放在 Makefile 或 Scripts/ 中，这里只做一行调用。
+# 发布走 .github/workflows/pages.yml；pages 任务只负责本地构建、预览与触发。
+
+[tasks."setup:bootstrap"]
+description = "生成 Xcode 工程（XcodeGen）"
+run = "make bootstrap"
+
+[tasks."setup:generate"]
+description = "重新生成 Xcode 工程"
+run = "make generate"
+
+[tasks."setup:prepare-plugins"]
+description = "校验并准备外部预装插件制品"
+run = "make prepare-plugins"
+
+[tasks."setup:update-plugin-lock"]
+description = "显式接受外部插件制品并更新锁文件"
+run = "make update-plugin-lock"
+
+[tasks."setup:verify-plugin-release"]
+description = "发行前要求外部插件为不可变 revision"
+run = "make verify-plugin-release"
+
+[tasks.app]
+description = "构建并启动 Debug app（等同 app:run，会中断当前 Switchly）"
+run = "make run"
+
+[tasks."app:build"]
+description = "Debug 构建"
+run = "make build"
+
+[tasks."app:build-release"]
+description = "Release 构建"
+run = "make build-release"
+
+[tasks."app:run"]
+description = "构建并启动 Debug app（会中断当前 Switchly）"
+run = "make run"
+
+[tasks."app:open"]
+description = "用 Xcode 打开工程"
+run = "make open"
+
+[tasks."app:clean"]
+description = "清理构建产物"
+run = "make clean"
+
+[tasks."test:test-unit"]
+description = "单元测试（CI 同款）"
+run = "make test-unit"
+
+[tasks."test:test"]
+description = "单元 + UI 测试"
+run = "make test"
+
+[tasks."test:verify"]
+description = "工具链、工程、版本与隐私卫生检查"
+run = "./verify.sh"
+
+[tasks."release:version"]
+description = "打印当前版本与 build 号"
+run = "make version"
+
+[tasks."release:dist"]
+description = "构建并复制 app 到 build/"
+run = "make dist"
+
+[tasks."release:package"]
+description = "生成确定性发布 zip"
+run = "make package"
+
+[tasks."release:checksums"]
+description = "打印 build/ 下文件的 SHA-256"
+run = "make checksums"
+
+[tasks."release:bump-patch"]
+description = "升 patch 版本（仅改 Info.plist）"
+run = "make bump-patch"
+
+[tasks."release:bump-minor"]
+description = "升 minor 版本（仅改 Info.plist）"
+run = "make bump-minor"
+
+[tasks."release:bump-major"]
+description = "升 major 版本（仅改 Info.plist）"
+run = "make bump-major"
+
+[tasks."release:bump-build"]
+description = "升 build 号（仅改 Info.plist）"
+run = "make bump-build"
+
+[tasks."release:release-patch"]
+description = "发 patch 版本：bump、CHANGELOG、提交、打标签"
+run = "make release-patch"
+
+[tasks."release:release-minor"]
+description = "发 minor 版本：bump、CHANGELOG、提交、打标签"
+run = "make release-minor"
+
+[tasks."release:release-major"]
+description = "发 major 版本：bump、CHANGELOG、提交、打标签"
+run = "make release-major"
+
+[tasks."release:release-build"]
+description = "升 build 号并打包"
+run = "make release-build"
+
+[tasks."release:github-release"]
+description = "发布 GitHub Release（TAG=vX.Y.Z mise run release:github-release）"
+run = "make github-release TAG=$TAG"
+
+[tasks."preview:generate"]
+description = "生成预览相关 targets 的工程"
+run = "make plugin-preview-generate"
+
+[tasks."preview:build"]
+description = "构建预览 app 与 worker"
+run = "make plugin-preview-build"
+
+[tasks."preview:app"]
+description = "构建并启动预览 app（启动器窗口，会先退出旧预览进程）"
+run = "make plugin-preview-run"
+
+[tasks."preview:worker"]
+description = "构建预览 worker 外壳"
+run = "make plugin-preview-worker"
+
+[tasks."preview:contract-check"]
+description = "校验契约哈希与共享源守卫"
+run = "make plugin-preview-contract-check"
+
+[tasks."preview:native-test"]
+description = "T15 原生输入回归（需 GUI+录屏权限）"
+run = "make plugin-preview-native-test"
+
+[tasks."preview:baseline-test"]
+description = "T16 视觉基线回归（需 GUI+录屏权限）"
+run = "make plugin-preview-baseline-test"
+
+[tasks."preview:regression"]
+description = "G2 GUI 回归（PLUGINS_REPO=<dir>）"
+run = "make plugin-preview-regression"
+
+[tasks."preview:package"]
+description = "打包 Release 预览离线工具包"
+run = "make plugin-preview-package"
+
+[tasks."preview:toolkit-test"]
+description = "T18 离线工具包验收（需 GUI+录屏权限）"
+run = "make plugin-preview-toolkit-test"
+
+[tasks."preview:cleanroom"]
+description = "T19 作者全流程（PLUGINS_REPO=<dir>）"
+run = "make plugin-preview-cleanroom"
+
+[tasks."plugin:verifier"]
+description = "构建独立插件验证器"
+run = "make plugin-verifier"
 
 [tasks."pages:build"]
-description = "组装 _site/（site/ 页面与截图 + docs/images 的九宫格示意图 + 应用图标）"
-run = """
-set -euo pipefail
-rm -rf _site
-mkdir -p _site
-cp site/*.html site/style.css _site/
-cp -R site/images _site/images
-cp docs/images/desktop-grid-zh.svg _site/images/
-cp Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-128.png _site/images/app-icon.png
-touch _site/.nojekyll
-echo "built _site: $(find _site -type f | wc -l | tr -d ' ') files"
-"""
+description = "组装 _site/（Website/ 页面与截图 + 九宫格示意图 + 应用图标）"
+run = "Scripts/pages.sh build"
 
 [tasks."pages:check"]
 description = "检查 _site/ 内 HTML 的本地 href/src 是否都存在"
 depends = ["pages:build"]
-run = """
-set -euo pipefail
-cd _site
-bad=0
-for f in *.html; do
-  for ref in $(grep -oE '(href|src)="[^"#:]+"' "$f" | sed -E 's/^[a-z]+="//; s/"$//'); do
-    [ -e "$ref" ] || { echo "missing: $f -> $ref"; bad=1; }
-  done
-done
-[ "$bad" = 0 ] && echo "links ok"
-exit "$bad"
-"""
+run = "Scripts/pages.sh check"
+
+[tasks."pages:enable"]
+description = "一次性：把仓库 Pages 来源设为 GitHub Actions（需 gh 登录且有仓库管理权限）"
+run = "Scripts/pages.sh enable"
+
+[tasks."pages:deploy"]
+description = "触发 Pages 工作流并等待结果（先把 Website/ 等改动推到 main）"
+run = "Scripts/pages.sh deploy"
 
 [tasks."pages:serve"]
 description = "本地预览 http://localhost:8000"
 depends = ["pages:build"]
 run = "python3 -m http.server 8000 --directory _site"
 
-[tasks."pages:enable"]
-description = "一次性：把仓库 Pages 来源设为 GitHub Actions（需 gh 登录且有仓库管理权限）"
-run = """
-gh api -X POST repos/{owner}/{repo}/pages -f build_type=workflow 2>/dev/null \
-  || gh api -X PUT repos/{owner}/{repo}/pages -f build_type=workflow
-"""
+[tasks."preview:dev"]
+description = "打开插件预览窗口并热重载（PLUGIN=<插件目录> SCENARIO=<场景.json>；需先 preview:app）"
+run = "Scripts/plugin-preview.sh dev"
 
-[tasks."pages:deploy"]
-description = "触发 Pages 工作流并等待结果（先把 site/ 等改动推到 main）"
-run = """
-set -euo pipefail
-gh workflow run pages.yml --ref main
-sleep 5
-gh run watch "$(gh run list --workflow pages.yml --limit 1 --json databaseId -q '.[0].databaseId')" --exit-status
-gh api repos/{owner}/{repo}/pages -q .html_url
-"""
+[tasks."preview:run"]
+description = "无界面运行场景并导出截图与报告（PLUGIN、SCENARIO，可选 OUT；需屏幕录制权限）"
+run = "Scripts/plugin-preview.sh run"

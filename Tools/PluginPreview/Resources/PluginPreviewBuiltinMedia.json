@@ -1,0 +1,34 @@
+{
+  "nowPlaying": {
+    "playing": false,
+    "title": "Synthetic Evening",
+    "artist": "Fixture Ensemble",
+    "album": "Fixture Sessions",
+    "position": 96,
+    "duration": 214,
+    "liked": true,
+    "canLike": true,
+    "progress": 0.4485981308411215
+  },
+  "library": [
+    {
+      "persistentID": "synthetic-track-001",
+      "title": "Synthetic Evening",
+      "artist": "Fixture Ensemble",
+      "bpm": 92,
+      "genres": [
+        "ambient"
+      ]
+    },
+    {
+      "persistentID": "synthetic-track-002",
+      "title": "Synthetic Daylight",
+      "artist": "Fixture Ensemble",
+      "bpm": 120,
+      "genres": [
+        "pop"
+      ]
+    }
+  ],
+  "artworkBase64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAnUlEQVR4nBXKIRVEIRRAwY20IQiB/AEQRHgREARAIhFXIohAo7v75Zwzn++D6cH8YHkwHuwPzgf3359vxVQxVywVo2KvOCvu+obAFJgDS2AE9sAZuOMNDVPD3LA0jIa94Wy42xsGpoF5YBkYA/vAOXCPNyxMC/PCsjAW9oVz4V5vOJgO5oPlYBzsB+fBfd5wMV3MF8vFuNgvzov77x+SQbBBK8thSgAAAABJRU5ErkJggg=="
+}

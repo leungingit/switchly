@@ -9,6 +9,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- 插件独立预览与开发工具（本地候选）：本体未运行时用同一份 Runtime/解码器/渲染代码预览插件，`switchly-plugin dev|run` 导出截图、声明式树、动作清单与报告；场景支持固定虚拟时钟（`Date`/`Math.random`/定时器/Scene）、步骤（推进时间、业务动作、文本断言、经可访问树的原生点击）、逐像素视觉基线与差异图。提供离线工具包（`make plugin-preview-package`）与兼容握手；CLI 与预览 App 版本、协议或契约不配套时在启动前拒绝。详见 `docs/plugins/plugin-preview-guide.md`。
+
 - 插件源码与算法测试迁往独立 `switchly-plugins` 仓库，预装包通过文件哈希和来源提交锁定；新增本地 SDK/CLI、完整 API 参考与机器能力清单（尚未发布 npm）。
 - 插件管理新增搜索、状态筛选、选中展开、本地目录安装、用户包替换/卸载与加载失败展示；更新用户包后重新授权并保留业务设置。
 - 插件 API 增加私有 Promise JSON 存储，普通插件图片复用通用资产预算；修复同名动作跨插件冲突，隐藏预览时暂停受控定时器。
@@ -16,7 +18,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - 天气抽卡（Music 的 Dock 预览）：设置天气后倒计时抽三张卡，选一张揭晓并播放资料库里的一首歌。它是内置 JS 插件 `com.switchly.weather-gacha`，不是宿主里的原生功能：五线谱音符倒计时、卡片流光与碎裂、跳动音符、背景涟漪全部由插件声明、宿主本地播放。
 - 插件 API 2：新增 `scene` 组件（图层、关键帧轨道、振荡器、粒子发射器、拨弦线、碎裂退场、命中区域，带层数 / 粒子 / 命中预算，减少动态效果时静帧）、`media.library` 权限（`ctx.media.library.pickRandom / play / pause`）、`ctx.reduceMotion`，以及设置项的 `select` / `number` 类型（保存于 `AppSettings.pluginValues`，旧设置读取为空）。
 
-- 官网与插件 API 文档（`site/`）：功能介绍、四张功能截图的悬停展示区、插件 API 参考；新增 `mise.toml` 的 `pages:*` 任务与 `.github/workflows/pages.yml`，用于构建并发布到 GitHub Pages。中英文 README 同步新增「Dock 预览插件」一节与官网链接。
+- 官网与插件 API 文档（`Website/`）：功能介绍、四张功能截图的悬停展示区、插件 API 参考；新增 `mise.toml` 的 `pages:*` 任务与 `.github/workflows/pages.yml`，用于构建并发布到 GitHub Pages。中英文 README 同步新增「Dock 预览插件」一节与官网链接。
 - 偏好设置 → 常规新增「写入本地日志文件」开关，默认关闭；开启后恢复原有的文件日志与轮转。旧设置读取为关闭。
 
 ### Changed
@@ -50,7 +52,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - 打开九宫格总览时关闭 apps 预览面板，点击总览时关闭 apps 面板并将总览置顶，避免两者同时出现、apps 面板始终压在上层。
-- 九宫格切换桌面：点击其他桌面时跳过在当前桌面也有窗口的应用（激活它们不会换桌面），无可用应用时改用「切换到桌面 N」系统快捷键；未配置的快捷键不再当作默认启用，而是提示未配置。接管系统四指手势时只拦截横滑和竖滑，四指捏合（App/启动台）和张开（显示桌面）恢复为系统响应。
+- 九宫格切换桌面：点击其他桌面时跳过在当前桌面也有窗口的应用（激活它们不会换桌面），无可用应用时改用「切换到桌面 N」系统快捷键；未配置的快捷键不再当作默认启用，而是提示未配置。接管系统四指手势时只拦截横滑和竖滑，四指捏合（Sources/App/启动台）和张开（显示桌面）恢复为系统响应。
 - 消除 Release / `make dist` 构建中桌面空间枚举桥接的 Sendable 警告。桌面枚举仍只在同一条串行队列上运行，行为不变。
 - 窗口监控的缩略图预热只补缺失的缓存：窗口已有内存或磁盘缓存截图时不再预热，避免未打开预览时仍反复抓取前台及受监控窗口；没有缓存的窗口仍会预热，首次打开预览不必等待现拍。保留打开面板时的按需截图与可见面板的定时刷新。
 - 预览面板切换窗口更稳：「正在查找其他桌面的窗口」提示与窗口计数同行显示，不再把窗口列表顶下去再弹回；悬停切换大图不再触发整个面板重绘，键盘选择只做最小滚动，大图切换改为旧图淡出、新图直接垫底的交叉过渡。
@@ -187,7 +189,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   now run on `macos-26`, and the documented requirement is Xcode 26.0 or
   later — which is what the Liquid Glass code has needed all along.
 - Documentation corrected against the shipped build. `README.md` and
-  `docs/RELEASING.md` both claimed published builds were Apple Silicon
+  `docs/engineering/RELEASING.md` both claimed published builds were Apple Silicon
   (arm64) only; a `Release` build is in fact **universal** (`ARCHS = arm64
   x86_64`, `ONLY_ACTIVE_ARCH = NO`) and runs on Intel Macs too. The README
   feature list also conflated the workspace bar with the Dock preview, and was
@@ -237,7 +239,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   configured without ever committing it. Ends the per-rebuild loss of the
   Accessibility / Screen Recording grants on developer machines. CI and fresh
   clones are unaffected.
-- Motion language for the whole app, centralized in `Utilities/MotionTokens.swift`:
+- Motion language for the whole app, centralized in `Sources/Utilities/MotionTokens.swift`:
   panels fade + rise in and zoom toward the activated card on dismiss; the dock
   preview grows out of the hovered Dock icon and springs between icons; window
   cards stagger in, lift on hover and keyboard selection; thumbnails cross-fade
@@ -257,7 +259,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   activate when the corresponding repository secrets are configured.
 - Dependabot configuration for GitHub Actions and the `HotKey` dependency.
 - `make test-unit`, `make zip`, and `make github-release` targets.
-- `docs/RELEASING.md` — the complete versioning and release guide: SemVer rules
+- `docs/engineering/RELEASING.md` — the complete versioning and release guide: SemVer rules
   for an app, every `make version` / `bump-*` / `release-*` target and what each
   one touches, what the release workflow does with a tag, the optional signing
   and notarization secrets, how to withdraw a release, and a copy-paste release

@@ -1,4 +1,4 @@
-.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build
+.PHONY: help all bootstrap generate build build-release test test-unit clean dist package zip checksums github-release open run version bump-patch bump-minor bump-major bump-build release-patch release-minor release-major release-build plugin-preview-generate plugin-preview-build plugin-preview-app plugin-preview-worker plugin-preview-run plugin-preview-contract-check plugin-preview-native-test plugin-preview-baseline-test plugin-preview-regression plugin-preview-package plugin-preview-toolkit-test plugin-preview-cleanroom
 
 .DEFAULT_GOAL := help
 
@@ -8,6 +8,9 @@ SCHEME := Switchly
 APP_NAME := Switchly
 BUILD_DIR := ./build
 DERIVED_DATA := ./DerivedData
+PLUGIN_PREVIEW_SCHEME := SwitchlyPluginPreview
+PLUGIN_PREVIEW_WORKER_SCHEME := SwitchlyPluginPreviewWorker
+PLUGIN_PREVIEW_DERIVED_DATA := $(DERIVED_DATA)/PluginPreview
 
 # Marketing version, read from Info.plist (the single source of truth).
 VERSION := $(shell /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist 2>/dev/null || echo 0.0.0)
@@ -227,9 +230,106 @@ update-plugin-lock: ## Explicitly accept external plugin artifacts into the prei
 
 .PHONY: verify-plugin-release
 verify-plugin-release: ## Require an immutable external source revision before release builds
-	@python3 -c 'import json,re; d=json.load(open("distribution/bundled-plugins.lock.json")); assert re.fullmatch("[0-9a-f]{40}", d.get("sourceRevision") or ""), "发布前请先提交外仓，再执行 make update-plugin-lock 锁定来源提交"'
+	@python3 -c 'import json,re; d=json.load(open("Plugins/bundled-plugins.lock.json")); assert re.fullmatch("[0-9a-f]{40}", d.get("sourceRevision") or ""), "发布前请先提交外仓，再执行 make update-plugin-lock 锁定来源提交"'
 
 .PHONY: plugin-verifier
 plugin-verifier: ## Build the standalone verifier using the real JSC runtime and decoders
 	@mkdir -p .build/tools
-	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Models/Plugins/PluginManifest.swift Models/Plugins/PluginUINode.swift Models/Plugins/PluginScene.swift Services/Plugins/PluginRegistry.swift Services/Plugins/PluginPackageValidator.swift Services/Plugins/PluginRuntime.swift Services/Plugins/PluginFileReader.swift Services/Plugins/PluginStorage.swift Services/Plugins/MediaBridge.swift Utilities/AppLogger.swift
+	@xcrun swiftc -swift-version 5 -parse-as-library -o .build/tools/switchly-plugin-verify Tools/PluginVerifier.swift Sources/Models/Plugins/PluginManifest.swift Sources/Models/Plugins/PluginUINode.swift Sources/Models/Plugins/PluginScene.swift Sources/Services/Plugins/PluginRegistry.swift Sources/Services/Plugins/PluginPackageValidator.swift Sources/Services/Plugins/PluginRuntime.swift Sources/Services/Plugins/PluginVirtualClock.swift Sources/Services/Plugins/PluginFileReader.swift Sources/Services/Plugins/PluginStorage.swift Sources/Services/Plugins/MediaBridge.swift Sources/Utilities/AppLogger.swift
+
+# T04: build wiring for the independent preview. Generation intentionally
+# skips prepare-plugins and the targets carry no host resources, services, or
+# entitlements. The entry points are compile shells until T06/T08 land.
+.PHONY: plugin-preview-generate
+plugin-preview-generate: check-xcodegen ## Generate the project for preview targets
+	@# The preview targets use no bundled plugins, but xcodegen validates the whole spec and the host target
+	@# references .build/Plugins (produced by `make prepare-plugins` from the private plugin repo). Make sure the
+	@# directory exists so the preview toolchain builds from a clean clone without that repo.
+	@mkdir -p .build/Plugins
+	@xcodegen generate
+
+.PHONY: plugin-preview-app
+plugin-preview-app: plugin-preview-generate ## Build the standalone preview app shell
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
+		-scheme $(PLUGIN_PREVIEW_SCHEME) \
+		-configuration Debug \
+		-destination 'generic/platform=macOS' \
+		-derivedDataPath $(PLUGIN_PREVIEW_DERIVED_DATA) \
+		$(SIGN_FLAG) \
+		-quiet \
+		build
+	@echo "${BLUE}→ $(PLUGIN_PREVIEW_DERIVED_DATA)/Build/Products/Debug/$(PLUGIN_PREVIEW_SCHEME).app${NC}"
+
+.PHONY: plugin-preview-worker
+plugin-preview-worker: plugin-preview-generate ## Build the standalone preview worker shell
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
+		-scheme $(PLUGIN_PREVIEW_WORKER_SCHEME) \
+		-configuration Debug \
+		-destination 'generic/platform=macOS' \
+		-derivedDataPath $(PLUGIN_PREVIEW_DERIVED_DATA) \
+		$(SIGN_FLAG) \
+		-quiet \
+		build
+	@echo "${BLUE}→ $(PLUGIN_PREVIEW_DERIVED_DATA)/Build/Products/Debug/$(PLUGIN_PREVIEW_WORKER_SCHEME)${NC}"
+
+.PHONY: plugin-preview-build
+plugin-preview-build: plugin-preview-app plugin-preview-worker ## Build preview app and worker targets
+	@echo "${GREEN}✅ Plugin preview build wiring complete${NC}"
+
+.PHONY: plugin-preview-run
+plugin-preview-run: plugin-preview-build ## Build and launch the standalone preview app (launcher window)
+	@# Same as `run`: `open` would only re-activate a running instance, so stop the old one first.
+	@-pkill -f "SwitchlyPluginPreview.app/Contents/MacOS" 2>/dev/null || true
+	@sleep 1
+	@open -n "$(PLUGIN_PREVIEW_DERIVED_DATA)/Build/Products/Debug/$(PLUGIN_PREVIEW_SCHEME).app"
+
+.PHONY: plugin-preview-contract-check
+plugin-preview-contract-check: ## Verify contract hash, renderer revision and shared-source guard
+	@./Tools/PluginPreview/contract-hash.sh --check
+	@./Tools/PluginPreview/renderer-revision.sh --check
+	@./Tools/PluginPreview/shared-source-check.sh
+
+.PHONY: plugin-preview-native-test
+plugin-preview-native-test: plugin-preview-build ## T15 native-input regression (needs GUI + Screen Recording; exits 77 if unavailable)
+	@./Tests/PluginPreview/run-native-input-tests.sh
+
+.PHONY: plugin-preview-baseline-test
+plugin-preview-baseline-test: plugin-preview-build ## T16 visual-baseline regression (needs GUI + Screen Recording; exits 77 if unavailable)
+	@./Tests/PluginPreview/run-baseline-tests.sh
+
+# G2 regression: native input, visual baseline, dev lifecycle and every scenario of the plugin repo.
+# Needs a GUI session and Screen Recording; each script exits 77 (not a pass) when the environment is unavailable.
+PLUGINS_REPO ?= ../switchly-plugins
+.PHONY: plugin-preview-regression
+plugin-preview-regression: plugin-preview-contract-check plugin-preview-build ## G2 GUI regression suite (set PLUGINS_REPO=<dir> for the plugin repo)
+	@./Tests/PluginPreview/run-native-input-tests.sh
+	@./Tests/PluginPreview/run-baseline-tests.sh
+	@./Tests/PluginPreview/run-dev-lifecycle-tests.sh
+	@./Tests/PluginPreview/run-failure-modes-tests.sh
+	@./Tests/PluginPreview/run-plugin-scenarios.sh $(PLUGINS_REPO)
+
+# T18: offline toolkit. Forces ad-hoc signing so no private identity or Config/Local.xcconfig value can leak
+# into the distributable; the package script fails if the app is not ad-hoc signed.
+PLUGIN_PREVIEW_RELEASE_DERIVED_DATA := $(DERIVED_DATA)/PluginPreviewRelease
+PLUGIN_PREVIEW_TOOLKIT_DIR ?= $(PLUGIN_PREVIEW_RELEASE_DERIVED_DATA)/toolkit
+.PHONY: plugin-preview-package
+plugin-preview-package: plugin-preview-generate plugin-preview-contract-check ## Build the Release preview app and package the offline toolkit
+	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
+		-scheme $(PLUGIN_PREVIEW_SCHEME) \
+		-configuration Release \
+		-destination 'generic/platform=macOS' \
+		-derivedDataPath $(PLUGIN_PREVIEW_RELEASE_DERIVED_DATA) \
+		CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" CODE_SIGN_STYLE=Manual \
+		-quiet \
+		build
+	@rm -rf "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"
+	@./Tools/PluginPreview/package-toolkit.sh "$(PLUGIN_PREVIEW_RELEASE_DERIVED_DATA)/Build/Products/Release/$(PLUGIN_PREVIEW_SCHEME).app" "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"
+
+.PHONY: plugin-preview-toolkit-test
+plugin-preview-toolkit-test: plugin-preview-package ## T18 acceptance: run the packaged toolkit with no Xcode, no network (needs GUI + Screen Recording)
+	@./Tests/PluginPreview/run-toolkit-tests.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz
+	@./Tests/PluginPreview/run-guide-check.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz
+
+.PHONY: plugin-preview-cleanroom
+plugin-preview-cleanroom: plugin-preview-package ## T19 author journey with only the plugin repo + toolkit (needs GUI + Screen Recording; PLUGINS_REPO=<dir>)
+	@./Tests/PluginPreview/run-clean-room.sh "$(PLUGIN_PREVIEW_TOOLKIT_DIR)"/switchly-plugin-preview-toolkit-*.tar.gz $(PLUGINS_REPO)

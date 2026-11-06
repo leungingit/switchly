@@ -29,7 +29,7 @@
 
 ## D04：本轮实际证据
 
-- 基线：`main` 与 `origin/main` 均为 `b00aa47eb34e7da5c0a302fa8fe6778f156f8910`；独立分支 `feat/all-spaces-window-preview`。原工作区 `Views/OnboardingView.swift` 修改未带入。
+- 基线：`main` 与 `origin/main` 均为 `b00aa47eb34e7da5c0a302fa8fe6778f156f8910`；独立分支 `feat/all-spaces-window-preview`。原工作区 `Sources/Views/OnboardingView.swift` 修改未带入。
 - 最初只读探测：执行环境 `axTrusted=true`、`screenCapture=true`。原属性读取出现 `missingIDs=20`，不能把没有属性误读成没有窗口。
 - 结束受控全屏场景后再次只读查询，AX 返回两个窗口，两个真实 ID 均恢复为当前桌面且可见；没有保留新增的全屏 Space。
 - 使用本次正式 `WindowSystemIdentity.swift` 编译的独立只读探针，受控应用返回：AX 只暴露 ID `30038`；CG 中 ID `30038` 为当前桌面，ID `30037` 为其他桌面，离屏 ID `30059` 归属未知。说明 AX 单一来源不足，且 CG 离屏辅助项不能直接计数。该证据仅证明读取路径，不证明成品面板已完成定位。

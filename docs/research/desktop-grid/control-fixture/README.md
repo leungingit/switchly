@@ -1,6 +1,6 @@
 # Spaces 受控评估夹具
 
-对应 [第二轮评估结论](../../../desktop-grid-evaluation-2026-10-21.md)。这是独立研究夹具，不是 Switchly 功能，也不加入工程、依赖、设置或发行包。
+对应 [第二轮评估结论](../../../product/desktop-grid-evaluation-2026-10-21.md)。这是独立研究夹具，不是 Switchly 功能，也不加入工程、依赖、设置或发行包。
 
 ## 用途与范围
 

@@ -1,0 +1,28 @@
+{
+  "name": "@switchly/plugin-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Switchly 插件的零依赖校验与本地构建 CLI",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "switchly-plugin": "./bin/switchly-plugin.js"
+  },
+  "exports": {
+    ".": "./src/cli.js",
+    "./validate": "./src/validate.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "contract",
+    "scripts"
+  ],
+  "scripts": {
+    "prepack": "node scripts/prepare-contract.mjs",
+    "test": "node --test",
+    "pretest": "node scripts/prepare-contract.mjs"
+  }
+}
