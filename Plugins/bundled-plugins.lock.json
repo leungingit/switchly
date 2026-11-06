@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": "leungingit/switchly-plugins",
-  "sourceRevision": "d1de39c22a8b5e131879d00b761c346dac949a41",
+  "sourceRevision": "720933b5d0895ec1e0fa5de75053c828492e4ff6",
   "plugins": [
     {
       "id": "com.switchly.music-controls",
@@ -44,8 +44,25 @@
         "assets/hair-front.png": "ba071393c9ebc099525e6fc6f6b4eeedf2b2f691233a6d38df8561fbf9c0d7cc",
         "assets/head.png": "75d6b69e0177e566f568d353f4279db4d8b0f38f0931106e006634a1befb7c3b",
         "assets/legs.png": "20d2b1e4726f38da0b1f93ff68aad7d8e4dfda0ea07913238669e75f3cb9e964",
+        "assets/lie-arms.png": "ae3ea1acd80f1a07aef4f7f1b188f2fdb1e090d24334a643abe4450c7e9e1dc2",
+        "assets/lie-base.png": "cb6f10286fdb93c4ee684dbe2ad1eded42f4ff43d1f8459e59b71ccc8c786c1d",
+        "assets/lie-ears.png": "0e488cbb8167706f0ade24341ceb4ef5af1b609c2259b69880cad73a83aa8cd9",
+        "assets/lie-eyes.png": "f112c880f6adf7d0b05a146f3ea8aba923931ea0898b94485142ffeb2fab75f1",
+        "assets/lie-hair-front.png": "b9a3477c0035715df24b9a53993bb15a69a3c68a46dd877ddebb82e61ab4dc9b",
+        "assets/lie-head.png": "905b48d28b5fed1979da5367e8fded61f150d1c10875dfc782bd99f27165e1f2",
+        "assets/mid-crouch.png": "e4119a4ed8534e0b6d6d050fbf0c96278e96edda23986ba30c7b94c14150df9e",
+        "assets/mid-lean.png": "6245516091f5691c751169c207b190e2d88b99fa0df4ab794675a33ede02f97e",
+        "assets/mid-lower.png": "f5665e7382e116129130189c6590b125da5cbe24958f295d7ffcdac153c3992c",
+        "assets/mid-prop.png": "1e3e75d12ce2176780620925c2d8ea0bb6989b841b2b439bee22fbe4f4720ee0",
+        "assets/sit-base.png": "a2a85934371b0c27c0c30261e0c865f2095e7ecb089c9af660f493196b42113b",
+        "assets/sit-ears.png": "c4f63326519be8002dc32deecba0999e993ce42bc3553a889ee0a2d8beab0995",
+        "assets/sit-eyes.png": "3ecc9bc68a8e0855001be90f31210c0a0ad8b1470a67f44f2cdffef8ffe9780f",
+        "assets/sit-hair-front.png": "27bfe49f2e7c1ed862cc00c387f423cca8f00bf29f6ba795eb4f89b6910bdd49",
+        "assets/sit-head.png": "107651399d92e06a0f04d63c31e76ac14352cfa7f06dbeeda279616b9ec6bce3",
         "assets/skirt.png": "e06ac3923f08ec6ef2fea760be647e50f916e7fa003a75c52fa0b9dbe1f9f08e",
-        "main.js": "416498df9ac6887983bddfc083a60113068d4dd7d93ce3ce3828a8da060fe7d5",
+        "locales/en.json": "5b08dbd093a6999d6b4f86f81c345661d92a35235cbf0690a1e1fc9eaf40d099",
+        "locales/zh-Hans.json": "dc45d86622bed61abced5010acd5dd0e17bca64b6045c1fbebc26635f800fb7b",
+        "main.js": "bcd39b6b35e54dbf701b350b95e987015c7e5844a1abfd405ba0c4ab700cf50d",
         "manifest.json": "a226ac3589d703a4e94fa894d435541e4f2e54d3a07b08a577a1dc820793d613"
       }
     }
