@@ -503,6 +503,7 @@
 "Enable “%@”" = "启用“%@”";
 "Selected plugin" = "已选插件";
 "Show plugin details" = "显示插件详情";
+"Collapse plugin details" = "收起插件详情";
 "No plugins match this search and status" = "没有符合搜索和状态条件的插件";
 "Clear Filters" = "清除筛选";
 "Clear plugin filters" = "清除插件筛选";

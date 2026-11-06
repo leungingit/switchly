@@ -42,8 +42,8 @@ struct PluginPreferencesSection: View {
     @State var plugins: [InstalledPlugin] = []
     @State var loadFailures: [PluginLoadFailure] = []
     @State var pendingConfirmation: InstalledPlugin?
-    @State var expandedInfo: String?
     @State var selectedPluginID: String?
+    @State var userCollapsedSelection = false
     @State var searchText = ""
     @State var statusFilter: PluginStatusFilter = .all
     @State var refreshGeneration = 0
@@ -172,7 +172,7 @@ struct PluginPreferencesSection: View {
         let auth = plugin.authorization
         return HStack(spacing: DesignTokens.Spacing.sm) {
             Button {
-                selectPlugin(plugin.id)
+                togglePlugin(plugin.id)
             } label: {
                 HStack(spacing: DesignTokens.Spacing.sm) {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -200,7 +200,7 @@ struct PluginPreferencesSection: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text(pluginAccessibilityLabel(plugin, isSelected: isSelected)))
-            .accessibilityHint(Text(isSelected ? t("Selected plugin") : t("Show plugin details")))
+            .accessibilityHint(Text(isSelected ? t("Collapse plugin details") : t("Show plugin details")))
 
             Spacer(minLength: DesignTokens.Spacing.md)
             infoButton(plugin)
@@ -220,41 +220,25 @@ struct PluginPreferencesSection: View {
                     format: t("Enable “%@”"),
                     manifest.displayName(preferredLanguages: [language.rawValue])
                 )))
-            Image(systemName: isSelected ? "chevron.up" : "chevron.down")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-                .accessibilityHidden(true)
+            Button {
+                togglePlugin(plugin.id)
+            } label: {
+                Image(systemName: isSelected ? "chevron.up" : "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+                    .padding(4)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(pluginAccessibilityLabel(plugin, isSelected: isSelected)))
+            .accessibilityHint(Text(isSelected ? t("Collapse plugin details") : t("Show plugin details")))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
     }
 
-    /// The “?” by the name: hover shows a short summary, click lists exactly what the plugin may do.
     private func infoButton(_ plugin: InstalledPlugin) -> some View {
-        let id = plugin.id
-        return Button {
-            expandedInfo = expandedInfo == id ? nil : id
-        } label: {
-            Image(systemName: "questionmark.circle")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.secondary)
-        }
-            .buttonStyle(.plain)
-            .help(infoTooltip(plugin))
-            .accessibilityLabel(Text(t("What this plugin can do")))
-            .popover(isPresented: Binding(get: { expandedInfo == id }, set: { if !$0 { expandedInfo = nil } }),
-                     arrowEdge: .bottom) {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-                    Text(plugin.package.manifest.displayName(preferredLanguages: [language.rawValue]))
-                        .font(.headline)
-                    if let summary = plugin.package.manifest.localizedSummary(preferredLanguages: [language.rawValue]) {
-                        Text(summary).font(.callout).fixedSize(horizontal: false, vertical: true)
-                    }
-                    permissionList(plugin)
-                }
-                .padding(14)
-                .frame(width: 280, alignment: .leading)
-            }
+        SettingsHelpButton(help: infoTooltip(plugin))
     }
 
     private func infoTooltip(_ plugin: InstalledPlugin) -> String {
@@ -262,20 +246,11 @@ struct PluginPreferencesSection: View {
         if let summary = plugin.package.manifest.localizedSummary(preferredLanguages: [language.rawValue]) {
             lines.append(summary)
         }
-        lines.append(listedPermissions(plugin).map { permissionText($0) }.joined(separator: " · "))
+        lines.append(contentsOf: listedPermissions(plugin).map { permission in
+            let pending = plugin.authorization.pendingPermissions.contains(permission)
+            return "• " + permissionText(permission) + (pending ? " (" + t("Not allowed yet") + ")" : "")
+        })
         return lines.joined(separator: "\n")
-    }
-
-    private func permissionList(_ plugin: InstalledPlugin) -> some View {
-        let auth = plugin.authorization
-        return VStack(alignment: .leading, spacing: 4) {
-            ForEach(listedPermissions(plugin), id: \.rawValue) { permission in
-                let pending = auth.pendingPermissions.contains(permission)
-                Label(permissionText(permission), systemImage: permission.systemImageName)
-                    .font(.caption)
-                    .foregroundColor(pending ? Color(nsColor: .systemOrange) : .secondary)
-            }
-        }
     }
 
     /// `fs.read` is left out: its own row on the card names the folder and
