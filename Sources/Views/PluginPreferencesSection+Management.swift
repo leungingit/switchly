@@ -192,11 +192,21 @@ extension PluginPreferencesSection {
 
     func selectPlugin(_ id: String) {
         selectedPluginID = id
-        expandedInfo = nil
+        userCollapsedSelection = false
+    }
+
+    func togglePlugin(_ id: String) {
+        if selectedPluginID == id {
+            selectedPluginID = nil
+            userCollapsedSelection = true
+        } else {
+            selectPlugin(id)
+        }
     }
 
     func synchronizeSelection() {
         let visibleIDs = filteredPlugins.map(\.id)
+        if selectedPluginID == nil && userCollapsedSelection { return }
         if !visibleIDs.contains(where: { $0 == selectedPluginID }) {
             selectedPluginID = visibleIDs.first
         }

@@ -503,6 +503,7 @@
 "Enable “%@”" = "Enable “%@”";
 "Selected plugin" = "Selected plugin";
 "Show plugin details" = "Show plugin details";
+"Collapse plugin details" = "Collapse plugin details";
 "No plugins match this search and status" = "No plugins match this search and status";
 "Clear Filters" = "Clear Filters";
 "Clear plugin filters" = "Clear plugin filters";
