@@ -1,0 +1,90 @@
+{
+  "name": "valid-ipod",
+  "apiVersion": 2,
+  "uiFeatures": {
+    "scene3d": true
+  },
+  "asset": "assets/ipod.glb",
+  "repositoryAsset": "docs/plugins/assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb",
+  "renderOutput": [
+    {
+      "slot": "center",
+      "node": {
+        "type": "scene3d",
+        "key": "ipod",
+        "asset": "assets/ipod.glb",
+        "fit": "contain",
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "rotate": {
+          "horizontal": true,
+          "vertical": true,
+          "pitchMin": -55,
+          "pitchMax": 55
+        },
+        "surfaces": [
+          {
+            "node": "mesh_screen",
+            "size": [
+              480,
+              320
+            ],
+            "content": {
+              "type": "vstack",
+              "spacing": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "marquee",
+                  "value": "Now Playing"
+                },
+                {
+                  "type": "text",
+                  "value": "Artist",
+                  "style": "caption"
+                }
+              ]
+            }
+          }
+        ],
+        "hits": [
+          {
+            "node": "mesh_wheel_play",
+            "id": "toggle",
+            "label": "Play / Pause"
+          }
+        ],
+        "fallback": {
+          "type": "surface",
+          "material": "glass",
+          "children": [
+            {
+              "type": "vstack",
+              "spacing": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "marquee",
+                  "value": "Now Playing"
+                },
+                {
+                  "type": "text",
+                  "value": "Artist",
+                  "style": "caption"
+                },
+                {
+                  "type": "button",
+                  "id": "toggle",
+                  "symbol": "play.fill",
+                  "label": "Play"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

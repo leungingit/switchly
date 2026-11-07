@@ -1,0 +1,1 @@
+{"id":"com.example.scene3d-legacy-host","name":{"en":"Scene3D Legacy Host Fixture","zh-Hans":"Scene3D 旧宿主夹具"},"version":"1","apiVersion":2,"matches":["com.example.app"],"permissions":[],"entry":"main.js"}

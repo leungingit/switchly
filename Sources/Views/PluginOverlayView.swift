@@ -20,6 +20,8 @@ struct PluginOverlayView: View {
     var artwork: NSImage? = nil
     /// Where `scene` sprite assets live (the owning plugin's directory).
     var assetDirectory: URL? = nil
+    /// Owning plugin ID; scene3d caches and logs are keyed by it.
+    var pluginID: String = ""
     let onAction: (String, Double?) -> Void
     @State private var assets: SceneAssets
 
@@ -28,12 +30,14 @@ struct PluginOverlayView: View {
          isGlassActive: Bool,
          artwork: NSImage? = nil,
          assetDirectory: URL? = nil,
+         pluginID: String = "",
          onAction: @escaping (String, Double?) -> Void) {
         self.node = node
         self.material = material
         self.isGlassActive = isGlassActive
         self.artwork = artwork
         self.assetDirectory = assetDirectory
+        self.pluginID = pluginID
         self.onAction = onAction
         _assets = State(initialValue: SceneAssets(directory: assetDirectory))
     }
@@ -65,6 +69,23 @@ struct PluginOverlayView: View {
             }))
         case .scene(let scene):
             return AnyView(PluginSceneView(scene: scene, assetDirectory: assetDirectory) { emit($0, $1) })
+        case .scene3d(let descriptor):
+            guard let dir = assetDirectory else {
+                return render(descriptor.fallback)
+            }
+            let surfaceArtwork = artwork?.cgImage(forProposedRect: nil, context: nil, hints: nil).map {
+                PluginSurfaceArtwork(token: "artwork-\(ObjectIdentifier(artwork!).hashValue)", image: $0)
+            }
+            return AnyView(PluginScene3DView(
+                descriptor: descriptor,
+                pluginID: pluginID,
+                assetDirectory: dir,
+                artwork: surfaceArtwork,
+                material: material,
+                isGlassActive: isGlassActive,
+                rasterizerFactory: { CoreGraphicsPluginSurfaceRasterizer(assetDirectory: dir) },
+                onAction: { emit($0, $1) }
+            ))
         case .spacer:
             return AnyView(Spacer(minLength: 0))
         case .surface(let children, let surfaceMaterial):

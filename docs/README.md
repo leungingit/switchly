@@ -47,6 +47,9 @@
 | [plugin-externalization-progress.md](plugins/plugin-externalization-progress.md) | 外迁实施台账与已完成范围 |
 | [dock-preview-plugins-design.md](plugins/dock-preview-plugins-design.md) | Dock 预览插件系统调研与设计 |
 | [scene-api-alignment.md](plugins/scene-api-alignment.md) | Scene API 双分支对齐说明 |
+| [plugin-3d-rendering-options-2026-11-06.md](plugins/plugin-3d-rendering-options-2026-11-06.md) | 插件通用 3D 场景与自由渲染层的对比及 C-D01 选型结论 |
+| [plugin-scene3d-implementation-plan.md](plugins/plugin-scene3d-implementation-plan.md) | `scene3d` 实施设计，以音乐插件 iPod 为最终验收目标 |
+| [plugin-scene3d-tasks.md](plugins/plugin-scene3d-tasks.md) | `scene3d` 子任务、依赖与阶段门禁 |
 | [whale-plugin-progress.md](plugins/whale-plugin-progress.md) | 鲸娘 Dock 预览插件进度与续接手册 |
 | [plugin-preview-development-plan.md](plugins/plugin-preview-development-plan.md) | 插件独立预览与开发工具方案 |
 | [plugin-preview-development-tasks.md](plugins/plugin-preview-development-tasks.md) | 预览工具任务书与分阶段取证 |

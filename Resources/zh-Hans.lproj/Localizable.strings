@@ -546,6 +546,7 @@
 "Width" = "宽度";
 "Reload" = "重载";
 "Reset" = "重置";
+"Reset 3D view" = "重置 3D 视图";
 "Center" = "中心";
 "Bottom bar" = "底栏";
 "Top trailing" = "右上角";

@@ -546,6 +546,7 @@
 "Width" = "Width";
 "Reload" = "Reload";
 "Reset" = "Reset";
+"Reset 3D view" = "Reset 3D view";
 "Center" = "Center";
 "Bottom bar" = "Bottom bar";
 "Top trailing" = "Top trailing";

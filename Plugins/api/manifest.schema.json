@@ -34,7 +34,8 @@
       "enum": [
         1,
         2
-      ]
+      ],
+      "description": "1 为旧宿主合同；2 允许 v2 协商增量。apiVersion 2 本身不代表宿主可渲染 3D：scene3d 只能在此后由 ctx.uiFeatures.scene3d === true 确认，且 scene3d 节点不写入 manifest。"
     },
     "summary": {
       "$ref": "#/$defs/localizedText"

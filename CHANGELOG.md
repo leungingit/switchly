@@ -23,6 +23,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- 音乐控制插件默认使用 3D 点按转盘（插件设置「3D 点按转盘」，默认开启）：转盘四个扇区是 glb 中独立的命中节点，对应 喜欢 / 上一首 / 下一首 / 播放暂停；宿主不支持 `scene3d` 或关闭该开关时回退 2D 点按转盘。`scene3d` 的 hit 允许复用其自身 `fallback` 子树中的 action ID，其余跨节点重复仍被拒绝。
 - 插件卡片里的 `scene` 由宿主裁到卡片圆角（`DesignTokens.Radius.control`）：`cover` 背景颜色不再在卡片四角露出直角。
 - 在线天气：城市查不到或服务不可用时，城市输入框变红并在下方给出原因；刷新成功会把取到的天气写回插件手动天气选项（天气 / 温度 / 风速），设置页显示的就是当下抽卡依据。
 - 新增可选的在线天气（默认关闭，使用 Open-Meteo，免费且无需 API 密钥）：在「偏好设置 → 插件 → 天气抽卡」打开并填写城市后，抽卡改用在线天气，失败或未填写时回落手动天气；每 15 分钟最多请求一次、结果缓存 30 分钟。这是应用唯一的联网功能，插件侧只读 `ctx.weather`（权限 `weather.current`），请求细节与原始响应不交给插件。`PRIVACY_POLICY.md` 已同步。

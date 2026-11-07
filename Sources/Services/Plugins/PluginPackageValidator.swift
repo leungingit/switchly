@@ -26,6 +26,7 @@ enum PluginPackageValidator {
         }
         var bytes = 0
         var files = 0
+        var models: [URL] = []
         for case let url as URL in walker {
             let values = try url.resourceValues(forKeys: keys)
             guard values.isSymbolicLink != true else { throw Failure(reason: "symbolic links are not allowed") }
@@ -37,9 +38,18 @@ enum PluginPackageValidator {
             if values.isRegularFile == true {
                 bytes += values.fileSize ?? 0
                 guard bytes <= maxPackageBytes else { throw Failure(reason: "package exceeds byte budget") }
+                if url.pathExtension.lowercased() == "glb" { models.append(url) }
             }
         }
         if let scanError { throw scanError }
+        // 3D 模型在任何第三方加载器之前做硬边界预检（T01）。
+        for model in models {
+            do {
+                _ = try GLBPreflight.inspect(Data(contentsOf: model, options: .mappedIfSafe))
+            } catch let failure as GLBPreflight.Failure {
+                throw Failure(reason: "\(model.lastPathComponent): \(failure.reason)")
+            }
+        }
         let manifestURL = root.appendingPathComponent("manifest.json")
         guard try manifestURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0 <= maxManifestBytes else {
             throw Failure(reason: "manifest exceeds byte budget")

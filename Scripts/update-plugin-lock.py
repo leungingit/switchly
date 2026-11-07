@@ -9,7 +9,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parent.parent
 inventory = runpy.run_path(str(ROOT / 'Scripts' / 'prepare-plugins.py'))['inventory']
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--source', type=Path, default=ROOT.parent / 'switchly-plugins' / 'dist' / 'Plugins')
+parser.add_argument('--source', type=Path, default=ROOT.parent / 'switchly-plugins' / 'dist-v2' / 'Plugins')
 parser.add_argument('--id', action='append', help='只预装指定 ID；可重复，不传则选择全部')
 args = parser.parse_args()
 items = []

@@ -1,0 +1,49 @@
+{
+  "name": "invalid-missing-named-node",
+  "apiVersion": 2,
+  "uiFeatures": {
+    "scene3d": true
+  },
+  "expect": "runtime-fallback",
+  "expectedError": "scene3d.nodeNotFound",
+  "repositoryAsset": "docs/plugins/assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb",
+  "missingNodes": [
+    "mesh_wheel_next"
+  ],
+  "renderOutput": [
+    {
+      "slot": "center",
+      "node": {
+        "type": "scene3d",
+        "key": "ipod",
+        "asset": "assets/ipod.glb",
+        "surfaces": [
+          {
+            "node": "mesh_screen",
+            "size": [
+              480,
+              320
+            ],
+            "content": {
+              "type": "text",
+              "value": "Now Playing"
+            }
+          }
+        ],
+        "hits": [
+          {
+            "node": "mesh_wheel_next",
+            "id": "next",
+            "label": "Next"
+          }
+        ],
+        "fallback": {
+          "type": "button",
+          "id": "next",
+          "symbol": "forward.fill",
+          "label": "Next"
+        }
+      }
+    }
+  ]
+}

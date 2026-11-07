@@ -1,0 +1,19 @@
+{
+  "name": "invalid-unknown-node",
+  "apiVersion": 1,
+  "expect": "decode-rejected",
+  "expectedError": "Unknown node type hologram",
+  "renderOutput": [
+    {
+      "slot": "center",
+      "node": {
+        "type": "hologram",
+        "key": "ipod",
+        "fallback": {
+          "type": "text",
+          "value": "2D"
+        }
+      }
+    }
+  ]
+}

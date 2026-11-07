@@ -62,3 +62,24 @@ test("wheel 与 scene 构建器保留完整载荷", () => {
   assert.equal(scene.type, "scene");
   assert.equal(scene.layers[0].kind, "rect");
 });
+
+test("scene3d 构建器保留完整载荷与 fallback", () => {
+  const fallback = ui.vstack([ui.text({ value: "2D" })]);
+  const node = ui.scene3d({
+    key: "ipod",
+    asset: "assets/ipod.glb",
+    fit: "contain",
+    camera: { yaw: 12, pitch: -8 },
+    rotate: { horizontal: true, vertical: true, pitchMin: -55, pitchMax: 55 },
+    surfaces: [{ node: "mesh_screen", size: [480, 320], content: fallback }],
+    hits: [{ node: "mesh_wheel_play", id: "play", label: "播放", value: null }],
+    fallback,
+  });
+
+  assert.equal(node.type, "scene3d");
+  assert.equal(node.asset, "assets/ipod.glb");
+  assert.deepEqual(node.surfaces[0].size, [480, 320]);
+  assert.equal(node.surfaces[0].content.children[0].type, "text");
+  assert.equal(node.hits[0].id, "play");
+  assert.equal(node.fallback.type, "vstack");
+});

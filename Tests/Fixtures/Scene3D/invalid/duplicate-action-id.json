@@ -1,0 +1,51 @@
+{
+  "name": "invalid-duplicate-action-id",
+  "apiVersion": 2,
+  "uiFeatures": {
+    "scene3d": true
+  },
+  "expect": "contract-rejected",
+  "expectedError": "duplicate action id toggle",
+  "repositoryAsset": "docs/plugins/assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb",
+  "renderOutput": [
+    {
+      "slot": "center",
+      "node": {
+        "type": "scene3d",
+        "key": "ipod",
+        "asset": "assets/ipod.glb",
+        "surfaces": [
+          {
+            "node": "mesh_screen",
+            "size": [
+              480,
+              320
+            ],
+            "content": {
+              "type": "text",
+              "value": "Now Playing"
+            }
+          }
+        ],
+        "hits": [
+          {
+            "node": "mesh_wheel_play",
+            "id": "toggle",
+            "label": "Play / Pause"
+          },
+          {
+            "node": "center_rim",
+            "id": "toggle",
+            "label": "Duplicate"
+          }
+        ],
+        "fallback": {
+          "type": "button",
+          "id": "toggle",
+          "symbol": "play.fill",
+          "label": "Play"
+        }
+      }
+    }
+  ]
+}

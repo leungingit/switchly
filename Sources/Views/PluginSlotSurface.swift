@@ -37,6 +37,7 @@ struct PluginSlotSurface: View {
                         isGlassActive: isGlassActive,
                         artwork: artwork,
                         assetDirectory: entry.assetDirectory,
+                        pluginID: entry.id,
                         onAction: { onAction(entry.id, $0, $1) }
                     )
                 }

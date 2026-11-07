@@ -1,0 +1,71 @@
+{
+  "name": "legacy-2d-layout",
+  "apiVersion": 1,
+  "renderOutput": [
+    {
+      "slot": "center",
+      "node": {
+        "type": "surface",
+        "material": "glass",
+        "children": [
+          {
+            "type": "hstack",
+            "spacing": "s",
+            "align": "center",
+            "children": [
+              {
+                "type": "image",
+                "source": {
+                  "artwork": true
+                },
+                "size": "l",
+                "corner": "m"
+              },
+              {
+                "type": "vstack",
+                "spacing": "xs",
+                "align": "leading",
+                "children": [
+                  {
+                    "type": "marquee",
+                    "value": "Song Title"
+                  },
+                  {
+                    "type": "text",
+                    "value": "Artist",
+                    "style": "caption"
+                  },
+                  {
+                    "type": "hstack",
+                    "spacing": "xs",
+                    "align": "center",
+                    "children": [
+                      {
+                        "type": "button",
+                        "id": "previous",
+                        "symbol": "backward.fill",
+                        "label": "Previous"
+                      },
+                      {
+                        "type": "button",
+                        "id": "toggle",
+                        "symbol": "play.fill",
+                        "label": "Play"
+                      },
+                      {
+                        "type": "button",
+                        "id": "next",
+                        "symbol": "forward.fill",
+                        "label": "Next"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

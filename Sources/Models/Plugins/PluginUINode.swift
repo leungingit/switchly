@@ -82,6 +82,8 @@ indirect enum PluginUINode: Equatable, Decodable {
     case wheel(children: [PluginUINode])
     /// Host-played animation (design doc §8). Its hits route to onAction.
     case scene(PluginScene)
+    /// Generic 3D model slot (scene3d). Its fallback is a regular 2D tree.
+    case scene3d(PluginScene3DDescriptor)
 
     private enum CodingKeys: String, CodingKey {
         case type, children, spacing, align, material, id, symbol, label, size, variant, enabled, selected
@@ -161,6 +163,12 @@ indirect enum PluginUINode: Equatable, Decodable {
             self = .wheel(children: items)
         case "scene":
             self = .scene(try PluginScene(from: decoder))
+        case "scene3d":
+            let descriptor = try PluginScene3DDescriptor(from: decoder)
+            do { try PluginScene3DDeclaration.validate(descriptor) } catch {
+                throw DecodingError.dataCorruptedError(forKey: .type, in: c, debugDescription: "Invalid scene3d: \(error)")
+            }
+            self = .scene3d(descriptor)
         default:
             throw DecodingError.dataCorruptedError(forKey: .type, in: c, debugDescription: "Unknown node type \(type)")
         }
@@ -178,17 +186,28 @@ indirect enum PluginUINode: Equatable, Decodable {
         switch self {
         case .button(let id, _, _, _, _, _, _), .toggle(let id, _, _, _, _), .slider(let id, _, _, _): return [id]
         case .scene(let scene): return scene.hits.map(\.id)
+        case .scene3d(let d):
+            // hit 与自身 fallback 可复用同一业务 ID（两条分支不会同时可见），取并集避免全局去重误判。
+            let hitIDs = d.hits.map(\.id)
+            return hitIDs + d.fallback.actionIDs.filter { !hitIDs.contains($0) }
         default: return children.flatMap(\.actionIDs)
         }
     }
 
     var usesArtwork: Bool {
         if case .image(.artwork, _, _) = self { return true }
+        if case .scene3d(let d) = self {
+            return d.fallback.usesArtwork || d.surfaces.contains { $0.content.usesArtwork }
+        }
         return children.contains(where: \.usesArtwork)
     }
 
-    var depth: Int { 1 + (children.map(\.depth).max() ?? 0) }
-    var nodeCount: Int { 1 + children.reduce(0) { $0 + $1.nodeCount } }
+    private var scene3dChildren: [PluginUINode] {
+        if case .scene3d(let d) = self { return [d.fallback] + d.surfaces.map(\.content) }
+        return []
+    }
+    var depth: Int { 1 + ((children + scene3dChildren).map(\.depth).max() ?? 0) }
+    var nodeCount: Int { 1 + (children + scene3dChildren).reduce(0) { $0 + $1.nodeCount } }
 }
 
 struct PluginSlotContent: Equatable, Decodable {

@@ -101,6 +101,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private let timeout: TimeInterval
     private let maxConsecutiveTimeouts: Int
     private let preferredLanguages: [String]
+    private let uiFeatures: [String: Bool]
     /// Authorized subset of the manifest's permissions (PluginAuthorization).
     let permissions: Set<PluginCapability>
     /// Only kept when a media permission is authorized.
@@ -171,7 +172,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          weather: (() -> [String: Any]?)? = nil,
          storage: PluginStorageProviding? = nil,
          virtualClock: PluginVirtualClock? = nil,
-         reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }) {
+         reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion },
+         uiFeatures: [String: Bool] = ["scene3d": true]) {
+        self.uiFeatures = uiFeatures
         self.virtualClock = virtualClock
         self.reduceMotion = reduceMotion
         self.settingsProvider = settings
@@ -704,6 +707,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             "settings": settingValues,
             "capabilities": capabilitySnapshot(bundleID: ctx.bundleID),
             "reduceMotion": reduceMotion(),
+            "uiFeatures": uiFeatures,
         ] as [String: Any], in: js)
         let strings = self.strings
         let t: @convention(block) (String) -> String = { key in strings[key] ?? key }

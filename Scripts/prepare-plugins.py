@@ -30,7 +30,7 @@ def inventory(directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source', type=Path, default=Path(os.environ.get('SWITCHLY_PLUGIN_SOURCE', ROOT.parent / 'switchly-plugins' / 'dist' / 'Plugins')))
+    parser.add_argument('--source', type=Path, default=Path(os.environ.get('SWITCHLY_PLUGIN_SOURCE', ROOT.parent / 'switchly-plugins' / 'dist-v2' / 'Plugins')))
     parser.add_argument('--output', type=Path, default=ROOT / '.build' / 'Plugins')
     parser.add_argument('--empty', action='store_true', help='仅供明确的无预装开发验证')
     args = parser.parse_args()
