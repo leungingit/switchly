@@ -35,7 +35,7 @@ jobs:
       contents: write # required to create the GitHub Release and upload assets
 
     env:
-      SWITCHLY_PLUGIN_SOURCE: ${{ github.workspace }}/.build/plugin-source/dist/Plugins
+      SWITCHLY_PLUGIN_SOURCE: ${{ github.workspace }}/.build/plugin-source/dist-v2/Plugins
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Optional signing / notarization credentials. With none of them set the
       # job publishes an ad-hoc, unnotarized build. A partially configured set

@@ -22,7 +22,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 30
     env:
-      SWITCHLY_PLUGIN_SOURCE: ${{ github.workspace }}/.build/plugin-source/dist/Plugins
+      SWITCHLY_PLUGIN_SOURCE: ${{ github.workspace }}/.build/plugin-source/dist-v2/Plugins
 
     steps:
       - name: Checkout

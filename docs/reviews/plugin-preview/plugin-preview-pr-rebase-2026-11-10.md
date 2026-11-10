@@ -42,3 +42,5 @@
 现已补齐四个脚本的 PluginScene3DDescriptor、PluginSurfaceRequest 与 GLBPreflight 源文件，没有更改断言或降低标准。本机完整运行输出：协议 8/8、整包监听通过、会话 5/5、进程监督 7/7。外仓仅把已提交的 33f8b9c 发布到独立依赖分支 feat/scene3d-preview-base，未推送未提交资产，未更新外仓主干，宿主锁文件保持同一 SHA。GitHub commit API 已确认该 revision 可读取。
 
 第二轮云端 JSC／协议检查已通过；宿主预检进一步检出原 3D 调研文档中的个人绝对路径。已改为不含本机身份的样本名，保持隐私门禁原样，不增加豁免。
+
+第三轮预检通过后，工程生成暴露 workflow 仍选择 dist/Plugins 的 v1 兼容发行线，与宿主 v2 锁文件不符。CI 与 release workflow 统一改为 dist-v2/Plugins，继续执行原逐文件哈希校验，不刷新锁文件、不放宽校验。
