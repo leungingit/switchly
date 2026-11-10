@@ -4,7 +4,7 @@
 
 ## 1. 边界
 
-预览进程不装配 `PluginHost`、Dock、AX、真实媒体、天气网络或用户目录；每个 worker 只处理一个插件包。所有读取路径必须由调用者明确指定，包使用 `PluginPackageValidator` 校验，fixture 相对场景文件目录解析，拒绝越界、符号链接和非普通文件。默认场景使用的内置样例是预览 App 资源包内的固定合成数据，同样不读取真实系统数据；显式场景不会自动套用内置样例。每次 `run` 使用独立临时 storage；`dev` 重载时显式保留该会话 storage，重置和关闭时清除。初始授权为场景授予与 manifest 声明的**交集**；`supported` 由运行时实现决定，不接受 fixture 覆盖。正式宿主功能和权限配置不由预览改写。
+预览进程不装配 `PluginHost`、Dock、宿主 AX 服务、真实媒体、天气网络或用户目录；后台输入仅允许 §3 的自身 AX 准备与进程内控件操作。每个 worker 只处理一个插件包。所有读取路径必须由调用者明确指定，包使用 `PluginPackageValidator` 校验，fixture 相对场景文件目录解析，拒绝越界、符号链接和非普通文件。默认场景使用的内置样例是预览 App 资源包内的固定合成数据，同样不读取真实系统数据；显式场景不会自动套用内置样例。每次 `run` 使用独立临时 storage；`dev` 重载时显式保留该会话 storage，重置和关闭时清除。初始授权为场景授予与 manifest 声明的**交集**；`supported` 由运行时实现决定，不接受 fixture 覆盖。正式宿主功能和权限配置不由预览改写。
 
 槽位 `center`、`bottomBar` 反映 Dock 当前接入并会被截图；`topTrailing`、`titleAccessory` 仅作组件预览，不截图。只渲染未截图槽位的插件得到 `unsupported`/`no-capturable-slot`；什么都没渲染得到 `failed`/`empty-render`。`window.focus`、`appleScript` 标记不支持。
 
@@ -19,7 +19,7 @@
 - `fixtures`：`media`/`weather`/`fs`，相对场景目录的 JSON 文件；在**显式场景**中缺失表示对应合成能力不可用，不读取真实系统数据。推导场景的默认来源见 2.1；显式 `--fixture` 或 GUI 选择的文件覆盖内置样例。
 - `grants`、`settings`、`storageSeed`：权限（与 manifest 取交集）、设置值、初始私有存储。无效设置、权限或路径在启动插件前拒绝。
 - `clock`（可选）：`{ startEpochMs ≥ 0, seed: uint32 }`。存在时 JS 的 `Date`、`Math.random`、`setTimeout` 由虚拟时钟接管（`PluginVirtualClock`），Scene 绘制时刻使用同一虚拟时间；时间只在 `advance` 步骤前进。缺省保持实时行为，正式宿主默认不创建虚拟时钟。
-- `steps`（可选，≤ 64）：`advance{ms}`（0…86 400 000，需要 `clock`）、`action{id, value?}`（业务动作，直接调用 `onAction`）、`expectText{contains}`、`nativeClick{label, expectAction? | expectDisabled?}`（原生输入，经可访问树 press）。未知类型返回 `unsupported`，字段错误返回 `invalid-scenario`。首个失败即停止，其后记 `skipped`；失败不产生截图。
+- `steps`（可选，≤ 64）：`advance{ms}`（0…86 400 000，需要 `clock`）、`action{id, value?}`（业务动作，直接调用 `onAction`）、`expectText{contains}`、`nativeClick{label, expectAction? | expectDisabled?}`（原生输入，经可访问树 press）、`nativeClickAt{point:{x,y}, expectAction?}`、`nativeDrag{from:{x,y}, to:{x,y}}`。坐标为截图表面左上角起的逻辑点，截图像素须除以报告中的 `displayScale`；有限、非负且必须落在当前视图内。坐标输入仅支持命中真实 SceneKit 交互视图，经其原生鼠标方法处理；其他视图返回 `pointer-target-unsupported`，不回退为业务 action。拖动固定 8 段、约 160ms，不要求产生业务动作。未知类型返回 `unsupported`，字段错误返回 `invalid-scenario`。首个失败即停止，其后记 `skipped`；失败不产生截图。
 
 Fixture Schema 为 `preview-media-fixture`、`preview-weather-fixture`、`preview-fs-fixture`；Schema 不替代运行时对字节数、文件类型、路径及 manifest 设置值的校验。媒体快照须包含公开 `NowPlaying` 的全部字段（含与位置和时长一致的 `progress`）。
 
@@ -86,7 +86,11 @@ fixture 来源分为三类：
 
 `run` 和 `dev` 接受插件目录、`--preview-tool <App>`、可选的 `--scenario`；未给 `--scenario` 时使用 2.1 的推导场景，并允许 2.2 的覆盖项。`run` 另需 `--out`（必须是空目录，不覆盖），可选 `--json`。JSON 模式 stdout 只输出一个结果对象，诊断在 stderr，且只含固定诊断（不含 fixture、渲染内容或私密路径）。
 
-`run --background` 是显式选择的后台截图模式：预览 App 不激活、不创建工作台窗口；截图表面以非 key 窗口后置，按窗口 ID 捕获。该模式仍需要 GUI 会话与屏幕录制授权，截图失败返回环境错误，不回退到前台。含 `nativeClick` 的场景在执行前返回 `unsupported`（退出码 3、固定码 `unsupported`），因为该步骤需要工作台可访问树；其余步骤与产物契约不变。`dev` 和 `inspect` 不接受此参数。默认 `run` 的原生输入行为暂时保持原状，自动化调用者须显式传入 `--background` 才能使用后台路径。
+`run --background` 是显式选择的后台视觉与输入模式（PV-D14）：独立 accessory 预览进程不激活、不创建工作台窗口；步骤与截图共用同一个持续观察状态的共享 Renderer。原生 nonactivating NSPanel 的几何在屏幕内、alpha=1，从创建到关闭从不排序到屏幕，不可成为 key/main，鼠标穿透；禁止透明预热、完全离屏或分层拼图。捕获按该进程自己的 windowNumber 一次返回整张原生图。运行前及最终捕获均校验 PNG 有可见且非单色内容；失败返回 `environment-error`（4），不以退出码 0 代替画面有效性，不回退显示窗口／抢焦点。
+
+后台支持 `nativeClick`：同一可执行文件的只读 helper 仅为父预览进程初始化 AX 窗口／子节点，再调用既有进程内 AX press；helper 不读取文字、不写 focus、不执行动作，不枚举其他应用。主 RunLoop 在等待时保持运行。`nativeClickAt`／`nativeDrag` 命中同一截图表面内的真实 SceneKit 视图，发送目标视图级 NSEvent，不使用全局键鼠。`expectAction` 会等待并核验原生回调及 worker 执行结果；worker 失败不能记为输入通过。坐标输入在默认 `run` 中同样作用于截图表面；标签输入在默认 `run` 中保留工作台路径。`dev` 和 `inspect` 不接受 `--background`。
+
+该模式仍需图形会话与屏幕录制授权。隔离状态在准备、输入、捕获前后检查；窗口可见、key/main 或进程激活即失败。每次运行必须通过实际捕获自检，不将 macOS 隐藏窗口行为视作跨版本保证。玻璃可用于观察，但不保证与已显示表面逐像素等价；多时钟动画不保证确定性回放，§6 基线限制不变。
 
 | 退出码 | `status` | 含义 |
 | --- | --- | --- |
@@ -173,7 +177,7 @@ CLI 侧为 `switchly-plugin inspect <插件目录> --preview-tool <App> [--json]
 - GUI 的所有可交互控件都必须有可访问标签：包括「打开插件目录… / Open Plugin Directory…」、模式切换、各编辑控件、fixture 的“选择文件…/清除”。标签用于 `nativeClick` 与辅助技术识别，不以颜色或位置替代。
 - “导出为场景文件…”使用 `NSSavePanel`：把当前草稿写成合法场景 JSON；显式 fixture 与内置样例都作为文件复制到导出目录并用相对路径引用；写出后立即用 `PreviewScenario.decode` 回读校验。导出文件不依赖预览 App 资源。
 - 草稿模型（`PreviewScenarioDraft`，可编辑字段 ↔ 场景 JSON 双向）是 GUI、覆盖项解析和导出的唯一来源。
-- **范围声明**：本轮只改启动器窗口。`dev`/`run` 命令打开的窗口、截图路径（离屏 `PluginSlotSurface` 平铺）、可访问树匹配、退出码与视觉基线身份完全不变。启动器里的模拟 Dock 只模拟悬停展示与插件交互，**不是**本体 Dock 悬停的验证；真实 AX 悬停、跨屏、真实缩略图与桌面玻璃合成仍由本体验证（见 3.5 与 §8）。
+- **范围声明**：本节启动器改造只涉及启动器窗口；后续 PV-D14 的 `run` 截图与输入生命周期按 §3 执行。启动器里的模拟 Dock 只模拟悬停展示与插件交互，**不是**本体 Dock 悬停的验证；真实 AX 悬停、跨屏、真实缩略图与桌面玻璃合成仍由本体验证（见 3.5 与 §8）。
 
 ### 3.4 缺数据提示（`plugin-script-error`）
 

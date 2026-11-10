@@ -293,6 +293,10 @@ plugin-preview-contract-check: ## Verify contract hash, renderer revision and sh
 plugin-preview-native-test: plugin-preview-build ## T15 native-input regression (needs GUI + Screen Recording; exits 77 if unavailable)
 	@./Tests/PluginPreview/run-native-input-tests.sh
 
+.PHONY: plugin-preview-background-test
+plugin-preview-background-test: plugin-preview-build ## 后台输入与隔离回归（需要 GUI 与屏幕录制授权；缺环境退出 77）
+	@./Tests/PluginPreview/run-background-input-tests.sh $(PLUGINS_REPO)
+
 .PHONY: plugin-preview-baseline-test
 plugin-preview-baseline-test: plugin-preview-build ## T16 visual-baseline regression (needs GUI + Screen Recording; exits 77 if unavailable)
 	@./Tests/PluginPreview/run-baseline-tests.sh
@@ -303,6 +307,7 @@ PLUGINS_REPO ?= ../switchly-plugins
 .PHONY: plugin-preview-regression
 plugin-preview-regression: plugin-preview-contract-check plugin-preview-build ## G2 GUI regression suite (set PLUGINS_REPO=<dir> for the plugin repo)
 	@./Tests/PluginPreview/run-native-input-tests.sh
+	@./Tests/PluginPreview/run-background-input-tests.sh $(PLUGINS_REPO)
 	@./Tests/PluginPreview/run-baseline-tests.sh
 	@./Tests/PluginPreview/run-dev-lifecycle-tests.sh
 	@./Tests/PluginPreview/run-failure-modes-tests.sh

@@ -32,7 +32,8 @@ final class Scene3DHitTestAdapter: Scene3DHitProviding {
             Scene3DHitRouter.Candidate(nodeNameChain: Self.nameChain(from: result.node),
                                        worldNormal: Self.simd(result.worldNormal),
                                        worldPoint: Self.simd(result.worldCoordinates),
-                                       passesThrough: Self.isTransparentPlaceholder(result.node))
+                                       passesThrough: Self.isTransparentPlaceholder(result.node),
+                                       localPoint: Self.localPoint(of: result))
         }
     }
 
@@ -56,6 +57,13 @@ final class Scene3DHitTestAdapter: Scene3DHitProviding {
             current = node.parent
         }
         return names
+    }
+
+    private static func localPoint(of result: SCNHitTestResult) -> SIMD2<Float> {
+        let (minimum, maximum) = result.node.boundingBox
+        let local = result.localCoordinates
+        return SIMD2(Float(local.x - (minimum.x + maximum.x) / 2),
+                     Float(local.y - (minimum.y + maximum.y) / 2))
     }
 
     private static func simd(_ vector: SCNVector3) -> SIMD3<Float> {

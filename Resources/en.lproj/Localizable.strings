@@ -547,6 +547,8 @@
 "Reload" = "Reload";
 "Reset" = "Reset";
 "Reset 3D view" = "Reset 3D view";
+"Rotate left" = "Rotate left";
+"Rotate right" = "Rotate right";
 "Center" = "Center";
 "Bottom bar" = "Bottom bar";
 "Top trailing" = "Top trailing";
@@ -605,6 +607,7 @@
 "A selected fixture file is invalid or too large." = "A selected fixture file is invalid or too large.";
 "The current scenario is invalid for this plugin." = "The current scenario is invalid for this plugin.";
 "The preview environment is unavailable." = "The preview environment is unavailable.";
+"The native preview surface is unavailable or failed isolation checks." = "The native preview surface is unavailable or failed isolation checks.";
 "The plugin failed to render." = "The plugin failed to render.";
 "Built-in sample" = "Built-in sample";
 "Needs a file" = "Needs a file";

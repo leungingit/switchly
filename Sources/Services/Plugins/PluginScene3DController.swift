@@ -162,10 +162,15 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
     private(set) var assetDirectory: URL
     private(set) var artwork: PluginSurfaceArtwork?
     private(set) var palette: PluginSurfacePalette
+    /// Real appearance of the hosting view; picks the model's finish for
+    /// device palettes (silver in light, space gray in dark).
+    private var hostIsDark = false
+    private var effectivePalette: PluginSurfacePalette { palette.resolved(dark: hostIsDark) }
     private(set) var slotSize: CGSize = .zero
     private(set) var isActive = false
     private(set) var instance: PluginScene3DInstance?
     private(set) var hitSession: Scene3DInputSession?
+    private var pressAppearance: [String: (scale: SCNVector3, opacity: CGFloat)] = [:]
     /// Exposed only for deterministic cancellation tests.
     private(set) var generation = 0
 
@@ -240,6 +245,29 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
                 || self.palette != palette else {
             return
         }
+        // Playback ticks only change what is painted on the surfaces (progress,
+        // play icon, cover). Repaint the live scene instead of rebuilding it,
+        // otherwise the model flashes and loses its camera pose every second.
+        if let instance, case .ready = state,
+           descriptor.canRepaintInPlace(from: self.descriptor),
+           self.pluginID == pluginID,
+           self.palette.darkFinish == palette.darkFinish,
+           self.assetDirectory == assetDirectory,
+           instance.refreshSurfaces(descriptor: descriptor,
+                                    assetDirectory: assetDirectory,
+                                    artwork: artwork,
+                                    palette: palette.resolved(dark: hostIsDark)) {
+            self.descriptor = descriptor
+            self.artwork = artwork
+            self.palette = palette
+            accessibilityElements = Scene3DAccessibilityModel.elements(
+                texts: instance.texts,
+                hits: instance.hits,
+                resetViewLabel: resetViewLabel
+            )
+            host?.refreshDisplay()
+            return
+        }
         self.descriptor = descriptor
         self.pluginID = pluginID
         self.assetDirectory = assetDirectory
@@ -251,6 +279,16 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
         if isActive {
             beginLoadIfPossible()
         }
+    }
+
+    /// Called by the host view when its effective appearance is known or
+    /// changes. Rebuilds from the cached asset only if the finish changes.
+    func updateHostAppearance(dark: Bool) {
+        guard dark != hostIsDark else { return }
+        let before = effectivePalette.darkFinish
+        hostIsDark = dark
+        guard effectivePalette.darkFinish != before, isActive, instance != nil else { return }
+        reassembleForNewSize(preserving: cameraPose)
     }
 
     /// Replaces the action closure when SwiftUI re-renders the same
@@ -404,6 +442,12 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
         stopFrameLoop()
     }
 
+    /// Starts an automatic turn from the on-screen controls.
+    func spin(_ direction: Scene3DCameraController.SpinDirection) {
+        guard let session = hitSession, session.spin(direction) else { return }
+        startFrameLoopIfNeeded()
+    }
+
     @discardableResult
     func resetView() -> Bool {
         guard let session = hitSession else { return false }
@@ -461,7 +505,7 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
                     assetDirectory: assetDirectory,
                     slotSize: slotSize,
                     artwork: artwork,
-                    palette: palette,
+                    palette: effectivePalette,
                     rasterizer: rasterizerFactory()
                 )
                 install(instance, pose: descriptorCamera)
@@ -491,7 +535,7 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
                 assetDirectory: assetDirectory,
                 slotSize: slotSize,
                 artwork: artwork,
-                palette: palette,
+                palette: effectivePalette,
                 rasterizer: rasterizerFactory()
             )
             install(next, pose: pose)
@@ -508,6 +552,12 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
         teardownInstance()
 
         self.instance = instance
+        pressAppearance = [:]
+        for hit in instance.hits where pressAppearance[hit.node] == nil {
+            if let node = instance.contentRoot.childNode(withName: hit.node, recursively: true) {
+                pressAppearance[hit.node] = (node.scale, node.opacity)
+            }
+        }
         let camera = Scene3DCameraController(
             initialPose: pose,
             limits: Scene3DCameraController.Limits(
@@ -527,6 +577,7 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
                                                                distance: instance.cameraDistance)
             },
             actionSink: { [weak self] id, value in
+                self?.animatePress(for: id)
                 self?.actionSink(id, value)
             }
         )
@@ -597,7 +648,27 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
         hitSession = nil
         instance?.teardown()
         instance = nil
+        pressAppearance = [:]
         accessibilityElements = []
+    }
+
+    private func animatePress(for actionID: String) {
+        guard !reduceMotion(), let instance,
+              let hit = instance.hits.first(where: { $0.actionID == actionID }),
+              let appearance = pressAppearance[hit.node],
+              let node = instance.contentRoot.childNode(withName: hit.node, recursively: true)
+        else { return }
+        node.removeAction(forKey: "scene3d.press")
+        node.scale = appearance.scale
+        node.opacity = appearance.opacity
+        let down = SCNAction.group([.scale(by: 0.94, duration: 0.08),
+                                    .fadeOpacity(to: appearance.opacity * 0.62, duration: 0.08)])
+        let up = SCNAction.group([.scale(by: 1 / 0.94, duration: 0.18),
+                                  .fadeOpacity(to: appearance.opacity, duration: 0.18)])
+        down.timingMode = .easeOut
+        up.timingMode = .easeOut
+        node.runAction(.sequence([down, up]), forKey: "scene3d.press")
+        host?.refreshDisplay()
     }
 
     private func cancelLoad() {

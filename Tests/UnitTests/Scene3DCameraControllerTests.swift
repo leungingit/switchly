@@ -79,4 +79,58 @@ final class Scene3DCameraControllerTests: XCTestCase {
         let right = Scene3DCameraController.Geometry.worldPosition(for: .init(yaw: 90), distance: 4)
         XCTAssertEqual(right.x, 4, accuracy: 0.001)
     }
+
+    // MARK: - Spin
+
+    func testSpinTurnsOneFullRevolutionThenSettles() {
+        var camera = Scene3DCameraController(initialPose: .init(yaw: -20, pitch: -8))
+        XCTAssertTrue(camera.beginSpin(.right, degrees: 360, duration: 1))
+        XCTAssertFalse(camera.isSettled)
+
+        // 中途确实在转动。
+        camera.advance(by: 0.25)
+        XCTAssertNotEqual(camera.pose.yaw, -20)
+
+        // 走完整个时长后回到起点并稳定，俯仰角不受影响。
+        for _ in 0..<10 { camera.advance(by: 0.1) }
+        XCTAssertTrue(camera.isSettled)
+        XCTAssertEqual(camera.pose.yaw, -20, accuracy: 1e-6)
+        XCTAssertEqual(camera.pose.pitch, -8)
+    }
+
+    func testSpinLeftAndRightMoveInOppositeDirections() {
+        var right = Scene3DCameraController()
+        var left = Scene3DCameraController()
+        right.beginSpin(.right, degrees: 90, duration: 1)
+        left.beginSpin(.left, degrees: 90, duration: 1)
+        right.advance(by: 1)
+        left.advance(by: 1)
+        XCTAssertEqual(right.pose.yaw, 90, accuracy: 1e-6)
+        XCTAssertEqual(left.pose.yaw, -90, accuracy: 1e-6)
+    }
+
+    func testSpinIsIgnoredWhenHorizontalRotationIsDisabled() {
+        var camera = Scene3DCameraController(limits: .init(horizontal: false, vertical: true))
+        XCTAssertFalse(camera.beginSpin(.right))
+        XCTAssertFalse(camera.turn(.right))
+        XCTAssertTrue(camera.isSettled)
+        XCTAssertEqual(camera.pose.yaw, 0)
+    }
+
+    func testStopInertiaCancelsSpinAndKeepsCurrentPose() {
+        var camera = Scene3DCameraController()
+        camera.beginSpin(.right, degrees: 360, duration: 1)
+        camera.advance(by: 0.3)
+        let yaw = camera.pose.yaw
+        camera.stopInertia()
+        XCTAssertTrue(camera.isSettled)
+        XCTAssertEqual(camera.pose.yaw, yaw)
+    }
+
+    func testTurnJumpsWithoutAnimation() {
+        var camera = Scene3DCameraController()
+        XCTAssertTrue(camera.turn(.right))
+        XCTAssertEqual(camera.pose.yaw, 90)
+        XCTAssertTrue(camera.isSettled)
+    }
 }

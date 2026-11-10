@@ -103,9 +103,9 @@ final class PluginScene3DAssemblyTests: XCTestCase {
         // components directly.
         let transform = material.diffuse.contentsTransform
         XCTAssertEqual(transform.m11, 1)
-        XCTAssertEqual(transform.m22, 1)
+        XCTAssertEqual(transform.m22, -1) // 垂直翻转，修正屏幕文字镜像
         XCTAssertEqual(transform.m41, 0)
-        XCTAssertEqual(transform.m42, 0)
+        XCTAssertEqual(transform.m42, 1)
         XCTAssertEqual(instance.surfaceTextureCount, 1)
         XCTAssertEqual(rasterizer.plans.count, 1)
         XCTAssertEqual(rasterizer.plans.first?.pointSize, CGSize(width: 64, height: 64))
@@ -334,6 +334,24 @@ final class PluginScene3DAssemblyTests: XCTestCase {
             bounds: PluginScene3DBounds(minimum: SIMD3(repeating: -1), maximum: SIMD3(repeating: 1)),
             cameraDistance: 4, fieldOfView: 30, aspect: 0
         ))
+    }
+
+    /// 高瘦模型（iPod）按各自方向的半径适配：宽度受限时仍应占满视口，而不是
+    /// 缩到包围球大小。
+    func testContainScaleFitsTallModelPerAxisInsteadOfBoundingSphere() throws {
+        // 约 iPod 比例：宽 2、高 3.5、深 0.3。
+        let bounds = PluginScene3DBounds(minimum: SIMD3(-1, -1.75, -0.15), maximum: SIMD3(1, 1.75, 0.15))
+        let scale = try XCTUnwrap(PluginScene3DAssembly.containScale(
+            bounds: bounds, cameraDistance: 4, fieldOfView: 30, aspect: 300.0 / 470.0))
+
+        let sphereScale = 4 * sin(Float(30) * .pi / 360) * PluginScene3DAssembly.containPadding / bounds.radius
+        XCTAssertGreaterThan(scale, sphereScale * 1.05)
+
+        // 任意偏航/俯仰下，缩放后的水平/垂直半径都不超出视口。
+        let verticalHalf = Float(30) * .pi / 360
+        let horizontalHalf = atan(tan(verticalHalf) * Float(300.0 / 470.0))
+        XCTAssertLessThanOrEqual(hypot(1, 0.15) * scale, 4 * sin(horizontalHalf) + 1e-4)
+        XCTAssertLessThanOrEqual(hypot(1.75, 0.15) * scale, 4 * sin(verticalHalf) + 1e-4)
     }
 
     // MARK: - Builders

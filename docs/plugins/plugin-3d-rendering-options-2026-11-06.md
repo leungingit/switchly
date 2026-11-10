@@ -240,7 +240,7 @@ CLICK target=back_metal
 
 ## 6. 若进入实施，先锁定的契约与验收
 
-1. 在 [插件设计台账](dock-preview-plugins-design.md) 新增经确认的裁决编号，明确 D03/D12 的保留或取代关系；同步 [API 参考](plugin-api-reference.md)、`Plugins/api/`、`Plugins/sdk/` 与 [预览契约](plugin-preview-contract.md)。本文本身不改现行合同。
+1. 在 [插件设计台账](dock-preview-plugins-design.md) 新增经确认的裁决编号，明确 D03/D12 的保留或取代关系；同步 [API 参考](plugin-api-reference.md)、`Plugins/api/`、`Plugins/sdk/` 与 [预览契约](preview/plugin-preview-contract.md)。本文本身不改现行合同。
 2. 原生或网页渲染小样先在真实宿主面板内验证薄封闭机身、白色正面、金属侧边/背板、反射随视角变化、屏幕无条纹以及旋转和点击行为。原型的浏览器截图只作为视觉参照。
 3. 记录正面、侧面、背面及拖动中的截图或视频，并分别测量首帧、空闲、拖动及多个卡片同时显示时的 CPU/GPU/内存；验收阈值在实施前确定，避免事后改标准。
 4. 运行插件外仓 `npm test`、`npm run build`，宿主 `make build`、`make test-unit` 和适用的 `make plugin-preview-contract-check`；预览工具使用与宿主一致的渲染实现验收。

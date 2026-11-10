@@ -139,6 +139,23 @@ final class Scene3DInputSession {
         return !camera.isSettled
     }
 
+    // MARK: - Programmatic turn
+
+    /// Turns the model one full revolution (or a quarter turn under Reduce
+    /// Motion, where animation is dropped but every side stays reachable).
+    /// Returns whether anything started or moved.
+    @discardableResult
+    func spin(_ direction: Scene3DCameraController.SpinDirection) -> Bool {
+        guard isActive else { return false }
+        classifier.cancel()
+        if reduceMotion() {
+            let changed = camera.turn(direction)
+            if changed { onCameraChanged?(camera.pose) }
+            return changed
+        }
+        return camera.beginSpin(direction)
+    }
+
     // MARK: - Accessibility and keyboard
 
     /// Resets the orbit angle. Returns whether the pose changed.

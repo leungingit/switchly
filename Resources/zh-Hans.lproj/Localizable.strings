@@ -547,6 +547,8 @@
 "Reload" = "重载";
 "Reset" = "重置";
 "Reset 3D view" = "重置 3D 视图";
+"Rotate left" = "向左旋转一圈";
+"Rotate right" = "向右旋转一圈";
 "Center" = "中心";
 "Bottom bar" = "底栏";
 "Top trailing" = "右上角";
@@ -605,6 +607,7 @@
 "A selected fixture file is invalid or too large." = "所选 fixture 文件无效或过大。";
 "The current scenario is invalid for this plugin." = "当前场景对该插件无效。";
 "The preview environment is unavailable." = "预览环境不可用。";
+"The native preview surface is unavailable or failed isolation checks." = "原生预览表面不可用或未通过隔离检查。";
 "The plugin failed to render." = "插件渲染失败。";
 "Built-in sample" = "内置样例";
 "Needs a file" = "需显式文件";

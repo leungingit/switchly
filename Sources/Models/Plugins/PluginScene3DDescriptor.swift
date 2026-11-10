@@ -120,14 +120,24 @@ struct PluginScene3DSurface: Decodable, Equatable {
     }
 }
 
+/// Quarter of a hit node, measured in the node's own X/Y plane around the
+/// centre of its bounds. Lets one visible mesh (a click-wheel ring) host up to
+/// four independent actions.
+enum PluginScene3DSector: String, Codable, Equatable, CaseIterable {
+    case top, right, bottom, left
+}
+
 struct PluginScene3DHit: Decodable, Equatable {
     var node: String
     var id: String
     var label: String
     var value: Double?
     var enabled: Bool
+    var sector: PluginScene3DSector?
 
-    init(node: String, id: String, label: String, value: Double? = nil, enabled: Bool = true) {
+    init(node: String, id: String, label: String, value: Double? = nil, enabled: Bool = true,
+         sector: PluginScene3DSector? = nil) {
+        self.sector = sector
         self.node = node
         self.id = id
         self.label = label
@@ -136,7 +146,7 @@ struct PluginScene3DHit: Decodable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case node, id, label, value, enabled
+        case node, id, label, value, enabled, sector
     }
 
     init(from decoder: Decoder) throws {
@@ -146,6 +156,7 @@ struct PluginScene3DHit: Decodable, Equatable {
         label = try container.decode(String.self, forKey: .label)
         value = try container.decodeIfPresent(Double.self, forKey: .value)
         enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        sector = try container.decodeIfPresent(PluginScene3DSector.self, forKey: .sector)
     }
 }
 
@@ -194,6 +205,17 @@ struct PluginScene3DDescriptor: Decodable, Equatable {
         fallback = try container.decode(PluginUINode.self, forKey: .fallback)
     }
 
+    /// True when `other` differs from `self` only in what is painted (surface
+    /// content, fallback). The asset, camera, limits, surface nodes and hits
+    /// are identical, so the live scene can be repainted instead of rebuilt.
+    func canRepaintInPlace(from other: PluginScene3DDescriptor) -> Bool {
+        key == other.key && asset == other.asset && fit == other.fit
+            && camera == other.camera && rotate == other.rotate
+            && hits == other.hits
+            && surfaces.map { [$0.node, "\($0.size.width)x\($0.size.height)"] }
+                == other.surfaces.map { [$0.node, "\($0.size.width)x\($0.size.height)"] }
+    }
+
     /// Resolves the package-relative asset path without leaving the plugin
     /// package. Validation has already rejected absolute and parent paths.
     func assetURL(in directory: URL) -> URL {
@@ -202,7 +224,7 @@ struct PluginScene3DDescriptor: Decodable, Equatable {
 }
 
 enum PluginScene3DLimits {
-    static let maxSurfaces = 2
+    static let maxSurfaces = 5
     static let maxHits = 12
     static let maxSurfaceEdge = 1024
     static let minSurfaceEdge = 1
@@ -229,7 +251,6 @@ enum PluginScene3DDeclarationError: LocalizedError, Equatable {
     case duplicateHitNode(String)
     case duplicateActionID(String)
     case nonFiniteHitValue(String)
-    case surfaceAndHitNodeOverlap(String)
     case duplicateFallbackActionID(String)
     case declarationTooDeep
     case declarationTooManyNodes
@@ -253,7 +274,6 @@ enum PluginScene3DDeclarationError: LocalizedError, Equatable {
         case .duplicateHitNode(let node): return "scene3d hit node is duplicated: \(node)"
         case .duplicateActionID(let id): return "scene3d action id is duplicated: \(id)"
         case .nonFiniteHitValue(let id): return "scene3d hit value is not finite: \(id)"
-        case .surfaceAndHitNodeOverlap(let node): return "scene3d node is used by both a surface and a hit: \(node)"
         case .duplicateFallbackActionID(let id): return "scene3d fallback action id is duplicated: \(id)"
         case .declarationTooDeep: return "scene3d declaration exceeds \(PluginRenderOutput.maxDepth) levels"
         case .declarationTooManyNodes: return "scene3d declaration exceeds \(PluginRenderOutput.maxNodes) nodes"
@@ -277,7 +297,6 @@ enum PluginScene3DDeclaration {
         try validateRotation(descriptor.rotate)
         try validateSurfaces(descriptor.surfaces)
         try validateHits(descriptor.hits)
-        try validateNodeDisjointness(surfaces: descriptor.surfaces, hits: descriptor.hits)
         try validateFallback(descriptor.fallback)
         try validateBudget(descriptor)
     }
@@ -349,15 +368,18 @@ enum PluginScene3DDeclaration {
         guard hits.count <= PluginScene3DLimits.maxHits else {
             throw PluginScene3DDeclarationError.tooManyHits
         }
-        var nodes = Set<String>()
+        var sectorsByNode: [String: Set<PluginScene3DSector?>] = [:]
         var actionIDs = Set<String>()
         for hit in hits {
             guard !hit.node.isEmpty else { throw PluginScene3DDeclarationError.emptyHitField("node") }
             guard !hit.id.isEmpty else { throw PluginScene3DDeclarationError.emptyHitField("id") }
             guard !hit.label.isEmpty else { throw PluginScene3DDeclarationError.emptyHitField("label") }
-            guard nodes.insert(hit.node).inserted else {
+            // A node may host several hits only when every one names its own sector.
+            let used = sectorsByNode[hit.node] ?? []
+            guard !used.contains(hit.sector), hit.sector == nil ? used.isEmpty : !used.contains(nil) else {
                 throw PluginScene3DDeclarationError.duplicateHitNode(hit.node)
             }
+            sectorsByNode[hit.node, default: []].insert(hit.sector)
             guard actionIDs.insert(hit.id).inserted else {
                 throw PluginScene3DDeclarationError.duplicateActionID(hit.id)
             }
@@ -394,15 +416,6 @@ enum PluginScene3DDeclaration {
             throw PluginScene3DDeclarationError.declarationTooDeep
         }
     }
-
-    /// Surfaces and hits must name disjoint glTF nodes so a node cannot be both
-    /// a dynamic texture target and an interactive target.
-    static func validateNodeDisjointness(surfaces: [PluginScene3DSurface], hits: [PluginScene3DHit]) throws {
-        let surfaceNodes = Set(surfaces.map(\.node))
-        for hit in hits where surfaceNodes.contains(hit.node) {
-            throw PluginScene3DDeclarationError.surfaceAndHitNodeOverlap(hit.node)
-        }
-    }
 }
 
 /// Size policy for an independent 3D slot view. The minimum is the frozen
@@ -412,7 +425,12 @@ enum PluginScene3DDeclaration {
 /// fallback instead of a squeezed 3D view.
 enum PluginScene3DViewport {
     static let minimumSize = CGSize(width: 220, height: 380)
-    static let idealSize = CGSize(width: 320, height: 420)
+    /// Near the tall iPod's own aspect so the fitted model fills ~90% of the
+    /// slot instead of floating in a wide, empty frame.
+    static let idealSize = CGSize(width: 300, height: 480)
+    /// Row under the scene for the host-owned turn controls; it is not part of
+    /// the slot the model is fitted into.
+    static let controlBarHeight: CGFloat = 36
 
     static func canHost3D(in size: CGSize) -> Bool {
         size.width.isFinite && size.height.isFinite

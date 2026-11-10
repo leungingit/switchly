@@ -68,9 +68,9 @@ Built-in plugin source and assets live in the separate [switchly-plugins reposit
 
 ### Preview plugins independently
 
-Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/plugin-preview-guide.md) and [coverage matrix](docs/plugins/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.
+Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/preview/plugin-preview-guide.md) and [coverage matrix](docs/plugins/preview/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.
 
-Agent 截图可为 `switchly-plugin run` 显式添加 `--background`，避免预览 App 激活和工作台窗口抢焦点；该模式仍需图形会话与屏幕录制授权，包含 `nativeClick` 的场景返回 `unsupported`。原生输入应在独立 GUI 环境验证，详见[预览指南](docs/plugins/plugin-preview-guide.md)。
+Agent 可为 `switchly-plugin run` 显式添加 `--background`，在不显示预览窗口、不激活预览 App 的路径中截图、按可访问标签点击，以及在真实 3D 视图内按截图坐标点击／拖动。输入与截图使用同一共享 Renderer，不发送全局键鼠；仍需图形会话与屏幕录制授权，图像或隔离自检失败直接报环境错误。该路线目前在本机 arm64／macOS 27.2 验证，兼容性及输入范围见[预览指南](docs/plugins/preview/plugin-preview-guide.md)。
 
 ## Desktop Grid: all your desktops, one glance away
 

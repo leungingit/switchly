@@ -222,4 +222,38 @@ final class Scene3DInputSessionTests: XCTestCase {
         session.pointerUp(at: .zero)
         XCTAssertTrue(dispatched.isEmpty)
     }
+
+    func testSpinStartsAnimatedTurnAndEmitsPoseChanges() {
+        session.start()
+        XCTAssertTrue(session.spin(.right))
+        XCTAssertFalse(session.isCameraSettled)
+        XCTAssertTrue(session.advance(by: 0.2))
+        XCTAssertFalse(cameraChanges.isEmpty)
+    }
+
+    func testSpinIsIgnoredBeforeStartAndAfterStop() {
+        XCTAssertFalse(session.spin(.left))
+        session.start()
+        session.stop()
+        XCTAssertFalse(session.spin(.left))
+        XCTAssertTrue(session.isCameraSettled)
+    }
+
+    func testPointerDownCancelsRunningSpin() {
+        session.start()
+        session.spin(.right)
+        session.pointerDown(at: .zero)
+        XCTAssertTrue(session.isCameraSettled)
+    }
+
+    func testSpinUnderReduceMotionTurnsInstantlyInsteadOfAnimating() {
+        let reduced = Scene3DInputSession(hitProvider: provider, hits: [],
+                                          reduceMotion: { true }, actionSink: { _, _ in })
+        reduced.onCameraChanged = { [unowned self] in self.cameraChanges.append($0) }
+        reduced.start()
+        XCTAssertTrue(reduced.spin(.right))
+        XCTAssertTrue(reduced.isCameraSettled)
+        XCTAssertEqual(reduced.cameraPose.yaw, 90)
+        XCTAssertEqual(cameraChanges.last?.yaw, 90)
+    }
 }

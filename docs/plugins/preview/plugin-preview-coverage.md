@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | 契约 | 场景/fixture/报告/协议/Schema 的形状与错误码 | 插件业务是否正确 |
 | 业务动作（`action` 步骤） | 直接调用插件 `onAction` 后状态变化 | 控件是否可点击、标签是否可读 |
-| 原生输入（`nativeClick` 步骤） | 默认 `run` 经可访问树按标签 press，动作经 SwiftUI 回调进入会话；禁用控件不触发；`run --background` 明确返回 `unsupported` | 后台原生输入隔离、系统级鼠标事件、hover、键盘焦点、滑块调节 |
+| 原生输入（`nativeClick`／`nativeClickAt`／`nativeDrag`） | 默认 `run` 保留标签 AX press；后台在同一隐藏原生表面经 AX press 或真实 SceneKit 视图鼠标方法处理。正式后台回归见 PV-D14 | 系统级鼠标事件、hover、键盘焦点、滑块调节；旧系统／Intel／跨 Space／压力矩阵 |
 | 视觉（`baseline`） | 确定时钟、非玻璃场景下像素级可比较、差异可定位 | 真实桌面玻璃效果 |
 | 真实系统集成 | 仍由本体承担：Dock、AX 切窗、跨屏、玻璃背景 | 本工具不验证，也不声称验证 |
 
@@ -28,6 +28,7 @@
 | CLI 参数、结果对象、信号转发、baseline | `npm --prefix Plugins/cli test` | 33 项通过 | — |
 | 外仓场景契约与校验 | 外仓 `npm test` | 32 项通过 | 需先用离线 CLI 包执行 `validator:prepare` |
 | 原生输入（按钮/禁用/开关/Scene 命中区域） | `make plugin-preview-native-test` | 正向 + 4 个负向通过 | 滑块、hover、键盘、系统级鼠标事件 |
+| 正式后台输入／截图／隔离（PV-D14） | `make plugin-preview-background-test` | 17 进程／1318 外部样本，上屏与激活为 0；7 步、负向、worker 抛错、环境错误、内容增长、SIGTERM、iPod 点击／拖动通过；另有真实看图 | 本机 arm64／macOS 27.2；跨系统、Space、压力与完整输入未验，见正式接入记录 |
 | 视觉基线（一致、差异检出、玻璃拒绝） | `make plugin-preview-baseline-test` | 通过 | 环境不兼容的组合只验证了拒绝逻辑（JS 测试），未在第二台机器上实测 |
 | dev 生命周期（重载、损坏保留旧画面、恢复、SIGINT 后无残留） | `bash Tests/PluginPreview/run-dev-lifecycle-tests.sh` | 通过 | 隐藏/最小化触发 suspend/resume 未自动化 |
 | 失败模式（12 种常见错误得到稳定且可区分的状态+错误码+退出码；死循环 worker 被回收） | `bash Tests/PluginPreview/run-failure-modes-tests.sh` | 12/12 通过 | 表中未列出的错误回落到 `preview-failed` |

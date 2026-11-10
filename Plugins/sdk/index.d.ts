@@ -620,13 +620,15 @@ export interface PluginScene3DSurface {
 }
 
 export interface PluginScene3DHit {
-  /** glTF node.name；不能同时被 surface 引用。 */
+  /** glTF node.name；可同时作为 surface 目标（贴图后的按钮）。 */
   readonly node: string;
   /** scene3d 内唯一；可与其自身 fallback 子树复用。 */
   readonly id: string;
   readonly label: string;
   readonly value?: number | null;
   readonly enabled?: boolean;
+  /** 节点局部 X/Y 平面上以包围盒中心划分的象限（按对角线分割）；同一节点承载多个命中时必填且不可重复。 */
+  readonly sector?: "top" | "right" | "bottom" | "left";
 }
 
 export interface PluginScene3DOptions {
@@ -637,7 +639,7 @@ export interface PluginScene3DOptions {
   readonly fit?: Scene3DFit;
   readonly camera?: PluginScene3DCamera;
   readonly rotate?: PluginScene3DRotate;
-  /** 最多 2 项。 */
+  /** 最多 5 项。 */
   readonly surfaces?: readonly PluginScene3DSurface[];
   /** 最多 12 项。 */
   readonly hits?: readonly PluginScene3DHit[];

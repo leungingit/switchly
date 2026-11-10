@@ -25,6 +25,9 @@ struct Scene3DHitRouter {
         /// then exposes a toggle with the current state.
         var isToggle: Bool
         var selected: Bool
+        /// Quarter of the node a hit owns. Several hits may share one node
+        /// (a click-wheel ring) as long as each declares a different sector.
+        var sector: PluginScene3DSector?
 
         init(node: String,
              actionID: String,
@@ -32,7 +35,8 @@ struct Scene3DHitRouter {
              value: Double? = nil,
              enabled: Bool = true,
              isToggle: Bool = false,
-             selected: Bool = false) {
+             selected: Bool = false,
+             sector: PluginScene3DSector? = nil) {
             self.node = node
             self.actionID = actionID
             self.label = label
@@ -40,6 +44,7 @@ struct Scene3DHitRouter {
             self.enabled = enabled
             self.isToggle = isToggle
             self.selected = selected
+            self.sector = sector
         }
     }
 
@@ -52,15 +57,20 @@ struct Scene3DHitRouter {
         /// True for fully transparent placeholders. Undeclared opaque surfaces
         /// in front of a declared hit block it instead of being clicked through.
         var passesThrough: Bool
+        /// Hit point in the hit node's own X/Y plane, relative to the centre of
+        /// its bounding box. Only needed to resolve sector hits.
+        var localPoint: SIMD2<Float>?
 
         init(nodeNameChain: [String],
              worldNormal: SIMD3<Float>,
              worldPoint: SIMD3<Float>,
-             passesThrough: Bool = false) {
+             passesThrough: Bool = false,
+             localPoint: SIMD2<Float>? = nil) {
             self.nodeNameChain = nodeNameChain
             self.worldNormal = worldNormal
             self.worldPoint = worldPoint
             self.passesThrough = passesThrough
+            self.localPoint = localPoint
         }
     }
 
@@ -74,12 +84,12 @@ struct Scene3DHitRouter {
     /// when the camera looks almost parallel to the surface.
     static let frontFacingThreshold: Float = 0.05
 
-    private let hitsByNode: [String: Hit]
+    private let hitsByNode: [String: [Hit]]
 
     init(hits: [Hit]) {
-        var map: [String: Hit] = [:]
-        for hit in hits where map[hit.node] == nil {
-            map[hit.node] = hit
+        var map: [String: [Hit]] = [:]
+        for hit in hits {
+            map[hit.node, default: []].append(hit)
         }
         hitsByNode = map
     }
@@ -104,7 +114,7 @@ struct Scene3DHitRouter {
     /// Looks up a declared hit by action ID, used by keyboard and
     /// accessibility paths that do not go through geometry.
     func hit(actionID: String) -> Hit? {
-        hitsByNode.values.first { $0.actionID == actionID }
+        hitsByNode.values.joined().first { $0.actionID == actionID }
     }
 
     static func isFrontFacing(_ candidate: Candidate, cameraPosition: SIMD3<Float>) -> Bool {
@@ -118,8 +128,19 @@ struct Scene3DHitRouter {
 
     private func declaredHit(for candidate: Candidate) -> Hit? {
         for name in candidate.nodeNameChain {
-            if let hit = hitsByNode[name] { return hit }
+            guard let hits = hitsByNode[name] else { continue }
+            let sector = candidate.localPoint.map(Self.sector(of:))
+            return hits.first { $0.sector == nil || $0.sector == sector }
         }
         return nil
+    }
+
+    /// Quarter of a node-local point: the dominant axis picks top/bottom or
+    /// left/right, so the four quarters meet along the diagonals.
+    static func sector(of point: SIMD2<Float>) -> PluginScene3DSector {
+        if abs(point.y) >= abs(point.x) {
+            return point.y >= 0 ? .top : .bottom
+        }
+        return point.x >= 0 ? .right : .left
     }
 }

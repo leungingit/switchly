@@ -98,6 +98,6 @@ GLTFKit2 只负责加载和桥接；宿主提供固定的环境反射、色彩�
 
 ## 5. 文件边界与交付门禁
 
-正式契约先于代码：在 [Dock 插件设计台账](dock-preview-plugins-design.md) 为 C-D01 增加正式裁决编号；同步 [插件 API 参考](plugin-api-reference.md)、`Plugins/api/capabilities.json`、`Plugins/sdk/`、`Plugins/cli/`、[预览契约](plugin-preview-contract.md)及其哈希和 renderer revision。新增通用 Swift 类型建议分别置于 `Sources/Models/Plugins/`（解码/预算）、`Sources/Services/Plugins/`（校验/加载）、`Sources/Views/`（共享 3D 视图与表面），以 `project.yml` 接线；具体文件名由 T00 冻结。预览必须编译同一实现，不在 `Tools/PluginPreview` 另写渲染器。宿主不依赖外仓插件源码，外仓不实现 glb 解析器。
+正式契约先于代码：在 [Dock 插件设计台账](dock-preview-plugins-design.md) 为 C-D01 增加正式裁决编号；同步 [插件 API 参考](plugin-api-reference.md)、`Plugins/api/capabilities.json`、`Plugins/sdk/`、`Plugins/cli/`、[预览契约](preview/plugin-preview-contract.md)及其哈希和 renderer revision。新增通用 Swift 类型建议分别置于 `Sources/Models/Plugins/`（解码/预算）、`Sources/Services/Plugins/`（校验/加载）、`Sources/Views/`（共享 3D 视图与表面），以 `project.yml` 接线；具体文件名由 T00 冻结。预览必须编译同一实现，不在 `Tools/PluginPreview` 另写渲染器。宿主不依赖外仓插件源码，外仓不实现 glb 解析器。
 
 实现前后的每个门禁、命令和可接受证据见[任务书](plugin-scene3d-tasks.md)。最终必须运行外仓 `npm test`、`npm run build`，宿主 `make prepare-plugins`、`make build`、`make test-unit`、`make plugin-preview-contract-check`、`./verify.sh`，再看真实插件预览与 Dock 面板截图。签名包、旧系统、Intel、真实媒体与用户视觉验收分别报告；单元测试通过不等于产品验收。本文不授权提交、推送或发布。

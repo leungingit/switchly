@@ -6,7 +6,9 @@ trap 'python3 -c "import shutil,sys; shutil.rmtree(sys.argv[1])" "$TEST_DIR"' EX
 cd "$ROOT"
 xcrun swiftc -swift-version 5 -parse-as-library \
   Sources/Models/Plugins/PluginManifest.swift Sources/Models/Plugins/PluginUINode.swift Sources/Models/Plugins/PluginScene.swift \
-  Sources/Services/Plugins/PluginRegistry.swift Sources/Services/Plugins/PluginPackageValidator.swift Sources/Utilities/AppLogger.swift \
+  Sources/Models/Plugins/PluginScene3DDescriptor.swift Sources/Services/Plugins/PluginSurfaceRequest.swift \
+  Sources/Services/Plugins/PluginRegistry.swift Sources/Services/Plugins/PluginPackageValidator.swift \
+  Sources/Services/Plugins/GLBPreflight.swift Sources/Utilities/AppLogger.swift \
   Tools/PluginPreview/Scenario/PluginPreviewStep.swift Tools/PluginPreview/Scenario/PreviewScenario.swift \
   Tools/PluginPreview/Artifacts/PluginPreviewArtifactModels.swift \
   Tools/PluginPreview/Artifacts/PluginPreviewArtifactBuilder.swift \

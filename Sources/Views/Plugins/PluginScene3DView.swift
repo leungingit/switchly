@@ -70,6 +70,10 @@ final class PluginScene3DPointerView: SCNView, PluginScene3DSceneHosting {
 
     // MARK: - Pointer
 
+    /// The Dock preview panel is not key when the pointer enters it; the very
+    /// first click must reach the model instead of only activating the panel.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     override func mouseDown(with event: NSEvent) {
         controller?.pointerDown(at: topLeftPoint(from: event))
     }
@@ -91,6 +95,17 @@ final class PluginScene3DPointerView: SCNView, PluginScene3DSceneHosting {
         if window == nil {
             controller?.pointerCancelled()
         }
+        reportAppearance()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        reportAppearance()
+    }
+
+    private func reportAppearance() {
+        let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        controller?.updateHostAppearance(dark: dark)
     }
 
     private func topLeftPoint(from event: NSEvent) -> CGPoint {
@@ -113,6 +128,13 @@ struct PluginScene3DViewConfiguration: Equatable {
     var assetDirectory: URL
     var artworkToken: String?
     var palette: PluginSurfacePalette
+    var artwork: PluginSurfaceArtwork? = nil
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.descriptor == rhs.descriptor && lhs.pluginID == rhs.pluginID
+            && lhs.assetDirectory == rhs.assetDirectory
+            && lhs.artworkToken == rhs.artworkToken && lhs.palette == rhs.palette
+    }
 }
 
 /// Bridges the AppKit host into SwiftUI. Re-attaching is idempotent and
@@ -165,6 +187,7 @@ struct PluginScene3DView: View {
     let onAction: (String, Double?) -> Void
 
     @StateObject private var controller: PluginScene3DController
+    @State private var loveBurst = false
 
     init(descriptor: PluginScene3DDescriptor,
          pluginID: String,
@@ -196,28 +219,77 @@ struct PluginScene3DView: View {
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            content
-                .onAppear {
-                    controller.updateActionSink(onAction)
-                    controller.updateSlotSize(proxy.size)
-                    controller.start()
-                }
-                .onChange(of: proxy.size) { controller.updateSlotSize($0) }
-                .onDisappear { controller.stop() }
-                .onChange(of: configuration) { _ in
-                    controller.updateActionSink(onAction)
-                    controller.configure(
-                        descriptor: descriptor,
-                        pluginID: pluginID,
-                        assetDirectory: assetDirectory,
-                        artwork: artwork,
-                        palette: palette
-                    )
-                }
+        VStack(spacing: 0) {
+            GeometryReader { proxy in
+                content
+                    .overlay(alignment: .center) {
+                        if loveBurst {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 30, weight: .semibold))
+                                .foregroundStyle(.pink)
+                                .shadow(color: .pink.opacity(0.5), radius: 8)
+                                .offset(y: -34)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
+                                .transition(.scale(scale: 0.45).combined(with: .opacity))
+                        }
+                    }
+                    .onAppear {
+                        controller.updateActionSink(handleAction)
+                        controller.updateSlotSize(proxy.size)
+                        controller.start()
+                    }
+                    .onChange(of: proxy.size) { controller.updateSlotSize($0) }
+                    .onDisappear { controller.stop() }
+                    .onChange(of: configuration) { updated in
+                        controller.updateActionSink(handleAction)
+                        controller.configure(
+                            descriptor: updated.descriptor,
+                            pluginID: updated.pluginID,
+                            assetDirectory: updated.assetDirectory,
+                            artwork: updated.artwork,
+                            palette: updated.palette
+                        )
+                    }
+            }
+            turnControls
+                .frame(height: PluginScene3DViewport.controlBarHeight)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(descriptor.key))
+    }
+
+    private func handleAction(_ id: String, _ value: Double?) {
+        onAction(id, value)
+        guard id == "love", !MotionTokens.reduceMotion else { return }
+        loveBurst = false
+        withAnimation(.easeOut(duration: 0.22)) { loveBurst = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
+            withAnimation(.easeIn(duration: 0.2)) { loveBurst = false }
+        }
+    }
+
+    /// Two buttons that spin the model a full turn left / right. Dragging the
+    /// model needs the pointer to travel across a small panel, and leaving the
+    /// panel dismisses it; these let users inspect every side without moving.
+    @ViewBuilder
+    private var turnControls: some View {
+        if case .ready = controller.state, descriptor.rotate.horizontal {
+            HStack(spacing: DesignTokens.Spacing.md) {
+                PluginSymbolButton(symbol: "arrow.counterclockwise",
+                                   label: NSLocalizedString("Rotate left", comment: "Spin the 3D model a full turn to the left"),
+                                   size: .m, prominent: false, selected: false) {
+                    controller.spin(.left)
+                }
+                PluginSymbolButton(symbol: "arrow.clockwise",
+                                   label: NSLocalizedString("Rotate right", comment: "Spin the 3D model a full turn to the right"),
+                                   size: .m, prominent: false, selected: false) {
+                    controller.spin(.right)
+                }
+            }
+        } else {
+            Color.clear
+        }
     }
 
     private var configuration: PluginScene3DViewConfiguration {
@@ -226,7 +298,8 @@ struct PluginScene3DView: View {
             pluginID: pluginID,
             assetDirectory: assetDirectory,
             artworkToken: artwork?.token,
-            palette: palette
+            palette: palette,
+            artwork: artwork
         )
     }
 
@@ -234,7 +307,7 @@ struct PluginScene3DView: View {
     private var content: some View {
         switch controller.state {
         case .ready:
-            PluginScene3DHostView(controller: controller, onAction: onAction)
+            PluginScene3DHostView(controller: controller, onAction: handleAction)
         case .idle, .loading, .fallback:
             fallbackView
         }

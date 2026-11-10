@@ -398,7 +398,7 @@ struct PluginSurfaceDrawing {
         switch source {
         case .symbol(let name):
             drawSymbol(name, pointSize: side * 0.6, weight: .regular,
-                       color: palette.text, in: box)
+                       color: palette.symbol, in: box)
         case .artwork:
             if let artwork {
                 drawFilledImage(artwork, in: box, radius: radius)

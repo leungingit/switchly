@@ -19,6 +19,56 @@ enum PluginPreviewNativeDriver {
     static let maxNodes = 5_000
     static let maxDepth = 64
 
+    /// 坐标从截图表面左上角转换到窗口，再让 AppKit hitTest 决定目标。
+    /// 只适配已有 SceneKit 鼠标处理，不对 SwiftUI 控件猜测 action，也不投递全局事件。
+    static func pointer(from start: PluginPreviewPoint, to end: PluginPreviewPoint?, in window: NSWindow,
+                        checkIsolation: () throws -> Void) async throws {
+        guard let root = window.contentView else { throw PluginPreviewStepFailure(code: "window-unavailable") }
+        func location(_ point: PluginPreviewPoint) throws -> NSPoint {
+            guard point.x.isFinite, point.y.isFinite, point.x >= 0, point.y >= 0,
+                  point.x < root.bounds.width, point.y < root.bounds.height else {
+                throw PluginPreviewStepFailure(code: "point-out-of-bounds")
+            }
+            let local = NSPoint(x: root.bounds.minX + point.x,
+                                y: root.isFlipped ? root.bounds.minY + point.y : root.bounds.maxY - point.y)
+            return root.convert(local, to: nil)
+        }
+        let first = try location(start)
+        let last = try end.map(location) ?? first
+        let rootPoint = root.convert(first, from: nil)
+        guard let target = root.hitTest(root.convert(rootPoint, to: root.superview)) as? PluginScene3DPointerView else {
+            throw PluginPreviewStepFailure(code: "pointer-target-unsupported")
+        }
+        func event(_ type: NSEvent.EventType, at point: NSPoint) throws -> NSEvent {
+            guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+                context: nil, eventNumber: 0, clickCount: end == nil ? 1 : 0, pressure: type == .leftMouseUp ? 0 : 1) else {
+                throw PluginPreviewStepFailure(code: "pointer-event-unavailable")
+            }
+            return event
+        }
+        try checkIsolation()
+        target.mouseDown(with: try event(.leftMouseDown, at: first))
+        do {
+            if end != nil {
+                for index in 1...8 {
+                    try await Task.sleep(nanoseconds: 20_000_000)
+                    try checkIsolation()
+                    let progress = CGFloat(index) / 8
+                    let point = NSPoint(x: first.x + (last.x - first.x) * progress,
+                                        y: first.y + (last.y - first.y) * progress)
+                    target.mouseDragged(with: try event(.leftMouseDragged, at: point))
+                }
+            }
+            try checkIsolation()
+            target.mouseUp(with: try event(.leftMouseUp, at: last))
+        } catch {
+            // 取消手势走原视图的既有路径，避免半截拖动留在输入会话里。
+            if let cancel = try? event(.rightMouseDown, at: first) { target.rightMouseDown(with: cancel) }
+            throw error
+        }
+    }
+
     static func press(label: String, in root: NSView) -> Outcome {
         var matches: [NSObject] = []
         var visited = 0

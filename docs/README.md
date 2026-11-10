@@ -51,12 +51,12 @@
 | [plugin-scene3d-implementation-plan.md](plugins/plugin-scene3d-implementation-plan.md) | `scene3d` 实施设计，以音乐插件 iPod 为最终验收目标 |
 | [plugin-scene3d-tasks.md](plugins/plugin-scene3d-tasks.md) | `scene3d` 子任务、依赖与阶段门禁 |
 | [whale-plugin-progress.md](plugins/whale-plugin-progress.md) | 鲸娘 Dock 预览插件进度与续接手册 |
-| [plugin-preview-development-plan.md](plugins/plugin-preview-development-plan.md) | 插件独立预览与开发工具方案 |
-| [plugin-preview-development-tasks.md](plugins/plugin-preview-development-tasks.md) | 预览工具任务书与分阶段取证 |
-| [plugin-preview-contract.md](plugins/plugin-preview-contract.md) | 预览工具内部契约 v1 |
-| [plugin-preview-coverage.md](plugins/plugin-preview-coverage.md) | 覆盖矩阵与失败清单 |
-| [plugin-preview-guide.md](plugins/plugin-preview-guide.md) | 开发者与 Agent 使用指南 |
-| [plugin-preview-agent-isolation.md](plugins/plugin-preview-agent-isolation.md) | Preview App 的 Agent 验证隔离方案 |
+| [plugin-preview-development-plan.md](plugins/preview/plugin-preview-development-plan.md) | 插件独立预览与开发工具方案 |
+| [plugin-preview-development-tasks.md](plugins/preview/plugin-preview-development-tasks.md) | 预览工具任务书与分阶段取证 |
+| [plugin-preview-contract.md](plugins/preview/plugin-preview-contract.md) | 预览工具内部契约 v1 |
+| [plugin-preview-coverage.md](plugins/preview/plugin-preview-coverage.md) | 覆盖矩阵与失败清单 |
+| [plugin-preview-guide.md](plugins/preview/plugin-preview-guide.md) | 开发者与 Agent 使用指南 |
+| [plugin-preview-agent-isolation.md](plugins/preview/plugin-preview-agent-isolation.md) | Preview App 的 Agent 验证隔离方案 |
 
 ## 调研与评审
 
@@ -71,3 +71,17 @@
 - [README.md](../README.md)、[README.zh-CN.md](../README.zh-CN.md)：能力、权限与构建概览
 - [CONTRIBUTING.md](../CONTRIBUTING.md)：开发、设置兼容、日志与测试约定
 - [AGENTS.md](../AGENTS.md)：目录职责、分层边界与交付自检
+
+## 后台预览验证记录
+
+| 文档 | 内容 |
+| --- | --- |
+| [plugin-preview-background-input-2026-11-10.md](reviews/plugin-preview/plugin-preview-background-input-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-background-integration-2026-11-10.md](reviews/plugin-preview/plugin-preview-background-integration-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-color-clock-2026-11-10.md](reviews/plugin-preview/plugin-preview-color-clock-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-hidden-window-feasibility-2026-11-10.md](reviews/plugin-preview/plugin-preview-hidden-window-feasibility-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-layer-fidelity-2026-11-10.md](reviews/plugin-preview/plugin-preview-layer-fidelity-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-renderer-color-lifecycle-2026-11-10.md](reviews/plugin-preview/plugin-preview-renderer-color-lifecycle-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-renderer-input-2026-11-10.md](reviews/plugin-preview/plugin-preview-renderer-input-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-view-capture-2026-11-10.md](reviews/plugin-preview/plugin-preview-view-capture-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
+| [plugin-preview-pr-rebase-2026-11-10.md](reviews/plugin-preview/plugin-preview-pr-rebase-2026-11-10.md) | 主干 rebase 后的提交候选、固定依赖验证与旧 iPod 夹具边界 |

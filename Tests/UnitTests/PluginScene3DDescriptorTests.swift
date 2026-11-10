@@ -160,9 +160,15 @@ final class PluginScene3DDescriptorTests: XCTestCase {
         let two = PluginScene3DSurface(node: "second", size: .init(width: 64, height: 64), content: text("b"))
         let three = PluginScene3DSurface(node: "third", size: .init(width: 64, height: 64), content: text("c"))
 
+        let many = (0..<(PluginScene3DLimits.maxSurfaces + 1)).map {
+            PluginScene3DSurface(node: "n\($0)", size: .init(width: 64, height: 64), content: text("a"))
+        }
         XCTAssertThrowsError(try PluginScene3DDeclaration.validate(
-            PluginScene3DDescriptor(key: "k", asset: "a.glb", surfaces: [one, two, three], fallback: text("f"))
+            PluginScene3DDescriptor(key: "k", asset: "a.glb", surfaces: many, fallback: text("f"))
         )) { XCTAssertEqual($0 as? PluginScene3DDeclarationError, .tooManySurfaces) }
+        XCTAssertNoThrow(try PluginScene3DDeclaration.validate(
+            PluginScene3DDescriptor(key: "k", asset: "a.glb", surfaces: [one, two, three], fallback: text("f"))
+        ))
 
         XCTAssertThrowsError(try PluginScene3DDeclaration.validate(
             PluginScene3DDescriptor(key: "k", asset: "a.glb",
@@ -206,19 +212,40 @@ final class PluginScene3DDescriptorTests: XCTestCase {
                                     fallback: text("f"))
         )) { XCTAssertEqual($0 as? PluginScene3DDeclarationError, .duplicateHitNode("button")) }
 
+        // 不同 sector 可共用一个节点；重复 sector 或与无 sector 混用都拒绝。
+        XCTAssertNoThrow(try PluginScene3DDeclaration.validate(
+            PluginScene3DDescriptor(key: "k", asset: "a.glb",
+                                    hits: [PluginScene3DHit(node: "ring", id: "a", label: "A", sector: .top),
+                                           PluginScene3DHit(node: "ring", id: "b", label: "B", sector: .bottom)],
+                                    fallback: text("f"))
+        ))
+        XCTAssertThrowsError(try PluginScene3DDeclaration.validate(
+            PluginScene3DDescriptor(key: "k", asset: "a.glb",
+                                    hits: [PluginScene3DHit(node: "ring", id: "a", label: "A", sector: .top),
+                                           PluginScene3DHit(node: "ring", id: "b", label: "B", sector: .top)],
+                                    fallback: text("f"))
+        )) { XCTAssertEqual($0 as? PluginScene3DDeclarationError, .duplicateHitNode("ring")) }
+        XCTAssertThrowsError(try PluginScene3DDeclaration.validate(
+            PluginScene3DDescriptor(key: "k", asset: "a.glb",
+                                    hits: [PluginScene3DHit(node: "ring", id: "a", label: "A", sector: .top),
+                                           PluginScene3DHit(node: "ring", id: "b", label: "B")],
+                                    fallback: text("f"))
+        )) { XCTAssertEqual($0 as? PluginScene3DDeclarationError, .duplicateHitNode("ring")) }
+
         XCTAssertThrowsError(try PluginScene3DDeclaration.validate(
             PluginScene3DDescriptor(key: "k", asset: "a.glb",
                                     hits: [PluginScene3DHit(node: "a", id: "i", label: "L", value: .infinity)],
                                     fallback: text("f"))
         )) { XCTAssertEqual($0 as? PluginScene3DDeclarationError, .nonFiniteHitValue("i")) }
 
+        // 同一节点既可贴图又可点击（贴图后的按钮）。
         let surface = PluginScene3DSurface(node: "screen", size: .init(width: 64, height: 64), content: text("a"))
-        XCTAssertThrowsError(try PluginScene3DDeclaration.validate(
+        XCTAssertNoThrow(try PluginScene3DDeclaration.validate(
             PluginScene3DDescriptor(key: "k", asset: "a.glb",
                                     surfaces: [surface],
                                     hits: [PluginScene3DHit(node: "screen", id: "i", label: "L")],
                                     fallback: text("f"))
-        )) { XCTAssertEqual($0 as? PluginScene3DDeclarationError, .surfaceAndHitNodeOverlap("screen")) }
+        ))
     }
 
     func testFallbackActionIDsMustBeUnique() {
@@ -334,8 +361,8 @@ final class PluginScene3DDescriptorTests: XCTestCase {
                        CGSize(width: 220, height: 380))
         XCTAssertEqual(PluginScene3DViewport.size(fitting: CGSize(width: 500, height: 600)),
                        PluginScene3DViewport.idealSize)
-        XCTAssertEqual(PluginScene3DViewport.size(fitting: CGSize(width: 300, height: 600)),
-                       CGSize(width: 300, height: 420))
+        XCTAssertEqual(PluginScene3DViewport.size(fitting: CGSize(width: 280, height: 600)),
+                       CGSize(width: 280, height: 480))
         XCTAssertNil(PluginScene3DViewport.size(fitting: CGSize(width: 200, height: 600)))
     }
 

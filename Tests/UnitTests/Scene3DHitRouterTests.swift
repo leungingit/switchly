@@ -8,9 +8,10 @@ final class Scene3DHitRouterTests: XCTestCase {
     private func candidate(names: [String],
                            normal: SIMD3<Float> = SIMD3(0, 0, 1),
                            point: SIMD3<Float> = .zero,
-                           passesThrough: Bool = false) -> Scene3DHitRouter.Candidate {
+                           passesThrough: Bool = false,
+                           local: SIMD2<Float>? = nil) -> Scene3DHitRouter.Candidate {
         Scene3DHitRouter.Candidate(nodeNameChain: names, worldNormal: normal, worldPoint: point,
-                                   passesThrough: passesThrough)
+                                   passesThrough: passesThrough, localPoint: local)
     }
 
     func testUndeclaredOpaqueSurfaceBlocksDeclaredHitBehind() {
@@ -108,5 +109,24 @@ final class Scene3DHitRouterTests: XCTestCase {
         ])
         XCTAssertEqual(router.hit(actionID: "love")?.enabled, false)
         XCTAssertNil(router.hit(actionID: "missing"))
+    }
+
+    func testSectorHitsOnOneNodeRouteByLocalPoint() {
+        let router = Scene3DHitRouter(hits: [
+            .init(node: "ring", actionID: "up", label: "Up", sector: .top),
+            .init(node: "ring", actionID: "left", label: "Left", sector: .left),
+            .init(node: "ring", actionID: "right", label: "Right", sector: .right),
+            .init(node: "ring", actionID: "down", label: "Down", sector: .bottom),
+        ])
+        func route(_ x: Float, _ y: Float) -> String? {
+            router.route(candidates: [candidate(names: ["ring"], local: SIMD2(x, y))],
+                         cameraPosition: frontCamera)?.id
+        }
+        XCTAssertEqual(route(0, 60), "up")
+        XCTAssertEqual(route(-60, 10), "left")
+        XCTAssertEqual(route(60, -10), "right")
+        XCTAssertEqual(route(5, -60), "down")
+        // 没有局部坐标时无法判定扇区，不派发。
+        XCTAssertNil(router.route(candidates: [candidate(names: ["ring"])], cameraPosition: frontCamera))
     }
 }

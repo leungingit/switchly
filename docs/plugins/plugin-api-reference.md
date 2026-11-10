@@ -675,7 +675,7 @@ Scene 总预算：
 | `fit` | 否 | 首期只允许 `"contain"`，默认 `"contain"`；宿主按模型包围盒等比缩放并完整放入槽位。 |
 | `camera` | 否 | `{ yaw?: number; pitch?: number }`，角度单位为**度**，默认 `yaw = 0`、`pitch = 0`。`yaw ∈ [-180, 180]`，`pitch ∈ [-89, 89]`，必须是有限数字。 |
 | `rotate` | 否 | `{ horizontal?: boolean; vertical?: boolean; pitchMin?: number; pitchMax?: number }`，见 9.3。 |
-| `surfaces` | 否 | 数组，最多 2 项，默认空数组；见 9.4。 |
+| `surfaces` | 否 | 数组，最多 5 项，默认空数组；见 9.4。 |
 | `hits` | 否 | 数组，最多 12 项，默认空数组；见 9.5。 |
 | `fallback` | 是 | 必填的受限 2D 节点，不得为 `scene3d`，其子树也不得包含 `scene3d`。`fallback` 与 3D 分支不会同时可见，但计入 64 节点/深度 8 预算。 |
 
@@ -700,17 +700,18 @@ Scene 总预算：
 | `size` | 是 | `[width, height]`，两个整数，单位是**输出纹理像素**而非布局 pt；每边 `1...1024`。 |
 | `content` | 是 | 单个受限 2D 节点；其子树只允许 `hstack`、`vstack`、`zstack`、`spacer`、`text`、`progress`、`image`、`badge`、`marquee`。禁止 `button`、`toggle`、`slider`、`wheel`、`screen`、`surface`、`scene`、`scene3d` 与任意 HTML。 |
 
-表面内容按左上原点栅格化，映射到网格 UV 后，从模型正面观察时文字与图像必须正立，不得上下颠倒或镜像。内容复用现有 `PluginUINode` 的文本、封面、进度与本地化语义；`image.artwork` 受 `media.nowPlaying` 授权约束。表面子树计入 §7 的 64 节点/深度 8 预算。动态表面按实例隔离，每张 ≤1024×1024、RGBA 约 ≤4 MiB，最多 2 张；不写入其他卡片。表面纹理只在内容实际变化时更新，旋转不触发重新栅格化。
+表面内容按左上原点栅格化，映射到网格 UV 后，从模型正面观察时文字与图像必须正立，不得上下颠倒或镜像。内容复用现有 `PluginUINode` 的文本、封面、进度与本地化语义；`image.artwork` 受 `media.nowPlaying` 授权约束。表面子树计入 §7 的 64 节点/深度 8 预算。动态表面按实例隔离，每张 ≤1024×1024、RGBA 约 ≤4 MiB，最多 5 张；不写入其他卡片。表面纹理只在内容实际变化时更新，旋转不触发重新栅格化。
 
 ### 9.5 `hits`
 
 | 字段 | 必填 | 类型与约束 |
 | --- | --- | --- |
-| `node` | 是 | 引用 glTF `node.name`，要求同 9.6；必须解析到单个可见网格，且不能同时被 surface 引用。 |
+| `node` | 是 | 引用 glTF `node.name`，要求同 9.6；必须解析到单个可见网格；同一节点可同时是 surface 目标（贴图后的可点击按钮），命中只看几何。 |
 | `id` | 是 | 非空 action ID，在 `scene3d` 内唯一；与 `fallback` 子树复用同一 ID 是唯一例外。 |
 | `label` | 是 | 非空可访问标签；用于独立语义树，不能为空或仅含空白。 |
 | `value` | 否 | `number | null`，默认 `null`；点击时作为 `onAction(ctx, id, value)` 的 value。 |
 | `enabled` | 否 | boolean，默认 `true`；`false` 时不派发动作，也不进入可执行的可访问动作。 |
+| `sector` | 否 | `"top" \| "right" \| "bottom" \| "left"`。以命中节点包围盒中心为原点，按节点局部 X/Y 平面的对角线分成四个象限。同一节点可承载多个命中（如整圈点击转盘环带），但此时每个命中必须声明互不相同的 `sector`，且不能与未声明 `sector` 的命中混用。 |
 
 命中只取前方可见命名网格：透明占位、被遮挡背面、侧面与不可见网格不参与点击；拖动超过宿主点击阈值不派发点击动作，背面/侧面不得派发正面动作。`onAction` 仍走现有路由，插件不得假设屏幕坐标或 iPod 专用分支。
 
@@ -732,8 +733,8 @@ Scene 总预算：
 | 单个资产节点 | 256 |
 | 静态纹理边长 | 2048 |
 | 静态纹理累计解码 | 每插件 32 MiB |
-| 动态表面 | 最多 2 张，每张 ≤1024×1024（RGBA 约 ≤4 MiB） |
-| `surfaces` | 2 |
+| 动态表面 | 最多 5 张，每张 ≤1024×1024（RGBA 约 ≤4 MiB） |
+| `surfaces` | 5 |
 | `hits` | 12 |
 | 声明 UI 树 | 64 节点、深度 8；`scene3d`、surface content 与 `fallback` 均计入 |
 | 最小可读槽位 | 220×380 pt（候选值已冻结；真实 Dock 尺寸尚未实测，见 G0 未通过） |
@@ -742,7 +743,7 @@ Scene 总预算：
 
 ### 9.8 降级与错误语义
 
-声明结构错误令**整次 `render` 输出被拒绝**，与 §10 的现有规则一致；包括：未知节点、缺 `key`/`asset`/`fallback`、空 `key`/`asset`、非法 asset 路径、`fit` 非 `contain`、相机或 `rotate` 数值非有限/越界、`pitchMin > pitchMax`、`surfaces > 2`、`hits > 12`、surface `node` 空或重复、`size` 非整数/越界、surface content 含禁用节点、hit `node`/`id`/`label` 空、`scene3d` 内 hit ID 重复、surface 与 hit 引用同一 node、`fallback` 含 `scene3d`、节点/深度超预算、action ID 跨分支重复（hit 与其自身 fallback 的例外除外）、`scene3d` 非 slot 根或每 slot 多于一个。
+声明结构错误令**整次 `render` 输出被拒绝**，与 §10 的现有规则一致；包括：未知节点、缺 `key`/`asset`/`fallback`、空 `key`/`asset`、非法 asset 路径、`fit` 非 `contain`、相机或 `rotate` 数值非有限/越界、`pitchMin > pitchMax`、`surfaces > 5`、`hits > 12`、surface `node` 空或重复、`size` 非整数/越界、surface content 含禁用节点、hit `node`/`id`/`label` 空、同一节点的 hit `sector` 重复或与无 `sector` 的 hit 混用、`scene3d` 内 hit ID 重复、`fallback` 含 `scene3d`、节点/深度超预算、action ID 跨分支重复（hit 与其自身 fallback 的例外除外）、`scene3d` 非 slot 根或每 slot 多于一个。
 
 运行期资产/渲染错误**只令当前 `scene3d` 降级到 `fallback`**，其他 slot 保持；记录有界错误码，不记录窗口标题等敏感文本：
 

@@ -82,6 +82,23 @@ struct Scene3DCameraController {
         }
     }
 
+    /// Direction of a programmatic turn, matching a drag to the left / right.
+    enum SpinDirection {
+        case left, right
+
+        var sign: Double { self == .right ? 1 : -1 }
+    }
+
+    /// An eased horizontal turn started from a control (not a drag). It lets
+    /// users view every side of the model without moving the pointer across
+    /// the panel, where leaving the panel would dismiss it.
+    struct Spin: Equatable {
+        var startYaw: Double
+        var degrees: Double
+        var duration: TimeInterval
+        var elapsed: TimeInterval = 0
+    }
+
     let initialPose: Pose
     let limits: Limits
     let tuning: Tuning
@@ -89,6 +106,7 @@ struct Scene3DCameraController {
     private(set) var pose: Pose
     /// Degrees per second applied by `advance(by:)` after a flick.
     private(set) var velocity: CGVector = .zero
+    private(set) var spin: Spin?
 
     init(initialPose: Pose = Pose(),
          limits: Limits = Limits(),
@@ -99,7 +117,7 @@ struct Scene3DCameraController {
         self.pose = initialPose
     }
 
-    var isSettled: Bool { velocity == .zero }
+    var isSettled: Bool { velocity == .zero && spin == nil }
 
     /// Applies one pointer delta (points, top-left origin). Returns whether the
     /// pose changed. Velocity is retained as a flick candidate until
@@ -128,6 +146,30 @@ struct Scene3DCameraController {
     /// not keep a frame loop alive.
     mutating func stopInertia() {
         velocity = .zero
+        spin = nil
+    }
+
+    /// Starts an eased horizontal turn of `degrees` over `duration`. Returns
+    /// false (and changes nothing) when horizontal rotation is disabled.
+    @discardableResult
+    mutating func beginSpin(_ direction: SpinDirection,
+                            degrees: Double = 360,
+                            duration: TimeInterval = 1.4) -> Bool {
+        guard limits.horizontal, duration > 0, degrees != 0 else { return false }
+        velocity = .zero
+        spin = Spin(startYaw: pose.yaw, degrees: degrees * direction.sign, duration: duration)
+        return true
+    }
+
+    /// Turns instantly without animation (Reduce Motion). Returns whether the
+    /// pose changed.
+    @discardableResult
+    mutating func turn(_ direction: SpinDirection, degrees: Double = 90) -> Bool {
+        guard limits.horizontal, degrees != 0 else { return false }
+        stopInertia()
+        pose.yaw += degrees * direction.sign
+        clampPose()
+        return true
     }
 
     /// Advances inertia. Returns whether another frame is needed (the pose may
@@ -135,6 +177,17 @@ struct Scene3DCameraController {
     @discardableResult
     mutating func advance(by deltaTime: TimeInterval) -> Bool {
         guard deltaTime > 0, !isSettled else { return false }
+
+        if var active = spin {
+            active.elapsed = min(active.duration, active.elapsed + deltaTime)
+            let t = active.elapsed / active.duration
+            // Ease in-out: a full turn starts and stops gently.
+            let eased = t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2
+            pose.yaw = active.startYaw + active.degrees * eased
+            clampPose()
+            spin = t >= 1 ? nil : active
+            return true
+        }
 
         if limits.horizontal { pose.yaw += velocity.dx * deltaTime }
         if limits.vertical { pose.pitch += velocity.dy * deltaTime }
@@ -152,9 +205,10 @@ struct Scene3DCameraController {
     /// Returns the camera to its declared initial angle and stops inertia.
     @discardableResult
     mutating func reset() -> Bool {
-        let changed = pose != initialPose || velocity != .zero
+        let changed = pose != initialPose || velocity != .zero || spin != nil
         pose = initialPose
         velocity = .zero
+        spin = nil
         return changed
     }
 

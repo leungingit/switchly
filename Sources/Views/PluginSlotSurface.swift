@@ -22,6 +22,7 @@ struct PluginSlotSurface: View {
     let material: CrystalMaterial
     let isGlassActive: Bool
     let artwork: NSImage?
+    var artworkToken: String? = nil
     let fallback: AnyView?
     let onAction: (_ pluginID: String, _ actionID: String, _ value: Double?) -> Void
 
@@ -36,6 +37,7 @@ struct PluginSlotSurface: View {
                         material: material,
                         isGlassActive: isGlassActive,
                         artwork: artwork,
+                        artworkToken: artworkToken,
                         assetDirectory: entry.assetDirectory,
                         pluginID: entry.id,
                         onAction: { onAction(entry.id, $0, $1) }

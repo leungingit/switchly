@@ -18,6 +18,8 @@ struct PluginOverlayView: View {
     let isGlassActive: Bool
     /// Host-fetched cover for `image(source: {artwork})`.
     var artwork: NSImage? = nil
+    /// Identity of `artwork` for scene3d texture caching; see DockPluginOverlayModel.
+    var artworkToken: String? = nil
     /// Where `scene` sprite assets live (the owning plugin's directory).
     var assetDirectory: URL? = nil
     /// Owning plugin ID; scene3d caches and logs are keyed by it.
@@ -29,6 +31,7 @@ struct PluginOverlayView: View {
          material: CrystalMaterial,
          isGlassActive: Bool,
          artwork: NSImage? = nil,
+         artworkToken: String? = nil,
          assetDirectory: URL? = nil,
          pluginID: String = "",
          onAction: @escaping (String, Double?) -> Void) {
@@ -36,6 +39,7 @@ struct PluginOverlayView: View {
         self.material = material
         self.isGlassActive = isGlassActive
         self.artwork = artwork
+        self.artworkToken = artworkToken
         self.assetDirectory = assetDirectory
         self.pluginID = pluginID
         self.onAction = onAction
@@ -74,18 +78,23 @@ struct PluginOverlayView: View {
                 return render(descriptor.fallback)
             }
             let surfaceArtwork = artwork?.cgImage(forProposedRect: nil, context: nil, hints: nil).map {
-                PluginSurfaceArtwork(token: "artwork-\(ObjectIdentifier(artwork!).hashValue)", image: $0)
+                PluginSurfaceArtwork(token: artworkToken ?? "artwork-\(ObjectIdentifier(artwork!).hashValue)", image: $0)
             }
             return AnyView(PluginScene3DView(
                 descriptor: descriptor,
                 pluginID: pluginID,
                 assetDirectory: dir,
                 artwork: surfaceArtwork,
+                palette: .device,
                 material: material,
                 isGlassActive: isGlassActive,
                 rasterizerFactory: { CoreGraphicsPluginSurfaceRasterizer(assetDirectory: dir) },
                 onAction: { emit($0, $1) }
-            ))
+            )
+            // GeometryReader 在 fixedSize 下没有固有高度，会塌成一条细缝；
+            // 显式给出理想高度（场景 + 底部旋转按钮行），宽度跟随容器但不超过理想宽度。
+            .frame(maxWidth: PluginScene3DViewport.idealSize.width)
+            .frame(height: PluginScene3DViewport.idealSize.height + PluginScene3DViewport.controlBarHeight))
         case .spacer:
             return AnyView(Spacer(minLength: 0))
         case .surface(let children, let surfaceMaterial):
@@ -214,7 +223,7 @@ enum PluginMetrics {
     }
 }
 
-private struct PluginSymbolButton: View {
+struct PluginSymbolButton: View {
     let symbol: String
     let label: String
     let size: PluginControlSize

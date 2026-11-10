@@ -70,7 +70,9 @@ Dock 卡片可选择横向、纵向或网格布局，窗口较多时可以滚动
 
 ### 独立预览插件
 
-开发者无需运行 Switchly 本体，即可使用独立预览 App 和合成数据查看插件；它复用本体的 Runtime、解码器和渲染代码。启动器提供模拟 Dock，场景支持执行动作、导出截图和报告、比较视觉基线。默认场景和启动器改进仍在开发中，工具包目前是本地候选，尚未发布到 npm。可用 `make plugin-preview-package` 构建，具体用法与边界见[使用指南](docs/plugins/plugin-preview-guide.md)和[覆盖矩阵](docs/plugins/plugin-preview-coverage.md)。真实 Dock、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。
+开发者无需运行 Switchly 本体，即可使用独立预览 App 和合成数据查看插件；它复用本体的 Runtime、解码器和渲染代码。启动器提供模拟 Dock，场景支持执行动作、导出截图和报告、比较视觉基线。默认场景和启动器改进仍在开发中，工具包目前是本地候选，尚未发布到 npm。可用 `make plugin-preview-package` 构建，具体用法与边界见[使用指南](docs/plugins/preview/plugin-preview-guide.md)和[覆盖矩阵](docs/plugins/preview/plugin-preview-coverage.md)。真实 Dock、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。
+
+Agent 可为 `switchly-plugin run` 显式添加 `--background`，在不显示预览窗口、不激活预览 App 的路径中截图、按可访问标签点击，以及在真实 3D 视图内按截图坐标点击／拖动。输入与截图使用同一共享 Renderer，不发送全局键鼠；仍需图形会话与屏幕录制授权，捕获或隔离自检失败直接报错。目前后台路线只在本机 arm64／macOS 27.2 验证，旧系统、Intel、跨 Space 与完整输入尚未验收。
 
 ## 九宫格桌面：所有桌面，一眼看全
 

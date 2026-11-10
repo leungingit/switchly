@@ -18,6 +18,14 @@ private final class FakeTarget: PluginPreviewStepTarget {
         if let clickFailure { throw PluginPreviewStepFailure(code: clickFailure) }
         log.append("click:\(label):\(expectAction ?? "-"):\(expectDisabled)")
     }
+    func nativeClickAt(point: PluginPreviewPoint, expectAction: String?) async throws {
+        if let clickFailure { throw PluginPreviewStepFailure(code: clickFailure) }
+        log.append("point:\(point.x):\(point.y)")
+    }
+    func nativeDrag(from: PluginPreviewPoint, to: PluginPreviewPoint) async throws {
+        if let clickFailure { throw PluginPreviewStepFailure(code: clickFailure) }
+        log.append("drag:\(from.x):\(to.y)")
+    }
     func availableActions() async throws -> [PluginPreviewStepAction] { actions }
 }
 
@@ -76,6 +84,23 @@ enum StepTests {
         precondition(nativeA == [.nativeClick(label: "Pause", expectAction: "toggle", expectDisabled: false)])
         let nativeB = try parse(#"[{"type":"nativeClick","label":"Pause","expectDisabled":true}]"#)
         precondition(nativeB == [.nativeClick(label: "Pause", expectAction: nil, expectDisabled: true)])
+        let pointer = try parse(#"[{"type":"nativeClickAt","point":{"x":150,"y":389},"expectAction":"toggle"},{"type":"nativeDrag","from":{"x":150,"y":100},"to":{"x":190,"y":120}}]"#)
+        let pointerTarget = FakeTarget()
+        let pointerResult = await PluginPreviewStepRunner.run(pointer, on: pointerTarget)
+        precondition(pointerResult.failedIndex == nil && pointerResult.traces.allSatisfy { $0.source == "native-input" })
+        precondition(pointerTarget.log == ["point:150.0:389.0", "drag:150.0:120.0"])
+        let refusedPointer = FakeTarget(); refusedPointer.clickFailure = "pointer-target-unsupported"
+        let refusedPointerResult = await PluginPreviewStepRunner.run(pointer, on: refusedPointer)
+        precondition(refusedPointerResult.traces[0].detail == "pointer-target-unsupported" && refusedPointerResult.traces[1].status == "skipped")
+        rejects(#"[{"type":"nativeClickAt","point":{"x":true,"y":1}}]"#, .invalidScenario)
+        rejects(#"[{"type":"nativeClickAt","point":{"x":-1,"y":1}}]"#, .invalidScenario)
+        rejects(#"[{"type":"nativeClickAt","point":{"x":1,"y":1,"z":0}}]"#, .invalidScenario)
+        rejects(#"[{"type":"nativeClickAt","point":{"x":1,"y":1},"expectAction":""}]"#, .invalidScenario)
+        rejects(#"[{"type":"nativeDrag","from":{"x":1,"y":1}}]"#, .invalidScenario)
+        do {
+            _ = try PluginPreviewStep.parse([["type": "nativeClickAt", "point": ["x": Double.infinity, "y": 1]]])
+            fatalError("accepted infinite coordinate")
+        } catch let error as PreviewScenario.Failure { precondition(error == .invalidScenario) }
         rejects(#"[{"type":"nativeClick","label":"A","expectAction":"x","expectDisabled":true}]"#, .invalidScenario)
         rejects(#"[{"type":"nativeClick","label":""}]"#, .invalidScenario)
         rejects(#"[{"type":"nativeClick","label":"A","expectDisabled":1}]"#, .invalidScenario)

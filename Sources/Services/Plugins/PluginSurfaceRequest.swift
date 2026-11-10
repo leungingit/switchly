@@ -69,6 +69,45 @@ struct PluginSurfacePalette: Equatable {
     var badgeAccentFill: PluginSurfaceColor = .clear
     var badgeWarningFill: PluginSurfaceColor = .clear
     var badgeText: PluginSurfaceColor = .white
+    /// Symbols (transport icons) can need another colour than text: on a dark
+    /// device finish they sit on a dark wheel while the LCD text stays dark.
+    var symbolOverride: PluginSurfaceColor?
+    /// Dark appearance of a physical model: the host darkens its light
+    /// plastic (space-gray finish) instead of recolouring per plugin.
+    var darkFinish = false
+    /// True for palettes painted on a physical model: the hosting view's real
+    /// appearance (known only once it is in a window) picks the finish.
+    var adaptsToHostAppearance = false
+
+    var symbol: PluginSurfaceColor { symbolOverride ?? text }
+
+    /// Applies the hosting view's appearance to a device palette; other
+    /// palettes are returned unchanged.
+    func resolved(dark: Bool) -> PluginSurfacePalette {
+        guard adaptsToHostAppearance else { return self }
+        var palette = self
+        palette.symbolOverride = PluginSurfaceColor(white: dark ? 0.92 : 0.12)
+        palette.darkFinish = dark
+        return palette
+    }
+
+    /// Fixed palette for surfaces painted onto a physical 3D model. The model's
+    /// screen and wheel are light in every appearance, so dynamic label colors
+    /// (white in Dark Mode) would be unreadable on them.
+    static let device = PluginSurfacePalette(
+        background: .clear,
+        text: PluginSurfaceColor(white: 0.12),
+        secondaryText: PluginSurfaceColor(white: 0.12, alpha: 0.6),
+        progressTrack: PluginSurfaceColor(white: 0, alpha: 0.12),
+        progressFill: PluginSurfaceColor(red: 0, green: 0.478, blue: 1),
+        placeholderFill: PluginSurfaceColor(white: 0, alpha: 0.08),
+        badgeNeutralFill: PluginSurfaceColor(white: 0, alpha: 0.12),
+        badgeAccentFill: PluginSurfaceColor(red: 0, green: 0.478, blue: 1),
+        badgeWarningFill: PluginSurfaceColor(red: 1, green: 0.584, blue: 0),
+        badgeText: .white,
+        symbolOverride: PluginSurfaceColor(white: 0.92),
+        adaptsToHostAppearance: true
+    )
 
     /// Resolves the overlay's semantic colors for `appearance`. Pass the
     /// effective appearance of the panel hosting the 3D view; nil resolves

@@ -284,9 +284,6 @@ private enum Scene3DFixtureContract {
                 throw FixtureFailure(message: "hit enabled must be boolean")
             }
         }
-        guard surfaceNodeNames.isDisjoint(with: hitNodeNames) else {
-            throw FixtureFailure(message: "surface and hit nodes must not overlap")
-        }
 
         guard let fallback = node["fallback"] as? [String: Any] else {
             throw FixtureFailure(message: "scene3d fallback is required")

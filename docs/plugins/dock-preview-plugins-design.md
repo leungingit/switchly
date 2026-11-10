@@ -300,6 +300,8 @@ render: async (ctx) => {
 | D25 | 2026-11-06 | 经用户裁决，D24 遗留的 v1/v2 交付路径定为：外仓同时保留 v1 的 2D 音乐包（供 v1.3.0 等旧宿主）与另发的 v2 `scene3d` 包（供新宿主），新宿主只加载 v2 包；v2 包仍须依据 `ctx.uiFeatures.scene3d` 在不支持时返回 2D 树。不放宽 v1 对未知节点的拒绝。两包的并存命名、发布与锁文件细节仍属 T00/T09 待冻结项，G0 尚未通过 | 用户答复「保留 v1 包 + 另发 v2 包」；D24 |
 | D26 | 2026-11-06 | **T00 合同冻结（G0 未通过）**。公开合同冻结为：`scene3d` 仅 `apiVersion: 2` 且 `ctx.uiFeatures.scene3d === true` 时可用，与 `ctx.capabilities` 权限表分离；只接受自包含单文件 glTF 2.0 `.glb`，语义标识只按 glTF `node.name`；`fit` 仅 `contain`，相机角度单位为度，`rotate` 受限且减少动态效果下禁用惯性/自动回正；表面 `node`、`size`（纹理像素）、`content` 受限 2D 子集，命中 `node`/`id`/`label`/`value`/`enabled`；`fallback` 必填且不得递归 `scene3d`。`scene3d` 只能是 slot 根节点，每 slot 至多一个。预算冻结为 glb ≤8 MiB、整包 ≤32 MiB、mesh ≤128、三角 ≤150000、资产节点 ≤256、静态纹理边 ≤2048、每插件累计解码 ≤32 MiB、动态表面 ≤2 张且各 ≤1024×1024、hit ≤12、扩展仅 clearcoat/emissive strength/unlit；最小可读边界候选冻结为 220×380 pt。窄槽或运行期资产/渲染失败仅当前节点降级 `fallback`，声明结构错误仍拒绝整次输出。D25 分发规则冻结为同一插件 ID 的两条发行线：v1 线继续供旧宿主，v2 线供新宿主；任一宿主锁文件只能锁一条线，v1 包不进入新宿主，新宿主只加载 v2 包；外仓目录/分支/revision 与锁文件由 T09 落地。G0 仍不通过：真实 Dock 尺寸与 2D 性能基线未测、v1.3.0 旧宿主实机回退未验、宿主 `scene3d` 解码/渲染尚未实现（T04–T07） | T00 合同与夹具；`plugin-api-reference.md`、`Plugins/api/capabilities.json`、SDK；用户任务要求；C-D01/D03/D12/D24/D25 |
 
+| D27 | 2026-11-10 | 共享 Renderer 后台验证接入同步现有 3D 契约：动态表面上限由 D26 的 2 张更新为 5 张，仍受每实例 4 MiB 总预算与每边 1024 像素限制；命中可与表面共用网格，同一网格的多个命中必须使用互异 top/right/bottom/left 扇区。D26 其余预算和 G0 未放行状态保留。后台输入按 PV-D14 使用共享原生视图，不发送全局键鼠。锁定旧 iPod 资产不能套用新版正视转盘坐标，未匹配夹具必须报告未验证。 | 当前共享 Renderer／API／SDK 一致性；预览回归；PV-D14 |
+
 ## 8. Scene API 与外部状态读取提案（草案，待裁决）
 
 > 状态：仅提案，尚未实现。触发需求：插件需要播放带动作的卡通角色，并展示外部程序（如某 agent harness）的会话计数。分支：`feat/plugin-scene-api`。

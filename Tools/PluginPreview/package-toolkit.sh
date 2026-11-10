@@ -60,7 +60,7 @@ manifest = {
     "tool": {k: tool[k] for k in ("toolVersion", "protocolVersion", "scenarioSchemaVersion", "pluginAPIVersions", "sdkContractHash", "rendererRevision")},
     "cli": {"file": tgz, "version": cli_version, "sha256": "sha256:" + cli_sha},
     "app": {"path": "SwitchlyPluginPreview.app", "architectures": archs.split(), "minimumOS": min_os, "signature": "adhoc"},
-    "notes": "architectures 仅表示二进制包含的切片；是否经实测见 docs/plugin-preview-coverage.md。包为本地候选：未做 Developer ID 签名与公证。",
+    "notes": "architectures 仅表示二进制包含的切片；是否经实测见 docs/plugins/preview/plugin-preview-coverage.md。包为本地候选：未做 Developer ID 签名与公证。",
 }
 json.dump(manifest, open(path, "w"), indent=2, ensure_ascii=False)
 open(path, "a").write("\n")

@@ -48,6 +48,26 @@ final class PluginScene3DControllerTests: XCTestCase {
         XCTAssertEqual(instance.surfaceTextureCount, 0)
     }
 
+    func testClickGivesVisiblePressFeedbackAndRespectsReduceMotion() async throws {
+        for reduce in [false, true] {
+            let host = Scene3DFakeHost()
+            host.candidates = [Scene3DHitRouter.Candidate(
+                nodeNameChain: ["button"], worldNormal: SIMD3<Float>(0, 0, 1),
+                worldPoint: SIMD3<Float>(0, 0, 0))]
+            let (controller, _) = makeController(loader: Scene3DTestLoader(template: makeTemplate()),
+                                                 reduceMotion: { reduce })
+            controller.updateSlotSize(slot)
+            controller.attach(host: host)
+            controller.start()
+            await waitForReady(controller)
+            let node = try XCTUnwrap(controller.instance?.contentRoot.childNode(withName: "button", recursively: true))
+            controller.pointerDown(at: CGPoint(x: 10, y: 10))
+            controller.pointerUp(at: CGPoint(x: 10, y: 10))
+            XCTAssertEqual(node.actionKeys.contains("scene3d.press"), !reduce)
+            controller.stop()
+        }
+    }
+
     func testDescriptorCameraBecomesTheInitialPose() async throws {
         var descriptor = baseDescriptor()
         descriptor.camera = PluginScene3DCamera(yaw: 15, pitch: -5)
@@ -362,6 +382,12 @@ final class PluginScene3DControllerTests: XCTestCase {
         changed = base
         changed.artworkToken = "cover-b"
         XCTAssertNotEqual(base, changed, "an artwork change must reconfigure")
+        let pixel = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8,
+                              bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!.makeImage()!
+        changed.artwork = PluginSurfaceArtwork(token: "cover-b", image: pixel)
+        XCTAssertEqual(changed.artwork?.token, changed.artworkToken,
+                       "the new configuration must carry the image used by onChange")
 
         changed = base
         changed.palette.text = PluginSurfaceColor(red: 1, green: 0, blue: 0)
@@ -593,6 +619,53 @@ final class PluginScene3DControllerTests: XCTestCase {
         XCTAssertEqual(loader.callCount, 1)
         XCTAssertTrue(controller.instance === instance)
         XCTAssertEqual(controller.state, .ready(instance.identity))
+    }
+
+    /// 播放时进度每秒变化：只重绘贴图，场景实例、镜头姿态与宿主挂载都不能重建，否则模型会闪烁。
+    func testSurfaceOnlyChangeRepaintsInPlaceWithoutRebuilding() async throws {
+        let loader = Scene3DTestLoader(template: makeTemplate())
+        let (controller, _) = makeController(loader: loader)
+        controller.updateSlotSize(slot)
+        let first = descriptorWithSurface(content: .text(value: "0:01", style: .body, lines: nil))
+        controller.configure(descriptor: first, pluginID: "test.plugin", assetDirectory: directory,
+                             artwork: nil, palette: .system())
+        controller.start()
+        await waitForReady(controller)
+        let instance = try XCTUnwrap(controller.instance)
+        let generation = controller.generation
+
+        let second = descriptorWithSurface(content: .text(value: "0:02", style: .body, lines: nil))
+        controller.configure(descriptor: second, pluginID: "test.plugin", assetDirectory: directory,
+                             artwork: nil, palette: .system())
+
+        XCTAssertTrue(controller.instance === instance)
+        XCTAssertEqual(controller.generation, generation)
+        XCTAssertEqual(controller.state, .ready(instance.identity))
+        XCTAssertEqual(controller.descriptor, second)
+        XCTAssertEqual(loader.callCount, 1)
+    }
+
+    func testSurfaceSymbolChangeRepaintsWithoutRebuilding() async throws {
+        let loader = Scene3DTestLoader(template: makeTemplate())
+        let (controller, _) = makeController(loader: loader)
+        controller.updateSlotSize(slot)
+        let first = descriptorWithSurface(content: .image(source: .symbol("pause.fill"), size: .m, corner: nil))
+        controller.configure(descriptor: first, pluginID: "test.plugin", assetDirectory: directory,
+                             artwork: nil, palette: .system())
+        controller.start()
+        await waitForReady(controller)
+        let oldInstance = try XCTUnwrap(controller.instance)
+        let oldMaterial = try XCTUnwrap(oldInstance.contentRoot.childNode(withName: "screen", recursively: true)?.geometry?.firstMaterial)
+
+        let second = descriptorWithSurface(content: .image(source: .symbol("play.fill"), size: .m, corner: nil))
+        controller.configure(descriptor: second, pluginID: "test.plugin", assetDirectory: directory,
+                             artwork: nil, palette: .system())
+        await waitForReady(controller)
+
+        XCTAssertTrue(controller.instance === oldInstance)
+        let newMaterial = try XCTUnwrap(controller.instance?.contentRoot.childNode(withName: "screen", recursively: true)?.geometry?.firstMaterial)
+        XCTAssertTrue(newMaterial === oldMaterial)
+        XCTAssertEqual(controller.descriptor, second)
     }
 
     func testConfigureSwitchTearsDownTheOldSceneBeforeLoading() async throws {

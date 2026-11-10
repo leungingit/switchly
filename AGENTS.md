@@ -101,6 +101,7 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 - Debug 产物为 `DerivedData/Build/Products/Debug/Switchly.app`；`make build-release` 不会自动更新 `build/`，分发副本由 `make dist` 或 `build.sh` 生成。
 - Swift 代码修改后运行 `make build` 与 `make test-unit`，并补充与风险相称的回归测试；优先覆盖窗口归属、设置旧数据解码、取消、缓存失效和错误分支，不写只复述实现的测试。
 - UI 修改必须实际运行并查看相关界面截图，检查布局、遮挡、材质、交互和所涉及的主题状态；不能只凭编译、文本存在断言或未查看的快照宣称视觉通过。几何变化应验证真实边界、间距或重叠情况。
+- 独立插件预览的后台视觉／输入用 `run --background`，复用隐藏原生表面；禁止为通过验证回退到显示窗口、激活应用或发送全局键鼠。`make plugin-preview-background-test`（或 `mise run preview:background-test`）验证正式入口、有效截图、原生动作与独立观察。新后台路径目前仅在 arm64／macOS 27.2 实测；旧系统、Intel、跨 Space、压力与完整输入仍需独立验收，详见预览契约与 PV-D14。
 - AX 枚举、同应用切窗、最小化恢复、跨屏定位、Dock 悬停等系统行为需要真实场景验证。单元测试或 UI 测试骨架不能替代系统集成证据。
 - 仓库当前没有 `make guardrails` 或 `make ui-preview` 目标，不照搬其他仓库命令，也不声称存在未实现的门禁。
 - 纯文档修改检查内容、链接、命令和差异即可，无需构建。环境或权限限制导致无法验证时，明确写出未执行项与原因，不能报告通过。

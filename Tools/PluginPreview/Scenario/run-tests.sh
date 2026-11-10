@@ -10,6 +10,7 @@ xcrun swiftc -swift-version 5 -parse-as-library \
   "$ROOT/Sources/Models/Plugins/PluginManifest.swift" \
   "$ROOT/Sources/Services/Plugins/PluginRegistry.swift" \
   "$ROOT/Sources/Services/Plugins/PluginPackageValidator.swift" \
+  "$ROOT/Sources/Services/Plugins/GLBPreflight.swift" \
   "$ROOT/Sources/Services/Plugins/PluginStorage.swift" \
   "$ROOT/Sources/Utilities/AppLogger.swift" \
   "$ROOT/Tools/PluginPreview/Scenario/PreviewScenario.swift" \

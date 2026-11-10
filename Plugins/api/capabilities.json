@@ -452,7 +452,7 @@
         "reduceMotion": "keep-direct-drag; disable-inertia-and-auto-return"
       },
       "surfaces": {
-        "maxPerScene": 2,
+        "maxPerScene": 5,
         "node": "glTF node.name; exists, unique, resolves to a single visible mesh, complete TEXCOORD_0, not shared with a hit",
         "size": {
           "unit": "output-texture-pixels",
@@ -493,7 +493,7 @@
           "id",
           "label"
         ],
-        "node": "same rules as surfaces.node; cannot also be a surface",
+        "node": "same rules as surfaces.node; may also be a surface (a textured button)",
         "id": "non-empty and unique within scene3d; may reuse an id from its own fallback subtree",
         "label": "non-empty accessible label",
         "value": {
@@ -506,6 +506,16 @@
         "enabled": {
           "type": "boolean",
           "default": true
+        },
+        "sector": {
+          "values": [
+            "top",
+            "right",
+            "bottom",
+            "left"
+          ],
+          "optional": true,
+          "rule": "several hits may share one node only when each names a distinct sector; sector is a quarter of the node's X/Y plane around the centre of its bounds, split on the diagonals"
         },
         "visibility": "front-facing visible mesh only; drag inside click threshold does not dispatch"
       },
@@ -537,10 +547,10 @@
         "nodes": 256,
         "textureEdge": 2048,
         "decodedStaticTextureBytesPerPlugin": 33554432,
-        "dynamicSurfaces": 2,
+        "dynamicSurfaces": 5,
         "dynamicSurfaceEdge": 1024,
         "dynamicSurfaceBytesPerInstance": 4194304,
-        "surfaces": 2,
+        "surfaces": 5,
         "hits": 12,
         "uiNodes": 64,
         "uiDepth": 8
