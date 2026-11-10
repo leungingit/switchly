@@ -24,9 +24,12 @@ xcrun swiftc \
     Sources/Models/Plugins/PluginConsoleLine.swift \
     Sources/Models/Plugins/PluginGrant.swift \
     Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginScene3DDescriptor.swift \
+    Sources/Services/Plugins/PluginSurfaceRequest.swift \
     Sources/Models/Plugins/PluginScene.swift \
     Sources/Services/Plugins/PluginRegistry.swift \
     Sources/Services/Plugins/PluginPackageValidator.swift \
+    Sources/Services/Plugins/GLBPreflight.swift \
     Sources/Services/Plugins/PluginRuntime.swift \
     Sources/Services/Plugins/PluginVirtualClock.swift \
     Sources/Services/Plugins/PluginFileReader.swift \
@@ -50,9 +53,12 @@ xcrun swiftc \
     -parse-as-library \
     Sources/Models/Plugins/PluginScene.swift \
     Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginScene3DDescriptor.swift \
+    Sources/Services/Plugins/PluginSurfaceRequest.swift \
     Sources/Models/Plugins/PluginManifest.swift \
     Sources/Services/Plugins/PluginRegistry.swift \
     Sources/Services/Plugins/PluginPackageValidator.swift \
+    Sources/Services/Plugins/GLBPreflight.swift \
     Sources/Services/Plugins/PluginStorage.swift \
     Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
