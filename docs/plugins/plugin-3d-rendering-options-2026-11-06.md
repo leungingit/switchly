@@ -96,7 +96,7 @@
 
 ### C-V01：以当前 iPod 原型验证资产加载前提（2026-11-06）
 
-**样本**：`/Users/liangkaijun/.codex/visualizations/2026/11/06/01a1ae92-f963-7152-9dba-6001efaebce8/ipod-prototype.source.js`。源码用 `ExtrudeGeometry` 生成机身，以 `MeshPhysicalMaterial` 表达白色正面、金属侧边和背板，用 CanvasTexture 绘制屏幕，`requestAnimationFrame` 持续渲染；没有现成 `.glb` 或可直接交给宿主的 2D 节点树。原型的点击按屏幕坐标与偏航角粗略判断，并非网格射线拾取。
+**样本**：本机交互原型 `ipod-prototype.source.js`（不随仓库分发）。源码用 `ExtrudeGeometry` 生成机身，以 `MeshPhysicalMaterial` 表达白色正面、金属侧边和背板，用 CanvasTexture 绘制屏幕，`requestAnimationFrame` 持续渲染；没有现成 `.glb` 或可直接交给宿主的 2D 节点树。原型的点击按屏幕坐标与偏航角粗略判断，并非网格射线拾取。
 
 **最小加载探针**：在系统临时目录生成最小 glTF 2.0 二进制文件，含一个三角形、一个命名网格和一个 metallic-roughness 材质；用当前 Xcode 的 Swift、Model I/O 和 SceneKit 读取。这个文件只检验格式入口，不代替真实 iPod 资产验证。实际输出：
 
