@@ -64,6 +64,8 @@ Add useful controls directly to Dock previews. The built-in Music plugin shows p
 
 Manage built-in and locally installed plugins in **Preferences → Plugins**. Search and filter the list, inspect details and permissions, reload plugins, or remove user-installed packages. User plugins start disabled, require renewed authorization after an update, and cannot replace a built-in plugin with the same ID. Plugins have no direct network or process access; read-only folder access requires explicit permission.
 
+音乐插件默认使用本地 MediaRemote／AppleScript 组合桥：流媒体封面与歌曲信息配对后同批发布，控制、喜欢与资料库仍定向使用 AppleScript。`mise run app`／正常主 App 构建离线编译并打包固定 Adapter，只有获授权的可见消费者才启动采集；浏览器抢占时回退，避免串用封面。Preview／Worker 仍使用夹具。已验证本机真实 Dock 悬停，完整发行兼容验收仍待完成，详见[接入设计](docs/plugins/mediaremote/music-mediaremote-integration-plan.md)。
+
 Built-in plugin source and assets live in the separate [switchly-plugins repository](https://github.com/leungingit/switchly-plugins); the app bundles hash-locked artifacts for offline use. The local SDK and CLI are not published to npm. See the [API reference](docs/plugins/plugin-api-reference.md) and [roadmap](docs/plugins/plugin-api-roadmap.md).
 
 ### Preview plugins independently

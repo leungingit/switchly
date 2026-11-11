@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, feat/plugin-preview-background]
   workflow_dispatch:
 
 # Least privilege: CI only needs to read the repository.
@@ -97,6 +97,9 @@ jobs:
 
       - name: Generate Xcode project
         run: make bootstrap
+
+      - name: Verify offline MediaRemote dependency and packaging protections
+        run: make mediaremote-adapter-test
 
       - name: Build (Debug)
         run: make build
