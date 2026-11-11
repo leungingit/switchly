@@ -80,6 +80,68 @@ final class CompositeMediaBridgeTests: XCTestCase {
         }
     }
 
+    func testNoCandidateFallbackUsesTwoSamplesAndStillValidatesBeforePublication() throws {
+        let f = makeFixture()
+        defer { f.interest.cancel() }
+        f.child.waitForLaunch()
+        try f.bridge.queue.sync {
+            let read = try f.bridge.readContext(bundleID: MediaRemoteState.bundleID)
+            XCTAssertEqual(read.source, .appleScript)
+            XCTAssertEqual(f.script.reads, 2)
+            XCTAssertTrue(read.isCurrent())
+            XCTAssertEqual(f.script.reads, 3)
+            f.script.track?.trackID = "new-id"
+            XCTAssertFalse(read.isCurrent())
+        }
+    }
+
+    func testMismatchedCandidateReusesLastSampleForFallback() throws {
+        let f = makeFixture()
+        defer { f.interest.cancel() }
+        f.child.waitForLaunch()
+        f.child.send(payload(title: "Other"))
+        try f.bridge.queue.sync {
+            let read = try f.bridge.readContext(bundleID: MediaRemoteState.bundleID)
+            XCTAssertEqual(read.source, .appleScript)
+            XCTAssertEqual(f.script.reads, 3)
+            XCTAssertTrue(read.isCurrent())
+            XCTAssertEqual(f.script.reads, 4)
+        }
+    }
+
+    func testReusedFallbackSampleStillRejectsArtworkWhenTrackChangesDuringRead() throws {
+        let f = makeFixture()
+        defer { f.interest.cancel() }
+        f.child.waitForLaunch()
+        let image = Self.bitmap().tiffRepresentation
+        f.script.artworkData = image
+        f.script.onArtwork = { f.script.track?.trackID = "new-id" }
+        try f.bridge.queue.sync {
+            let read = try f.bridge.readContext(bundleID: MediaRemoteState.bundleID)
+            XCTAssertEqual(read.nowPlaying?.trackID, "new-id")
+            XCTAssertNil(read.artwork)
+            XCTAssertNil(read.artworkToken)
+            XCTAssertEqual(f.script.reads, 2)
+            XCTAssertTrue(read.isCurrent())
+        }
+    }
+
+    func testPairedCandidateRetainsFinalPlaybackAndLikeValidation() throws {
+        let f = makeFixture()
+        defer { f.interest.cancel() }
+        f.child.waitForLaunch()
+        f.child.send(payload())
+        try f.bridge.queue.sync {
+            let read = try f.bridge.readContext(bundleID: MediaRemoteState.bundleID)
+            XCTAssertEqual(read.source, .mediaRemote)
+            XCTAssertEqual(f.script.reads, 2)
+            XCTAssertTrue(read.isCurrent())
+            XCTAssertEqual(f.script.reads, 3)
+            f.script.track = f.script.track?.withPlaying(false)
+            XCTAssertFalse(read.isCurrent())
+        }
+    }
+
     func testSharedInterestStopsOnlyAfterLastRelease() {
         let child = MRBridgeChild()
         let session = MediaRemoteSession(stream: MediaRemoteStream(makeChild: { child }), identity: { self.process }, observeWorkspace: false)
@@ -314,9 +376,12 @@ private final class MRScript: MediaBridging, MusicLibraryPlaying, @unchecked Sen
     var played: String?
     var pauses = 0
     var onRead: (() -> Void)?
+    var reads = 0
+    var artworkData: Data?
+    var onArtwork: (() -> Void)?
     func supports(bundleID: String) -> Bool { bundleID == MediaRemoteState.bundleID }
-    func nowPlaying(bundleID: String) throws -> NowPlaying? { onRead?(); return track }
-    func artwork(bundleID: String) throws -> Data? { nil }
+    func nowPlaying(bundleID: String) throws -> NowPlaying? { reads += 1; onRead?(); return track }
+    func artwork(bundleID: String) throws -> Data? { onArtwork?(); return artworkData }
     func perform(_ command: MediaCommand, bundleID: String) throws { if let error { throw error }; commands.append(command) }
     func pickRandomTrack(genreKeywords: [String]) throws -> PickedTrack? {
         PickedTrack(persistentID: "picked", title: "Picked", artist: "Artist", bpm: 120, matchedGenre: true)

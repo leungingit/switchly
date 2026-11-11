@@ -2,9 +2,14 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   access,
+  copyFile,
   mkdir,
   mkdtemp,
+  readFile,
   rm,
+  stat,
+  utimes,
+  writeFile,
 } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -13,6 +18,31 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const packageDirectory = path.resolve(testDirectory, "..");
+
+test("契约准备复用相同文件且仍更新变化的来源", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "switchly-contract-prepare-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = path.join(root, "Plugins/api");
+  const target = path.join(root, "Plugins/cli/contract");
+  const script = path.join(root, "Plugins/cli/scripts/prepare-contract.mjs");
+  await mkdir(source, { recursive: true });
+  await mkdir(path.dirname(script), { recursive: true });
+  await copyFile(path.join(packageDirectory, "scripts/prepare-contract.mjs"), script);
+  const files = ["capabilities.json", "manifest.schema.json", "preview-scenario.schema.json",
+    "preview-media-fixture.schema.json", "preview-weather-fixture.schema.json", "preview-fs-fixture.schema.json"];
+  for (const name of files) await writeFile(path.join(source, name), JSON.stringify({ name }));
+  execFileSync(process.execPath, [script]);
+  const timestamp = new Date("2000-01-01T00:00:00Z");
+  for (const name of files) await utimes(path.join(target, name), timestamp, timestamp);
+  execFileSync(process.execPath, [script]);
+  for (const name of files) {
+    assert.equal((await stat(path.join(target, name))).mtimeMs, timestamp.getTime());
+    assert.deepEqual(await readFile(path.join(target, name)), await readFile(path.join(source, name)));
+  }
+  await writeFile(path.join(source, "capabilities.json"), '{"updated":true}');
+  execFileSync(process.execPath, [script]);
+  assert.equal(await readFile(path.join(target, "capabilities.json"), "utf8"), '{"updated":true}');
+});
 
 test("npm pack 后的 CLI 自包含 contract 且可执行 create", async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "switchly-plugin-pack-"));

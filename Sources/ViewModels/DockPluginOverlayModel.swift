@@ -59,6 +59,7 @@ final class DockPluginOverlayModel: ObservableObject {
     private var rendering = false
     private var renderRequested = false
     var hasCenter: Bool { !(slots[.center] ?? []).isEmpty }
+    var isPreparing: Bool { !hasCommittedRender && !display.slots.isEmpty }
 
     func hasWindowPlugins(bundleID: String) -> Bool {
         host.installedPlugins().contains {
@@ -92,6 +93,9 @@ final class DockPluginOverlayModel: ObservableObject {
     }
     private var actionOwners: [String: OwnedAction] { display.owners }
     private var loopTask: Task<Void, Never>?
+    private var loadingTask: Task<Void, Never>?
+    private var preparationTask: Task<Void, Never>?
+    private var hasCommittedRender = false
     /// Bumped on every start/stop so a render that finishes after the
     /// target changed cannot overwrite newer state.
     private var generation = 0
@@ -110,14 +114,23 @@ final class DockPluginOverlayModel: ObservableObject {
         guard context.bundleID != self.context?.bundleID || context.windowID != self.context?.windowID
                 || context.pid != self.context?.pid || context.captureTarget != self.context?.captureTarget else { return }
         stop()
-        let runtimes = host.runtimes(for: context.bundleID).filter { ($0.manifest.renderScope ?? .app) == scope }
-        guard !runtimes.isEmpty else { return }
         var context = context
         context.presentationID = UUID().uuidString
         self.context = context
-        self.runtimes = runtimes
-        if scope == .window { AppLogger.debug("Window plugin started. windowID=\(context.windowID) generation=\(self.generation) runtimes=\(runtimes.count)") }
         let generation = self.generation
+        let host = self.host
+        loadingTask = Task { @MainActor [weak self] in
+            let loaded = await host.loadRuntimes(for: context.bundleID)
+            guard !Task.isCancelled, let self, self.generation == generation else { return }
+            let runtimes = loaded.filter { ($0.manifest.renderScope ?? .app) == self.scope }
+            guard !runtimes.isEmpty else { return }
+            self.beginRendering(context: context, runtimes: runtimes, generation: generation)
+        }
+    }
+
+    private func beginRendering(context: PluginRenderContext, runtimes: [PluginRuntimeProtocol], generation: Int) {
+        self.runtimes = runtimes
+        if scope == .window { AppLogger.debug("Window plugin started. windowID=\(context.windowID) generation=\(generation) runtimes=\(runtimes.count)") }
         if readsMedia {
             mediaInterest = host.acquireMediaRead(for: context.bundleID) { [weak self] in
                 DispatchQueue.main.async {
@@ -130,13 +143,29 @@ final class DockPluginOverlayModel: ObservableObject {
                         self.display = cleared
                         self.artworkData = nil
                     }
-                    self.renderRevision += 1
+                    // 在途读取可能在通知后才固定最新代际；由发布前的 isCurrent /
+                    // isFresh 判断是否过期，避免把有效首批丢掉后再读一整批。
                     self.renderOnce(generation: generation)
                 }
             }
         }
         runtimeInterest = host.acquireRuntimeVisibility(runtimes) { [weak self] in
             DispatchQueue.main.async { self?.renderOnce(generation: generation) }
+        }
+        preparationTask = Task { @MainActor [weak self] in
+            var prepared: [PluginSlot: [PluginSlotEntry]] = [:]
+            for runtime in runtimes {
+                guard case .success(let contents) = await runtime.prepare(context: context) else { continue }
+                guard !Task.isCancelled, let self, self.generation == generation, !self.hasCommittedRender else { return }
+                for content in contents where (prepared[content.slot]?.count ?? 0) < Self.maxEntriesPerSlot {
+                    prepared[content.slot, default: []].append(PluginSlotEntry(
+                        id: runtime.manifest.id, node: content.node, directory: runtime.assetDirectory))
+                }
+                if !prepared.isEmpty {
+                    // 初始模型与布局可先显示；动作仅在正式媒体批次提交后注册。
+                    self.display = DisplayState(slots: prepared)
+                }
+            }
         }
         let interval = runtimes.compactMap { $0.manifest.effectiveRefreshInterval }.min() ?? Self.defaultRefreshInterval
         loopTask = Task { @MainActor [weak self] in
@@ -154,6 +183,11 @@ final class DockPluginOverlayModel: ObservableObject {
         pendingActions = 0
         loopTask?.cancel()
         loopTask = nil
+        loadingTask?.cancel()
+        loadingTask = nil
+        preparationTask?.cancel()
+        preparationTask = nil
+        hasCommittedRender = false
         runtimeInterest?.cancel()
         runtimeInterest = nil
         mediaInterest?.cancel()
@@ -161,7 +195,7 @@ final class DockPluginOverlayModel: ObservableObject {
         renderRequested = false
         runtimes = []
         context = nil
-        display = DisplayState()
+        if !display.slots.isEmpty || display.mediaRead != nil { display = DisplayState() }
         artworkData = nil
     }
 
@@ -180,6 +214,8 @@ final class DockPluginOverlayModel: ObservableObject {
 
     deinit {
         loopTask?.cancel()
+        loadingTask?.cancel()
+        preparationTask?.cancel()
         runtimeInterest?.cancel()
         mediaInterest?.cancel()
         // Host 可被多个叠层共享；销毁一个消费者不能卸载其他人的 VM 和读取兴趣。
@@ -291,7 +327,7 @@ final class DockPluginOverlayModel: ObservableObject {
         let token: String?
         if let mediaRead {
             guard await host.mediaReadIsCurrent(mediaRead, bundleID: context.bundleID) else {
-                renderRequested = allowRetry
+                renderRequested = renderRequested || allowRetry
                 return
             }
             image = usesArtwork ? mediaRead.artwork : nil
@@ -314,9 +350,10 @@ final class DockPluginOverlayModel: ObservableObject {
         }
         guard generation == self.generation, revision == renderRevision else { return }
         guard mediaRead?.isFresh() != false else {
-            renderRequested = allowRetry
+            renderRequested = renderRequested || allowRetry
             return
         }
+        hasCommittedRender = true
         display = DisplayState(slots: merged, artwork: image, artworkToken: token, owners: owners, mediaRead: mediaRead)
     }
 }

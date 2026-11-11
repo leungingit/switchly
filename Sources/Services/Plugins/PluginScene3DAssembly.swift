@@ -49,9 +49,11 @@ final class PluginScene3DInstance {
     private(set) var texts: [Scene3DAccessibilityModel.TextSource]
     let viewportSize: CGSize
     let appliedScale: Float
+    let darkFinish: Bool
 
     private let surfaceRenderer: PluginSurfaceRenderer
     private let surfaceBases: [String: SCNMaterial]
+    private var surfaceSignatures: [String: String]
     private(set) var isTornDown = false
 
     init(identity: PluginScene3DIdentity,
@@ -64,7 +66,9 @@ final class PluginScene3DInstance {
          viewportSize: CGSize,
          appliedScale: Float,
          surfaceBases: [String: SCNMaterial],
-         surfaceRenderer: PluginSurfaceRenderer) {
+         surfaceRenderer: PluginSurfaceRenderer,
+         darkFinish: Bool = false,
+         surfaceSignatures: [String: String] = [:]) {
         self.identity = identity
         self.scene = scene
         self.contentRoot = contentRoot
@@ -74,7 +78,9 @@ final class PluginScene3DInstance {
         self.texts = texts
         self.viewportSize = viewportSize
         self.appliedScale = appliedScale
+        self.darkFinish = darkFinish
         self.surfaceBases = surfaceBases
+        self.surfaceSignatures = surfaceSignatures
         self.surfaceRenderer = surfaceRenderer
     }
 
@@ -105,7 +111,8 @@ final class PluginScene3DInstance {
                                                    artwork: artwork,
                                                    palette: palette,
                                                    surfaceBases: surfaceBases,
-                                                   renderer: surfaceRenderer)
+                                                   renderer: surfaceRenderer,
+                                                   appliedSignatures: &surfaceSignatures)
         } catch {
             return false
         }
@@ -122,6 +129,7 @@ final class PluginScene3DInstance {
     func teardown() {
         guard !isTornDown else { return }
         isTornDown = true
+        surfaceSignatures.removeAll()
         contentRoot.removeFromParentNode()
         for child in scene.rootNode.childNodes {
             child.removeFromParentNode()
@@ -149,6 +157,8 @@ enum PluginScene3DAssembly {
                          artwork: PluginSurfaceArtwork?,
                          palette: PluginSurfacePalette,
                          rasterizer: PluginSurfaceRasterizing) throws -> PluginScene3DInstance {
+        let started = DispatchTime.now().uptimeNanoseconds
+        defer { AppLogger.performance("Scene3DAssembly", since: started) }
         let renderer = PluginSurfaceRenderer(rasterizer: rasterizer)
         do {
             let scene = SCNScene()
@@ -188,13 +198,15 @@ enum PluginScene3DAssembly {
             cameraNode.constraints = [lookAt]
             addFixedLights(to: root, scene: scene)
 
+            var surfaceSignatures: [String: String] = [:]
             try bindSurfaces(descriptor: descriptor,
                              contentRoot: contentRoot,
                              assetDirectory: assetDirectory,
                              artwork: artwork,
                              palette: palette,
                              surfaceBases: surfaceBases,
-                             renderer: renderer)
+                             renderer: renderer,
+                             appliedSignatures: &surfaceSignatures)
             let hits = try bindHits(descriptor: descriptor, contentRoot: contentRoot)
             let texts = collectTexts(descriptor: descriptor)
 
@@ -209,7 +221,9 @@ enum PluginScene3DAssembly {
                 viewportSize: slotSize,
                 appliedScale: scale,
                 surfaceBases: surfaceBases,
-                surfaceRenderer: renderer
+                surfaceRenderer: renderer,
+                darkFinish: palette.darkFinish,
+                surfaceSignatures: surfaceSignatures
             )
             instance.apply(Scene3DCameraController.Pose(yaw: descriptor.camera.yaw,
                                                         pitch: descriptor.camera.pitch))
@@ -484,18 +498,13 @@ enum PluginScene3DAssembly {
                                      artwork: PluginSurfaceArtwork?,
                                      palette: PluginSurfacePalette,
                                      surfaceBases: [String: SCNMaterial],
-                                     renderer: PluginSurfaceRenderer) throws {
+                                     renderer: PluginSurfaceRenderer,
+                                     appliedSignatures: inout [String: String]) throws {
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0
         defer { SCNTransaction.commit() }
         for surface in descriptor.surfaces {
             let node = try uniqueNode(named: surface.node, in: contentRoot)
-            guard let currentGeometry = node.geometry,
-                  let geometry = currentGeometry.copy() as? SCNGeometry,
-                  !geometry.sources(for: .texcoord).isEmpty else {
-                throw PluginScene3DFailure.uvMissing(surface.node)
-            }
-
             // §9.4 declares `size` in output texture pixels, so the rasterized
             // bitmap must match it exactly. `pixelsPerPoint: 1` keeps the
             // declared dimensions from being multiplied by a backing scale.
@@ -503,12 +512,19 @@ enum PluginScene3DAssembly {
                 content: surface.content,
                 pointSize: CGSize(width: surface.size.width, height: surface.size.height),
                 pixelsPerPoint: 1,
-                artwork: artwork,
+                artwork: surface.content.usesArtwork ? artwork : nil,
                 assetDirectory: assetDirectory,
                 palette: palette
             )
             guard let texture = renderer.texture(for: request) else {
                 throw PluginScene3DFailure.renderFailed
+            }
+            // 未变表面连材质合成都跳过；播放进度不能反复复制背板大图。
+            guard appliedSignatures[surface.node] != texture.contentSignature else { continue }
+            guard let currentGeometry = node.geometry,
+                  let geometry = currentGeometry.copy() as? SCNGeometry,
+                  !geometry.sources(for: .texcoord).isEmpty else {
+                throw PluginScene3DFailure.uvMissing(surface.node)
             }
 
             let material: SCNMaterial
@@ -536,6 +552,7 @@ enum PluginScene3DAssembly {
                                                            over: surfaceBases[surface.node]?.diffuse.contents,
                                                            darkFinish: palette.darkFinish
                                                                && ((surfaceBases[surface.node]?.metalness.contents as? NSNumber)?.doubleValue ?? 0) > 0.01)
+            appliedSignatures[surface.node] = texture.contentSignature
         }
     }
 

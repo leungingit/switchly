@@ -20,8 +20,17 @@
 //
 
 import Foundation
+import os
 
 enum AppLogger {
+    private static let performanceLog = OSLog(subsystem: "com.switchly.performance", category: .pointsOfInterest)
+
+    /// 仅输出阶段和耗时，不含窗口标题、路径或媒体内容；由 Instruments／log stream 按需采集。
+    static func performance(_ stage: StaticString, since started: UInt64) {
+        guard performanceLog.signpostsEnabled else { return }
+        let milliseconds = Double(DispatchTime.now().uptimeNanoseconds - started) / 1_000_000
+        os_signpost(.event, log: performanceLog, name: stage, "duration_ms=%{public}.3f", milliseconds)
+    }
     private static let lock = NSLock()
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()

@@ -74,6 +74,10 @@ struct DockLayoutSpec: Equatable {
 
 /// Panel sizing for a Dock preview layout. Pure so it can be unit tested.
 enum DockPanelMetrics {
+    /// 只比较面板实际使用的锚点分量；忽略 Dock AX 纵坐标及亚像素抖动。
+    static func sameAnchor(_ lhs: CGRect, _ rhs: CGRect) -> Bool {
+        abs(lhs.midX - rhs.midX) <= 0.5 && abs(lhs.height - rhs.height) <= 0.5
+    }
     static let headerHeight: CGFloat = 40
     static let cardPadding: CGFloat = 12        // 6 + 6 around each card
     static let labelSpacing: CGFloat = 6

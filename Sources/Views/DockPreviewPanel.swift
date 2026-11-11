@@ -25,6 +25,9 @@ class DockPreviewPanel: NSPanel {
     private var panelWidthCancellable: AnyCancellable?
     private var interestCancellable: AnyCancellable?
     private var currentIconFrame: CGRect = .zero
+    private var presentationRevision = 0
+    private var isPresentationScheduled = false
+    private var layoutTarget: NSRect?
 
     init(viewModel: DockPreviewViewModel) {
         self.viewModel = viewModel
@@ -76,7 +79,7 @@ class DockPreviewPanel: NSPanel {
         interestCancellable = viewModel.$windows
             .receive(on: DispatchQueue.main)
             .sink { [weak self] windows in
-                guard let self, self.isVisible else { return }
+                guard let self, self.isVisible, !self.isPresentationScheduled else { return }
                 ThumbnailService.shared.setRefreshInterest(Set(windows.map(\.id)), owner: self)
             }
     }
@@ -89,16 +92,15 @@ class DockPreviewPanel: NSPanel {
     private func observePanelWidth() {
         panelWidthCancellable = Publishers.CombineLatest(viewModel.$panelWidth, viewModel.$panelHeight)
             .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self, self.isVisible else { return }
+            .map { CGSize(width: $0.0, height: $0.1) }
+            .removeDuplicates()
+            .debounce(for: .zero, scheduler: DispatchQueue.main)
+            .sink { [weak self] size in
+                guard let self, self.isVisible, self.viewModel.isPanelVisible, !self.isPresentationScheduled else { return }
                 // Content width changed while visible (icon switch, or the
                 // window list refreshed): spring to the new frame.
-                Motion.movePanel(
-                    self,
-                    to: self.frameForCurrentContent(),
-                    duration: MotionTokens.morphDuration
-                )
+                // @Published 在赋值前通知，使用发布值，不能重读到旧尺寸后误判为重复。
+                self.moveToContentFrame(size: size)
             }
     }
 
@@ -129,6 +131,9 @@ class DockPreviewPanel: NSPanel {
               bundleURL: URL? = nil,
               completion: (() -> Void)? = nil) {
         currentIconFrame = iconFrame
+        presentationRevision += 1
+        let revision = presentationRevision
+        isPresentationScheduled = true
         viewModel.showPanel(forApp: appName, bundleURL: bundleURL)
         // Resize and position after the view model has loaded windows.
         DispatchQueue.main.async { [weak self] in
@@ -136,6 +141,11 @@ class DockPreviewPanel: NSPanel {
                 completion?()
                 return
             }
+            guard self.presentationRevision == revision else {
+                completion?()
+                return
+            }
+            self.isPresentationScheduled = false
             let finalFrame = self.frameForCurrentContent()
             if self.isVisible {
                 // Hovering a different Dock icon: slide the panel to the new
@@ -144,7 +154,7 @@ class DockPreviewPanel: NSPanel {
                 // still be fading the panel out.
                 self.generation += 1
                 self.isDismissing = false
-                Motion.movePanel(self, to: finalFrame, duration: MotionTokens.morphDuration)
+                self.moveToContentFrame()
                 Motion.fadePanel(self, to: 1, duration: MotionTokens.morphDuration)
             } else {
                 // First show: grow out of the Dock icon — start one lift-step
@@ -159,6 +169,7 @@ class DockPreviewPanel: NSPanel {
                 self.setFrame(startFrame, display: true)
                 self.alphaValue = 0
                 self.orderFront(nil)
+                self.layoutTarget = finalFrame
                 Motion.fadePanel(self, to: 1, duration: MotionTokens.morphDuration)
                 Motion.movePanel(self, to: finalFrame, duration: MotionTokens.morphDuration)
             }
@@ -172,6 +183,21 @@ class DockPreviewPanel: NSPanel {
         }
     }
 
+    private func moveToContentFrame(size: CGSize? = nil) {
+        let frame = frameForCurrentContent(size: size)
+        guard layoutTarget != frame else { return }
+        layoutTarget = frame
+        Motion.movePanel(self, to: frame, duration: MotionTokens.morphDuration)
+    }
+
+    /// Dock 放大只改变锚点，不重新枚举窗口或重新挂载插件。
+    func updateAnchorFrame(_ frame: CGRect) {
+        guard !DockPanelMetrics.sameAnchor(frame, currentIconFrame) else { return }
+        currentIconFrame = frame
+        guard isVisible, !isDismissing, !isPresentationScheduled else { return }
+        moveToContentFrame()
+    }
+
     /// The frame the panel needs for its current content, positioned above
     /// the hovered Dock icon. Single source of truth for both the instant
     /// resize path and the animated slide between icons.
@@ -180,8 +206,9 @@ class DockPreviewPanel: NSPanel {
     /// (it varies across macOS versions and Dock magnification states), so we
     /// only trust the x coordinate for horizontal alignment. The vertical
     /// position is derived from the screen geometry (Dock edge + gap).
-    private func frameForCurrentContent() -> NSRect {
-        let panelWidth = viewModel.panelWidth
+    private func frameForCurrentContent(size: CGSize? = nil) -> NSRect {
+        let panelWidth = size?.width ?? viewModel.panelWidth
+        let panelHeight = size?.height ?? viewModel.panelHeight
         let gap: CGFloat = 8 // Space between the Dock and the panel.
 
         // Use the icon's x center for horizontal alignment.
@@ -194,9 +221,9 @@ class DockPreviewPanel: NSPanel {
         guard let screen else {
             return NSRect(
                 x: max(0, (NSScreen.main?.frame.midX ?? 400) - panelWidth / 2),
-                y: max(0, (NSScreen.main?.frame.midY ?? 300) - viewModel.panelHeight / 2),
+                y: max(0, (NSScreen.main?.frame.midY ?? 300) - panelHeight / 2),
                 width: panelWidth,
-                height: viewModel.panelHeight
+                height: panelHeight
             )
         }
 
@@ -226,10 +253,13 @@ class DockPreviewPanel: NSPanel {
             originY = max(restingTopY, magnifiedTopY) + gap
         }
 
-        return NSRect(x: clampedX, y: originY, width: panelWidth, height: viewModel.panelHeight)
+        return NSRect(x: clampedX, y: originY, width: panelWidth, height: panelHeight)
     }
 
     func hide() {
+        layoutTarget = nil
+        presentationRevision += 1
+        isPresentationScheduled = false
         guard !isDismissing else {
             return
         }

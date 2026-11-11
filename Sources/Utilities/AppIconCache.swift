@@ -62,6 +62,7 @@ enum AppIconCache {
     /// (no bundle identifier). Resolving it walks `runningApplications`, so
     /// the result is cached per name — the header re-renders on every hover.
     static func icon(forAppName appName: String) -> NSImage? {
+        guard !appName.isEmpty else { return nil }
         if let cached = nameIcons.object(forKey: appName as NSString) {
             return cached
         }

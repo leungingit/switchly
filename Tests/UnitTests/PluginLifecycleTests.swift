@@ -204,6 +204,253 @@ final class PluginLifecycleTests: XCTestCase {
         observation.cancel()
     }
 
+    func testMediaNotificationDuringReadCanPublishTheCurrentFirstBatch() async throws {
+        let runtime = TestRuntime(id: "com.example.current", node: actionNode)
+        let host = TestHost(runtimes: [runtime])
+        host.read = MediaReadContext(nowPlaying: nil, artwork: nil, artworkToken: nil,
+                                     validateFreshness: { true }, validate: { true })
+        let model = DockPluginOverlayModel(host: host)
+        let began = expectation(description: "first read began")
+        let committed = expectation(description: "current first batch committed")
+        var finishFirst: (() -> Void)?
+        var finishFollowup: (() -> Void)?
+        var reads = 0
+        host.onMediaRead = {
+            reads += 1
+            await withCheckedContinuation { continuation in
+                if reads == 1 {
+                    finishFirst = { continuation.resume() }
+                    began.fulfill()
+                } else {
+                    finishFollowup = { continuation.resume() }
+                }
+            }
+        }
+        let observation = model.slotsPublisher.dropFirst().sink { slots in
+            if !slots.isEmpty { committed.fulfill() }
+        }
+        defer {
+            model.stop()
+            finishFirst?()
+            finishFollowup?()
+            observation.cancel()
+        }
+        model.start(context: context)
+        await fulfillment(of: [began], timeout: 1)
+        host.mediaInvalidation?()
+        let notified = expectation(description: "notification processed")
+        DispatchQueue.main.async { notified.fulfill() }
+        await fulfillment(of: [notified], timeout: 1)
+        finishFirst?()
+        finishFirst = nil
+        // 后续读取保持挂起；首批必须能独立提交，不能靠重读通过。
+        await fulfillment(of: [committed], timeout: 1)
+        XCTAssertEqual(model.slots[.center]?.first?.node, actionNode)
+    }
+
+    func testNotificationDuringRejectedRetrySchedulesLatestRead() async throws {
+        let runtime = TestRuntime(id: "com.example.retry-notification", node: actionNode, refreshInterval: 60)
+        let host = TestHost(runtimes: [runtime])
+        host.read = MediaReadContext(nowPlaying: nil, artwork: nil, artworkToken: nil, validate: { false })
+        let model = DockPluginOverlayModel(host: host)
+        let retryBegan = expectation(description: "automatic retry started")
+        let committed = expectation(description: "notified latest batch committed without periodic refresh")
+        var releaseRetry: (() -> Void)?
+        var reads = 0
+        host.onMediaRead = {
+            reads += 1
+            if reads == 2 {
+                await withCheckedContinuation { continuation in
+                    releaseRetry = { continuation.resume() }
+                    retryBegan.fulfill()
+                }
+            } else if reads == 3 {
+                host.read = MediaReadContext(nowPlaying: nil, artwork: nil, artworkToken: nil, validate: { true })
+            }
+        }
+        let observation = model.slotsPublisher.dropFirst().sink { slots in
+            if !slots.isEmpty { committed.fulfill() }
+        }
+        defer { model.stop(); releaseRetry?(); observation.cancel() }
+        model.start(context: context)
+        await fulfillment(of: [retryBegan], timeout: 1)
+        host.mediaInvalidation?()
+        let notified = expectation(description: "notification queued while retry is suspended")
+        DispatchQueue.main.async { DispatchQueue.main.async { notified.fulfill() } }
+        await fulfillment(of: [notified], timeout: 1)
+        releaseRetry?(); releaseRetry = nil
+        await fulfillment(of: [committed], timeout: 1)
+        XCTAssertEqual(reads, 3)
+    }
+
+    func testPreparePublishesBeforeMediaAndDoesNotRegisterActions() async throws {
+        let runtime = TestRuntime(id: "com.example.prepare-first", node: actionNode)
+        let preparedNode = PluginUINode.button(
+            id: "toggle", symbol: "play.fill", label: "Play", size: .m,
+            variant: .plain, enabled: true, selected: false)
+        runtime.prepareContents = { _ in
+            [PluginSlotContent(slot: .center, node: preparedNode)]
+        }
+        let host = TestHost(runtimes: [runtime])
+        let model = DockPluginOverlayModel(host: host)
+        let mediaStarted = expectation(description: "media read suspended")
+        let prepared = expectation(description: "prepare committed before media")
+        var finishMedia: (() -> Void)?
+        host.onMediaRead = {
+            await withCheckedContinuation { continuation in
+                finishMedia = { continuation.resume() }
+                mediaStarted.fulfill()
+            }
+        }
+        let observation = model.slotsPublisher.dropFirst().sink { slots in
+            guard let node = slots[.center]?.first?.node,
+                  node.actionIDs == ["toggle"] else { return }
+            prepared.fulfill()
+        }
+        defer {
+            finishMedia?()
+            model.stop()
+            observation.cancel()
+        }
+
+        model.start(context: context)
+        await fulfillment(of: [mediaStarted, prepared], timeout: 1)
+
+        let actionUnexpected = expectation(description: "prepared action stays unregistered")
+        actionUnexpected.isInverted = true
+        runtime.onAction = { actionUnexpected.fulfill() }
+        model.perform(pluginID: runtime.manifest.id, actionID: "toggle")
+        await fulfillment(of: [actionUnexpected], timeout: 0.1)
+
+        XCTAssertEqual(runtime.prepareCallCount, 1)
+        XCTAssertTrue(runtime.actions.isEmpty)
+        XCTAssertEqual(model.slots[.center]?.first?.node, preparedNode)
+    }
+
+    func testLatePrepareCannotOverwriteCommittedFormalRender() async throws {
+        let formalNode = PluginUINode.text(value: "Formal", style: .body, lines: nil)
+        let preparedNode = PluginUINode.text(value: "Late prepare", style: .body, lines: nil)
+        let runtime = TestRuntime(id: "com.example.prepare-late", node: formalNode)
+        runtime.prepareContents = { _ in
+            [PluginSlotContent(slot: .center, node: preparedNode)]
+        }
+        let model = DockPluginOverlayModel(host: TestHost(runtimes: [runtime]))
+        let prepareStarted = expectation(description: "prepare started")
+        let prepareReturned = expectation(description: "prepare returned")
+        let formalCommitted = expectation(description: "formal render committed")
+        let stalePreparationPublished = expectation(description: "late prepare must not publish")
+        stalePreparationPublished.isInverted = true
+        var finishPrepare: (() -> Void)?
+        runtime.onPrepare = { _ in prepareStarted.fulfill() }
+        runtime.onPrepareAsync = {
+            await withCheckedContinuation { continuation in
+                finishPrepare = { continuation.resume() }
+            }
+        }
+        runtime.onPrepareReturned = { _ in prepareReturned.fulfill() }
+        let observation = model.slotsPublisher.dropFirst().sink { slots in
+            guard let node = slots[.center]?.first?.node else { return }
+            if node == formalNode { formalCommitted.fulfill() }
+            if node == preparedNode { stalePreparationPublished.fulfill() }
+        }
+        defer {
+            finishPrepare?()
+            model.stop()
+            observation.cancel()
+        }
+
+        model.start(context: context)
+        await fulfillment(of: [prepareStarted, formalCommitted], timeout: 1)
+        XCTAssertEqual(model.slots[.center]?.first?.node, formalNode)
+
+        finishPrepare?()
+        finishPrepare = nil
+        await fulfillment(of: [prepareReturned, stalePreparationPublished], timeout: 0.1)
+        XCTAssertEqual(model.slots[.center]?.first?.node, formalNode)
+    }
+
+    func testTargetSwitchPreventsLatePreparationFromOverwritingNewGeneration() async throws {
+        let firstContext = context
+        let secondContext = PluginRenderContext(
+            bundleID: "com.example.host",
+            pid: 43,
+            appName: "Host",
+            windowID: 8,
+            titleSummary: "Other window"
+        )
+        let staleNode = PluginUINode.text(value: "Stale", style: .body, lines: nil)
+        let freshNode = PluginUINode.text(value: "Fresh", style: .body, lines: nil)
+        let runtime = TestRuntime(id: "com.example.prepare-switch", node: freshNode)
+        runtime.prepareContents = { call in
+            [PluginSlotContent(slot: .center, node: call == 1 ? staleNode : freshNode)]
+        }
+        let host = TestHost(runtimes: [runtime])
+        let model = DockPluginOverlayModel(host: host)
+        let firstStarted = expectation(description: "old preparation started")
+        let secondStarted = expectation(description: "new preparation started")
+        let secondReturned = expectation(description: "new prepare returned")
+        let firstReturned = expectation(description: "old prepare returned")
+        let freshCommitted = expectation(description: "new initial content committed")
+        let stalePublished = expectation(description: "old prepare must not publish")
+        stalePublished.isInverted = true
+        var finishFirst: (() -> Void)?
+        var finishSecond: (() -> Void)?
+        var finishMediaReads: [() -> Void] = []
+        host.onMediaRead = {
+            await withCheckedContinuation { continuation in
+                finishMediaReads.append { continuation.resume() }
+            }
+        }
+        runtime.onPrepare = { call in
+            if call == 1 { firstStarted.fulfill() } else { secondStarted.fulfill() }
+        }
+        runtime.onPrepareAsync = {
+            await withCheckedContinuation { continuation in
+                if runtime.prepareCallCount == 1 {
+                    finishFirst = { continuation.resume() }
+                } else {
+                    finishSecond = { continuation.resume() }
+                }
+            }
+        }
+        runtime.onPrepareReturned = { call in
+            if call == 1 { firstReturned.fulfill() } else { secondReturned.fulfill() }
+        }
+        let observation = model.slotsPublisher.dropFirst().sink { slots in
+            guard let node = slots[.center]?.first?.node else { return }
+            if node == freshNode { freshCommitted.fulfill() }
+            if node == staleNode { stalePublished.fulfill() }
+        }
+        defer {
+            finishFirst?()
+            finishSecond?()
+            finishMediaReads.forEach { $0() }
+            model.stop()
+            observation.cancel()
+        }
+
+        model.start(context: firstContext)
+        await fulfillment(of: [firstStarted], timeout: 1)
+        model.start(context: secondContext)
+        await fulfillment(of: [secondStarted], timeout: 1)
+
+        finishSecond?()
+        finishSecond = nil
+        await fulfillment(of: [secondReturned, freshCommitted], timeout: 1)
+        XCTAssertEqual(model.slots[.center]?.first?.node, freshNode)
+
+        finishFirst?()
+        finishFirst = nil
+        await fulfillment(of: [firstReturned, stalePublished], timeout: 0.1)
+        XCTAssertEqual(model.slots[.center]?.first?.node, freshNode)
+    }
+
+    func testProtocolDefaultPrepareReturnsNoInitialSlots() async throws {
+        let runtime = TestRuntime(id: "com.example.default-prepare", node: actionNode)
+        let prepared = try await runtime.prepare(context: context).get()
+        XCTAssertEqual(prepared, [])
+    }
+
     func testRenderWithoutArtworkNodeClearsPreviousImage() async throws {
         let runtime = TestRuntime(id: "com.example.image", node: .image(source: .artwork, size: .l, corner: nil))
         let host = TestHost(runtimes: [runtime])
@@ -262,12 +509,43 @@ final class PluginLifecycleTests: XCTestCase {
         XCTAssertEqual(runtime.unmountCount, 0)
     }
 
-    func testStartResumesAndStopSuspendsWithoutUnmounting() {
+    func testStopRejectsRuntimeDiscoveryThatFinishesLate() async {
+        let runtime = TestRuntime(id: "com.example.late-load", node: actionNode)
+        let host = TestHost(runtimes: [runtime])
+        let began = expectation(description: "runtime discovery began")
+        let returned = expectation(description: "runtime discovery returned")
+        var finish: (() -> Void)?
+        host.onLoad = {
+            await withCheckedContinuation { continuation in
+                finish = { continuation.resume() }
+                began.fulfill()
+            }
+            returned.fulfill()
+        }
+        let model = DockPluginOverlayModel(host: host)
+        defer { model.stop(); finish?() }
+        model.start(context: context)
+        await fulfillment(of: [began], timeout: 1)
+        model.stop()
+        finish?()
+        finish = nil
+        await fulfillment(of: [returned], timeout: 1)
+        let drained = expectation(description: "late result drained")
+        DispatchQueue.main.async { drained.fulfill() }
+        await fulfillment(of: [drained], timeout: 1)
+        XCTAssertEqual(runtime.resumeCount, 0)
+        XCTAssertTrue(model.slots.isEmpty)
+    }
+
+    func testStartResumesAndStopSuspendsWithoutUnmounting() async {
         let runtime = TestRuntime(id: "com.example.lifecycle", node: actionNode)
         let host = TestHost(runtimes: [runtime])
         let model = DockPluginOverlayModel(host: host)
 
+        let first = expectation(description: "first runtime resumed")
+        runtime.onResume = { first.fulfill() }
         model.start(context: context)
+        await fulfillment(of: [first], timeout: 1)
         XCTAssertEqual(runtime.resumeCount, 1)
         XCTAssertEqual(runtime.suspendCount, 0)
         XCTAssertEqual(runtime.unmountCount, 0)
@@ -276,16 +554,22 @@ final class PluginLifecycleTests: XCTestCase {
         XCTAssertEqual(runtime.suspendCount, 1)
         XCTAssertEqual(runtime.unmountCount, 0)
 
+        let second = expectation(description: "second runtime resumed")
+        runtime.onResume = { second.fulfill() }
         model.start(context: context)
+        await fulfillment(of: [second], timeout: 1)
         XCTAssertEqual(runtime.resumeCount, 2)
         model.stop()
     }
 
-    func testAuthorizationRefreshDetachesPreviouslyVisibleRuntime() {
+    func testAuthorizationRefreshDetachesPreviouslyVisibleRuntime() async {
         let runtime = TestRuntime(id: "com.example.revoked", node: actionNode)
         let host = TestHost(runtimes: [runtime])
         let model = DockPluginOverlayModel(host: host)
+        let resumed = expectation(description: "runtime resumed before revocation")
+        runtime.onResume = { resumed.fulfill() }
         model.start(context: context)
+        await fulfillment(of: [resumed], timeout: 1)
         host.runtimes = []
         model.reloadCurrentContext()
         XCTAssertEqual(runtime.suspendCount, 1)
@@ -409,17 +693,29 @@ private final class TestRuntime: PluginRuntimeProtocol {
     var node: PluginUINode
     var onInvalidate: (() -> Void)?
     var assetDirectory: URL? { nil }
+    var onPrepare: ((Int) -> Void)?
+    var prepareContents: ((Int) -> [PluginSlotContent])?
+    var onPrepareAsync: (() async -> Void)?
+    var onPrepareReturned: ((Int) -> Void)?
+    private let prepareLock = NSLock()
+    private var prepareCalls = 0
+    var prepareCallCount: Int {
+        prepareLock.lock()
+        defer { prepareLock.unlock() }
+        return prepareCalls
+    }
     var onRender: (() -> Void)?
     var renderNode: (() -> PluginUINode)?
     var onRenderAsync: (() async -> Void)?
     var onAction: (() -> Void)?
     var onActionAsync: (() async -> Void)?
+    var onResume: (() -> Void)?
     private(set) var actions: [String] = []
     private(set) var suspendCount = 0
     private(set) var resumeCount = 0
     private(set) var unmountCount = 0
 
-    init(id: String, node: PluginUINode) {
+    init(id: String, node: PluginUINode, refreshInterval: TimeInterval? = nil) {
         self.manifest = PluginManifest(
             id: id,
             name: ["en": id],
@@ -428,7 +724,7 @@ private final class TestRuntime: PluginRuntimeProtocol {
             matches: ["com.example.host"],
             permissions: [],
             entry: "main.js",
-            refreshInterval: nil
+            refreshInterval: refreshInterval
         )
         self.node = node
     }
@@ -440,6 +736,18 @@ private final class TestRuntime: PluginRuntimeProtocol {
         return .success([PluginSlotContent(slot: .center, node: resolved)])
     }
 
+    func prepare(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> {
+        prepareLock.lock()
+        prepareCalls += 1
+        let call = prepareCalls
+        prepareLock.unlock()
+        onPrepare?(call)
+        await onPrepareAsync?()
+        let contents = prepareContents?(call) ?? []
+        onPrepareReturned?(call)
+        return .success(contents)
+    }
+
     func performAction(id: String, value: Double?,
                        context: PluginRenderContext) async -> Result<Void, PluginRuntimeError> {
         actions.append(id)
@@ -449,21 +757,35 @@ private final class TestRuntime: PluginRuntimeProtocol {
     }
 
     func suspend() { suspendCount += 1 }
-    func resume() { resumeCount += 1 }
+    func resume() { resumeCount += 1; onResume?() }
     func unmount() { unmountCount += 1 }
 }
 
 private final class TestHost: PluginHosting {
     var runtimes: [PluginRuntimeProtocol]
+    var onLoad: (() async -> Void)?
 
     init(runtimes: [PluginRuntimeProtocol]) {
         self.runtimes = runtimes
     }
 
     func runtimes(for bundleID: String) -> [PluginRuntimeProtocol] { runtimes }
+    func loadRuntimes(for bundleID: String) async -> [PluginRuntimeProtocol] {
+        await onLoad?()
+        return runtimes
+    }
     func installedPlugins() -> [InstalledPlugin] { [] }
     var read: MediaReadContext?
-    func mediaRead(for bundleID: String) async -> MediaReadContext? { read }
+    var onMediaRead: (() async -> Void)?
+    var mediaInvalidation: (() -> Void)?
+    func mediaRead(for bundleID: String) async -> MediaReadContext? {
+        await onMediaRead?()
+        return read
+    }
+    func acquireMediaRead(for bundleID: String, invalidate: @escaping () -> Void) -> MediaReadInterest? {
+        mediaInvalidation = invalidate
+        return MediaReadInterest {}
+    }
     var artworkData: Data?
     func artwork(for bundleID: String) async -> Data? { artworkData }
     func unmountAll() { runtimes.forEach { $0.unmount() } }

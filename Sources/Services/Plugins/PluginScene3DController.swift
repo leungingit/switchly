@@ -107,20 +107,20 @@ enum PluginScene3DAssetFile {
 /// loader are internally thread-safe; the only mutable object produced is the
 /// template scene, which is never mutated after decoding.
 private final class PluginScene3DLoadJob: @unchecked Sendable {
-    let descriptor: PluginScene3DDescriptor
+    let asset: String
     let assetDirectory: URL
     let pluginID: String
     let dataReader: (URL) throws -> Data
     let loader: PluginScene3DAssetLoading
     let cache: PluginScene3DAssetCache
 
-    init(descriptor: PluginScene3DDescriptor,
+    init(asset: String,
          assetDirectory: URL,
          pluginID: String,
          dataReader: @escaping (URL) throws -> Data,
          loader: PluginScene3DAssetLoading,
          cache: PluginScene3DAssetCache) {
-        self.descriptor = descriptor
+        self.asset = asset
         self.assetDirectory = assetDirectory
         self.pluginID = pluginID
         self.dataReader = dataReader
@@ -129,8 +129,10 @@ private final class PluginScene3DLoadJob: @unchecked Sendable {
     }
 
     func run() -> Result<PluginScene3DAsset, PluginScene3DFailure> {
+        let started = DispatchTime.now().uptimeNanoseconds
+        defer { AppLogger.performance("Scene3DAsset", since: started) }
         let data: Data
-        let url = descriptor.assetURL(in: assetDirectory)
+        let url = assetDirectory.appendingPathComponent(asset)
         if let failure = PluginScene3DAssetFile.violation(url, within: assetDirectory) { return .failure(failure) }
         do {
             data = try dataReader(url)
@@ -245,6 +247,18 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
                 || self.palette != palette else {
             return
         }
+        // A pending decode only depends on the plugin-scoped asset path.
+        // Presentation changes can update the request that finishLoad uses
+        // without cancelling and decoding the same asset a second time.
+        if loadTask != nil,
+           self.pluginID == pluginID,
+           self.assetDirectory == assetDirectory,
+           self.descriptor.asset == descriptor.asset {
+            self.descriptor = descriptor
+            self.artwork = artwork
+            self.palette = palette
+            return
+        }
         // Playback ticks only change what is painted on the surfaces (progress,
         // play icon, cover). Repaint the live scene instead of rebuilding it,
         // otherwise the model flashes and loses its camera pose every second.
@@ -343,6 +357,10 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
             return
         }
         isActive = true
+        if let instance, instance.darkFinish != effectivePalette.darkFinish {
+            reassembleForNewSize(preserving: cameraPose)
+            return
+        }
         if let instance {
             host?.mountScene(instance.scene)
             host?.refreshDisplay()
@@ -478,7 +496,7 @@ final class PluginScene3DController: ObservableObject, Scene3DHitProviding {
         guard isActive, canHostScene, instance == nil, loadTask == nil else { return }
         let token = nextGeneration()
         state = .loading
-        let job = PluginScene3DLoadJob(descriptor: descriptor,
+        let job = PluginScene3DLoadJob(asset: descriptor.asset,
                                        assetDirectory: assetDirectory,
                                        pluginID: pluginID,
                                        dataReader: dataReader,
