@@ -169,6 +169,14 @@ private func waitForStderr(_ supervisor: PluginPreviewWorkerSupervisor<TestPaylo
     throw TestFailure(description: "stderr was not drained")
 }
 
+private func waitForAdmission(_ condition: () async -> Bool) async throws {
+    let deadline = Date().addingTimeInterval(2)
+    while !(await condition()) {
+        guard Date() < deadline else { throw TestFailure(description: "请求未进入预期状态") }
+        try await Task.sleep(nanoseconds: 10_000_000)
+    }
+}
+
 private enum FakeWorker {
     static func run(mode: String) -> Never {
         if mode == "ignore-shutdown" {
@@ -188,6 +196,16 @@ private enum FakeWorker {
             }
             if mode == "ignore-shutdown", request.type == "shutdown" {
                 continue
+            }
+            if mode == "gated-render", request.type == "render" {
+                let release = URL(fileURLWithPath: request.payload.message)
+                do { try Data().write(to: release.appendingPathExtension("entered")) }
+                catch { exit(3) }
+                let deadline = Date().addingTimeInterval(5)
+                while !FileManager.default.fileExists(atPath: release.path) {
+                    guard Date() < deadline else { exit(3) }
+                    usleep(1_000)
+                }
             }
             if request.payload.delayMilliseconds > 0 {
                 usleep(useconds_t(request.payload.delayMilliseconds * 1_000))
@@ -324,7 +342,11 @@ private struct ProcessSupervisorTests {
 
         await suite.run("serializes requests and allows only one queued request") {
             let recorder = EventRecorder()
-            let supervisor = try makeSupervisor(mode: "normal", recorder: recorder)
+            let supervisor = try makeSupervisor(mode: "gated-render", recorder: recorder, requestTimeout: 5)
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent("preview-queue-" + UUID().uuidString)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let release = directory.appendingPathComponent("release")
             _ = try await supervisor.start(
                 generation: 9,
                 hello: frame(type: "hello", generation: 9, requestID: 10)
@@ -334,15 +356,18 @@ private struct ProcessSupervisorTests {
                 type: "render",
                 generation: 9,
                 requestID: 11,
-                payload: TestPayload(delayMilliseconds: 120)
+                payload: TestPayload(message: release.path)
             ))
-            try await Task.sleep(nanoseconds: 30_000_000)
+            // worker 明确进入首个请求后才创建第二个请求；容量断言前保持首个响应未返回。
+            try await waitForAdmission {
+                FileManager.default.fileExists(atPath: release.appendingPathExtension("entered").path)
+            }
             async let second = supervisor.request(frame(
                 type: "load",
                 generation: 9,
                 requestID: 12
             ))
-            try await Task.sleep(nanoseconds: 30_000_000)
+            try await waitForAdmission { await supervisor.snapshot().queuedRequestCount == 1 }
 
             do {
                 _ = try await supervisor.request(frame(
@@ -355,6 +380,7 @@ private struct ProcessSupervisorTests {
                 // 预期：一个执行中请求加一个等待请求后必须拒绝。
             }
 
+            try Data().write(to: release)
             let firstResponse = try await first
             let secondResponse = try await second
             try expectEqual(firstResponse.payload.sequence, 2, "first worker sequence")
