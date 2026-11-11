@@ -1,3 +1,6 @@
+import AppKit
+import SwiftUI
+import Combine
 import Foundation
 import XCTest
 @testable import Switchly
@@ -61,6 +64,194 @@ final class PluginLifecycleTests: XCTestCase {
         await fulfillment(of: [called], timeout: 1)
         XCTAssertEqual(runtime.actions, ["toggle"])
         model.stop()
+    }
+
+    func testActionWaitsForMediaResultBeforePublishingNextRender() async throws {
+        let runtime = TestRuntime(id: "com.example.media", node: actionNode)
+        let model = DockPluginOverlayModel(host: TestHost(runtimes: [runtime]))
+        let initial = expectation(description: "initial render")
+        runtime.onRender = { initial.fulfill() }
+        model.start(context: context)
+        await fulfillment(of: [initial], timeout: 1)
+        runtime.onRender = nil
+
+        let actionStarted = expectation(description: "action started")
+        var finishAction: (() -> Void)?
+        runtime.onActionAsync = {
+            await withCheckedContinuation { continuation in
+                finishAction = { continuation.resume() }
+                actionStarted.fulfill()
+            }
+        }
+        model.perform(actionID: "toggle")
+        await fulfillment(of: [actionStarted], timeout: 1)
+        runtime.node = .text(value: "paused", style: .body, lines: nil)
+        runtime.onInvalidate?()
+        try await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(model.slots[.center]?.first?.node, actionNode)
+
+        let updated = expectation(description: "render after action")
+        runtime.onRender = { updated.fulfill() }
+        finishAction?()
+        await fulfillment(of: [updated], timeout: 1)
+        XCTAssertEqual(model.slots[.center]?.first?.node, .text(value: "paused", style: .body, lines: nil))
+        model.stop()
+    }
+
+    func testActionReconcilesLaggingExternalStateBeforeNextRefreshTick() async throws {
+        let runtime = TestRuntime(id: "com.example.media", node: actionNode)
+        let model = DockPluginOverlayModel(host: TestHost(runtimes: [runtime]))
+        let initial = expectation(description: "initial render")
+        runtime.onRender = { initial.fulfill() }
+        model.start(context: context)
+        await fulfillment(of: [initial], timeout: 1)
+        runtime.onRender = nil
+
+        // The first read after the command still sees the old external state;
+        // it settles before the bounded follow-up render (well under the 1s loop).
+        var reads = 0
+        let staleNode = actionNode
+        runtime.renderNode = {
+            reads += 1
+            return reads == 1 ? staleNode : .text(value: "paused", style: .body, lines: nil)
+        }
+        let reconciled = expectation(description: "bounded reconciliation")
+        reconciled.expectedFulfillmentCount = 2
+        runtime.onRender = { reconciled.fulfill() }
+        model.perform(actionID: "toggle")
+        await fulfillment(of: [reconciled], timeout: 0.8)
+        XCTAssertEqual(model.slots[.center]?.first?.node, .text(value: "paused", style: .body, lines: nil))
+        model.stop()
+    }
+
+    /// scene3d keys its cover texture by `artworkToken`. A token derived from the
+    /// NSImage address could repeat after the old image is freed, so the iPod
+    /// kept showing the previous track's cover. Every cover change must mint a
+    /// new token, and no cover must clear it.
+    func testArtworkTokenChangesWithEveryCover() async throws {
+        let runtime = TestRuntime(id: "com.example.media",
+                                  node: .image(source: .artwork, size: .l, corner: nil))
+        let host = TestHost(runtimes: [runtime])
+        let model = DockPluginOverlayModel(host: host)
+        var tokens: [String?] = []
+        for data in [Self.png(gray: 0.2), nil, Self.png(gray: 0.8)] {
+            host.artworkData = data
+            let rendered = expectation(description: "render")
+            runtime.onRender = { rendered.fulfill() }
+            if tokens.isEmpty { model.start(context: context) } else { runtime.onInvalidate?() }
+            await fulfillment(of: [rendered], timeout: 1)
+            try await Task.sleep(nanoseconds: 50_000_000)
+            XCTAssertEqual(model.artwork == nil, data == nil)
+            tokens.append(model.artworkToken)
+        }
+        XCTAssertNotNil(tokens[0])
+        XCTAssertNil(tokens[1])
+        XCTAssertNotNil(tokens[2])
+        XCTAssertNotEqual(tokens[0], tokens[2])
+        model.stop()
+    }
+
+    func testStaleMediaBatchCannotPublishAndNewBatchIsAtomic() async throws {
+        let runtime = TestRuntime(id: "com.example.atomic", node: .hstack(children: [
+            .text(value: "Old", style: .body, lines: nil), .image(source: .artwork, size: .l, corner: nil)
+        ], spacing: nil, align: nil))
+        let host = TestHost(runtimes: [runtime])
+        let oldImage = NSImage(data: Self.png(gray: 0.2))!
+        var oldValid = true
+        host.read = MediaReadContext(nowPlaying: nil, artwork: oldImage, artworkToken: "old", validate: { oldValid })
+        let model = DockPluginOverlayModel(host: host)
+        let began = expectation(description: "old render blocked")
+        var finish: (() -> Void)?
+        runtime.onRenderAsync = {
+            await withCheckedContinuation { continuation in
+                finish = { continuation.resume() }
+                began.fulfill()
+            }
+        }
+        var publishedTokens: [String?] = []
+        let committed = expectation(description: "new batch committed")
+        let observation = model.slotsPublisher.dropFirst().sink { slots in
+            guard !slots.isEmpty else { return }
+            // Published emits before assignment; observe after the main-actor commit.
+            DispatchQueue.main.async {
+                publishedTokens.append(model.artworkToken)
+                committed.fulfill()
+            }
+        }
+        model.start(context: context)
+        await fulfillment(of: [began], timeout: 1)
+        XCTAssertTrue(model.slots.isEmpty)
+        oldValid = false
+        host.read = MediaReadContext(nowPlaying: nil, artwork: NSImage(data: Self.png(gray: 0.8)),
+                                    artworkToken: "new", validate: { true })
+        runtime.node = .hstack(children: [
+            .text(value: "New", style: .body, lines: nil), .image(source: .artwork, size: .l, corner: nil)
+        ], spacing: nil, align: nil)
+        runtime.onRenderAsync = nil
+        finish?()
+        await fulfillment(of: [committed], timeout: 1)
+        XCTAssertEqual(publishedTokens, ["new"])
+        XCTAssertEqual(model.slots[.center]?.first?.node, runtime.node)
+        model.stop()
+        observation.cancel()
+    }
+
+    func testRenderWithoutArtworkNodeClearsPreviousImage() async throws {
+        let runtime = TestRuntime(id: "com.example.image", node: .image(source: .artwork, size: .l, corner: nil))
+        let host = TestHost(runtimes: [runtime])
+        host.read = MediaReadContext(nowPlaying: nil, artwork: NSImage(data: Self.png(gray: 0.2)),
+                                    artworkToken: "cover", validate: { true })
+        let model = DockPluginOverlayModel(host: host)
+        model.start(context: context)
+        try await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertNotNil(model.artwork)
+        runtime.node = .text(value: "No image", style: .body, lines: nil)
+        runtime.onInvalidate?()
+        try await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertNil(model.artwork)
+        XCTAssertNil(model.artworkToken)
+        model.stop()
+    }
+
+    /// 保存实际共享视图的浅/深色 fixture 渲染，供本轮眼见核验；不触达真实播放器。
+    func testAtomicDisplayFixtureRendersInBothAppearances() throws {
+        let data = Self.png(gray: 0.5)
+        let image = try XCTUnwrap(MediaArtworkDecoder.decode(data))
+        let node = PluginUINode.hstack(children: [
+            .image(source: .artwork, size: .l, corner: nil),
+            .vstack(children: [.text(value: "Media snapshot", style: .title, lines: nil),
+                               .text(value: "Atomic artwork fixture", style: .caption, lines: nil)], spacing: nil, align: nil)
+        ], spacing: .m, align: nil)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("switchly-mr-t03-t04")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        for (name, scheme) in [("light", ColorScheme.light), ("dark", ColorScheme.dark)] {
+            let view = NSHostingView(rootView: PluginOverlayView(node: node, material: .legacyDefault,
+                isGlassActive: false, artwork: image, artworkToken: "fixture", onAction: { _, _ in })
+                .padding(20).frame(width: 360, height: 120)
+                .background(scheme == .dark ? Color.black : Color.white).environment(\.colorScheme, scheme))
+            view.frame = CGRect(x: 0, y: 0, width: 360, height: 120)
+            view.layoutSubtreeIfNeeded()
+            let rep = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+            view.cacheDisplay(in: view.bounds, to: rep)
+            let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+            try png.write(to: directory.appendingPathComponent("atomic-\(name).png"))
+        }
+    }
+
+    private static func png(gray: CGFloat) -> Data {
+        let context = CGContext(data: nil, width: 16, height: 16, bitsPerComponent: 8, bytesPerRow: 64,
+                                space: CGColorSpaceCreateDeviceRGB(),
+                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.setFillColor(CGColor(red: gray, green: gray, blue: gray, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 16, height: 16))
+        return NSBitmapImageRep(cgImage: context.makeImage()!).representation(using: .png, properties: [:])!
+    }
+
+    func testDestroyingOneOverlayDoesNotUnmountSharedHost() {
+        let runtime = TestRuntime(id: "com.example.shared", node: actionNode)
+        let host = TestHost(runtimes: [runtime])
+        do { let overlay = DockPluginOverlayModel(host: host); _ = overlay }
+        XCTAssertEqual(runtime.unmountCount, 0)
     }
 
     func testStartResumesAndStopSuspendsWithoutUnmounting() {
@@ -207,11 +398,14 @@ final class PluginLifecycleTests: XCTestCase {
 
 private final class TestRuntime: PluginRuntimeProtocol {
     let manifest: PluginManifest
-    let node: PluginUINode
+    var node: PluginUINode
     var onInvalidate: (() -> Void)?
     var assetDirectory: URL? { nil }
     var onRender: (() -> Void)?
+    var renderNode: (() -> PluginUINode)?
+    var onRenderAsync: (() async -> Void)?
     var onAction: (() -> Void)?
+    var onActionAsync: (() async -> Void)?
     private(set) var actions: [String] = []
     private(set) var suspendCount = 0
     private(set) var resumeCount = 0
@@ -232,14 +426,17 @@ private final class TestRuntime: PluginRuntimeProtocol {
     }
 
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> {
+        let resolved = renderNode?() ?? node
         onRender?()
-        return .success([PluginSlotContent(slot: .center, node: node)])
+        await onRenderAsync?()
+        return .success([PluginSlotContent(slot: .center, node: resolved)])
     }
 
     func performAction(id: String, value: Double?,
                        context: PluginRenderContext) async -> Result<Void, PluginRuntimeError> {
         actions.append(id)
         onAction?()
+        await onActionAsync?()
         return .success(())
     }
 
@@ -257,7 +454,10 @@ private final class TestHost: PluginHosting {
 
     func runtimes(for bundleID: String) -> [PluginRuntimeProtocol] { runtimes }
     func installedPlugins() -> [InstalledPlugin] { [] }
-    func artwork(for bundleID: String) async -> Data? { nil }
+    var read: MediaReadContext?
+    func mediaRead(for bundleID: String) async -> MediaReadContext? { read }
+    var artworkData: Data?
+    func artwork(for bundleID: String) async -> Data? { artworkData }
     func unmountAll() { runtimes.forEach { $0.unmount() } }
     func reload() {}
 }

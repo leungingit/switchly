@@ -287,6 +287,7 @@ struct DockPluginSlotView: View {
             material: settings.crystalMaterial,
             isGlassActive: settings.enableBackgroundBlur && settings.crystalMaterial.glassStyle != .opaque,
             artwork: overlay.artwork,
+            artworkToken: overlay.artworkToken,
             fallback: fallback
         ) { pluginID, actionID, value in
             overlay.perform(pluginID: pluginID, actionID: actionID, value: value)

@@ -100,6 +100,8 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 - `mise.toml` 是上述命令与官网 Pages 任务的统一入口（`mise tasks` 查看，`mise run app:build`、`test:test-unit`、`pages:serve` 等）；复杂逻辑留在 Makefile 或 `Scripts/`（如 `Scripts/pages.sh`），mise 内不写大段 shell。
 - Debug 产物为 `DerivedData/Build/Products/Debug/Switchly.app`；`make build-release` 不会自动更新 `build/`，分发副本由 `make dist` 或 `build.sh` 生成。
 - Swift 代码修改后运行 `make build` 与 `make test-unit`，并补充与风险相称的回归测试；优先覆盖窗口归属、设置旧数据解码、取消、缓存失效和错误分支，不写只复述实现的测试。
+- 主 App 默认经 `MediaRemoteAssembly` 装配组合媒体桥；Host 构造要求显式注入媒体依赖。主 App 的 Xcode 构建阶段离线校验、编译双架构 Adapter 并在最终签名前复制进包内；`mise run app` 复用该路径。Preview／Worker 不打包、不启动真实采集。`make mediaremote-adapter-test` 验证依赖完整性和打包保护，`make mediaremote-adapter-build MEDIAREMOTE_OUTPUT=...` 可独立构建。普通构建不下载、不更新清单；来源、任务和门禁见 `docs/plugins/mediaremote/music-mediaremote-integration-plan.md`。
+- `make mediaremote-adapter-stage MEDIAREMOTE_APP=".../Switchly.app" MEDIAREMOTE_OUTPUT=".../Candidate.app"` 只在新路径生成待签名验收的候选副本，拒绝覆盖输入、Preview／Worker 及既有输出；复用宿主打包实现，但不写回输入、不进行发行签名验收。
 - UI 修改必须实际运行并查看相关界面截图，检查布局、遮挡、材质、交互和所涉及的主题状态；不能只凭编译、文本存在断言或未查看的快照宣称视觉通过。几何变化应验证真实边界、间距或重叠情况。
 - 独立插件预览的后台视觉／输入用 `run --background`，复用隐藏原生表面；禁止为通过验证回退到显示窗口、激活应用或发送全局键鼠。`make plugin-preview-background-test`（或 `mise run preview:background-test`）验证正式入口、有效截图、原生动作与独立观察。新后台路径目前仅在 arm64／macOS 27.2 实测；旧系统、Intel、跨 Space、压力与完整输入仍需独立验收，详见预览契约与 PV-D14。
 - AX 枚举、同应用切窗、最小化恢复、跨屏定位、Dock 悬停等系统行为需要真实场景验证。单元测试或 UI 测试骨架不能替代系统集成证据。

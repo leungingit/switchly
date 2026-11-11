@@ -69,6 +69,11 @@ targets:
     dependencies:
       - package: HotKey
       - package: GLTFKit2
+    postBuildScripts:
+      - name: Bundle offline MediaRemote Adapter
+        basedOnDependencyAnalysis: false
+        script: |
+          python3 -B "${SRCROOT}/Scripts/mediaremote-adapter.py" embed --app "${TARGET_BUILD_DIR}/${WRAPPER_NAME}"
     entitlements:
       path: Supporting/Switchly.entitlements
       properties:
@@ -260,6 +265,8 @@ targets:
       - Sources/Services/Plugins/PluginFileReader.swift
       - Sources/Services/Plugins/PluginStorage.swift
       - Sources/Services/Plugins/MediaBridge.swift
+      - Sources/Services/Plugins/MediaReadContext.swift
+      - Sources/Services/Plugins/PluginLifetime.swift
       - Sources/Utilities/AppLogger.swift
       - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
       - Tools/PluginPreview/Scenario/PreviewScenario.swift

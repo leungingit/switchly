@@ -26,6 +26,8 @@ xcrun swiftc -swift-version 5 -D PLUGIN_PREVIEW_WORKER_TESTS \
     Sources/Services/Plugins/PluginFileReader.swift \
     Sources/Services/Plugins/PluginStorage.swift \
     Sources/Services/Plugins/MediaBridge.swift \
+    Sources/Services/Plugins/MediaReadContext.swift \
+    Sources/Services/Plugins/PluginLifetime.swift \
     Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Scenario/PreviewScenario.swift \
