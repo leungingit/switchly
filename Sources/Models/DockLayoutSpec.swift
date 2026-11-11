@@ -76,20 +76,22 @@ struct DockLayoutSpec: Equatable {
 enum DockPanelMetrics {
     static let headerHeight: CGFloat = 40
     static let cardPadding: CGFloat = 12        // 6 + 6 around each card
-    static let labelAllowance: CGFloat = 26     // spacing + title line
+    static let labelSpacing: CGFloat = 6
+    static let labelAllowance: CGFloat = 26
     static let stripHorizontalInset: CGFloat = 24 // 12 + 12
     static let stripVerticalInset: CGFloat = 20   // 10 + 10
     static let emptyWidth: CGFloat = 200
     static let screenMargin: CGFloat = 96       // 48 each side
 
-    static func cardSize(cardWidth: CGFloat) -> CGSize {
+    static func cardSize(cardWidth: CGFloat, titleAccessoryHeight: CGFloat = 0) -> CGSize {
         CGSize(width: cardWidth + cardPadding,
-               height: cardWidth * 0.625 + cardPadding + labelAllowance)
+               height: cardWidth * 0.625 + cardPadding + max(labelAllowance, labelSpacing + titleAccessoryHeight))
     }
 
     /// Size of the whole panel, clamped to `visibleSize` minus a margin.
-    static func panelSize(spec: DockLayoutSpec, count: Int, cardWidth: CGFloat, visibleSize: CGSize) -> CGSize {
-        let card = cardSize(cardWidth: cardWidth)
+    static func panelSize(spec: DockLayoutSpec, count: Int, cardWidth: CGFloat, visibleSize: CGSize,
+                          titleAccessoryHeight: CGFloat = 0) -> CGSize {
+        let card = cardSize(cardWidth: cardWidth, titleAccessoryHeight: titleAccessoryHeight)
         let maxWidth = visibleSize.width - screenMargin
         let maxHeight = visibleSize.height - screenMargin
 

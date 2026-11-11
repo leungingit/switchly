@@ -52,6 +52,7 @@ export type PluginPermission =
   | "media.library"
   | "weather.current"
   | "window.focus"
+  | "window.capture"
   | "fs.read"
   | AppleScriptPermission;
 
@@ -62,6 +63,7 @@ export interface PluginFSRoot {
 }
 
 export interface PluginManifest {
+  readonly renderScope?: "app" | "window" | null;
   readonly id: string;
   readonly name: LocalizedText;
   readonly version: string;
@@ -211,6 +213,15 @@ export interface PluginUIFeatures {
 }
 
 export interface PluginContext {
+  /** 每次叠层展示的宿主标识，可用于清理上次展开状态。 */
+  readonly presentationID?: string;
+  /** 获准后提供；仅用户 onAction 有效调用期间可提交一次，目标由宿主卡片绑定。 */
+  readonly capture?: {
+    window(options: { readonly mode: "full" | "region" }): Promise<
+      { readonly status: "accepted" } |
+      { readonly status: "failed"; readonly reason: "permissionDenied" | "noScreenPermission" | "noUserAction" | "invalidRequest" | "windowGone" | "windowUnavailable" | "busy" | "captureFailed" | "timeout" | "tooLarge" }
+    >;
+  };
   readonly capabilities: Readonly<Record<string, PluginCapabilityState | undefined>>;
   /** v2 协商增量；缺失表示无协商，插件必须返回 2D 树。 */
   readonly uiFeatures?: PluginUIFeatures;
@@ -240,7 +251,7 @@ export type PluginSpacing = "xs" | "s" | "m";
 export type PluginAlignment = "leading" | "center" | "trailing";
 export type PluginMaterial = "glass" | "plain";
 export type PluginControlSize = "s" | "m" | "l";
-export type PluginButtonVariant = "plain" | "prominent";
+export type PluginButtonVariant = "plain" | "prominent" | "labeled";
 export type PluginTextStyle = "title" | "body" | "caption";
 export type PluginProgressStyle = "linear" | "circular";
 export type PluginCorner = "s" | "m";

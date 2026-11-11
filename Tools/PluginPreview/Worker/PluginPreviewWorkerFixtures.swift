@@ -409,15 +409,18 @@ enum PluginPreviewWorkerLoader {
             weather: weather.map { fixture in { fixture.jsObject } },
             storage: fixtures.storage,
             virtualClock: virtualClock,
+            captureRequester: PluginPreviewCaptureRequester(),
             reduceMotion: { scenario.environment.reduceMotion }
         )
         let context = PluginRenderContext(
             bundleID: scenario.target.bundleID,
-            pid: 0,
+            pid: package.manifest.renderScope == .window ? 1 : 0,
             appName: scenario.target.appName,
-            windowID: 0,
+            windowID: package.manifest.renderScope == .window ? 1 : 0,
             titleSummary: PluginRenderContext.summarize(title: scenario.target.titleSummary ?? ""),
-            lastActiveAt: scenario.target.lastActiveAt
+            lastActiveAt: scenario.target.lastActiveAt,
+            captureTarget: package.manifest.renderScope == .window
+                ? WindowCaptureTarget(windowID: 1, pid: 1, processStartedAt: Date(timeIntervalSince1970: 0)) : nil
         )
         return PluginPreviewPreparedPlugin(
             runtime: runtime,
@@ -563,4 +566,10 @@ enum PluginPreviewWorkerLoader {
         }
         if object["artworkBase64"] is NSNull { throw PluginPreviewWorkerFailure.invalidFixture }
     }
+}
+
+/// Preview / Worker only acknowledge submissions. They never link the capture backend or open an editor.
+private final class PluginPreviewCaptureRequester: WindowCaptureRequesting {
+    var isAvailable: Bool { true }
+    func submit(_ request: WindowCaptureRequest) -> WindowCaptureSubmission { .accepted }
 }

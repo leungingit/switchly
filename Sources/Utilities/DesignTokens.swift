@@ -14,6 +14,13 @@ import SwiftUI
 
 enum DesignTokens {
 
+    enum Capture {
+        static let windowWidth: CGFloat = 900
+        static let windowHeight: CGFloat = 680
+        static let minimumWidth: CGFloat = 600
+        static let minimumHeight: CGFloat = 440
+    }
+
     enum Spacing {
         static let xs: CGFloat = 4
         static let sm: CGFloat = 8

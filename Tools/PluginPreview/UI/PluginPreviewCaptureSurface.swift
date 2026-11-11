@@ -12,10 +12,14 @@ private struct PluginPreviewCaptureView: View {
     @ObservedObject var state: PluginPreviewState
 
     var body: some View {
-        PluginSlotSurface(entries: [PluginSlot.center, .bottomBar].flatMap { state.slots[$0] ?? [] },
-                          material: state.environment.material,
-                          isGlassActive: state.environment.glassEnabled, artwork: state.artwork,
-                          fallback: nil, onAction: state.perform)
+        VStack(spacing: DesignTokens.Spacing.xs) {
+            ForEach(state.capturedSlots, id: \.self) { slot in
+                PluginSlotSurface(entries: state.slots[slot] ?? [],
+                                  material: state.environment.material,
+                                  isGlassActive: state.environment.glassEnabled, artwork: state.artwork,
+                                  fallback: nil, onAction: state.perform)
+            }
+        }
             .environment(\.pluginSceneNow, state.virtualNowSeconds.map { now in { now } })
             .frame(width: state.environment.contentWidth)
             .fixedSize(horizontal: false, vertical: true)

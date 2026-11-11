@@ -606,6 +606,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             activeHash = hash
             state.pluginID = package.manifest.id
             state.pluginVersion = package.manifest.version
+            state.renderScope = package.manifest.renderScope ?? .app
             state.generation = Int(clamping: loaded.generation)
             state.virtualNowSeconds = scenario?.clock.map { $0.startEpochMs / 1000 }
             state.artwork = loaded.artworkBase64.flatMap { Data(base64Encoded: $0) }.flatMap(NSImage.init(data:))
@@ -731,7 +732,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         guard let scenario, let package, let outputDirectory = arguments?.output,
               let screen = window?.screen ?? NSScreen.main,
               CGPreflightScreenCaptureAccess() else { throw PreviewAppError.capture }
-        let entries = [PluginSlot.center, .bottomBar].flatMap { state.slots[$0] ?? [] }
+        let entries = state.capturedSlots.flatMap { state.slots[$0] ?? [] }
         guard !entries.isEmpty else {
             // 没有可截图的内容不是环境问题：区分「只渲染了未接入的槽位」与「什么都没渲染」。
             let renderedElsewhere = state.slots.values.contains { !$0.isEmpty }
@@ -974,6 +975,7 @@ extension PreviewAppDelegate: PreviewLauncherHost {
         state.artwork = nil
         state.pluginID = ""
         state.pluginVersion = ""
+        state.renderScope = .app
         state.virtualNowSeconds = nil
     }
 }

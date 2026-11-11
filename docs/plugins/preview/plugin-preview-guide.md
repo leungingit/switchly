@@ -15,6 +15,10 @@
 
 本次改造后，日常预览不再必须先写场景文件：工具从 manifest 推导默认场景，可用覆盖项调整语言/外观/宽度/目标/授权/设置/fixture；默认场景对媒体和天气**开箱即用**——声明了任一媒体权限（`media.nowPlaying`/`media.control`/`media.library`）的插件自动带内置合成媒体样例，声明 `weather.current` 的自动带内置合成天气样例；`fs.read` 因内容取决于插件自身目录，仍需显式文件。`inspect` 可在无 GUI 下查看推导结果与 fixture 来源；GUI 启动器提供插件选择、默认/自定义模式、“导出为场景文件”，并在右栏用模拟 Dock 展示插件在 Dock 预览浮层中的样子。这些能力**实现中**，验收以 `Tests/PluginPreview/` 回归为准。
 
+### 窗口截图插件的模拟边界
+
+`renderScope: "window"` 插件可在 `titleAccessory`、`topTrailing`、`bottomBar` 展示。Preview / Worker 每次只运行一个合成窗口上下文；GUI 模拟 Dock 仅在第一张卡片挂载该上下文，不模拟多窗口各自的 Runtime。`ctx.capture.window` 只返回模拟 `accepted`，不生成截图、不写编辑临时文件、不调用真实屏幕录制。正式多窗口绑定、原图、裁剪与系统编辑需由主 App 或 [WindowCaptureProbe](../../../Tools/WindowCaptureProbe/README.md) 验证；探针的自有窗口结果也不能代替跨应用权限与真实 Dock 验收。
+
 ## 2. 前置条件
 
 - macOS 12 或更新；Node.js 18 或更新。

@@ -28,6 +28,12 @@ def inventory(directory):
     return result
 
 
+def content_hash(files):
+    """将路径与文件摘要清单归一化为单个制品摘要。"""
+    manifest = json.dumps(files, ensure_ascii=True, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    return 'sha256:' + hashlib.sha256(manifest).hexdigest()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=Path(os.environ.get('SWITCHLY_PLUGIN_SOURCE', ROOT.parent / 'switchly-plugins' / 'dist-v2' / 'Plugins')))
@@ -35,6 +41,8 @@ def main():
     parser.add_argument('--empty', action='store_true', help='仅供明确的无预装开发验证')
     args = parser.parse_args()
     lock = json.loads((ROOT / 'Plugins' / 'bundled-plugins.lock.json').read_text())
+    if lock.get('schemaVersion') != 2:
+        raise ValueError('不支持的插件锁文件版本；请使用 schemaVersion 2 的锁文件')
     selected = [] if args.empty else lock['plugins']
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='switchly-plugins-') as temporary:
@@ -47,13 +55,13 @@ def main():
             source = args.source / plugin_id
             if source.is_symlink() or not source.is_dir():
                 raise ValueError('缺少外仓制品；先在 switchly-plugins 执行 npm run build，或指定 SWITCHLY_PLUGIN_SOURCE')
-            if inventory(source) != item['files']:
+            if content_hash(inventory(source)) != item['contentHash']:
                 raise ValueError('外仓制品与锁文件不符：' + plugin_id)
             manifest = json.loads((source / 'manifest.json').read_text())
             if manifest['id'] != plugin_id or manifest['version'] != item['version']:
                 raise ValueError('制品身份或版本不符')
             shutil.copytree(source, staged / plugin_id)
-            if inventory(staged / plugin_id) != item['files']:
+            if content_hash(inventory(staged / plugin_id)) != item['contentHash']:
                 raise ValueError('复制过程中制品发生变化')
         # 目标只接受本任务的生成目录，防止误删任意路径。
         output = args.output.resolve()

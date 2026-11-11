@@ -37,6 +37,28 @@ configFiles:
   Release: Config/Base.xcconfig
 
 targets:
+  SwitchlyCaptureProbe:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+        excludes: [App/SwitchlyApp.swift]
+      - Tools/WindowCaptureProbe
+      - path: Resources/en.lproj
+        buildPhase: resources
+      - path: Resources/zh-Hans.lproj
+        buildPhase: resources
+    dependencies:
+      - package: HotKey
+      - package: GLTFKit2
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.switchly.capture-validation
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+    scheme:
+      gatherCoverageData: false
+
   Switchly:
     type: application
     platform: macOS
@@ -261,6 +283,7 @@ targets:
       - Sources/Services/Plugins/PluginPackageValidator.swift
       - Sources/Services/Plugins/GLBPreflight.swift
       - Sources/Services/Plugins/PluginRuntime.swift
+      - Sources/Models/WindowCapture.swift
       - Sources/Services/Plugins/PluginVirtualClock.swift
       - Sources/Services/Plugins/PluginFileReader.swift
       - Sources/Services/Plugins/PluginStorage.swift

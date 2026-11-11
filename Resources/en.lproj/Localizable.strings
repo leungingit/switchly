@@ -614,3 +614,33 @@
 "This plugin needs a %@ fixture. Pick a file in Custom mode or use --fixture %@=<file>." = "This plugin needs a %@ fixture. Pick a file in Custom mode or use --fixture %@=<file>.";
 "Choose %@ fixture file" = "Choose %@ fixture file";
 "Clear %@ fixture" = "Clear %@ fixture";
+
+// 用户主动触发的窗口截图
+"Capture windows" = "Capture windows";
+"Window screenshot" = "Window screenshot";
+"Select an area" = "Select an area";
+"Drag to select an area, then press Return to crop. Escape cancels." = "Drag to select an area, then press Return to crop. Escape cancels.";
+"Screenshot selection area" = "Screenshot selection area";
+"Crop selection" = "Crop selection";
+"Save and close this image in Preview, then reload the saved changes here." = "Save and close this image in Preview, then reload the saved changes here.";
+"Saved and closed — reload changes" = "Saved and closed — reload changes";
+"Edit in Preview" = "Edit in Preview";
+"Close the image in Preview first" = "Close the image in Preview first";
+"Save and close the image in Preview before ending this screenshot. The temporary image will then be deleted." = "Save and close the image in Preview before ending this screenshot. The temporary image will then be deleted.";
+"Keep editing" = "Keep editing";
+"Image closed — end screenshot" = "Image closed — end screenshot";
+"Preview could not open the image. Please try again." = "Preview could not open the image. Please try again.";
+"The saved image could not be read. Save it as PNG and try again." = "The saved image could not be read. Save it as PNG and try again.";
+"The image could not be saved. Choose another location and try again." = "The image could not be saved. Choose another location and try again.";
+"Allow Screen Recording in System Settings to capture windows." = "Allow Screen Recording in System Settings to capture windows.";
+"Window capture permission was revoked." = "Window capture permission was revoked.";
+"This window is no longer available." = "This window is no longer available.";
+"This window cannot be captured. Restore it and try again." = "This window cannot be captured. Restore it and try again.";
+"Finish the current screenshot before starting another." = "Finish the current screenshot before starting another.";
+"Capturing the window timed out. Please try again." = "Capturing the window timed out. Please try again.";
+"This image is too large to edit safely." = "This image is too large to edit safely.";
+"Screenshot cancelled." = "Screenshot cancelled.";
+"The screenshot could not be completed. Please try again." = "The screenshot could not be completed. Please try again.";
+"Save…" = "Save…";
+"Copy" = "Copy";
+"Share" = "Share";

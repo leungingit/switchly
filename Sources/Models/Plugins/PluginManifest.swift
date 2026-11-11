@@ -17,6 +17,7 @@ enum PluginCapability: Hashable, Codable {
     /// Read the weather snapshot the host already has (no requests from JS).
     case weatherCurrent
     case windowFocus
+    case windowCapture
     /// Read-only access to the folders named by the manifest's `fsRoots` (design doc §8.6).
     /// Never implied: even built-in plugins need the user's explicit grant.
     case fsRead
@@ -30,6 +31,7 @@ enum PluginCapability: Hashable, Codable {
         case "media.library": self = .mediaLibrary
         case "weather.current": self = .weatherCurrent
         case "window.focus": self = .windowFocus
+        case "window.capture": self = .windowCapture
         case "fs.read": self = .fsRead
         default:
             let prefix = "appleScript:"
@@ -47,6 +49,7 @@ enum PluginCapability: Hashable, Codable {
         case .mediaLibrary: return "media.library"
         case .weatherCurrent: return "weather.current"
         case .windowFocus: return "window.focus"
+        case .windowCapture: return "window.capture"
         case .fsRead: return "fs.read"
         case .appleScript(let bundleID): return "appleScript:\(bundleID)"
         }
@@ -221,6 +224,8 @@ struct PluginFSRoot: Codable, Equatable {
     }
 }
 
+enum PluginRenderScope: String, Codable { case app, window }
+
 struct PluginManifest: Codable, Equatable {
     /// API versions this host can run.
     static let supportedAPIVersions: ClosedRange<Int> = 1...2
@@ -244,6 +249,7 @@ struct PluginManifest: Codable, Equatable {
     var fsRoots: [PluginFSRoot]? = nil
     /// Whether a built-in plugin runs before the user touches its toggle; true when absent.
     var defaultEnabled: Bool? = nil
+    var renderScope: PluginRenderScope? = nil
 
     enum ValidationError: Error, Equatable {
         case invalidID
@@ -315,6 +321,6 @@ struct PluginManifest: Codable, Equatable {
     }
 
     func matches(bundleID: String) -> Bool {
-        matches.contains(bundleID)
+        matches.contains("*") || matches.contains(bundleID)
     }
 }

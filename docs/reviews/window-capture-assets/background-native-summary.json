@@ -1,0 +1,67 @@
+[
+  {
+    "run": 1,
+    "status": "passed",
+    "nativeClicks": 2,
+    "activationEvents": 0,
+    "activeSamples": 0,
+    "exitCode": 0,
+    "foregroundChangedSamples": 0,
+    "maxIntervalMs": 76.34294033050537,
+    "onScreenSamples": 0,
+    "samples": 107,
+    "timedOut": false
+  },
+  {
+    "run": 2,
+    "status": "passed",
+    "nativeClicks": 2,
+    "activationEvents": 0,
+    "activeSamples": 0,
+    "exitCode": 0,
+    "foregroundChangedSamples": 0,
+    "maxIntervalMs": 109.43794250488281,
+    "onScreenSamples": 0,
+    "samples": 92,
+    "timedOut": false
+  },
+  {
+    "run": 3,
+    "status": "passed",
+    "nativeClicks": 2,
+    "activationEvents": 0,
+    "activeSamples": 0,
+    "exitCode": 0,
+    "foregroundChangedSamples": 0,
+    "maxIntervalMs": 140.79904556274414,
+    "onScreenSamples": 0,
+    "samples": 97,
+    "timedOut": false
+  },
+  {
+    "run": 4,
+    "status": "passed",
+    "nativeClicks": 2,
+    "activationEvents": 0,
+    "activeSamples": 0,
+    "exitCode": 0,
+    "foregroundChangedSamples": 0,
+    "maxIntervalMs": 89.50495719909668,
+    "onScreenSamples": 0,
+    "samples": 120,
+    "timedOut": false
+  },
+  {
+    "run": 5,
+    "status": "passed",
+    "nativeClicks": 2,
+    "activationEvents": 0,
+    "activeSamples": 0,
+    "exitCode": 0,
+    "foregroundChangedSamples": 0,
+    "maxIntervalMs": 82.91196823120117,
+    "onScreenSamples": 0,
+    "samples": 88,
+    "timedOut": false
+  }
+]

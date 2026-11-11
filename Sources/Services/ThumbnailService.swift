@@ -94,6 +94,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
     private let lock = NSLock()
     private let diskCache: ThumbnailDiskCaching?
     private let screenCaptureAccess: () -> Bool
+    private let imageCapturer: WindowImageCapturing
     private let preheatQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "com.switchly.thumbnailPreheat"
@@ -207,10 +208,12 @@ class ThumbnailService: ThumbnailServiceProtocol {
         gridBudget: TierBudget = .grid,
         nativeBudget: TierBudget = .native,
         diskCache: ThumbnailDiskCaching? = nil,
-        screenCaptureAccess: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() }
+        screenCaptureAccess: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() },
+        imageCapturer: WindowImageCapturing = WindowImageCaptureBackend.shared
     ) {
         self.diskCache = diskCache
         self.screenCaptureAccess = screenCaptureAccess
+        self.imageCapturer = imageCapturer
         self.budgets = [
             .grid: gridBudget,
             .native: nativeBudget
@@ -341,12 +344,7 @@ class ThumbnailService: ThumbnailServiceProtocol {
                 try? await Task.sleep(nanoseconds: delay)
             }
             do {
-                return try await performOffThread { [weak self] in
-                    guard let self else {
-                        throw ThumbnailError.captureFailed
-                    }
-                    return try self.captureWindowThumbnail(window, pixelSize: pixelSize, scale: scale)
-                }
+                return try await captureWindowThumbnail(window, pixelSize: pixelSize, scale: scale)
             } catch {
                 lastError = error
             }
@@ -1021,137 +1019,27 @@ class ThumbnailService: ThumbnailServiceProtocol {
         )
     }
 
-    private func captureWindowThumbnail(_ window: WindowInfo, pixelSize: CGSize, scale: CGFloat) throws -> CapturedThumbnail {
-        guard screenCaptureAccess() else {
-            AppLogger.error("Screen capture permission is not granted. Cannot capture thumbnail. windowID=\(window.id), owner=\(window.ownerName)")
-            throw ThumbnailError.screenCapturePermissionDenied
-        }
-
-        let options: CGWindowImageOption = [.boundsIgnoreFraming, .bestResolution]
-
-        // `CGWindowListCreateImage` can block indefinitely when the macOS
-        // ScreenCaptureKit proxying layer is stuck (observed on macOS 26: the
-        // call sits on `semaphore_timedwait_trap` forever). Run the call on a
-        // background queue and wait with a hard timeout so a single bad
-        // capture cannot pin a worker thread and freeze the dock cards.
-        //
-        // `.null` captures the whole window at the display's native pixel
-        // resolution regardless of the size we ultimately want, so this call's
-        // cost does not depend on `pixelSize`; only the downscale below does.
-        var captured: CGImage?
-        let semaphore = DispatchSemaphore(value: 0)
-        let captureQueue = DispatchQueue.global(qos: .userInitiated)
-        let windowID = window.id
-        captureQueue.async {
-            let image = CGWindowListCreateImage(
-                .null,
-                .optionIncludingWindow,
-                windowID,
-                options
-            )
-            if let image {
-                captured = image
-            }
-            semaphore.signal()
-        }
-        let waitResult = semaphore.wait(timeout: .now() + captureTimeout)
-        if waitResult == .timedOut {
-            AppLogger.error("CGWindowListCreateImage timed out after \(captureTimeout)s. windowID=\(window.id), owner=\(window.ownerName)")
-            // Distinct from a plain failure: timed-out attempts leak the
-            // global-queue thread they were dispatched to, so `markFailed`
-            // escalates the cooldown for them — see `timeoutStrikes`.
+    private func captureWindowThumbnail(_ window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async throws -> CapturedThumbnail {
+        guard screenCaptureAccess() else { throw ThumbnailError.screenCapturePermissionDenied }
+        let image: CGImage
+        do {
+            image = try await imageCapturer.captureCG(windowID: window.id, timeout: captureTimeout)
+        } catch WindowCaptureFailure.timeout {
             throw ThumbnailError.captureTimedOut
         }
-
-        guard let cgImage = captured else {
-            AppLogger.throttledError(
-                key: "capture:\(window.id)",
-                "Failed to capture window thumbnail. windowID=\(window.id), owner=\(window.ownerName), title=\(window.windowTitle), bounds=\(window.bounds)"
-            )
-            throw ThumbnailError.captureFailed
-        }
-
-        if isBlankImage(cgImage) {
-            AppLogger.warning("Captured blank thumbnail (window content not ready). windowID=\(window.id), owner=\(window.ownerName)")
-            throw ThumbnailError.blankCapture
-        }
-
-        return try makeThumbnail(from: cgImage, pixelSize: pixelSize, scale: scale)
+        guard !WindowImageCaptureBackend.isBlankCapture(image) else { throw ThumbnailError.blankCapture }
+        return try await performOffThread { try self.makeThumbnail(from: image, pixelSize: pixelSize, scale: scale) }
     }
 
-    /// ScreenCaptureKit fallback for windows the CG capture API cannot read
-    /// (e.g. remote-desktop / OpenGL content that returns blank). Available on
-    /// macOS 14+. Uses the same screen-recording permission already required
-    /// by the CG path.
-    ///
-    /// Wrapped in a `Task` with a hard timeout because SCK can also hang on the
-    /// same system-level stall that makes `CGWindowListCreateImage`
-    /// block forever on macOS 26.
+    /// Shares the bounded system backend with explicit captures, but keeps thumbnail size/cache policy here.
     private func captureWithScreenCaptureKit(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async -> CapturedThumbnail? {
-        guard #available(macOS 14.0, *),
-              screenCaptureAccess() else {
-            return nil
-        }
-
-        // Minimized windows have no on-screen content; SCK cannot capture them.
-        guard !window.isMinimized else {
-            return nil
-        }
-
-        return await withTaskGroup(of: CapturedThumbnail?.self, returning: CapturedThumbnail?.self) { group in
-            group.addTask { [weak self] in
-                await self?.performSCKCapture(window: window, pixelSize: pixelSize, scale: scale) ?? nil
-            }
-            group.addTask {
-                try? await Task.sleep(nanoseconds: UInt64(self.sckCaptureTimeout * 1_000_000_000))
-                return nil
-            }
-            // Whichever finishes first wins. If the timeout task wins, we
-            // return nil and the SCK task continues running in the background
-            // (it will eventually return or hang; either way the dock card
-            // has already moved on).
-            let result = await group.next() ?? nil
-            group.cancelAll()
-            return result
-        }
-    }
-
-    @available(macOS 14.0, *)
-    private func performSCKCapture(window: WindowInfo, pixelSize: CGSize, scale: CGFloat) async -> CapturedThumbnail? {
-        // Resolve the CG window ID to an SCWindow. `SCShareableContent.current`
-        // is slow on some systems, so this stays on the fallback path only.
-        let content: SCShareableContent
+        guard #available(macOS 14.0, *), screenCaptureAccess(), !window.isMinimized else { return nil }
         do {
-            content = try await SCShareableContent.current
+            let image = try await imageCapturer.captureSCK(windowID: window.id, pid: window.ownerPID,
+                                                         pixelSize: pixelSize, timeout: sckCaptureTimeout)
+            return try await performOffThread { try self.makeThumbnail(from: image, pixelSize: pixelSize, scale: scale) }
         } catch {
-            AppLogger.warning("SCK fallback: cannot list shareable content. windowID=\(window.id), error=\(error)")
-            return nil
-        }
-
-        guard let scWindow = content.windows.first(where: {
-            $0.windowID == window.id && $0.owningApplication?.processID == window.ownerPID
-        }) else {
-            AppLogger.warning("SCK fallback: window not found in shareable content. windowID=\(window.id)")
-            return nil
-        }
-
-        let filter = SCContentFilter(desktopIndependentWindow: scWindow)
-        let configuration = SCStreamConfiguration()
-        // `pixelSize` is already in device pixels, so it configures the stream
-        // directly (the old code multiplied the point size by 2 here).
-        configuration.width = max(1, Int(pixelSize.width))
-        configuration.height = max(1, Int(pixelSize.height))
-        configuration.showsCursor = false
-
-        do {
-            let cgImage = try await SCScreenshotManager.captureImage(
-                contentFilter: filter,
-                configuration: configuration
-            )
-            AppLogger.info("SCK fallback captured thumbnail. windowID=\(window.id), size=\(cgImage.width)x\(cgImage.height)")
-            return try makeThumbnail(from: cgImage, pixelSize: pixelSize, scale: scale)
-        } catch {
-            AppLogger.warning("SCK fallback capture failed. windowID=\(window.id), error=\(error)")
+            AppLogger.warning("SCK thumbnail failed. windowID=\(window.id), error=\(error)")
             return nil
         }
     }
@@ -1246,53 +1134,6 @@ class ThumbnailService: ThumbnailServiceProtocol {
         context.interpolationQuality = .high
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         return context.makeImage()
-    }
-
-    /// Detects captures whose content is essentially uniform (blank white,
-    /// blank black, or fully transparent) — e.g. an app window whose backing
-    /// store has not been rendered yet. Downsampled luminance variance check.
-    private func isBlankImage(_ image: CGImage) -> Bool {
-        let width = image.width
-        let height = image.height
-        guard width > 0, height > 0 else { return true }
-
-        let sampleWidth = min(32, width)
-        let sampleHeight = min(32, height)
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        var buffer = [UInt8](repeating: 0, count: sampleWidth * sampleHeight * 4)
-        guard let context = CGContext(
-            data: &buffer,
-            width: sampleWidth,
-            height: sampleHeight,
-            bitsPerComponent: 8,
-            bytesPerRow: sampleWidth * 4,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            return true
-        }
-        context.interpolationQuality = .high
-        context.draw(image, in: CGRect(x: 0, y: 0, width: sampleWidth, height: sampleHeight))
-
-        var sum: Int = 0
-        var sumSquared: Int = 0
-        var count = 0
-        for index in stride(from: 0, to: buffer.count, by: 4) {
-            let alpha = Int(buffer[index + 3])
-            guard alpha >= 16 else { continue }
-            let luminance = (Int(buffer[index]) + Int(buffer[index + 1]) + Int(buffer[index + 2])) / 3
-            sum += luminance
-            sumSquared += luminance * luminance
-            count += 1
-        }
-        // Fully transparent → nothing rendered → blank.
-        guard count > 0 else { return true }
-
-        let mean = sum / count
-        let variance = sumSquared / count - mean * mean
-        // Blank when there is almost no variance AND the content is uniformly
-        // near-white or near-black (unrendered backing store).
-        return variance < 120 && (mean > 240 || mean < 16)
     }
 
     // MARK: - Preheat gating
