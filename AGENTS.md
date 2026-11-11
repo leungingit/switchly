@@ -130,6 +130,8 @@ make run           # 构建并退出旧实例后启动 Debug app，会中断当�
 
 - 插件 JS、资产、专属文案与算法测试唯一来源为相邻 `switchly-plugins` 仓库；禁止重新写回宿主 `Resources/Plugins` 或添加按插件 ID 的业务分支。
 - 宿主公开 API 真源见 `Plugins/api/` 与 `docs/plugins/plugin-api-reference.md`。`Plugins/sdk`、`Plugins/cli` 是未发布的本地工具包；CLI `build` 仅校验与复制，不冒充 TS 转译。
+- 可选 `prepare(ctx)` 只提供静态上下文，与媒体读取并行准备初始 UI；正式批次提交前不注册动作，关闭／切目标／撤权时丢弃迟到结果。插件包发现与 GLB 预检走宿主加载队列，Dock AX 布局查询走单一后台队列，不在指针主线程等待。
+- 悬停等待期间可预热首个获授权匹配插件的空 JavaScriptCore 引擎，但不能安装桥接、执行插件入口、启动 Timer 或读取媒体；可见阶段才装配并执行，卸载时清空预热 Context。预热始终限制为一个任务及一个可替换的最新目标。
 - 先在外仓 `npm test`、`npm run build`，再宿主 `make prepare-plugins` / `make build`。工程使用忽略的 `.build/Plugins` 制品；`make generate`、build、test 会先校验锁文件，完全不联网。
 - `make update-plugin-lock` 是显式接受新制品的入口，审查制品摘要与来源提交；锁文件 schemaVersion 2 仅保存覆盖相对路径与内容的 contentHash，禁止让普通构建自动刷新锁文件。发行前外仓必须提交并锁定不可变 revision，再运行 `make verify-plugin-release`。
 - 用户目录安装与 Registry 复用 `PluginPackageValidator`，用户更新重新授权；当前没有发布者签名验证，因此继续拒绝覆盖预装 ID。不可提前宣称在线市场、独立更新信任或硬隔离完成。

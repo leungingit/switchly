@@ -48,6 +48,8 @@ Hover a Dock icon to see that app’s window thumbnails. Choose a horizontal, ve
 
 Hovering Apple Music also shows play / pause, previous, next and Love controls, even when its window is closed. The first time, macOS asks you to allow Switchly to control Music (Automation).
 
+音乐插件的初始界面与歌曲／封面读取并行准备，3D 模型可提前加载，媒体校验完成后再启用控制；普通 Dock 预览按目标产品查询窗口，并合并重复布局，减少快速划过图标时的主线程工作。
+
 音乐插件默认使用本地 MediaRemote／AppleScript 组合桥：流媒体封面与歌曲信息配对后同批发布，控制、喜欢与资料库仍定向使用 AppleScript。`mise run app`／正常主 App 构建离线编译并打包固定 Adapter，只有获授权的可见消费者才启动采集；浏览器抢占时回退，避免串用封面。Preview／Worker 仍使用夹具。已验证本机真实 Dock 悬停，完整发行兼容验收仍待完成，详见[接入设计](docs/plugins/mediaremote/music-mediaremote-integration-plan.md)。
 
 ### Make room for different kinds of work

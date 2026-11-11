@@ -28,6 +28,47 @@ final class PluginScene3DControllerTests: XCTestCase {
 
     // MARK: - Load success
 
+    func testInitialDarkAppearanceBuildsCorrectSurfacesWithoutASecondAssembly() async throws {
+        let rasterizer = Scene3DFakeRasterizer(image: Self.makeImage())
+        let controller = PluginScene3DController(
+            descriptor: descriptorWithSurface(content: .text(value: "Loading", style: .body, lines: nil)),
+            pluginID: "test.dark.initial", assetDirectory: directory, palette: .device,
+            loader: Scene3DTestLoader(template: makeTemplate()), cache: PluginScene3DAssetCache(),
+            dataReader: { _ in Data("glb".utf8) }, rasterizerFactory: { rasterizer })
+        controller.updateHostAppearance(dark: true)
+        controller.updateSlotSize(slot)
+        controller.start()
+        defer { controller.unload() }
+        await waitForReady(controller)
+        let first = try XCTUnwrap(controller.instance)
+        XCTAssertEqual(rasterizer.palettes.map(\.darkFinish), [true])
+        controller.updateHostAppearance(dark: true)
+        XCTAssertTrue(controller.instance === first, "原生宿主随后报告相同主题不能再克隆和栅格化一次")
+        XCTAssertEqual(rasterizer.palettes.count, 1)
+    }
+
+    func testHiddenAppearanceChangeIsAppliedBeforeMountingRetainedScene() async throws {
+        let rasterizer = Scene3DFakeRasterizer(image: Self.makeImage())
+        let controller = PluginScene3DController(
+            descriptor: descriptorWithSurface(content: .text(value: "Track", style: .body, lines: nil)),
+            pluginID: "test.dark.resume", assetDirectory: directory, palette: .device,
+            loader: Scene3DTestLoader(template: makeTemplate()), cache: PluginScene3DAssetCache(),
+            dataReader: { _ in Data("glb".utf8) }, rasterizerFactory: { rasterizer })
+        controller.updateSlotSize(slot)
+        controller.start()
+        defer { controller.unload() }
+        await waitForReady(controller)
+        let light = try XCTUnwrap(controller.instance)
+        XCTAssertFalse(light.darkFinish)
+        controller.stop()
+        controller.updateHostAppearance(dark: true)
+        XCTAssertTrue(controller.instance === light, "隐藏时不应额外组装")
+        controller.start()
+        XCTAssertTrue(controller.instance?.darkFinish == true)
+        XCTAssertTrue(light.isTornDown)
+        XCTAssertEqual(rasterizer.palettes.map(\.darkFinish), [false, true])
+    }
+
     func testLoadsSceneMountsHostAndExposesAccessibility() async throws {
         let host = Scene3DFakeHost()
         let (controller, _) = makeController(loader: Scene3DTestLoader(template: makeTemplate()))
@@ -187,6 +228,51 @@ final class PluginScene3DControllerTests: XCTestCase {
 
         XCTAssertNil(controller.instance)
         XCTAssertEqual(controller.state, .idle)
+    }
+
+    func testConfigureDuringPendingLoadUsesLatestPresentationWithoutReloading() async throws {
+        let loader = Scene3DTestLoader(template: makeTemplate(), gateFirstCall: true)
+        let prepared = descriptorWithSurface(
+            content: .text(value: "Preparing", style: .body, lines: nil)
+        )
+        let (controller, _) = makeController(loader: loader, descriptor: prepared)
+        controller.updateSlotSize(slot)
+        controller.start()
+        await waitFor(controller, "first loader call") { loader.callCount == 1 }
+        XCTAssertEqual(controller.state, .loading)
+
+        let generation = controller.generation
+        let final = descriptorWithSurface(
+            content: .image(source: .artwork, size: .m, corner: nil)
+        )
+        var palette = PluginSurfacePalette.system()
+        palette.text = PluginSurfaceColor(red: 0.8, green: 0.2, blue: 0.4)
+        let artwork = PluginSurfaceArtwork(token: "cover-final", image: Self.makeImage())
+
+        controller.configure(
+            descriptor: final,
+            pluginID: "test.plugin",
+            assetDirectory: directory,
+            artwork: artwork,
+            palette: palette
+        )
+
+        XCTAssertEqual(controller.generation, generation)
+        XCTAssertEqual(controller.state, .loading)
+        XCTAssertEqual(loader.callCount, 1)
+        XCTAssertEqual(controller.descriptor, final)
+        XCTAssertEqual(controller.artwork?.token, artwork.token)
+        XCTAssertEqual(controller.palette, palette)
+
+        loader.releaseFirstCall()
+        await waitForReady(controller)
+
+        let instance = try XCTUnwrap(controller.instance)
+        XCTAssertEqual(loader.callCount, 1)
+        XCTAssertEqual(instance.surfaceTextureCount, 1)
+        XCTAssertTrue(instance.texts.isEmpty,
+                      "the completed scene must use the formal artwork surface, not the preparing text")
+        XCTAssertEqual(controller.state, .ready(instance.identity))
     }
 
     // MARK: - Idempotent lifecycle
@@ -622,6 +708,25 @@ final class PluginScene3DControllerTests: XCTestCase {
     }
 
     /// 播放时进度每秒变化：只重绘贴图，场景实例、镜头姿态与宿主挂载都不能重建，否则模型会闪烁。
+    func testArtworkChangeDoesNotRasterizeAStaticSurface() async throws {
+        let rasterizer = Scene3DFakeRasterizer(image: Self.makeImage())
+        let controller = PluginScene3DController(descriptor: descriptorWithSurface(content: .text(value: "Static", style: .body, lines: nil)),
+            pluginID: "test.plugin", assetDirectory: directory,
+            artwork: PluginSurfaceArtwork(token: "cover-A", image: Self.makeImage()), palette: .system(),
+            loader: Scene3DTestLoader(template: makeTemplate()), cache: PluginScene3DAssetCache(),
+            dataReader: { _ in Data("glb".utf8) }, rasterizerFactory: { rasterizer })
+        controller.updateSlotSize(slot)
+        controller.start()
+        await waitForReady(controller)
+        let instance = try XCTUnwrap(controller.instance)
+        let count = rasterizer.palettes.count
+        controller.configure(descriptor: controller.descriptor, pluginID: "test.plugin", assetDirectory: directory,
+            artwork: PluginSurfaceArtwork(token: "cover-B", image: Self.makeImage()), palette: .system())
+        XCTAssertTrue(controller.instance === instance)
+        XCTAssertEqual(rasterizer.palettes.count, count, "没有 artwork 节点的表面不受封面切换影响")
+        controller.unload()
+    }
+
     func testSurfaceOnlyChangeRepaintsInPlaceWithoutRebuilding() async throws {
         let loader = Scene3DTestLoader(template: makeTemplate())
         let (controller, _) = makeController(loader: loader)
@@ -889,13 +994,15 @@ private final class Scene3DFakeFrameScheduler: PluginScene3DFrameScheduling {
 @MainActor
 private final class Scene3DFakeRasterizer: PluginSurfaceRasterizing {
     private let image: CGImage
+    private(set) var palettes: [PluginSurfacePalette] = []
 
     init(image: CGImage) {
         self.image = image
     }
 
     func rasterize(_ plan: PluginSurfaceRasterPlan) -> PluginSurfaceTexture? {
-        PluginSurfaceTexture(
+        palettes.append(plan.request.palette)
+        return PluginSurfaceTexture(
             image: image,
             pointSize: plan.pointSize,
             pixelsPerPoint: plan.pixelsPerPoint,

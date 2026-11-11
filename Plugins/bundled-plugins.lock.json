@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
   "repository": "leungingit/switchly-plugins",
-  "sourceRevision": "fbcd7346829fef1f8e5e6c4cff98956ec6da8916",
+  "sourceRevision": "f994a8a26bbeb708c83d6d5b3cf7d91d81c90463",
   "plugins": [
     {
       "id": "com.switchly.music-controls",
       "version": "1.0.0",
       "apiVersion": 2,
-      "contentHash": "sha256:075493402c5ef0d27d9da15c8eb808adc19b1a2487e2f770695ee07b7f6125f4"
+      "contentHash": "sha256:4241c9e566df41ac6fc92e5d81c624a969d7a674de0bd92d0227f7b94dc5417f"
     },
     {
       "id": "com.switchly.weather-gacha",

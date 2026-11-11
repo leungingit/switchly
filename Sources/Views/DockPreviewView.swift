@@ -289,6 +289,8 @@ struct DockPluginSlotView: View {
         ) { pluginID, actionID, value in
             overlay.perform(pluginID: pluginID, actionID: actionID, value: value)
         }
+        .allowsHitTesting(!overlay.isPreparing)
+        .disabled(overlay.isPreparing)
     }
 }
 

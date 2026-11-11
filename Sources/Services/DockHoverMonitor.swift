@@ -28,6 +28,16 @@ struct DockIconInfo {
 /// whether the preview is stranded — "the panel is on screen" and "a
 /// presentation is still in flight" — can be exercised headless.
 enum DockHoverState {
+    enum IconTransition: Equatable {
+        /// The pointer is still on the same product, so an existing hover
+        /// delay must keep its original deadline.
+        case retain
+        /// A delay for a different product must replace the previous one.
+        case startDelay
+        /// The panel is already visible; switch products without another delay.
+        case switchImmediately
+    }
+
     /// Whether the monitor's bookkeeping must be reset because the panel it
     /// believes it is showing is gone (dismissed by Escape, a card click, or
     /// any other path that bypasses the monitor).
@@ -55,6 +65,28 @@ enum DockHoverState {
                               pointerInDockArea: Bool,
                               pointerInPanel: Bool) -> Bool {
         panelVisible && !pointerInDockArea && !pointerInPanel
+    }
+
+    /// Two icons are the same product when both expose a bundle URL and they
+    /// match, or when only the display name is available and it matches.
+    static func iconsIdentical(_ lhs: DockIconInfo?, _ rhs: DockIconInfo) -> Bool {
+        guard let lhs else { return false }
+        if let lhsURL = lhs.bundleURL, let rhsURL = rhs.bundleURL {
+            return lhsURL.standardizedFileURL == rhsURL.standardizedFileURL
+        }
+        return lhs.appName == rhs.appName
+    }
+
+    /// Decides whether a pointer sample changes the hover-delay target.
+    /// Magnified Dock frames move while the pointer remains on one icon, so
+    /// frame geometry cannot participate in this decision.
+    static func iconTransition(currentIcon: DockIconInfo?,
+                               hoveredIcon: DockIconInfo,
+                               isShowing: Bool) -> IconTransition {
+        if iconsIdentical(currentIcon, hoveredIcon) {
+            return .retain
+        }
+        return isShowing ? .switchImmediately : .startDelay
     }
 
     /// Which Dock icon does the pointer rest on?
@@ -107,6 +139,37 @@ enum DockHoverState {
     }
 }
 
+/// 高频鼠标事件只保留一个待处理的最新位置，避免主线程忙时积压过时目标。
+final class DockPointerSamples {
+    private let lock = NSLock()
+    private var latest: NSPoint?
+    private var scheduled = false
+
+    func offer(_ point: NSPoint) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        latest = point
+        guard !scheduled else { return false }
+        scheduled = true
+        return true
+    }
+
+    func take() -> NSPoint? {
+        lock.lock()
+        defer { lock.unlock() }
+        let point = latest
+        latest = nil
+        scheduled = false
+        return point
+    }
+
+    func clear() {
+        lock.lock()
+        latest = nil
+        lock.unlock()
+    }
+}
+
 class DockHoverMonitor {
     static let shared = DockHoverMonitor()
 
@@ -125,6 +188,7 @@ class DockHoverMonitor {
     private var isPresentationPending = false
     private var currentIcon: DockIconInfo?
     private var lastProcessedLocation: NSPoint?
+    private let pointerSamples = DockPointerSamples()
     private let pollInterval: TimeInterval = 0.05
 
     // Tracks whether the autohide Dock has actually slid out.
@@ -138,6 +202,10 @@ class DockHoverMonitor {
     private var cachedHoverDelay: Double = 0.4
     private var cachedDockAutohide = false
     private var cachedDockOrientation = "bottom"
+    private var lastDockDefaultsRefresh: Date?
+    private var cachedDockMagnification = false
+    private var lastSampledLocation: NSPoint?
+    private var layoutSettlingUntil = Date.distantPast
 
     /// Dock icon layout from the last Accessibility walk, with the time it was
     /// taken. Rebuilding the layout costs 5+ AX IPC calls per Dock icon, and
@@ -147,35 +215,54 @@ class DockHoverMonitor {
     /// Icons do not move on that timescale (Dock magnification shifts frames,
     /// but a ≤120 ms stale frame is imperceptible for preview switching).
     private var dockIconCache: (date: Date, icons: [DockIconInfo])?
+    /// The AX walk runs on one serial queue. Keep the in-flight flag set until
+    /// that walk finishes so stop/start churn cannot enqueue another stale scan
+    /// behind the current one.
+    private var dockIconScanInFlight = false
+    /// Incremented whenever pending scan results no longer belong to the
+    /// current monitor configuration or lifecycle.
+    private var dockIconScanGeneration = 0
+    private let dockIconScanQueue: DispatchQueue
+    private let dockIconQuery: () -> [DockIconInfo]
+    private let dockPointQuery: ((CGPoint) -> DockIconInfo?)?
+    private var cachedPointLocation: NSPoint?
+    private let now: () -> Date
+    private let prewarmPluginEngine: (URL) -> Void
     /// Auto-hidden Dock thickness, grown with magnified icons (see
     /// `DockHoverState.autohideExtent`). Defaults to the unmagnified strip.
     private var autohideDockExtent: CGFloat = 80
     /// How long a Dock icon layout stays authoritative between AX walks.
     private let dockIconCacheInterval: TimeInterval = 0.12
 
-    private init() {}
+    init(queryDockIcons: (() -> [DockIconInfo])? = nil,
+         queryDockIconAtPoint: ((CGPoint) -> DockIconInfo?)? = nil,
+         prewarmPluginEngine: @escaping (URL) -> Void = { PluginHost.shared.prewarmEngine(for: $0) },
+         now: @escaping () -> Date = Date.init) {
+        dockIconQuery = queryDockIcons ?? Self.queryDockIcons
+        dockPointQuery = queryDockIconAtPoint ?? (queryDockIcons == nil ? Self.queryDockIconAtPoint : nil)
+        self.now = now
+        self.prewarmPluginEngine = prewarmPluginEngine
+        dockIconScanQueue = DispatchQueue(label: "com.switchly.dock-hover.ax",
+                                          qos: .userInitiated)
+    }
 
     func start() {
         guard globalMonitor == nil else { return }
         refreshCache()
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
-            let location = NSEvent.mouseLocation
-            DispatchQueue.main.async { [weak self] in
-                self?.processMouseLocation(location)
-            }
+            self?.enqueueMouseLocation(NSEvent.mouseLocation)
         }
         if pollTimer == nil {
             pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
-                let location = NSEvent.mouseLocation
-                DispatchQueue.main.async { [weak self] in
-                    self?.processMouseLocation(location)
-                }
+                self?.enqueueMouseLocation(NSEvent.mouseLocation)
             }
         }
         AppLogger.info("DockHoverMonitor started")
     }
 
     func stop() {
+        pointerSamples.clear()
+        dockIconScanGeneration += 1
         if let monitor = globalMonitor {
             NSEvent.removeMonitor(monitor)
             globalMonitor = nil
@@ -190,6 +277,8 @@ class DockHoverMonitor {
         isPresentationPending = false
         currentIcon = nil
         lastProcessedLocation = nil
+        lastSampledLocation = nil
+        layoutSettlingUntil = .distantPast
         isDockRevealed = false
         dockIconCache = nil
         autohideDockExtent = 80
@@ -207,15 +296,29 @@ class DockHoverMonitor {
     }
 
     private func refreshCache() {
+        dockIconScanGeneration += 1
         let settings = SettingsService.shared.loadSettings()
         cachedHoverDelay = settings.dockPreviewHoverDelay
 
-        let dockDefaults = UserDefaults(suiteName: "com.apple.dock")
-        cachedDockAutohide = dockDefaults?.bool(forKey: "autohide") ?? false
-        cachedDockOrientation = dockDefaults?.string(forKey: "orientation") ?? "bottom"
+        refreshDockDefaultsCache(force: true)
+    }
+
+    private func enqueueMouseLocation(_ location: NSPoint) {
+        guard pointerSamples.offer(location) else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let latest = self.pointerSamples.take() else { return }
+            self.processMouseLocation(latest)
+        }
     }
 
     private func processMouseLocation(_ location: NSPoint) {
+        // 外部 Dock 设置也必须在几何门控之前更新，否则关闭自动隐藏后仍会等待触边。
+        refreshDockDefaultsCache()
+        let timestamp = now()
+        if lastSampledLocation.map({ abs($0.x - location.x) >= 1 || abs($0.y - location.y) >= 1 }) ?? true {
+            lastSampledLocation = location
+            layoutSettlingUntil = timestamp.addingTimeInterval(MotionTokens.morphDuration + 2 * dockIconCacheInterval)
+        }
         // State recovery: if the monitor thinks the panel is showing but it's
         // actually hidden (e.g. dismissed via Escape key, thumbnail click, or
         // any other external path), reset the internal state so the next hover
@@ -237,13 +340,16 @@ class DockHoverMonitor {
             hideTimer = nil
         }
 
+        let inDockArea = isInDockArea(location)
+        let layoutIsFresh = dockIconCache.map { now().timeIntervalSince($0.date) < dockIconCacheInterval } ?? false
         // Skip duplicate processing for the same location (reduces timer noise).
         // BUT: if the cursor is in the Dock area and we haven't identified an
         // icon yet, keep retrying - the Dock may still be sliding out (autohide)
         // and the AX tree may not be available yet.
         if let last = lastProcessedLocation,
            abs(last.x - location.x) < 1, abs(last.y - location.y) < 1,
-           currentIcon != nil {
+           (currentIcon != nil || (timestamp >= layoutSettlingUntil && !isDockRevealed)),
+           (!inDockArea || layoutIsFresh || timestamp >= layoutSettlingUntil) {
             return
         }
         lastProcessedLocation = location
@@ -258,7 +364,6 @@ class DockHoverMonitor {
         // last window closed, all windows minimized, Finder after a desktop
         // click) left the Dock fully usable while the gate silently disabled
         // the preview until a windowed app was frontmost again.
-        let inDockArea = isInDockArea(location)
         // Membership is derived from the panel itself: a panel that is on
         // screen keeps the preview alive even if the monitor's own bookkeeping
         // was reset, so the pointer can still travel up to it and click a card.
@@ -278,8 +383,6 @@ class DockHoverMonitor {
             let hoveredIcon = dockIconAtLocation(location)
 
             if let icon = hoveredIcon {
-                showDelayTimer?.invalidate()
-                showDelayTimer = nil
                 hideTimer?.invalidate()
                 hideTimer = nil
 
@@ -287,13 +390,26 @@ class DockHoverMonitor {
                 // Compare by bundle URL when available (several products can
                 // share a display name, e.g. ChatGPT and ChatGPT Atlas), and
                 // fall back to the name otherwise.
-                if !iconsIdentical(currentIcon, icon) {
+                let transition = DockHoverState.iconTransition(currentIcon: currentIcon,
+                                                               hoveredIcon: icon,
+                                                               isShowing: isShowing)
+                if transition != .retain {
+                    showDelayTimer?.invalidate()
+                    showDelayTimer = nil
                     currentIcon = icon
-                    if isShowing {
+                    if let bundleURL = icon.bundleURL { prewarmPluginEngine(bundleURL) }
+                    if transition == .switchImmediately {
                         // Switch to the new app immediately without re-delay.
                         AppLogger.info("Dock hover switched app. appName=\(icon.appName), bundleURL=\(icon.bundleURL?.path ?? "nil")")
                         DockPreviewPanel.shared.show(forApp: icon.appName, aboveIconFrame: icon.frame, bundleURL: icon.bundleURL)
                     }
+                } else {
+                    // 放大动画会在指针不动时改变同一图标的中心与高度；保留延时，只更新锚点。
+                    if let previous = currentIcon, !DockPanelMetrics.sameAnchor(previous.frame, icon.frame) {
+                        layoutSettlingUntil = max(layoutSettlingUntil, timestamp.addingTimeInterval(2 * dockIconCacheInterval))
+                    }
+                    currentIcon = icon
+                    if isShowing { DockPreviewPanel.shared.updateAnchorFrame(icon.frame) }
                 }
 
                 if !isShowing && showDelayTimer == nil {
@@ -351,7 +467,7 @@ class DockHoverMonitor {
             let fullFrame = screen.frame
             guard fullFrame.contains(point) else { continue }
 
-            if cachedDockAutohide {
+            if cachedDockAutohide || dockPointQuery != nil {
                 // With autohide, the Dock only slides out when the cursor
                 // enters the screen edge (~2px). We track that state so the
                 // preview only triggers when the Dock is actually visible.
@@ -362,19 +478,19 @@ class DockHoverMonitor {
                     let inDock = point.x >= fullFrame.minX && point.x <= fullFrame.minX + autohideDockSize
                     if atEdge { isDockRevealed = true }
                     else if !inDock { isDockRevealed = false }
-                    return inDock && isDockRevealed
+                    return inDock && (dockPointQuery != nil || isDockRevealed)
                 case "right":
                     let atEdge = point.x >= fullFrame.maxX - edgeThreshold && point.x <= fullFrame.maxX
                     let inDock = point.x >= fullFrame.maxX - autohideDockSize && point.x <= fullFrame.maxX
                     if atEdge { isDockRevealed = true }
                     else if !inDock { isDockRevealed = false }
-                    return inDock && isDockRevealed
+                    return inDock && (dockPointQuery != nil || isDockRevealed)
                 default: // "bottom"
                     let atEdge = point.y >= fullFrame.minY && point.y <= fullFrame.minY + edgeThreshold
                     let inDock = point.y >= fullFrame.minY && point.y <= fullFrame.minY + autohideDockSize
                     if atEdge { isDockRevealed = true }
                     else if !inDock { isDockRevealed = false }
-                    return inDock && isDockRevealed
+                    return inDock && (dockPointQuery != nil || isDockRevealed)
                 }
             }
 
@@ -396,50 +512,100 @@ class DockHoverMonitor {
         return false
     }
 
-    /// Two icons are the same product when both expose a bundle URL and they
-    /// match, or when only the display name is available and it matches.
-    private func iconsIdentical(_ lhs: DockIconInfo?, _ rhs: DockIconInfo) -> Bool {
-        guard let lhs else { return false }
-        if let lhsURL = lhs.bundleURL, let rhsURL = rhs.bundleURL {
-            return lhsURL.standardizedFileURL == rhsURL.standardizedFileURL
-        }
-        return lhs.appName == rhs.appName
-    }
-
     /// Finds the Dock icon at the given screen location.
     ///
-    /// The Dock's Accessibility tree is walked at most once per
-    /// `dockIconCacheInterval` (see `dockIconCache`); in between, the cached
-    /// frames decide. The Dock's own orientation/autohide preferences are
-    /// refreshed on the same cadence, so a Dock moved to a screen side
-    /// mid-session is matched against the right axis instead of a stale one.
-    private func dockIconAtLocation(_ location: NSPoint) -> DockIconInfo? {
-        if let cache = dockIconCache,
-           Date().timeIntervalSince(cache.date) < dockIconCacheInterval {
-            return DockHoverState.bestIcon(in: cache.icons, at: location, orientation: cachedDockOrientation)
-        }
+    /// A fresh cache answers immediately. An expired or missing cache schedules
+    /// one background AX walk and returns nil for this sample; the completed
+    /// layout is published on the main thread for the next pointer sample.
+    /// The Dock's own orientation/autohide preferences are refreshed when a
+    /// scan is scheduled, so a Dock moved to a screen side mid-session is
+    /// matched against the right axis instead of a stale one.
+    func dockIconAtLocation(_ location: NSPoint) -> DockIconInfo? {
         refreshDockDefaultsCache()
-        let icons = queryDockIcons()
-        dockIconCache = (Date(), icons)
-        if !icons.isEmpty {
-            autohideDockExtent = DockHoverState.autohideExtent(icons: icons, orientation: cachedDockOrientation)
+        let pointMode = dockPointQuery != nil
+        if let cache = dockIconCache,
+           now().timeIntervalSince(cache.date) < dockIconCacheInterval {
+            if pointMode {
+                if let cachedPointLocation, abs(cachedPointLocation.x - location.x) < 1,
+                   abs(cachedPointLocation.y - location.y) < 1 { return cache.icons.first }
+            } else {
+                return DockHoverState.bestIcon(in: cache.icons, at: location, orientation: cachedDockOrientation)
+            }
         }
-        return DockHoverState.bestIcon(in: icons, at: location, orientation: cachedDockOrientation)
+        scheduleDockIconScanIfNeeded(at: location, pointMode: pointMode)
+        return nil
+    }
+
+    private func scheduleDockIconScanIfNeeded(at location: NSPoint, pointMode: Bool) {
+        guard !dockIconScanInFlight else { return }
+        dockIconScanInFlight = true
+
+        let generation = dockIconScanGeneration
+        let query = dockIconQuery
+        let pointQuery = dockPointQuery
+        let systemPoint = CGPoint(x: location.x, y: CGDisplayBounds(CGMainDisplayID()).height - location.y)
+        dockIconScanQueue.async { [weak self] in
+            let icons = pointMode ? pointQuery?(systemPoint).map { [$0] } ?? [] : query()
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.dockIconScanInFlight = false
+                guard generation == self.dockIconScanGeneration else { return }
+
+                self.dockIconCache = (self.now(), icons)
+                self.cachedPointLocation = pointMode ? location : nil
+                if !icons.isEmpty {
+                    self.autohideDockExtent = DockHoverState.autohideExtent(
+                        icons: icons,
+                        orientation: self.cachedDockOrientation
+                    )
+                }
+                // Re-evaluate the current pointer position even if it stopped
+                // moving while the background scan was in progress.
+                self.lastProcessedLocation = nil
+                if self.globalMonitor != nil {
+                    self.enqueueMouseLocation(NSEvent.mouseLocation)
+                }
+            }
+        }
+    }
+
+    var cachedDockIcons: [DockIconInfo]? {
+        dockIconCache?.icons
+    }
+
+    var isDockIconScanInFlight: Bool {
+        dockIconScanInFlight
     }
 
     /// Re-reads the Dock's own preference keys. CFPreferences caches in
     /// process, so reading them at the icon-cache cadence (≈8/s while
     /// hovering) is cheap next to the AX walk it accompanies.
-    private func refreshDockDefaultsCache() {
+    private func refreshDockDefaultsCache(force: Bool = false) {
+        let timestamp = now()
+        guard force || (lastDockDefaultsRefresh.map({ timestamp.timeIntervalSince($0) >= dockIconCacheInterval }) ?? true) else { return }
+        lastDockDefaultsRefresh = timestamp
         let dockDefaults = UserDefaults(suiteName: "com.apple.dock")
-        cachedDockAutohide = dockDefaults?.bool(forKey: "autohide") ?? false
-        cachedDockOrientation = dockDefaults?.string(forKey: "orientation") ?? "bottom"
+        let autohide = dockDefaults?.bool(forKey: "autohide") ?? false
+        let orientation = dockDefaults?.string(forKey: "orientation") ?? "bottom"
+        let magnification = dockDefaults?.bool(forKey: "magnification") ?? false
+        if cachedDockAutohide != autohide || cachedDockOrientation != orientation || cachedDockMagnification != magnification {
+            cachedDockAutohide = autohide
+            cachedDockOrientation = orientation
+            cachedDockMagnification = magnification
+            dockIconScanGeneration += 1
+            dockIconCache = nil
+            cachedPointLocation = nil
+            autohideDockExtent = 80
+            isDockRevealed = false
+            lastProcessedLocation = nil
+            layoutSettlingUntil = timestamp.addingTimeInterval(MotionTokens.morphDuration + 2 * dockIconCacheInterval)
+        }
     }
 
     /// Walks the Dock's Accessibility tree and returns every app icon with its
     /// frame and product-root bundle URL. Location matching is not done here —
     /// see `DockHoverState.bestIcon` for why only the layout axis is trusted.
-    private func queryDockIcons() -> [DockIconInfo] {
+    private static func queryDockIcons() -> [DockIconInfo] {
         guard let dockApp = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == "Dock" }) else {
             return []
         }
@@ -461,56 +627,75 @@ class DockHoverMonitor {
             return []
         }
 
-        var icons: [DockIconInfo] = []
+        return axIcons.compactMap(dockIconInfo)
+    }
 
-        for icon in axIcons {
-            var subroleValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(icon, kAXSubroleAttribute as CFString, &subroleValue)
-            let subrole = subroleValue as? String ?? ""
+    private static func dockIconInfo(_ icon: AXUIElement) -> DockIconInfo? {
+        var subroleValue: CFTypeRef?
+        AXUIElementCopyAttributeValue(icon, kAXSubroleAttribute as CFString, &subroleValue)
+        let subrole = subroleValue as? String ?? ""
 
-            // Only consider app icons (not Trash, Downloads, minimized windows).
-            guard subrole == "AXApplicationDockItem" else { continue }
+        // Only consider app icons (not Trash, Downloads, minimized windows).
+        guard subrole == "AXApplicationDockItem" else { return nil }
 
-            var titleValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(icon, kAXTitleAttribute as CFString, &titleValue)
-            guard let appName = titleValue as? String, !appName.isEmpty else { continue }
+        var titleValue: CFTypeRef?
+        AXUIElementCopyAttributeValue(icon, kAXTitleAttribute as CFString, &titleValue)
+        guard let appName = titleValue as? String, !appName.isEmpty else { return nil }
 
-            // The Dock AX item exposes AXURL (the app bundle URL), which is
-            // the only reliable identity here — several installed products can
-            // share the same display title (e.g. ChatGPT and ChatGPT Atlas).
-            var urlValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(icon, kAXURLAttribute as CFString, &urlValue)
-            let bundleURL = urlValue as? URL
+        // The Dock AX item exposes AXURL (the app bundle URL), which is
+        // the only reliable identity here — several installed products can
+        // share the same display title (e.g. ChatGPT and ChatGPT Atlas).
+        var urlValue: CFTypeRef?
+        AXUIElementCopyAttributeValue(icon, kAXURLAttribute as CFString, &urlValue)
+        let bundleURL = urlValue as? URL
 
-            // Read position and size to build the icon's frame.
-            var posValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(icon, kAXPositionAttribute as CFString, &posValue)
-            var sizeValue: CFTypeRef?
-            AXUIElementCopyAttributeValue(icon, kAXSizeAttribute as CFString, &sizeValue)
+        // Read position and size to build the icon's frame.
+        var posValue: CFTypeRef?
+        AXUIElementCopyAttributeValue(icon, kAXPositionAttribute as CFString, &posValue)
+        var sizeValue: CFTypeRef?
+        AXUIElementCopyAttributeValue(icon, kAXSizeAttribute as CFString, &sizeValue)
 
-            guard let posValue, let sizeValue,
-                  CFGetTypeID(posValue) == AXValueGetTypeID(),
-                  CFGetTypeID(sizeValue) == AXValueGetTypeID() else { continue }
+        guard let posValue, let sizeValue,
+              CFGetTypeID(posValue) == AXValueGetTypeID(),
+              CFGetTypeID(sizeValue) == AXValueGetTypeID() else { return nil }
 
-            var position = CGPoint.zero
-            var size = CGSize.zero
-            guard AXValueGetValue(posValue as! AXValue, .cgPoint, &position),
-                  AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) else { continue }
+        var position = CGPoint.zero
+        var size = CGSize.zero
+        guard AXValueGetValue(posValue as! AXValue, .cgPoint, &position),
+              AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) else { return nil }
 
-            let frame = CGRect(origin: position, size: size)
+        let frame = CGRect(origin: position, size: size)
 
-            // Normalize to the product root: apps that ship nested app bundles
-            // (e.g. WeChat's WeChatAppEx.app inside WeChat.app) get their own
-            // Dock icon, but their windows are owned by processes across the
-            // whole containing bundle. Resolving to the nearest enclosing .app
-            // makes both icons resolve to the same product so the preview
-            // shows the product's windows instead of "No windows".
-            let productURL = WindowAttribution.productRootURL(for: bundleURL)
+        // Normalize to the product root: apps that ship nested app bundles
+        // (e.g. WeChat's WeChatAppEx.app inside WeChat.app) get their own
+        // Dock icon, but their windows are owned by processes across the
+        // whole containing bundle. Resolving to the nearest enclosing .app
+        // makes both icons resolve to the same product so the preview
+        // shows the product's windows instead of "No windows".
+        let productURL = WindowAttribution.productRootURL(for: bundleURL)
 
-            icons.append(DockIconInfo(appName: appName, frame: frame, bundleURL: productURL))
+        return DockIconInfo(appName: appName, frame: frame, bundleURL: productURL)
+    }
+
+    /// 放大和自动隐藏时，真实 Dock 命中优先于旧矩形；只接受 Dock 进程的应用图标。
+    private static func queryDockIconAtPoint(_ point: CGPoint) -> DockIconInfo? {
+        guard let dock = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else { return nil }
+        let root = AXUIElementCreateApplication(dock.processIdentifier)
+        AXUIElementSetMessagingTimeout(root, 0.5)
+        var hit: AXUIElement?
+        guard AXUIElementCopyElementAtPosition(root, Float(point.x), Float(point.y), &hit) == .success else { return nil }
+        for _ in 0..<8 {
+            guard let element = hit else { return nil }
+            var pid: pid_t = 0
+            guard AXUIElementGetPid(element, &pid) == .success, pid == dock.processIdentifier else { return nil }
+            AXUIElementSetMessagingTimeout(element, 0.5)
+            if let icon = dockIconInfo(element) { return icon }
+            var parent: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &parent) == .success,
+                  let parent, CFGetTypeID(parent) == AXUIElementGetTypeID() else { return nil }
+            hit = (parent as! AXUIElement)
         }
-
-        return icons
+        return nil
     }
 
     private func showPreview() {

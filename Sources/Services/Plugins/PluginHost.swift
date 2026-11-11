@@ -18,6 +18,7 @@ struct InstalledPlugin: Equatable, Identifiable {
 
 protocol PluginHosting: AnyObject {
     func runtimes(for bundleID: String) -> [PluginRuntimeProtocol]
+    func loadRuntimes(for bundleID: String) async -> [PluginRuntimeProtocol]
     func installedPlugins() -> [InstalledPlugin]
     func loadFailures() -> [PluginLoadFailure]
     /// Cover art for the target app; nil unless an enabled plugin matching it
@@ -32,6 +33,7 @@ protocol PluginHosting: AnyObject {
 }
 
 extension PluginHosting {
+    func loadRuntimes(for bundleID: String) async -> [PluginRuntimeProtocol] { runtimes(for: bundleID) }
     func acquireRuntimeVisibility(_ runtimes: [PluginRuntimeProtocol], invalidate: @escaping () -> Void) -> PluginLifetime {
         let visibility = PluginRuntimeVisibility()
         let lease = visibility.acquire(runtimes, invalidate: invalidate)
@@ -43,10 +45,12 @@ extension PluginHosting {
     func acquireMediaRead(for bundleID: String, invalidate: @escaping () -> Void) -> MediaReadInterest? { nil }
 }
 
-final class PluginHost: PluginHosting {
+/// 包与运行时表由 lock 保护；可见性和媒体生命周期各自使用已有的串行同步入口。
+final class PluginHost: PluginHosting, @unchecked Sendable {
     static let shared = PluginHost(mediaBridge: MediaRemoteAssembly.makeBridge())
 
     private let visibility = PluginRuntimeVisibility()
+    private let loadingQueue = DispatchQueue(label: "com.switchly.plugin.loading", qos: .userInitiated)
     private let registry: PluginRegistryProtocol
     private let grants: () -> [String: PluginGrant]
     private let mediaBridge: MediaBridging
@@ -57,6 +61,9 @@ final class PluginHost: PluginHosting {
     private var mediaInterests: [UUID: (bundleID: String, lease: MediaReadInterest)] = [:]
     private var failures: [PluginLoadFailure] = []
     private var packages: [PluginPackage]?
+    private var engineWarmupTask: Task<Void, Never>?
+    private var engineWarmupID: UUID?
+    private var pendingEngineWarmupURL: URL?
     /// Keyed by id; the permission set is kept so a grant change rebuilds the VM.
     private var runtimesByID: [String: (permissions: Set<PluginCapability>, runtime: PluginRuntimeProtocol)] = [:]
 
@@ -133,6 +140,57 @@ final class PluginHost: PluginHosting {
         stale.forEach { $0.unmount() }
         pruneMediaInterests()
         return result
+    }
+
+    func loadRuntimes(for bundleID: String) async -> [PluginRuntimeProtocol] {
+        await withCheckedContinuation { continuation in
+            loadingQueue.async { [self] in
+                let started = DispatchTime.now().uptimeNanoseconds
+                let result = runtimes(for: bundleID)
+                AppLogger.performance("PluginDiscovery", since: started)
+                continuation.resume(returning: result)
+            }
+        }
+    }
+
+    /// 悬停等待期间只预热第一个获授权匹配插件的空引擎，不执行用户 JS。
+    /// 始终只有一个任务和一个可替换的最新目标，避免快速扫过图标积压工作。
+    func prewarmEngine(for bundleURL: URL) {
+        lock.lock()
+        pendingEngineWarmupURL = bundleURL
+        guard engineWarmupTask == nil else { lock.unlock(); return }
+        let id = UUID()
+        engineWarmupID = id
+        engineWarmupTask = Task { [weak self] in
+            while !Task.isCancelled, let url = self?.takeEngineWarmupURL(id: id) {
+                guard let root = WindowAttribution.productRootURL(for: url),
+                      let bundleID = Bundle(url: root)?.bundleIdentifier else { continue }
+                let runtimes = await self?.loadRuntimes(for: bundleID) ?? []
+                guard !Task.isCancelled else { return }
+                await runtimes.first?.prewarmEngine()
+            }
+        }
+        lock.unlock()
+    }
+
+    private func takeEngineWarmupURL(id: UUID) -> URL? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard engineWarmupID == id else { return nil }
+        let url = pendingEngineWarmupURL
+        pendingEngineWarmupURL = nil
+        if url == nil { engineWarmupTask = nil; engineWarmupID = nil }
+        return url
+    }
+
+    private func cancelEngineWarmup() {
+        lock.lock()
+        let task = engineWarmupTask
+        engineWarmupTask = nil
+        engineWarmupID = nil
+        pendingEngineWarmupURL = nil
+        lock.unlock()
+        task?.cancel()
     }
 
     func acquireRuntimeVisibility(_ runtimes: [PluginRuntimeProtocol], invalidate: @escaping () -> Void) -> PluginLifetime {
@@ -219,6 +277,7 @@ final class PluginHost: PluginHosting {
     }
 
     func unmountAll() {
+        cancelEngineWarmup()
         visibility.reset()
         releaseMediaInterests()
         lock.lock()
@@ -228,6 +287,7 @@ final class PluginHost: PluginHosting {
     }
 
     func reload() {
+        cancelEngineWarmup()
         visibility.reset()
         releaseMediaInterests()
         lock.lock()
@@ -239,7 +299,7 @@ final class PluginHost: PluginHosting {
         DispatchQueue.main.async { [weak self] in self?.captureRequester?.validateAuthorization() }
     }
 
-    deinit { releaseMediaInterests() }
+    deinit { cancelEngineWarmup(); releaseMediaInterests() }
 
     /// Caller holds `lock`.
     private func loadedPackages() -> [PluginPackage] {

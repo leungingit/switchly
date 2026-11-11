@@ -5,6 +5,11 @@ extension MediaBridging {
     func frozenRead(bundleID: String) throws -> MediaReadContext {
         if let provider = self as? MediaReadProviding { return try provider.readContext(bundleID: bundleID) }
         let before = try nowPlaying(bundleID: bundleID)
+        return try frozenRead(bundleID: bundleID, before: before)
+    }
+
+    /// 仅复用同一串行队列、同一批次刚取得的样本；封面后仍独立采样。
+    func frozenRead(bundleID: String, before: NowPlaying?) throws -> MediaReadContext {
         let bytes = before == nil ? nil : try artwork(bundleID: bundleID)
         let after = try nowPlaying(bundleID: bundleID)
         let matched = MediaReadContext.sameTrack(before, after)
