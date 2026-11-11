@@ -247,6 +247,7 @@ SWITCHLY_PLUGIN_SOURCE=/tmp/switchly-dock-perf.79UTyb/plugins make test-unit
 - `make test-unit`：`Executed 843 tests, with 9 tests skipped and 0 failures`，`TEST SUCCEEDED`。9 项为条件验收项，未计为通过。
 - SDK `npm test --prefix Plugins/sdk`：6 通过、1 跳过（隔离工作树没有 tsc）；CLI `npm test --prefix Plugins/cli`：67 通过、0 失败。
 - `make plugin-preview-contract-check`：契约哈希、renderer revision 一致，33 个共享核心类型检查通过；`make mediaremote-adapter-test`：13 项通过。
+- `make plugin-preview-build`：App／Worker 构建成功；隔离 `Tests/PluginPreview/run-background-input-tests.sh ../switchly-plugins`：22 条 PASS、`SUMMARY background-input passed`，未显示后台表面或发送全局输入。
 - `./verify.sh`：0 失败、2 警告（提交前 dirty、超长源文件）；`git diff --check` 通过。CoreSimulator 版本提示未阻止 macOS 构建与测试。
 
 **验收边界**：D07–D10 的已查看原生截图与实测口径继续适用，本次 Git 集成未重新触发播放、切歌或 Space 切换。完整跨 Space 3D 视觉、Space 切换期间短暂空列表／插件重挂载、首次系统初始化尖峰及长尾分布仍未完成；不能因本次提交与合并将其标记解决。依据项目 AGENTS §8 和交付自检清单核对范围、验证、文档与卫生；临时构建、日志和隔离工作树在交付前清理，已有工作区修改保持保留。
