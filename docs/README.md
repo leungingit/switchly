@@ -85,3 +85,4 @@
 | [plugin-preview-renderer-input-2026-11-10.md](reviews/plugin-preview/plugin-preview-renderer-input-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
 | [plugin-preview-view-capture-2026-11-10.md](reviews/plugin-preview/plugin-preview-view-capture-2026-11-10.md) | 后台预览输入、捕获或接入验证记录 |
 | [plugin-preview-pr-rebase-2026-11-10.md](reviews/plugin-preview/plugin-preview-pr-rebase-2026-11-10.md) | 主干 rebase 后的提交候选、固定依赖验证与旧 iPod 夹具边界 |
+| [plugin-preview-ipod-lock-2026-11-11.md](reviews/plugin-preview/plugin-preview-ipod-lock-2026-11-11.md) | 新版 iPod 不可变资产锁定、后台交互回归与 PR 待审验收 |

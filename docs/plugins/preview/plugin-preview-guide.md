@@ -314,4 +314,6 @@ echo "修复后通过"
 - 本次改造（推导场景、覆盖项、`inspect`、GUI 启动器/自定义模式/导出、两栏启动器与模拟 Dock、工作台舞台与原始桌面透射、内置合成样例、fixture 来源与清除、缺数据提示、可访问标签）**实现中**，尚未完成回归取证；以 `Tests/PluginPreview/` 的脚本结果为准，不把本文示例当作已验证。模拟 Dock 的悬停计时、浮层定位与槽位挂载没有截图证据；原始桌面透射下的玻璃外观依赖桌面背景，不能作为视觉基线。
 - GUI 回归需要有屏幕录制授权的 runner；GitHub 托管 runner 默认没有，见 `.github/workflows/ci.yml` 的 `preview-gui`。
 
-后台 iPod 坐标回归要求正视的 `wheel_ring` 扇区版夹具；当前锁定旧 revision 不满足时退出 77，不能将其截图成功或 2D 回归通过作为 3D 输入证据。提交候选范围与复验见 [rebase 记录](../../reviews/plugin-preview/plugin-preview-pr-rebase-2026-11-10.md)。
+后台 iPod 坐标回归要求正视的 `wheel_ring` 扇区版夹具；未匹配该夹具格式的旧 revision 退出 77，不能将其截图成功或 2D 回归通过作为 3D 输入证据。提交候选范围与复验见 [rebase 记录](../../reviews/plugin-preview/plugin-preview-pr-rebase-2026-11-10.md)。
+
+2026-11-11 的 PV-D16 已锁定新版 iPod 来源提交 `c2487864ae70e877ee539291884f4ae6e807fd11`，该不可变制品已通过完整后台交互回归；详见 [新版资产验收](../../reviews/plugin-preview/plugin-preview-ipod-lock-2026-11-11.md)。
