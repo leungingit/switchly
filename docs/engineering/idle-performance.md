@@ -250,4 +250,6 @@ SWITCHLY_PLUGIN_SOURCE=/tmp/switchly-dock-perf.79UTyb/plugins make test-unit
 - `make plugin-preview-build`：App／Worker 构建成功；隔离 `Tests/PluginPreview/run-background-input-tests.sh ../switchly-plugins`：22 条 PASS、`SUMMARY background-input passed`，未显示后台表面或发送全局输入。
 - `./verify.sh`：0 失败、2 警告（提交前 dirty、超长源文件）；`git diff --check` 通过。CoreSimulator 版本提示未阻止 macOS 构建与测试。
 
+**远端 CI 发现与修复**：首轮 Ubuntu `Preview — static & Node` 在 CLI 测试失败：假预览工具读取到正常契约 `b853e950…`，CLI 随后读到 `cea418dd…`。该摘要精确等于六文件清单中 `preview-fs-fixture.schema.json` 暂时为空的结果；并行的打包测试会再次执行 prepack，`copyFile` 将同一契约文件截断后重写。制备脚本现对逐字节相同的文件直接复用，来源变化仍更新。新增回归用固定时间戳验证同内容无重写及变化仍生效，旧脚本确定性失败，新脚本通过；完整 CLI 复跑 68 项通过、0 失败。不关闭并行测试、不放宽兼容校验或修改原有断言。
+
 **验收边界**：D07–D10 的已查看原生截图与实测口径继续适用，本次 Git 集成未重新触发播放、切歌或 Space 切换。完整跨 Space 3D 视觉、Space 切换期间短暂空列表／插件重挂载、首次系统初始化尖峰及长尾分布仍未完成；不能因本次提交与合并将其标记解决。依据项目 AGENTS §8 和交付自检清单核对范围、验证、文档与卫生；临时构建、日志和隔离工作树在交付前清理，已有工作区修改保持保留。

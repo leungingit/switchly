@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir } from "node:fs/promises";
+import { access, copyFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,6 +20,12 @@ for (const file of files) {
   const source = path.join(repositoryRoot, "Plugins/api", file);
   const destination = path.join(contractDirectory, file);
   try {
+    // npm pack 可与契约读取并行；相同内容不再截断重写已准备的文件。
+    try {
+      if ((await readFile(source)).equals(await readFile(destination))) continue;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
     await copyFile(source, destination);
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
