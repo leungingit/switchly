@@ -164,3 +164,17 @@ rendererRevision=sha256:9515d9a1a46eb96deb02a651abbcb06996d86e674ac7189379809fd9
 PR #31 首轮 CI 的 `Preview — JSC & protocol (macOS)` 失败，日志显示 `Tests/PluginPreview/run-session-tests.sh` 编译 `PluginRuntime.swift` 时找不到 `WindowCaptureTarget`、`WindowCaptureRequesting` 等类型。本地运行同一脚本复现。原因是该脚本直接列出 Swift 编译输入，新增截图模型后只同步了 Worker harness，漏掉了 Session harness。
 
 修复只在 Session 脚本的真实 Worker 编译输入中加入 `Sources/Models/WindowCapture.swift`，没有关闭检查或改动断言。随后完整运行 CI 中相同的七组脚本：Protocol 8/8、Session 5/5、ProcessSupervisor 7/7，Scenario、Artifact、Reload、Worker 全部通过。CI 的最终结果以 PR 检查记录为准。
+
+## V12 合入后主干 CI 的契约写入竞态（2026-11-11）
+
+PR #31 在运行 43001654552 全部适用检查通过后合入；主干运行 43002775288 的 Node 检查随后出现间歇性哈希不一致。失败哈希 `sha256:4f0fb7cb1a67be7627193a78d6e07de46b4482a93d811fcb2dde3653b3286edb` 恰好等于把 `preview-scenario.schema.json` 替换为空字节后计算的结果。
+
+根因是 Node 测试文件并行执行：打包测试运行 npm prepack，`prepare-contract.mjs` 用 copyFile 重写共享 contract，另一个 Preview 测试可能在目标文件被截断但尚未写完时计算哈希。它不是需要更新契约常量的真实不兼容。
+
+修复为内容相同不重写，变化时先写同目录唯一临时文件，再 rename 原子发布，finally 清理。没有串行化测试、放宽哈希门禁或增加重试。新增并发读写测试在修复前复现空文件/部分内容，修复后要求每个文件只可能是完整旧版或新版；同时覆盖未变化文件。CLI 全套 69 项连续三轮通过。
+
+## V13 并行主干更新的冲突集成（2026-11-11）
+
+等待 PR #33 的 CI 期间，主干合入性能 PR #32（cbce38e）。其中也为相同契约加入了“不重写相同内容”的修复，导致脚本冲突。集成保留该行为和主干新增的内容/mtime 回归测试，同时保留本 PR 的原子替换和并发读写测试。其余性能实现及主干锁文件原样合入；外仓锁更新为 f994a8a 合并提交，包含同时合入的音乐 prepare 优化，未退回旧音乐制品。
+
+集成后实测：外仓 50/50、CLI 70/70、宿主 make build 通过、make test-unit 865 项 / 11 skipped / 0 failures、Session 5/5、锁测试 13/13。主干契约哈希为 `sha256:50397d0bf6be94848d48a883b6b182a40165c5431ade2af862378756dd6dcdfb`，共享源码守卫与 renderer revision 校验通过。

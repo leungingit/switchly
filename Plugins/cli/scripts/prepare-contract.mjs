@@ -1,4 +1,5 @@
-import { access, copyFile, mkdir, readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,17 +20,26 @@ await mkdir(contractDirectory, { recursive: true });
 for (const file of files) {
   const source = path.join(repositoryRoot, "Plugins/api", file);
   const destination = path.join(contractDirectory, file);
+  let contents;
   try {
-    // npm pack 可与契约读取并行；相同内容不再截断重写已准备的文件。
-    try {
-      if ((await readFile(source)).equals(await readFile(destination))) continue;
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
-    }
-    await copyFile(source, destination);
+    contents = await readFile(source);
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
     // 已发布包包含 contract；再次从包内执行 prepack 时无需仓库源文件。
     await access(destination);
+    continue;
+  }
+  try {
+    if (contents.equals(await readFile(destination))) continue;
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  // prepack 可与 CLI 读者并行；不截断已发布的契约文件。
+  const staged = path.join(contractDirectory, `.${file}.${randomUUID()}.tmp`);
+  try {
+    await writeFile(staged, contents, { flag: "wx" });
+    await rename(staged, destination);
+  } finally {
+    await rm(staged, { force: true });
   }
 }
