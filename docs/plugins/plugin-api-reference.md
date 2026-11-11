@@ -1,6 +1,6 @@
 # Switchly 插件 API 参考
 
-> 更新日期：2026-11-02。本文以当前宿主的 Swift 解码、运行时、资源读取与包校验实现为准。机器可读能力清单见 [`Plugins/api/capabilities.json`](../../Plugins/api/capabilities.json)，manifest Schema 见 [`Plugins/api/manifest.schema.json`](../../Plugins/api/manifest.schema.json)。
+> 更新日期：2026-11-06。本文以当前宿主的 Swift 解码、运行时、资源读取与包校验实现为准。机器可读能力清单见 [`Plugins/api/capabilities.json`](../../Plugins/api/capabilities.json)，manifest Schema 见 [`Plugins/api/manifest.schema.json`](../../Plugins/api/manifest.schema.json)。`scene3d` 与 `ctx.uiFeatures` 是 D26 冻结的合同，宿主当前尚未实现（T04–T07）；在能力清单仍标记 `unimplemented` 前，不得把它们宣传为已可用能力。
 
 ## 1. 当前兼容状态
 
@@ -17,6 +17,8 @@
 | `media.nowPlaying/control/library` | 稳定 | 当前桥接目标是 Apple Music，受用户授权限制。 |
 | `ctx.fs` | 稳定 | 只读、根目录白名单、调用预算与路径解析限制。 |
 | 声明式 UI | 稳定 | `render()` 返回经过解码校验的槽位树。 |
+| `ctx.uiFeatures` | 未实现 | D26 合同冻结：`{ scene3d: boolean }`，与 `ctx.capabilities` 权限表分离；当前宿主不注入。 |
+| `scene3d` | 未实现 | D26 合同冻结：仅 `apiVersion: 2` 且 `ctx.uiFeatures.scene3d === true` 可用；当前宿主解码器仍按未知节点拒绝。 |
 | Scene | 稳定 | 宿主本地播放，JS 不逐帧参与。 |
 | 普通 `image.pluginAsset` | 稳定 | 复用 SceneAssets 路径与纹理预算，已通过真实图片渲染回归。 |
 | `window.focus` | 未实现 | manifest 可声明，宿主不会注入对应 API。 |
@@ -283,6 +285,7 @@ node Plugins/cli/bin/switchly-plugin.js verify ../switchly-plugins/plugins/com.s
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `ctx.capabilities` | object | 能力名到 `{ supported, granted, available }` 的映射；含媒体、天气、文件、未实现窗口能力及基础 storage；未知键为空。available 不代表已获得系统自动化许可或实际文件存在，调用仍须处理错误。 |
+| `ctx.uiFeatures` | object，可选 | 宿主 UI 能力协商快照，与权限表分离。当前唯一字段为 `scene3d: boolean`。字段缺失表示宿主没有该协商，插件必须返回 2D 树；不能据 `apiVersion: 2` 推断 3D 可用。 |
 | `ctx.app` | object | `{ bundleID, pid, name, lastActiveAt }`。`lastActiveAt` 为 Unix 秒或 `null`。 |
 | `ctx.window` | object | `{ windowID, title }`；`title` 最多约 40 个字符。 |
 | `ctx.locale` | string | 首选语言，例如 `zh-Hans-CN`。 |
@@ -441,7 +444,7 @@ null | undefined | Array<{
 }>
 ```
 
-每次输出最多 64 个节点，树深最多 8。每个 slot 最多出现一次；所有 button、toggle、slider 与 Scene hit 的 action ID 在整个输出内必须唯一。
+每次输出最多 64 个节点，树深最多 8。每个 slot 最多出现一次；所有 button、toggle、slider、Scene hit 与 `scene3d` hit 的 action ID 在整个输出内必须唯一。唯一例外是 `scene3d` 的 hit 与其自身 `fallback` 子树复用同一业务 action ID，因为两条展示分支不会同时可见；其他跨 slot 或跨节点复用仍被拒绝。
 
 ### 7.1 布局节点
 
@@ -648,7 +651,114 @@ Scene 总预算：
 
 `ctx.reduceMotion === true` 时宿主使用 `restAt` 或稳定时间静帧。
 
-## 9. 错误与输出校验
+## 9. `scene3d`（合同冻结，宿主未实现）
+
+> 状态：D26 已冻结合同；T04–T07 完成前宿主不具备该能力。`apiVersion: 2` 本身不代表可渲染 3D。插件必须先读取 `ctx.uiFeatures.scene3d`，仅在值为 `true` 时返回 `scene3d`；字段缺失或为 `false` 时返回原有 2D 树。机器可读定义与预算见 `Plugins/api/capabilities.json` 的 `ui.scene3d`。
+
+### 9.1 能力协商与分发（D25/D26）
+
+- `scene3d` 是 v2 协商式增量能力，与 `ctx.capabilities` 权限表分离。`ctx.uiFeatures` 不表示用户授权，只表示宿主 UI 是否支持。
+- 不支持 `scene3d` 的 v2 宿主收到 `scene3d` 时按未知节点拒绝整次输出，不会静默显示空白；JS 的 `fallback` 不能补救这种情况，插件必须直接返回 2D 树。
+- 已发布 v1.3.0 宿主只接受 v1 包，会在加载阶段拒绝 v2 包；JS 回退无法让旧宿主接受 v2 包。
+- D25/D26 分发规则：同一插件 ID 保留两条发行线。v1 线使用 `apiVersion: 1`，继续供 v1.3.0 等旧宿主；v2 线使用 `apiVersion: 2`，供支持 `scene3d` 的新宿主。任一宿主发行只能锁一条线：v1 包不进入新宿主，新宿主只加载 v2 包；v2 包在不支持 `scene3d` 的宿主上仍按上面的协商返回 2D。外仓目录、分支、revision 与锁文件细节由 T09 落地，不在本文虚构尚未存在的外仓目录名。
+- 不放宽 v1 对未知节点的拒绝，也不把 `apiVersion: 2` 当作 3D 可用性的替代判断。
+
+### 9.2 节点字段
+
+`scene3d` 只能作为 slot 的根 `node`，不得嵌套在任意 `children` 或 `fallback` 内；每个 slot 最多一个 `scene3d`。
+
+| 字段 | 必填 | 类型与约束 |
+| --- | --- | --- |
+| `type` | 是 | 固定字符串 `"scene3d"`。 |
+| `key` | 是 | 非空字符串，最多 64 个字符；同一插件实例内用于复用场景。相同 key 且相同 asset 的重复 `render()` 不重建场景；asset 变化时重新加载。 |
+| `asset` | 是 | 插件包内相对路径，必须是单个 `.glb` 文件；不能是绝对路径或包含 `..`。实际文件大小 ≤ 8 MiB，且在交给 GLTFKit2 前通过宿主 GLB 预检。 |
+| `fit` | 否 | 首期只允许 `"contain"`，默认 `"contain"`；宿主按模型包围盒等比缩放并完整放入槽位。 |
+| `camera` | 否 | `{ yaw?: number; pitch?: number }`，角度单位为**度**，默认 `yaw = 0`、`pitch = 0`。`yaw ∈ [-180, 180]`，`pitch ∈ [-89, 89]`，必须是有限数字。 |
+| `rotate` | 否 | `{ horizontal?: boolean; vertical?: boolean; pitchMin?: number; pitchMax?: number }`，见 9.3。 |
+| `surfaces` | 否 | 数组，最多 5 项，默认空数组；见 9.4。 |
+| `hits` | 否 | 数组，最多 12 项，默认空数组；见 9.5。 |
+| `fallback` | 是 | 必填的受限 2D 节点，不得为 `scene3d`，其子树也不得包含 `scene3d`。`fallback` 与 3D 分支不会同时可见，但计入 64 节点/深度 8 预算。 |
+
+相机约定：`yaw = 0, pitch = 0` 时相机位于 glTF `+Z` 轴、看向原点，`+Y` 为上；正 `yaw` 把相机绕 `+Y` 轴转向 `+X` 一侧，正 `pitch` 抬高相机。相机距离、FOV、近远裁剪、灯光、环境反射、抗锯齿与色彩空间由宿主固定，不开放 `zoom`、FOV、灯光或任意着色器。插件侧本期不提供环境预设字段；若后续增加，必须另行冻结并保持旧资产默认行为。
+
+### 9.3 `rotate`
+
+| 字段 | 默认 | 约束 |
+| --- | --- | --- |
+| `horizontal` | `true` | 是否允许水平拖动改变 `yaw`。 |
+| `vertical` | `true` | 是否允许垂直拖动改变 `pitch`。 |
+| `pitchMin` | `-55` | `[-89, 89]`，必须有限且 ≤ `pitchMax`。 |
+| `pitchMax` | `55` | `[-89, 89]`，必须有限且 ≥ `pitchMin`。 |
+
+`horizontal: false` 固定 yaw，`vertical: false` 固定 pitch。`ctx.reduceMotion === true` 时保留直接拖动，但禁用惯性与自动回正；普通模式下的惯性参数不开放给插件。
+
+### 9.4 `surfaces`
+
+| 字段 | 必填 | 类型与约束 |
+| --- | --- | --- |
+| `node` | 是 | 引用 glTF `node.name`，见 9.6。名称必须存在、唯一，解析到单个可见网格，且 UV 完整；同一 `node` 不能被多个 surface 或任一 hit 重复引用。 |
+| `size` | 是 | `[width, height]`，两个整数，单位是**输出纹理像素**而非布局 pt；每边 `1...1024`。 |
+| `content` | 是 | 单个受限 2D 节点；其子树只允许 `hstack`、`vstack`、`zstack`、`spacer`、`text`、`progress`、`image`、`badge`、`marquee`。禁止 `button`、`toggle`、`slider`、`wheel`、`screen`、`surface`、`scene`、`scene3d` 与任意 HTML。 |
+
+表面内容按左上原点栅格化，映射到网格 UV 后，从模型正面观察时文字与图像必须正立，不得上下颠倒或镜像。内容复用现有 `PluginUINode` 的文本、封面、进度与本地化语义；`image.artwork` 受 `media.nowPlaying` 授权约束。表面子树计入 §7 的 64 节点/深度 8 预算。动态表面按实例隔离，每张 ≤1024×1024、RGBA 约 ≤4 MiB，最多 5 张；不写入其他卡片。表面纹理只在内容实际变化时更新，旋转不触发重新栅格化。
+
+### 9.5 `hits`
+
+| 字段 | 必填 | 类型与约束 |
+| --- | --- | --- |
+| `node` | 是 | 引用 glTF `node.name`，要求同 9.6；必须解析到单个可见网格；同一节点可同时是 surface 目标（贴图后的可点击按钮），命中只看几何。 |
+| `id` | 是 | 非空 action ID，在 `scene3d` 内唯一；与 `fallback` 子树复用同一 ID 是唯一例外。 |
+| `label` | 是 | 非空可访问标签；用于独立语义树，不能为空或仅含空白。 |
+| `value` | 否 | `number | null`，默认 `null`；点击时作为 `onAction(ctx, id, value)` 的 value。 |
+| `enabled` | 否 | boolean，默认 `true`；`false` 时不派发动作，也不进入可执行的可访问动作。 |
+| `sector` | 否 | `"top" \| "right" \| "bottom" \| "left"`。以命中节点包围盒中心为原点，按节点局部 X/Y 平面的对角线分成四个象限。同一节点可承载多个命中（如整圈点击转盘环带），但此时每个命中必须声明互不相同的 `sector`，且不能与未声明 `sector` 的命中混用。 |
+
+命中只取前方可见命名网格：透明占位、被遮挡背面、侧面与不可见网格不参与点击；拖动超过宿主点击阈值不派发点击动作，背面/侧面不得派发正面动作。`onAction` 仍走现有路由，插件不得假设屏幕坐标或 iPod 专用分支。
+
+### 9.6 glTF 命名与资产
+
+- 语义标识只按 glTF `node.name`，按 `mesh.name` 查找一律无效；名称区分大小写，不做模糊或子串匹配。
+- 被 surface/hit 引用的名称必须在资产内唯一且对应单个可见网格；`GLBPreflight` 已拒绝空名与重复名，缺失、歧义或 UV 不完整在运行时令当前 `scene3d` 降级到 `fallback`。
+- 只接受单文件、自包含 glTF 2.0 `.glb`。`buffer.uri`、`image.uri`、外部文件、绝对路径、网络 URI、Draco/KTX2 与未批准扩展均拒绝。允许扩展首期仅 `KHR_materials_clearcoat`、`KHR_materials_emissive_strength`、`KHR_materials_unlit`。
+- 表面网格必须具备完整 `TEXCOORD_0`；文字方向与 UV 方向一致性由 T04 在真实模型上验收。
+
+### 9.7 预算硬值
+
+| 项目 | 上限 |
+| --- | --- |
+| 单个 `.glb` | 8 MiB |
+| 整个插件包 | 32 MiB（沿用 §3） |
+| mesh | 128 |
+| 三角形 | 150000 |
+| 单个资产节点 | 256 |
+| 静态纹理边长 | 2048 |
+| 静态纹理累计解码 | 每插件 32 MiB |
+| 动态表面 | 最多 5 张，每张 ≤1024×1024（RGBA 约 ≤4 MiB） |
+| `surfaces` | 5 |
+| `hits` | 12 |
+| 声明 UI 树 | 64 节点、深度 8；`scene3d`、surface content 与 `fallback` 均计入 |
+| 最小可读槽位 | 220×380 pt（候选值已冻结；真实 Dock 尺寸尚未实测，见 G0 未通过） |
+
+静态纹理累计解码指 glb 内嵌图片与 `pluginAsset`/`image` 的累计预算；动态表面按实例另行计算，不能借静态预算绕过 2 张/每张 1024 的限制。减少动态效果不改变预算。
+
+### 9.8 降级与错误语义
+
+声明结构错误令**整次 `render` 输出被拒绝**，与 §10 的现有规则一致；包括：未知节点、缺 `key`/`asset`/`fallback`、空 `key`/`asset`、非法 asset 路径、`fit` 非 `contain`、相机或 `rotate` 数值非有限/越界、`pitchMin > pitchMax`、`surfaces > 5`、`hits > 12`、surface `node` 空或重复、`size` 非整数/越界、surface content 含禁用节点、hit `node`/`id`/`label` 空、同一节点的 hit `sector` 重复或与无 `sector` 的 hit 混用、`scene3d` 内 hit ID 重复、`fallback` 含 `scene3d`、节点/深度超预算、action ID 跨分支重复（hit 与其自身 fallback 的例外除外）、`scene3d` 非 slot 根或每 slot 多于一个。
+
+运行期资产/渲染错误**只令当前 `scene3d` 降级到 `fallback`**，其他 slot 保持；记录有界错误码，不记录窗口标题等敏感文本：
+
+- `scene3d.assetMissing`：资产不存在或不可读。
+- `scene3d.preflightRejected`：GLB 预检拒绝。
+- `scene3d.decodeFailed`：GLTFKit2 解码或场景创建失败。
+- `scene3d.nodeNotFound`：surface/hit 引用的 `node.name` 不存在。
+- `scene3d.nodeAmbiguous`：名称对应多个可见网格或无法解析为单一网格。
+- `scene3d.uvMissing`：表面网格缺少完整 UV。
+- `scene3d.renderFailed`：SceneKit 渲染或纹理创建失败。
+- `scene3d.slotTooSmall`：槽位实际内容小于 220×380 pt。
+
+窄槽判定使用宿主布局测量的实际内容尺寸，不要求插件轮询窗口尺寸；宽度小于 220 pt **或**高度小于 380 pt 即使用 `fallback`。3D 与 `fallback` 不同时可见，`fallback` 内的动作 ID 只在其可见时参与路由。
+
+## 10. 错误与输出校验
 
 - 未注册 `__switchlyPlugin`：运行时不会挂载。
 - `render` / `onAction` 抛错：对应调用失败，错误写入宿主日志。
@@ -658,7 +768,7 @@ Scene 总预算：
 
 日志字段包含插件 ID、阶段与耗时。分享日志前仍应检查其中是否含窗口标题摘要等本地信息。
 
-## 10. SDK
+## 11. SDK
 
 `Plugins/sdk/` 是零外部依赖的本地包：
 
@@ -668,7 +778,8 @@ Scene 总预算：
 - `ui.button/toggle/slider`
 - `ui.text/progress/image/badge/marquee`
 - `ui.scene`
-- `index.d.ts`：完整 ctx、manifest、UI、Scene 类型。
+- `ui.scene3d`（合同冻结，宿主未实现；仅 v2 且 `ctx.uiFeatures.scene3d === true` 时由插件返回）
+- `index.d.ts`：完整 ctx、manifest、UI、Scene、`scene3d` 类型。
 
 示例：
 
@@ -692,7 +803,7 @@ export default definePlugin({
 
 SDK 不提供 Node、DOM 或网络 polyfill。宿主只执行最终入口 JavaScript；SDK 的 ES module 需要由插件仓库自身的构建流程转换为宿主可执行单入口。
 
-## 11. CLI
+## 12. CLI
 
 `Plugins/cli/` 同样零外部依赖，可执行：
 
@@ -716,6 +827,7 @@ node Plugins/cli/bin/switchly-plugin.js create <目标目录>
 - `fs.read` 与 `fsRoots` 成对出现，root ID 唯一并做基本敏感路径检查。
 - `locales/*.json` 是字符串字典。
 - 静态 `pluginAsset`、`asset`、`image` 与 `assets/...` 字符串引用的基本路径和文件存在性。
+- 包内所有 `.glb` 普通文件（不依赖 manifest 或入口是否显式引用）执行预检，检查容器结构、自包含 BIN、未批准扩展、bufferView 边界、节点/网格/三角形与纹理预算、空名或重复节点名。CLI 当前仅识别 PNG/JPEG 内嵌纹理，检查可能比使用 ImageIO 的宿主更严格；CLI 通过后宿主仍会在交给 GLTFKit2 前再次校验，宿主是最终防线。
 
 `build` 只会在验证通过后把插件目录原样复制到：
 
@@ -732,10 +844,10 @@ CLI 的 `prepack` 会把权威 `Plugins/api/capabilities.json` 与 `manifest.sch
 测试：
 
 ```sh
-node --test Plugins/sdk/test/sdk.test.js Plugins/cli/test/cli.test.js
+node --test Plugins/sdk/test/sdk.test.js Plugins/cli/test/cli.test.js Plugins/cli/test/glb.test.js
 ```
 
-## 12. 安装、覆盖与更新
+## 13. 安装、覆盖与更新
 
 第一阶段安装策略：
 
@@ -747,11 +859,13 @@ node --test Plugins/sdk/test/sdk.test.js Plugins/cli/test/cli.test.js
 
 预装制品未来从 `.build/Plugins/<id>/` 进入宿主打包流程；该路径表示构建产物布局，不表示插件可以从网络自动安装。
 
-## 13. 版本与兼容原则
+## 14. 版本与兼容原则
 
 - `apiVersion` 是运行协议主版本；当前支持 `1` 和 `2`。
 - `version` 是插件自身版本，只要求非空，不强制 SemVer。
 - 新插件应声明 `apiVersion: 2`。
+- `scene3d` 是 v2 的协商式增量能力，只有 `ctx.uiFeatures.scene3d === true` 才可用；`apiVersion: 2` 本身不代表宿主支持 3D。
+- D26 分发规则下，v1 2D 包继续供旧宿主，新宿主只加载 v2 包；两条发行线不能混进同一宿主的锁文件。
 - 发布包格式、运行协议、SDK 和宿主版本分别演进，不能用一个版本号代替全部含义。
 - 当前没有公开 npm 发布，不应把本地包名当成已发布制品。
 - 未在能力清单标记 `stable` 的能力不得在插件市场、官网或 README 中宣传为稳定。

@@ -19,7 +19,7 @@
 
 - macOS 12 或更新；Node.js 18 或更新。
 - `run` 需要截图：图形会话 + 系统设置里授予运行预览的终端/应用「屏幕录制」权限。不可用时命令返回环境错误（退出码 4），**不会**伪造通过。
-- Agent 仅需截图或业务步骤时，可给 `run` 加 `--background`：预览 App 不激活，也不打开工作台窗口；截图窗口后置且不获取 key。该模式下含 `nativeClick` 的场景返回 `unsupported`（退出码 3），原生输入仍需在专用 GUI 环境验证。该模式仍需要图形会话及屏幕录制权限。
+- Agent 可给 `run` 加 `--background` 做后台视觉与输入验证：预览 App 不激活、不打开工作台；截图表面使用从不排序到屏幕的原生 nonactivating 面板，输入和截图复用同一共享 Renderer。支持标签 `nativeClick` 与 3D 坐标点击／拖动；不发送全局键鼠事件。每次执行先做有效图像与隔离自检，失败退出 4，不回退显示窗口。仍需图形会话及屏幕录制权限；跨系统兼容性以实测为准。
 - 不需要 Xcode，不需要联网，不需要 Switchly 本体在运行。
 
 ## 3. 取得并安装工具包
@@ -120,6 +120,10 @@ switchly-plugin run ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" --ou
 | `action` | `id`、可选 `value` | **业务动作**：直接调用插件 `onAction`。不证明控件可点击 | `business-action` |
 | `expectText` | `contains` | 渲染树的任一文本包含该字符串 | `render-output` |
 | `nativeClick` | `label`，可选 `expectAction` 或 `expectDisabled: true`（互斥） | **原生输入**：经可访问树按标签 press，并核对动作确实路由到会话；`expectDisabled` 要求控件存在、禁用且没有动作被触发 | `native-input` |
+| `nativeClickAt` | `point: {x,y}`，可选 `expectAction` | 截图表面左上角的逻辑点，经 hitTest 命中真实 SceneKit 视图，调用原生鼠标 down/up；核验回调及 worker 结果 | `native-input` |
+| `nativeDrag` | `from: {x,y}`、`to: {x,y}` | 同一表面内的真实 SceneKit 视图拖动，8 段、约 160ms；不要求产生业务动作 | `native-input` |
+
+坐标必须有限、非负且在当前截图表面内；截图是像素，输入是逻辑点，须除以报告的 `environment.displayScale`。坐标输入仅适配 SceneKit，命中其他视图返回 `pointer-target-unsupported`；超出表面返回 `point-out-of-bounds`。它不是系统鼠标操作，也不证明 Agent 已自主定位任意控件。后台标签输入用只读 helper 初始化自身 AX 树，不读取其他应用、不写 focus。后台与最终捕获对同一活视图操作，动作后重新布局并取图；不能用业务 `action` 代替原生输入证据。
 
 步骤按顺序执行，**首个失败即停止**，其后步骤记为 `skipped`，整体状态 `failed`、错误码 `step-failed`，且不产生截图（不会出现「失败但有一张好看的图」）。每步 trace 只含固定失败码，不回显断言文本或渲染内容。
 
@@ -139,14 +143,15 @@ switchly-plugin run ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" --ou
 
 ## 7. 错误修复
 
-下表每一行都由 `Tests/PluginPreview/run-failure-modes-tests.sh` 真实验证。
+常见失败由 `Tests/PluginPreview/run-failure-modes-tests.sh` 验证；后台输入的步骤错误与隔离由 `run-background-input-tests.sh` 验证。隐藏捕获不可用的历史反例见 PV-D13，新后台路径每次运行均做图像自检。
 
 | 现象（`error.code` / `failure.code`） | 原因 | 修复 |
 | --- | --- | --- |
+| `background-surface-unavailable`（4） | 隐藏原生表面不可捕获、图像全透明／单色、helper 不可用或捕获前后隔离校验失败 | 在有授权的 GUI 会话核验该系统兼容性；不回退前台，不将环境错误记为通过 |
 | `no-capturable-slot`（3） | 插件只渲染了 `topTrailing`/`titleAccessory` | 渲染到 `center` 或 `bottomBar` |
 | `empty-render`（1） | `render` 返回空数组 | 在目标应用匹配时返回至少一个槽位内容 |
 | `plugin-script-error`（1） | `render` 抛出异常，也包括 manifest 需要但没有任何来源的 fixture（如 `fs.read` 未给文件、GUI 已清除内置样例） | 在插件里修复；用 `console.log` 不会输出到预览（日志被刻意抑制）。缺 fixture 时按下面的固定提示补齐数据 |
-| `invalid-render-output`（1） | 返回的 UI 不符合声明式树契约 | 对照 [API 参考](plugin-api-reference.md) §7 |
+| `invalid-render-output`（1） | 返回的 UI 不符合声明式树契约 | 对照 [API 参考](../plugin-api-reference.md) §7 |
 | `plugin-timeout`（1） | 渲染超时（如死循环）；worker 已被终止并回收 | 去掉死循环或阻塞逻辑 |
 | `invalid-package`（1） | manifest 损坏、入口缺失或超出包限制 | 先运行 `switchly-plugin validate` |
 | `invalid-scenario`（1） | 场景含未知字段或非法值 | 对照第 5 节 |
@@ -237,7 +242,9 @@ switchly-plugin dev ./hello --preview-tool "$KIT/SwitchlyPluginPreview.app" --sc
 
 ## 12. Agent 无 GUI 流程
 
-Agent 不需要打开 GUI 启动器，也不必人工点选；以下截图流程显式使用 `--background`，仍需要图形会话与屏幕录制授权（`inspect` 不需要）。需要 `nativeClick` 时改在独立 GUI runner 运行默认 `run`。
+Agent 不需要打开 GUI 启动器，也不必人工点选；以下截图流程显式使用 `--background`，仍需要图形会话与屏幕录制授权（`inspect` 不需要）。场景可包含 `nativeClick`、`nativeClickAt` 或 `nativeDrag`；后台回归入口为 `make plugin-preview-background-test`，可用 `PLUGINS_REPO` 指定包含 iPod 与合成媒体夹具的外仓。
+
+仓库封装 `Scripts/plugin-preview.sh run`（`mise run preview:run`）自动添加 `--background`，与其“无界面运行”约定一致；直接调用 CLI 时须显式传入该参数。
 
 1. **查看默认输入**：`inspect` 输出插件信息、推导场景、设置项和 fixture 的 `needed`/`reason`/`source`。`source: builtin` 表示 media/weather 会自动使用内置样例；`fs.read` 即使 `needed: true` 也通常是 `source: none`，需要显式文件。据此决定要不要覆盖。
    ```sh
@@ -258,7 +265,7 @@ Agent 不需要打开 GUI 启动器，也不必人工点选；以下截图流程
 2. 以退出码分流：`0` 成功；`1` 去读 `error.code` 或 `report.json` 的 `failure.code` 与 `steps`，修改插件或场景后重跑；`3` 是能力边界，不要重试；`4` 是环境问题，停止并报告，**不要把它当成通过**。
 3. 每次运行用**新的空** `--out` 目录。
 4. 退出码 0 之后仍要读 `preview.png` 判断画面是否符合预期；断言文本只能证明「有这段文字」。
-5. 区分证据：`action` 步骤是业务动作，`nativeClick` 才经过控件与可访问标签；两者都不能替代本体里的真实 Dock 验证。
+5. 区分证据：`action` 是业务直调；`nativeClick` 经过控件与可访问标签，`nativeClickAt`／`nativeDrag` 经过真实 SceneKit 视图的鼠标处理。它们都不能替代本体里的真实 Dock 验证。
 
 下面的循环块同样被原样执行：用显式场景文件（进阶/回归用法）注入断言，失败时把 `step-failed` 的失败步骤找出来，演示「运行 → 解析 → 判断 → 修复 → 重跑」。运行前设置 `KIT`，并在 `quickstart` 之后的同一目录执行。
 
@@ -302,6 +309,11 @@ echo "修复后通过"
 
 - 工具包是本地候选：未做 Developer ID 签名与公证，未发布 npm；通过浏览器下载的副本会被 Gatekeeper 隔离。
 - 已实测架构：arm64 原生与 x86_64（Apple Silicon 上经 Rosetta）；原生 Intel 硬件与 macOS 12 未验证。
+- 新后台表面目前只在本机 arm64／macOS 27.2 验证；旧系统、原生 Intel、跨 Space 与压力矩阵未完成。隐藏窗口捕获没有跨版本稳定保证，须逐次通过图像自检。原生玻璃用于观察，不保证与已显示表面逐像素等价；真实相机与 SwiftUI 动画不受 JS 固定时钟完整控制，不能据此声称严格同帧回放。
 - 未覆盖：滑块调节、hover、键盘焦点；窗口隐藏/最小化触发的 `suspend`/`resume` 自动化；fixture 更新类步骤。
 - 本次改造（推导场景、覆盖项、`inspect`、GUI 启动器/自定义模式/导出、两栏启动器与模拟 Dock、工作台舞台与原始桌面透射、内置合成样例、fixture 来源与清除、缺数据提示、可访问标签）**实现中**，尚未完成回归取证；以 `Tests/PluginPreview/` 的脚本结果为准，不把本文示例当作已验证。模拟 Dock 的悬停计时、浮层定位与槽位挂载没有截图证据；原始桌面透射下的玻璃外观依赖桌面背景，不能作为视觉基线。
 - GUI 回归需要有屏幕录制授权的 runner；GitHub 托管 runner 默认没有，见 `.github/workflows/ci.yml` 的 `preview-gui`。
+
+后台 iPod 坐标回归要求正视的 `wheel_ring` 扇区版夹具；未匹配该夹具格式的旧 revision 退出 77，不能将其截图成功或 2D 回归通过作为 3D 输入证据。提交候选范围与复验见 [rebase 记录](../../reviews/plugin-preview/plugin-preview-pr-rebase-2026-11-10.md)。
+
+2026-11-11 的 PV-D16 已锁定新版 iPod 来源提交 `c2487864ae70e877ee539291884f4ae6e807fd11`，该不可变制品已通过完整后台交互回归；详见 [新版资产验收](../../reviews/plugin-preview/plugin-preview-ipod-lock-2026-11-11.md)。

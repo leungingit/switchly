@@ -37,7 +37,7 @@ switchly-plugin run <插件目录> --preview-tool <App> [--scenario <场景> | �
   --target-bundle-id <id>        --target-app-name <名称>
 
 说明：
-  validate  检查 manifest、入口、设置唯一性、权限和静态资源路径。
+  validate  检查 manifest、入口、设置唯一性、权限、静态资源路径与 GLB 预检。
   build     在 validate 通过后原样复制到 <输出根目录>/<插件 id>。
             默认输出根目录为当前目录下的 .build/Plugins。
             该命令不做 TypeScript 转译或 JavaScript 打包。

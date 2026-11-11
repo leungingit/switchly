@@ -22,6 +22,10 @@ struct PreviewFailure {
     static func classify(_ error: Error,
                          missingFixtureKind: PreviewScenarioDraft.FixtureKind? = nil,
                          language: AppLanguage = .english) -> PreviewFailure {
+        if error is PluginPreviewSurfaceError {
+            return PreviewFailure(status: "environment-error", exitCode: 4, code: "background-surface-unavailable",
+                                  message: language.localizedString("The native preview surface is unavailable or failed isolation checks."))
+        }
         if let error = error as? PreviewAppError {
             switch error {
             case .invalidPackage:
@@ -130,6 +134,7 @@ private enum PreviewAppMain {
     @MainActor
     static func main() {
         let args = Array(CommandLine.arguments.dropFirst())
+        if let code = PluginPreviewAccessibilityPreparation.run(arguments: args) { exit(code) }
         if args == ["--version-json"] {
             printVersionAndExit()
         }
@@ -202,6 +207,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     private let state = PluginPreviewState()
     private var session: PluginPreviewSession?
     private var window: NSWindow?
+    private var captureSurface: PluginPreviewCaptureSurface?
     private var scenario: PreviewScenario?
     private var package: PluginPackage?
     private var rawJSON: String?
@@ -350,12 +356,6 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
                 scenario = prepared.scenario
             }
             self.scenario = scenario
-            if arguments.background && scenario.typedSteps.contains(where: {
-                if case .nativeClick = $0 { return true }
-                return false
-            }) {
-                throw PreviewScenario.Failure.unsupportedSteps
-            }
             applyEnvironment(scenario)
             if arguments.command == "dev" {
                 let watcher = PluginPreviewPackageWatcher(directory: pluginURL) { [weak self] in
@@ -367,6 +367,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             try await replaceSession(force: true, reset: true)
             if arguments.command == "run" { try await captureAndReport() }
         } catch {
+            guard !closing else { return }
             state.status = .failed
             state.diagnostics = [PluginPreviewDiagnostic(level: .error, message: "Preview failed")]
             if arguments.command == "run" {
@@ -466,20 +467,27 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     /// 最近一次经原生回调路由到会话的动作，供 nativeClick 步骤核对路径。
-    private var routedAction: (id: String, task: Task<Void, Never>)?
+    private var routedAction: (id: String, task: Task<Void, Error>)?
 
     private func perform(pluginID: String, id: String, value: Double?) {
         guard pluginID == state.pluginID, let session else { return }
-        let task = Task {
+        let task = Task<Void, Error> {
             do { try await session.action(id: id, value: value); try await updateRender(session) }
-            catch { state.status = .stale }
+            catch { state.status = .stale; throw error }
         }
         routedAction = (id, task)
     }
 
     /// 通过可访问树 press 控件，等待（有界）回调把动作路由进会话并处理完成。
     fileprivate func nativeClick(label: String, expectAction: String?, expectDisabled: Bool) async throws {
-        guard let root = window?.contentView else { throw PluginPreviewStepFailure(code: "window-unavailable") }
+        let root: NSView?
+        if arguments?.background == true {
+            try await captureSurface?.layout()
+            root = captureSurface?.window.contentView
+        } else {
+            root = window?.contentView
+        }
+        guard let root else { throw PluginPreviewStepFailure(code: "window-unavailable") }
         routedAction = nil
         switch PluginPreviewNativeDriver.press(label: label, in: root) {
         case .notFound: throw PluginPreviewStepFailure(code: "element-not-found")
@@ -489,18 +497,38 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             guard expectDisabled else { throw PluginPreviewStepFailure(code: "element-disabled") }
             try await Task.sleep(nanoseconds: 100_000_000)
             if routedAction != nil { throw PluginPreviewStepFailure(code: "disabled-control-fired") }
+            try captureSurface?.requireIsolation()
             return
         case .pressed:
             if expectDisabled { throw PluginPreviewStepFailure(code: "element-not-disabled") }
         }
+        try await waitForRoutedAction(expectAction: expectAction)
+        try captureSurface?.requireIsolation()
+    }
+
+    private func waitForRoutedAction(expectAction: String?) async throws {
         var waited = 0
         while routedAction == nil, waited < 100 {
             try await Task.sleep(nanoseconds: 20_000_000)
             waited += 1
         }
         guard let routed = routedAction else { throw PluginPreviewStepFailure(code: "no-action-routed") }
-        await routed.task.value
+        try await routed.task.value
         if let expectAction, routed.id != expectAction { throw PluginPreviewStepFailure(code: "wrong-action-routed") }
+    }
+
+    private func nativePointer(from: PluginPreviewPoint, to: PluginPreviewPoint?, expectAction: String?) async throws {
+        guard let surface = captureSurface else { throw PluginPreviewStepFailure(code: "window-unavailable") }
+        try await surface.layout()
+        routedAction = nil
+        try await PluginPreviewNativeDriver.pointer(from: from, to: to, in: surface.window,
+                                                    checkIsolation: surface.requireIsolation)
+        if to == nil {
+            try await waitForRoutedAction(expectAction: expectAction)
+        } else if let routed = routedAction {
+            try await routed.task.value
+        }
+        try surface.requireIsolation()
     }
 
     private func requestReload(force: Bool, reset: Bool) {
@@ -626,6 +654,14 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
             try await requireCurrent()
             try await owner.nativeClick(label: label, expectAction: expectAction, expectDisabled: expectDisabled)
         }
+        func nativeClickAt(point: PluginPreviewPoint, expectAction: String?) async throws {
+            try await requireCurrent()
+            try await owner.nativePointer(from: point, to: nil, expectAction: expectAction)
+        }
+        func nativeDrag(from: PluginPreviewPoint, to: PluginPreviewPoint) async throws {
+            try await requireCurrent()
+            try await owner.nativePointer(from: from, to: to, expectAction: nil)
+        }
         func availableActions() async throws -> [PluginPreviewStepAction] {
             try await requireCurrent()
             let json = try await session.render()
@@ -645,6 +681,8 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         guard !scenario.typedSteps.isEmpty else { return nil }
         guard let session else { throw PreviewAppError.worker }
         let outcome = await PluginPreviewStepRunner.run(scenario.typedSteps, on: StepTarget(owner: self, session: session))
+        // 信号清理可能在原生手势 await 期间关闭表面；不能再写失败报告覆盖 128+signal。
+        guard !closing else { throw CancellationError() }
         guard outcome.failedIndex != nil else { return outcome.traces }
         let report = try PluginPreviewArtifactWriter().writeFailure(
             identity: artifactIdentity(scenario: scenario, package: package), status: .failed, failure: .stepFailed,
@@ -665,7 +703,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         let environment = PluginPreviewArtifactEnvironment(
             operatingSystemVersion: "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
             architecture: architecture, locale: scenario.environment.locale, appearance: scenario.environment.appearance,
-            displayScale: Double((window?.screen ?? NSScreen.main)?.backingScaleFactor ?? 0),
+            displayScale: Double((captureSurface?.screen ?? window?.screen ?? NSScreen.main)?.backingScaleFactor ?? 0),
             rendererRevision: PluginPreviewContract.rendererRevision, glass: scenario.environment.glass,
             deterministicClock: scenario.clock != nil)
         return PluginPreviewArtifactIdentity(scenarioID: scenario.id, pluginID: package.manifest.id,
@@ -678,6 +716,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func emitReportAndExit(_ report: PluginPreviewArtifactReport, code: Int32) async throws {
+        guard !closing else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(report)
@@ -692,9 +731,6 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         guard let scenario, let package, let outputDirectory = arguments?.output,
               let screen = window?.screen ?? NSScreen.main,
               CGPreflightScreenCaptureAccess() else { throw PreviewAppError.capture }
-        let steps = try await runScenarioSteps(scenario, package: package, outputDirectory: outputDirectory)
-        if !scenario.typedSteps.isEmpty && steps == nil { return }
-        guard let rawJSON else { throw PreviewAppError.capture }
         let entries = [PluginSlot.center, .bottomBar].flatMap { state.slots[$0] ?? [] }
         guard !entries.isEmpty else {
             // 没有可截图的内容不是环境问题：区分「只渲染了未接入的槽位」与「什么都没渲染」。
@@ -703,48 +739,29 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
                 identity: artifactIdentity(scenario: scenario, package: package),
                 status: renderedElsewhere ? .unsupported : .failed,
                 failure: renderedElsewhere ? .noCapturableSlot : .emptyRender,
-                outputDirectory: outputDirectory, steps: steps)
+                outputDirectory: outputDirectory, steps: nil)
             try await emitReportAndExit(report, code: renderedElsewhere ? 3 : 1)
             return
         }
-        let surface = PluginSlotSurface(entries: entries, material: state.environment.material,
-                                        isGlassActive: state.environment.glassEnabled, artwork: state.artwork,
-                                        fallback: nil) { _, _, _ in }
-            .environment(\.pluginSceneNow, state.virtualNowSeconds.map { now in { now } })
-            .frame(width: state.environment.contentWidth)
-            .fixedSize(horizontal: false, vertical: true)
-            .background(Color(nsColor: .windowBackgroundColor))
-            .preferredColorScheme(state.environment.theme.colorScheme)
-            .environment(\.locale, Locale(identifier: state.environment.language.rawValue))
-        let host = NSHostingView(rootView: surface)
-        let size = host.fittingSize
-        guard size.width > 0, size.height > 0, size.width <= screen.visibleFrame.width,
-              size.height <= screen.visibleFrame.height else { throw PreviewAppError.capture }
-        let captureWindow = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless],
-                                     backing: .buffered, defer: false, screen: screen)
-        captureWindow.isReleasedWhenClosed = false
-        captureWindow.contentView = host
-        captureWindow.center()
-        if arguments?.background == true {
-            captureWindow.orderBack(nil)
-        } else {
-            captureWindow.makeKeyAndOrderFront(nil)
-        }
-        defer { captureWindow.orderOut(nil); captureWindow.contentView = nil }
-        try await Task.sleep(nanoseconds: 500_000_000)
-        captureWindow.displayIfNeeded()
-        let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("switchly-preview-" + UUID().uuidString, isDirectory: true)
+        let surface = try PluginPreviewCaptureSurface(state: state, screen: screen, background: arguments?.background == true)
+        captureSurface = surface
+        defer { surface.close(); captureSurface = nil }
+        guard let workRoot else { throw PreviewAppError.environment }
+        let temporary = workRoot.appendingPathComponent("capture", isDirectory: true)
         try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temporary) }
+        try await Task.sleep(nanoseconds: 500_000_000)
         let screenshot = temporary.appendingPathComponent("preview.png")
-        let capture = Process()
-        capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        capture.arguments = ["-x", "-l", String(captureWindow.windowNumber), screenshot.path]
-        capture.standardOutput = FileHandle.nullDevice
-        capture.standardError = FileHandle.nullDevice
-        try capture.run()
-        capture.waitUntilExit()
-        guard capture.terminationStatus == 0 else { throw PreviewAppError.capture }
+        // 真实图像自检在步骤前执行，避免在返回空图的系统上仍派发输入。
+        try await surface.capture(to: screenshot)
+        if arguments?.background == true && scenario.typedSteps.contains(where: {
+            if case .nativeClick = $0 { return true }; return false
+        }) { try await surface.prepareAccessibility() }
+        let steps = try await runScenarioSteps(scenario, package: package, outputDirectory: outputDirectory)
+        if !scenario.typedSteps.isEmpty && steps == nil { return }
+        guard let rawJSON else { throw PreviewAppError.capture }
+        try FileManager.default.removeItem(at: screenshot)
+        try await surface.capture(to: screenshot)
         let report = try PluginPreviewArtifactWriter().writeSuccess(
             identity: artifactIdentity(scenario: scenario, package: package), rawJSON: Data(rawJSON.utf8),
             screenshotURL: screenshot, outputDirectory: outputDirectory, steps: steps)
@@ -760,6 +777,7 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func finish(status: String, code: Int32, reason: String, message: String? = nil) {
+        guard !closing else { return }
         var errorValue: [String: Any] = ["code": reason]
         if let message { errorValue["message"] = message }
         var value: [String: Any] = ["schemaVersion": 1, "status": status, "error": errorValue]
@@ -816,6 +834,12 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
         return .terminateLater
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        // NSApplication.terminate 默认直接 exit(0)，不会返回 main 的 app.run() 之后。
+        // 清理已在上述终止入口完成，此处保留与 JSON 报告一致的 CLI 退出码。
+        exit(exitCode)
+    }
+
     func windowDidMiniaturize(_ notification: Notification) { setHidden(true) }
     func windowDidDeminiaturize(_ notification: Notification) { setHidden(false) }
     func applicationDidHide(_ notification: Notification) { setHidden(true) }
@@ -836,6 +860,8 @@ private final class PreviewAppDelegate: NSObject, NSApplicationDelegate, NSWindo
     }
 
     private func cleanup() async {
+        captureSurface?.close()
+        captureSurface = nil
         watcher?.stop()
         watcher = nil
         reloadTask?.cancel()

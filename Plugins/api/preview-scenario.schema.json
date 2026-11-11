@@ -60,13 +60,20 @@
             "properties": { "type": { "const": "expectText" }, "contains": { "type": "string", "minLength": 1, "maxLength": 256 } } },
           { "type": "object", "additionalProperties": false, "required": ["type", "label"],
             "properties": { "type": { "const": "nativeClick" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 },
-                            "expectAction": { "type": "string", "minLength": 1, "maxLength": 128 }, "expectDisabled": { "type": "boolean" } } }
+                            "expectAction": { "type": "string", "minLength": 1, "maxLength": 128 }, "expectDisabled": { "type": "boolean" } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "point"],
+            "properties": { "type": { "const": "nativeClickAt" }, "point": { "$ref": "#/$defs/point" },
+                            "expectAction": { "type": "string", "minLength": 1, "maxLength": 128 } } },
+          { "type": "object", "additionalProperties": false, "required": ["type", "from", "to"],
+            "properties": { "type": { "const": "nativeDrag" }, "from": { "$ref": "#/$defs/point" }, "to": { "$ref": "#/$defs/point" } } }
         ]
       },
-      "description": "advance 需要场景声明 clock；action 是业务动作（直接调用 onAction，不经原生输入）；nativeClick 经可访问树按标签 press 并核对路由动作，expectDisabled 与 expectAction 互斥。"
+      "description": "advance 需要 clock；action 是业务直调；nativeClick 经 AX press，expectDisabled 与 expectAction 互斥。nativeClickAt/nativeDrag 使用截图表面左上角逻辑点，仅适配真实 SceneKit 视图，不投递全局键鼠。"
     }
   },
   "$defs": {
+    "point": { "type": "object", "additionalProperties": false, "required": ["x", "y"],
+               "properties": { "x": { "type": "number", "minimum": 0 }, "y": { "type": "number", "minimum": 0 } } },
     "relativePath": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[^\\u0000]*[^/\\u0000]$" }
   }
 }

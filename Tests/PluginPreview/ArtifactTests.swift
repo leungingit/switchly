@@ -45,6 +45,16 @@ struct ArtifactTests {
         precondition(tree == raw)
         let actions = try JSONDecoder().decode(PluginPreviewArtifactActions.self, from: Data(contentsOf: out.appendingPathComponent("actions.json")))
         precondition(actions.actions.count == 1 && !actions.actions[0].enabled)
+        let scene = PluginScene3DDescriptor(
+            key: "device", asset: "assets/device.glb",
+            hits: [PluginScene3DHit(node: "wheel", id: "toggle", label: "Play/Pause"),
+                   PluginScene3DHit(node: "wheel", id: "disabled", label: "Disabled", value: 1, enabled: false)],
+            fallback: .text(value: "fallback", style: .body, lines: nil))
+        let sceneActions = PluginPreviewArtifactBuilder.actions(
+            pluginID: "com.example.plugin", slots: [PluginSlotContent(slot: .center, node: .scene3d(scene))]).actions
+        precondition(sceneActions.map(\.actionID) == ["toggle", "disabled"])
+        precondition(sceneActions[0].enabled && !sceneActions[1].enabled)
+        precondition(sceneActions[1].value == .number(1))
         do { _ = try PluginPreviewArtifactWriter().writeSuccess(identity: identity, rawJSON: raw, screenshotURL: image, outputDirectory: out); fatalError("overwrote output") }
         catch PluginPreviewArtifactError.outputNotEmpty {}
         let bad = root.appendingPathComponent("bad.png")

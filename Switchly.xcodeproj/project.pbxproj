@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		020BFDAE3FB688562345AD6C /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58738EAF78774734195AB7BB /* AppLogger.swift */; };
+		0310FB07FDE05AF2366FC823 /* Scene3DInputSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE32DFED1A99BE34E9DECF0A /* Scene3DInputSession.swift */; };
 		0399533991E0D3B32546D963 /* SkyLightSpaceBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */; };
 		04E527BB9930BA81744FCB22 /* PluginPreferencesSection+Management.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5229299C311246FE54964A9D /* PluginPreferencesSection+Management.swift */; };
+		04E7508EC493790054976867 /* PluginScene3DDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB99453FF67966622923AC /* PluginScene3DDescriptor.swift */; };
 		0500E332023AB5469F060402 /* PluginPreviewWorkerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A23977B37EBEA98C4054D8E /* PluginPreviewWorkerSession.swift */; };
 		0581FBC3BFF31CB62FBDB5D2 /* DockPreviewPanelRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CED393B9343D3736721692 /* DockPreviewPanelRefreshTests.swift */; };
 		09BD2162E6B3702DE9EC40B5 /* WindowMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */; };
@@ -21,11 +23,15 @@
 		0CDB9415C6AF01F191F7743B /* DockPreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */; };
 		0D5D33312D630DEC557DBB80 /* PreviewTriggerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687A3E6FE32AE24C7E961024 /* PreviewTriggerMonitor.swift */; };
 		0D9330C204918BD9E1B1BCEA /* PluginHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA37ACF14FDF7DCCE220552E /* PluginHost.swift */; };
+		0E05AC7653F6B36B49810D24 /* Scene3DContractFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39A6BDE5A46774EC2D66258F /* Scene3DContractFixtureTests.swift */; };
 		0EA1E4834CCF195ECE4166EA /* PreviewTriggerMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */; };
 		0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */; };
+		0EE988D0917A3C1E7BF2F800 /* Scene3DPointerClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6DE22BD4523EBBA22BE4DE /* Scene3DPointerClassifierTests.swift */; };
 		107C15C9C3A17DE414DBCDFC /* DesignTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2438A75DB7A27F64D5D4EE4C /* DesignTokensTests.swift */; };
+		12410B2AE4A2073BEB74244C /* PluginScene3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9877862BF168D5EBF337F5FD /* PluginScene3DView.swift */; };
 		1260AE175CC5B873AC780E0B /* FourFingerHoldDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */; };
 		12995E670840DF9318E8A3E5 /* AppIconCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 585D0FDE5B7ED9200D75A40D /* AppIconCache.swift */; };
+		129D6549188E815A6919E0DC /* PluginSurfaceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC247AA1AA1DDAD3FD6625E /* PluginSurfaceRequest.swift */; };
 		137BC8984AC89E033BDC5621 /* SwitchlyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E029A87A20E2F1B6B9BC71AB /* SwitchlyUITests.swift */; };
 		139D992482CCDB0FB46C454E /* ThemeApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */; };
 		14C131F5A0F9159CF7FACA2A /* ThemeApplier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C274A02F4D1D5BBCF00240A /* ThemeApplier.swift */; };
@@ -37,9 +43,12 @@
 		17970177CADBF3DF3FB0AA57 /* PreferencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */; };
 		1A3FB074DE69877640E4C4C3 /* PluginSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */; };
 		1B23DE9DD03F57C4DBBFF9A2 /* DesktopGridPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */; };
+		1C7B5875AA822149652E7BB0 /* GLTFKit2IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80A5E775080EF6B6E142F82F /* GLTFKit2IntegrationTests.swift */; };
 		1CA10B8CCCD02079CBF3FF40 /* NativeCrystalContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71DD962701C1A4451D4506CE /* NativeCrystalContainer.swift */; };
+		20030E1BD57CC8C914D0E18D /* PluginSurfaceSignature.swift in Sources */ = {isa = PBXBuildFile; fileRef = C04E5324E0D7FBC19678E8F1 /* PluginSurfaceSignature.swift */; };
 		20AA715BA7A7E7EAA29FD172 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6740DE703ADA5B5025E36CB0 /* Workspace.swift */; };
 		21CBE3B666C51E715AB41FE8 /* PluginFileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA27D10772371E9573FC8678 /* PluginFileReader.swift */; };
+		2263EA8901D9D7B8CDC9B2AF /* Scene3DHitRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4498ADFBB594261D11543D /* Scene3DHitRouterTests.swift */; };
 		243B037A14206ADC0E41E561 /* PluginInstallerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1700B16A7499216E47D58C /* PluginInstallerTests.swift */; };
 		24D6AB2547DFFC675DC0152E /* WorkspaceBarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */; };
 		255A53C7D0488BE6696A47BF /* PluginUINode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB40B59170D7184D10C4D3 /* PluginUINode.swift */; };
@@ -56,7 +65,10 @@
 		2DD527A51A91C49F01542D1C /* GridPrerequisite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421C420FA2D63BC64F9C77D6 /* GridPrerequisite.swift */; };
 		2FBD22FF2B8C953E92F8931C /* PluginSlotSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = E31B6FF3B4E85D119F15C0CE /* PluginSlotSurface.swift */; };
 		30B6ACDD05EE5C7A68218356 /* SceneEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FF0001F6360C215F7DED5C /* SceneEvaluator.swift */; };
+		30E920EE9CE2460909BA73A8 /* CoreGraphicsPluginSurfaceRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48373F59723BB27CD4B70F5 /* CoreGraphicsPluginSurfaceRasterizer.swift */; };
 		312880D62EC09B821A1663B5 /* PreviewDockHoverLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5332545E0A8AB13853E20BD0 /* PreviewDockHoverLogic.swift */; };
+		31C5BB9123C3571171FF2F85 /* Scene3DAccessibilityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F3441F676C835EF85B4F8A /* Scene3DAccessibilityModel.swift */; };
+		32A2F278C61A75885C55A12F /* PluginSurfaceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1223835502CFCC4CAE8498 /* PluginSurfaceRenderer.swift */; };
 		32DEAC7A8D34BC0F9C95EF32 /* PluginConsoleLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D26DF606648C14604F8754 /* PluginConsoleLine.swift */; };
 		33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */; };
 		349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */; };
@@ -70,14 +82,17 @@
 		3960BC3B413490342F240D38 /* PreviewMockWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C65DDE9695C2E7DB0A531FB /* PreviewMockWindows.swift */; };
 		3BC8F841531D50863EF0599A /* PluginRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EBA602A293A20853A59E9F /* PluginRegistry.swift */; };
 		3BCE3F97F82CB56973A3733B /* PreviewStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */; };
+		3D385B0E9BBAD2B2DCB84A29 /* Scene3DHitTestAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5A06D489543030FC3000B2 /* Scene3DHitTestAdapter.swift */; };
 		3F73C153038AA97997BC1FAD /* GridPrerequisiteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 250B42D2879CDF76B3533567 /* GridPrerequisiteServiceTests.swift */; };
 		3F8A227C123726C6A5AEAFF9 /* PluginRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDBD58543D26CB798059E1C /* PluginRuntime.swift */; };
 		3FFAE120A11DC84A744DA82D /* AppActivationTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 627F924133A6E1643F00BEB0 /* AppActivationTracker.swift */; };
 		4017C16D01445F42A436A537 /* PreviewLauncherLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D1369177EAF19C952C2B05 /* PreviewLauncherLogic.swift */; };
 		40EF377A98A618E6698A9D2D /* ThumbnailSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A46EE486121EF5CD8A2635C /* ThumbnailSize.swift */; };
 		412A29A0FC1C89C1DF18EAF3 /* PreviewLauncherEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891EDF0E7D3991B4CB286236 /* PreviewLauncherEditorView.swift */; };
+		4149FCCD2E512F83E2B958E0 /* PluginSurfaceDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9205ECB1D4144319213E3D /* PluginSurfaceDrawing.swift */; };
 		4220C2F5C224A679C4DEDF5F /* PluginPreviewBuiltinMedia.json in Resources */ = {isa = PBXBuildFile; fileRef = 6A92F15FDFC00D2481F3B6F9 /* PluginPreviewBuiltinMedia.json */; };
 		42852FE3A1F39938F64B7885 /* PreviewLauncherAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D80F57A7E2C5AF898CC900 /* PreviewLauncherAccessibility.swift */; };
+		42A253C9B9F18ACCFB0767D2 /* PluginScene3DAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DE17001D1A09B9BBE071EA /* PluginScene3DAsset.swift */; };
 		42E090248740FFDC71FE92AE /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */; };
 		439324893176691BA6AF5D4C /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E128AF4509BB5B2FD19166CE /* AccessibilityService.swift */; };
 		44A2E88EA3EEB87EBC890A79 /* DockWindowCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FED07E05E4F83D086167821 /* DockWindowCard.swift */; };
@@ -87,7 +102,10 @@
 		4C018B8DF65064F72678C0BE /* OnlineWeatherPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 834F2190F7DEC17F777E1BC6 /* OnlineWeatherPreferences.swift */; };
 		4C6789C2DA56826ED31A0EEB /* PluginScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ACDD640F337FBD9F860BE1F /* PluginScene.swift */; };
 		4C8E285F29A903C506F74761 /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DC6D7B68AA6B89AFB14000 /* StatusBarView.swift */; };
+		4D8686EF311F3282D5AD650F /* Scene3DHitTestAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5A06D489543030FC3000B2 /* Scene3DHitTestAdapter.swift */; };
 		4D945D85A7042393A06DDBF4 /* PreviewReplicaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E270A7C7525E09B303AE2508 /* PreviewReplicaPanel.swift */; };
+		4DC656EFC6A0C7DFE4BB2EAF /* PluginScene3DAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5FA4FC59DCEBC04D212A3C /* PluginScene3DAssembly.swift */; };
+		4DF4775B688B8E38E0B2A67E /* PluginScene3DAssetLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4434B3DF2088E63B9EB8EFDE /* PluginScene3DAssetLoader.swift */; };
 		4E48AD9509F16D3180F2B27F /* GridPrerequisiteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BE468141F782C97C514E73 /* GridPrerequisiteTests.swift */; };
 		4F2CDC5321222012203BA669 /* DesktopSpaceServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAA37AFCB4B01F4F1AF1D53 /* DesktopSpaceServiceTests.swift */; };
 		4F319DCCBFF23D406715CD88 /* NotificationStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */; };
@@ -95,16 +113,21 @@
 		50A4C9B050CCCB28A04B988A /* GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F9D7FC2A842D77756AF533 /* GlassEffect.swift */; };
 		516DAFDA8F12E8738E11FEB1 /* GridOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */; };
 		5199B0E3B22217CBAEF9261E /* DesktopNavigationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D68B1BB3A196CF0B752C9B /* DesktopNavigationService.swift */; };
+		51BE1CEC18849BF8C7754927 /* GLTFKit2 in Frameworks */ = {isa = PBXBuildFile; productRef = 06210CCDF6AF6C5B988EEDCE /* GLTFKit2 */; };
 		5290FC79BCF59304009A9FC1 /* PluginPreviewArtifactModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202A82F92302766BE7DF9A75 /* PluginPreviewArtifactModels.swift */; };
 		53374F1E06FC574DFAEE4B55 /* PreviewDockLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAE04B75198D4E1889F2B47 /* PreviewDockLayout.swift */; };
 		549DCC5C314E323C70534CF8 /* WorkspacesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB73E8A8C3255DFB68679B69 /* WorkspacesViewModelTests.swift */; };
 		557D68547549ED39FDA46C08 /* ShortcutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */; };
 		56515D6849D58FE6F491AA7F /* GridPanelLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */; };
+		56AA945ECACCE75BFBF08503 /* PluginScene3DIPodInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5825AE67EB3FECA84EA4F939 /* PluginScene3DIPodInteractionTests.swift */; };
 		56E3A56517915441578539FF /* WorkspaceBarRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DD52312002F9FA54F893558 /* WorkspaceBarRefreshTests.swift */; };
 		581A749B78531737F567CD95 /* SwitchlyPluginPreviewWorker in Resources */ = {isa = PBXBuildFile; fileRef = 41FDB677E6083704E303F178 /* SwitchlyPluginPreviewWorker */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		582864A43B78E47E0255B2D8 /* PluginSurfaceRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0777FD7DFBA77E60D0E3C1 /* PluginSurfaceRendererTests.swift */; };
 		58AF36F0B0E5A06841964EDF /* PluginAssetBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A441DA7C1D341308D995E6C0 /* PluginAssetBudgetTests.swift */; };
 		5965D574F95974E9CCDD08FB /* PluginUINode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB40B59170D7184D10C4D3 /* PluginUINode.swift */; };
+		59F4CF1C56F43AF0D571F07D /* GLTFKit2 in Frameworks */ = {isa = PBXBuildFile; productRef = FE6460E9A98CE02474C3E8A2 /* GLTFKit2 */; };
 		5ACA21E551EF05A37C063BF7 /* PluginPreviewWorkerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 322D0D38FA253ACEEB6CC192 /* PluginPreviewWorkerProtocol.swift */; };
+		5B37AE9B75C5594B45B5704F /* PluginScene3DDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB99453FF67966622923AC /* PluginScene3DDescriptor.swift */; };
 		5B9F757E94BC377A96C08E0E /* GridPrerequisiteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6893DEFCCFFFB529574170B /* GridPrerequisiteViewModel.swift */; };
 		5C73A2306744312FB4A6556C /* PreviewLauncherModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 492642C496D068F999C0C217 /* PreviewLauncherModel.swift */; };
 		5CE692786849C32EAE6B3C13 /* PreviewMockDockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89D9DE01BC134D679A777067 /* PreviewMockDockView.swift */; };
@@ -114,6 +137,7 @@
 		5D7CC19CB2A8650CF28C160E /* PluginUINode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EB40B59170D7184D10C4D3 /* PluginUINode.swift */; };
 		5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */; };
 		5E2D82D4E87877780699A6B8 /* PreviewLauncherSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E072F86C6583776C0106965 /* PreviewLauncherSidebarView.swift */; };
+		5EBFE8166F053C491D2C215F /* Scene3DAccessibilityModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0052ED2BCBC4C98A5B6E0EAF /* Scene3DAccessibilityModelTests.swift */; };
 		5F8646499C553D59B1EFAB86 /* PluginPreviewPackageHasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D167B2F3323C5CDA2AA5BA0D /* PluginPreviewPackageHasher.swift */; };
 		5FA543B9C254D62E25D6E1D4 /* DockPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B7824198BBB99C36B66461 /* DockPreviewView.swift */; };
 		5FE99BC07558FBCBDD9CAF1F /* ThumbnailLoadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F430FBBEF6553568F20C9D9 /* ThumbnailLoadState.swift */; };
@@ -122,17 +146,25 @@
 		624687C20F919D88169C9299 /* PreviewScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B9A3A2125D75888717ADE1 /* PreviewScenario.swift */; };
 		6313CE2EE84C1E8C72CF13AC /* PluginPreviewNativeDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4E007C8703B1F76B550963 /* PluginPreviewNativeDriver.swift */; };
 		641505FD43ABC11B089FF553 /* PluginManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3731E6CAD353BCD2A1663E0 /* PluginManifest.swift */; };
+		643C30DFE99F9B0B2FD1928A /* PluginScene3DController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD92630117464A83BE2610C /* PluginScene3DController.swift */; };
+		6453255F175DF5C1E7D385E3 /* PluginSurfaceTexture.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD63D758288601FDBAACB03 /* PluginSurfaceTexture.swift */; };
+		6491A5EEB03AAE779ADB6168 /* PluginScene3DDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB99453FF67966622923AC /* PluginScene3DDescriptor.swift */; };
 		65996F0D789B2455B3F83A18 /* SwitchlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */; };
 		674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */; };
+		6824912D65C38EF53D85BEBD /* Scene3DAccessibilityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F3441F676C835EF85B4F8A /* Scene3DAccessibilityModel.swift */; };
 		69AB47854A41F9F08B18CADB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4E0E8FE4D53097A66445F548 /* Assets.xcassets */; };
 		6B0C967C9567C91B5E0FE76F /* StatisticsChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */; };
 		6CBAA46EEEABA09F7860EC6C /* EnumsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D3BA644980C96412DADE54F /* EnumsTests.swift */; };
+		6D60F1C8F6976E6042A58890 /* PluginScene3DAssetCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714A347C989B61E7853F090A /* PluginScene3DAssetCacheTests.swift */; };
 		6D66A44DCAF2CFC8F266309C /* PluginGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290E7694EDAC0E810F258F5E /* PluginGrant.swift */; };
 		6E4E83CA9748AD21074F4735 /* ThumbnailDiskCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */; };
 		6F560B916DBAEEBEC7FEFCA5 /* PluginRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FDBD58543D26CB798059E1C /* PluginRuntime.swift */; };
 		6FD480D3CA014E0A70E5C244 /* en.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 95256075698122B773FCA946 /* en.lproj */; };
 		6FDC73A8195B5E1DCED2DA5F /* WindowSwitchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EECBABDCC48455985B5E3C /* WindowSwitchService.swift */; };
+		70C3BD859A501889AF95FDAD /* PluginSurfaceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC247AA1AA1DDAD3FD6625E /* PluginSurfaceRequest.swift */; };
 		718CB4B1F80D0A03803AC927 /* GridHUDViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6BAA4649436C3C22EAAA03E /* GridHUDViewModel.swift */; };
+		72FB001754FD36A1D35F5342 /* PluginScene3DAssetCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064F30129805F4F90C893ED0 /* PluginScene3DAssetCache.swift */; };
+		72FB8AC8FDC000A8615664D5 /* PluginSurfaceRasterizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA264DA178DB7A44BE4C932C /* PluginSurfaceRasterizing.swift */; };
 		7325B1D7F9DDC54C1C9A0690 /* GridOverviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */; };
 		7326864C328885CC55E25D34 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1CF970731577ECF8B051637 /* Assets.xcassets */; };
 		7421BBBB5DC93D163DDC2965 /* PluginPackageValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2760466C86A743DE701B4 /* PluginPackageValidator.swift */; };
@@ -145,6 +177,9 @@
 		775DDFD010B842421511E6F1 /* GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41F9D7FC2A842D77756AF533 /* GlassEffect.swift */; };
 		78303BF3CD027E13C0717F56 /* PluginStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065CFA59BAA97E4133D79FE4 /* PluginStorage.swift */; };
 		78C77E295F7654AAC3B671AC /* StatisticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */; };
+		79987978FAA4008B55065592 /* PluginScene3DAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DE17001D1A09B9BBE071EA /* PluginScene3DAsset.swift */; };
+		79CCD4D6603FB72C505F523D /* Scene3DHitRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461C425980DAD91FFF106BE /* Scene3DHitRouter.swift */; };
+		7B18672091938E21826B0E65 /* CoreGraphicsPluginSurfaceRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48373F59723BB27CD4B70F5 /* CoreGraphicsPluginSurfaceRasterizer.swift */; };
 		7BD89AFAC9DE588F75A61327 /* MonitoredAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B863AF7408FCE0FFF4B8F61 /* MonitoredAppTests.swift */; };
 		7C69F2CE54DA3EA2C419C977 /* AllSpacesIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C2BCB63C040B6B4271DD2AE /* AllSpacesIntegrationTests.swift */; };
 		7CE92B9881FC19BB2489D2CF /* PreviewViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 241C233749CBA2C47224E65F /* PreviewViewModel.swift */; };
@@ -179,10 +214,14 @@
 		94E51B873754304F5C6973BC /* DefaultScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE15E641C88AF3EAC9DBA315 /* DefaultScenario.swift */; };
 		952EC9DC569A3E3414EF4779 /* DockWindowCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FED07E05E4F83D086167821 /* DockWindowCard.swift */; };
 		95622DD50AC53EFDA8FF1F71 /* PreviewDockPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B17A9A95A81A1713DD7FAE /* PreviewDockPanelView.swift */; };
+		9584E219C24E0123D4C8CEAC /* GLBPreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED970742264747DCED87418E /* GLBPreflight.swift */; };
 		9628D8A3A7F638165A7BEBC3 /* PluginPreviewInspect.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12FCD18D257E0236A9E35CD /* PluginPreviewInspect.swift */; };
+		96470FACEE8A33FEBC6122A8 /* PluginSurfaceTexture.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD63D758288601FDBAACB03 /* PluginSurfaceTexture.swift */; };
 		983D139B7130194FFB794D25 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6740DE703ADA5B5025E36CB0 /* Workspace.swift */; };
+		9AF7D71AEB253FB633D8139B /* Scene3DCameraControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D658A8ED78223A3CE825276 /* Scene3DCameraControllerTests.swift */; };
 		9C83EB8E1730DD7331B6096D /* ExternalPluginIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB4907F42A6D8A17408C885 /* ExternalPluginIntegrationTests.swift */; };
 		9DBFD15E6E930FFCB1C95B85 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEDD2810190844B35AF5D61 /* AppSettings.swift */; };
+		9DF0F7C83BC7E4A026AF20F9 /* Scene3DCameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7194D580136054546F66D21E /* Scene3DCameraController.swift */; };
 		9E2F6C9478E07EB44021ED67 /* SwipeDirectionClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */; };
 		9E2FA5DCDBD20C995796CD33 /* DesktopNavigationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B327F0F758209F4FAF26918 /* DesktopNavigationServiceTests.swift */; };
 		9F4403A6356D3C66EA5CB406 /* UsageStatisticsEfficiency.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BC7F606BB1860128BCCCC5 /* UsageStatisticsEfficiency.swift */; };
@@ -193,11 +232,13 @@
 		A072D06E5B68A96A4DCADA1E /* StatisticsEfficiencyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5679F50D57C72293C772C0EF /* StatisticsEfficiencyView.swift */; };
 		A174EF356A7E1CE551E0E288 /* DesktopGridCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */; };
 		A22DC9C6CF45CD31ED6E8C1A /* PluginScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ACDD640F337FBD9F860BE1F /* PluginScene.swift */; };
+		A258942078577A3C10DE1C7D /* PluginSurfaceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC247AA1AA1DDAD3FD6625E /* PluginSurfaceRequest.swift */; };
 		A261FF7B76B4EF9CD41D191F /* PreviewDockHoverController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 598EC9A19A50BD0CD76B4B67 /* PreviewDockHoverController.swift */; };
 		A4696C2EA72C0B8B284CA098 /* OnlineWeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7869AA9506E03FE200959D38 /* OnlineWeatherService.swift */; };
 		A4C6BA68425E77517DCE454B /* DockGlassRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56E257EBC8C0FB7879E7D63D /* DockGlassRenderingTests.swift */; };
 		A5105AB477196D0D6392696C /* PluginSceneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */; };
 		A52D55EC6F37CD0195757012 /* GridPrerequisiteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */; };
+		A5709969C82737D454C22E38 /* Scene3DHitTestAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA9B6601FB99D2A13DF9C5C6 /* Scene3DHitTestAdapterTests.swift */; };
 		A5B6DCFD03AE0EDA6856C9CF /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = B6472048A84916C39E9693F6 /* HotKey */; };
 		A6DE96D91D22B5C7DA0A5A1B /* MediaBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385979B435CF361A00665A46 /* MediaBridge.swift */; };
 		A7247E24A7B75417318BC00B /* WindowSystemIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49CFADAD909F280F349847B /* WindowSystemIdentity.swift */; };
@@ -206,9 +247,11 @@
 		AA62BAD3C5A9CEF7EE8B615E /* MotionTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AA59073B11D0CDFB620270 /* MotionTokens.swift */; };
 		AA7BEAF963CB36DDC1C4FA10 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3337C977CD2AF7514192B081 /* DesignTokens.swift */; };
 		AA9419A4F30A62D9FFFEBC58 /* SettingsHelpButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED4EA7CB3EBAB16E3821C56 /* SettingsHelpButton.swift */; };
+		AB69CA4F292CC4A931A80847 /* PluginScene3DControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434685C27B7C2BE83D8F1429 /* PluginScene3DControllerTests.swift */; };
 		AD00BF4A25EEBFC308259DC0 /* PluginSceneDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CE51AB1199542766F6B6CD /* PluginSceneDrawing.swift */; };
 		AD10121E29DB38A523BAA187 /* PluginConsoleLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19D26DF606648C14604F8754 /* PluginConsoleLine.swift */; };
 		AE49D1A312A4DB8AB184A0B4 /* PluginPreviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4E4F5FC309E107602408E1 /* PluginPreviewSession.swift */; };
+		AF76CB9C47E49DE46F011412 /* Scene3DPointerClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991BD204CCC6CEFCB2175F3F /* Scene3DPointerClassifier.swift */; };
 		B09D2790372896E8A13F7090 /* PluginGrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290E7694EDAC0E810F258F5E /* PluginGrant.swift */; };
 		B32AACF7C6D7DA1385B8F872 /* PluginLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3FA3BA196C23A2260E4A0 /* PluginLifecycleTests.swift */; };
 		B350218760B76CCF7D5CB18C /* PluginPreviewFrameCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE57EDC38B0A61357D53D867 /* PluginPreviewFrameCodec.swift */; };
@@ -223,9 +266,15 @@
 		BC4F42FFD482D48DDFE86802 /* PluginPreferencesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429241B0962218A3BBA8A97F /* PluginPreferencesSection.swift */; };
 		BC8FB069C8563D3CDF42C047 /* UsageStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA61A7C92B5FC46B8B7D582B /* UsageStatisticsService.swift */; };
 		BCE3A9A312B74260D0089A66 /* PluginPreviewProcessTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF328BA5F01B73E400A5039E /* PluginPreviewProcessTypes.swift */; };
+		BD37A1B477A80CB7F483F476 /* Scene3DPointerClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991BD204CCC6CEFCB2175F3F /* Scene3DPointerClassifier.swift */; };
 		BF5217ACAFA0F8E24B46B4EB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA8089BA53B1D1CCC78BEC2 /* AppDelegate.swift */; };
+		BFDC08C31D89C7FCA698BE53 /* PluginPreviewCaptureSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D0A5063255B895BE586DD7C /* PluginPreviewCaptureSurface.swift */; };
+		C01B786CA9F895C21F491886 /* Scene3DHitRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1461C425980DAD91FFF106BE /* Scene3DHitRouter.swift */; };
+		C055606043DC9FE0EB169E9B /* PluginSurfaceSignature.swift in Sources */ = {isa = PBXBuildFile; fileRef = C04E5324E0D7FBC19678E8F1 /* PluginSurfaceSignature.swift */; };
 		C23BF8F8B71FBE85F7A8628B /* GridThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96510776297C69649DA4F443 /* GridThumbnailView.swift */; };
 		C2911F7073C505A3C3CE01C4 /* PluginRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EBA602A293A20853A59E9F /* PluginRegistry.swift */; };
+		C29D20A57B686488A5C72112 /* GLBPreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED970742264747DCED87418E /* GLBPreflight.swift */; };
+		C31D00B9EF78087FBD60C243 /* PluginSurfaceDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9205ECB1D4144319213E3D /* PluginSurfaceDrawing.swift */; };
 		C34CAEA18AA0D479AE954229 /* PluginSlotSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = E31B6FF3B4E85D119F15C0CE /* PluginSlotSurface.swift */; };
 		C60ECB9102AA8F46C302C7FF /* DockPluginOverlayModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D4E0170008B3E39DCAAC0B /* DockPluginOverlayModel.swift */; };
 		C894A4B29F55E63242E6207A /* OnlineWeatherSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */; };
@@ -236,6 +285,7 @@
 		CC2F70B1D38D49A3904205C7 /* zh-Hans.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 8C454449F43BF62BEDCE15AD /* zh-Hans.lproj */; };
 		CC764C95FBC1A3E5F0AE9375 /* PluginPreviewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B6359AF089A8884AD486143 /* PluginPreviewState.swift */; };
 		CD3E7E5608B3CEB73C313AEE /* PreviewStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */; };
+		CE461C8CE87F109E290E829E /* PluginScene3DAssetLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4434B3DF2088E63B9EB8EFDE /* PluginScene3DAssetLoader.swift */; };
 		CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */; };
 		D00B5AC3244E006E5B970959 /* GridPrerequisiteViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E8B69F55E3915AA564A11E /* GridPrerequisiteViewModelTests.swift */; };
 		D0453BCE9645F02AC3F3C026 /* Desktop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3E2C79236802A9D96C8612 /* Desktop.swift */; };
@@ -251,6 +301,7 @@
 		D44F5C97B2215F013DEA975A /* ThumbnailDiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */; };
 		D49140E553C9742B1C7FCCF0 /* PluginPackageValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B2760466C86A743DE701B4 /* PluginPackageValidator.swift */; };
 		D4F117D0913EE5B7792BF96D /* MediaBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385979B435CF361A00665A46 /* MediaBridge.swift */; };
+		D5A39A6C8EEED5ABAE2215F3 /* PluginScene3DDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19CD962FCFE0697E8B8046DC /* PluginScene3DDescriptorTests.swift */; };
 		D6B0300B14893C779872D146 /* DockLayoutSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AD5F5DC076F55D773A14D1C /* DockLayoutSpec.swift */; };
 		D6F5633006C8795C401614BD /* PluginManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3731E6CAD353BCD2A1663E0 /* PluginManifest.swift */; };
 		D8428B6E4847EB4A802F4025 /* PluginStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065CFA59BAA97E4133D79FE4 /* PluginStorage.swift */; };
@@ -261,6 +312,8 @@
 		DCC611909E026C6CCBED6F33 /* OnlineWeatherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */; };
 		DCF444870A420771BB601C2B /* ThumbnailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34689921552D03B9A0939D3 /* ThumbnailService.swift */; };
 		DD2618DAEF66223C90A57743 /* PluginPreviewStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156D163E15282FCBFB613474 /* PluginPreviewStep.swift */; };
+		DD7336E6D0C8498A8D96C26E /* PluginScene3DAssetCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064F30129805F4F90C893ED0 /* PluginScene3DAssetCache.swift */; };
+		DE7334D904AD8937F77F42A1 /* PluginScene3DAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5FA4FC59DCEBC04D212A3C /* PluginScene3DAssembly.swift */; };
 		DE769BCF31B7EE7149B31CAD /* PreviewCommandLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1099A2E7FA5A95FF4E2F32 /* PreviewCommandLine.swift */; };
 		E0014664397567828FF3D23A /* PluginSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C9FFAA0E50CCA50D6D6F5A /* PluginSceneView.swift */; };
 		E097DE1DA795AC819C571E38 /* PluginSceneDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CE51AB1199542766F6B6CD /* PluginSceneDrawing.swift */; };
@@ -269,13 +322,22 @@
 		E252E12E2A360DFDEC5A2950 /* PluginPreviewPackageWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0095BADFAB543C9A688B6625 /* PluginPreviewPackageWatcher.swift */; };
 		E2553B4A97E3BA40CBF8A007 /* PreviewHotspotEdge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86E6C2CE23A3834E6FEAA800 /* PreviewHotspotEdge.swift */; };
 		E261C9AD00EE827BE170FF1C /* AppIconCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 585D0FDE5B7ED9200D75A40D /* AppIconCache.swift */; };
+		E3BDA2427AD410C1AED391FA /* GLBPreflight.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED970742264747DCED87418E /* GLBPreflight.swift */; };
+		E3C6C699D64BD5C6C77B5217 /* Scene3DInputSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A915379DF7009AFC1BE595BA /* Scene3DInputSessionTests.swift */; };
+		E5A7A8BCD9EE97516408F88F /* Scene3DInputSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE32DFED1A99BE34E9DECF0A /* Scene3DInputSession.swift */; };
+		E5DC75FB7D8A29E19E998638 /* PluginScene3DController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD92630117464A83BE2610C /* PluginScene3DController.swift */; };
 		E5E44B452D354BB50FB41429 /* PluginInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1CE923152DEEFC38FCF4BC7 /* PluginInstaller.swift */; };
 		E5F729C07BD850AF1C104CE5 /* ShortcutPrefix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D718DDF3DF82D909F59365 /* ShortcutPrefix.swift */; };
 		E8123D94AC1AEAE779F20734 /* PluginFileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA27D10772371E9573FC8678 /* PluginFileReader.swift */; };
 		E9677126E75207A7ACCF79C5 /* OnlineWeatherSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB26369A0DF93778834A7F3C /* OnlineWeatherSettings.swift */; };
 		E9DE129852F828C142F543D6 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B39BEC7FA3384FA15C08FF3B /* StatisticsView.swift */; };
+		EBE6E7E543310F8D079ECD8D /* GLBPreflightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C693AEE6A2A0A93B749256 /* GLBPreflightTests.swift */; };
 		EC78FC6D8059F42C1E4CAD53 /* WindowInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A6A58BEAD9ACBF4698AC7 /* WindowInfo.swift */; };
+		EE4C9AD81C76918A40FAD048 /* Scene3DCameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7194D580136054546F66D21E /* Scene3DCameraController.swift */; };
+		EF593B5035B005095D634D42 /* PluginScene3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9877862BF168D5EBF337F5FD /* PluginScene3DView.swift */; };
 		F0BB21A07793A02139702B39 /* GlassAppearanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A8B16C69B8E7ED74E9F2CEA /* GlassAppearanceTests.swift */; };
+		F107CAAB35778E8077238478 /* PluginSurfaceRasterizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA264DA178DB7A44BE4C932C /* PluginSurfaceRasterizing.swift */; };
+		F15A6FD499DED240E0DFD1AD /* PluginSurfaceRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1223835502CFCC4CAE8498 /* PluginSurfaceRenderer.swift */; };
 		F1E7E91E4EFD3167DB313986 /* DesktopGridPaletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A9F687B26508A8F5DABF84 /* DesktopGridPaletteTests.swift */; };
 		F27C095E9B00CC976EA000B8 /* GridPanelLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */; };
 		F2A2EB753395BD0DA61C7DCC /* DockPreviewRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD99AD78798255193ECC585B /* DockPreviewRefreshTests.swift */; };
@@ -284,6 +346,7 @@
 		F890568428257DA5AC6E2DDD /* PreviewWorkerMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFFEAAF2B14BA48E1C508472 /* PreviewWorkerMain.swift */; };
 		FC4B737FDDAF385608C00299 /* PreviewViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */; };
 		FC4C0508570510FE1B9552B0 /* NotificationStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */; };
+		FC818D2A07F6A62834FD616E /* PluginScene3DAssemblyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32FEDBF7F7A379A83C0B80BF /* PluginScene3DAssemblyTests.swift */; };
 		FF32458B66D59F2EAC0A6AB2 /* GridHUDPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A3E053A9776181F04E2644 /* GridHUDPanel.swift */; };
 /* End PBXBuildFile section */
 
@@ -312,22 +375,27 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0052ED2BCBC4C98A5B6E0EAF /* Scene3DAccessibilityModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DAccessibilityModelTests.swift; sourceTree = "<group>"; };
 		0095BADFAB543C9A688B6625 /* PluginPreviewPackageWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewPackageWatcher.swift; sourceTree = "<group>"; };
 		00D1369177EAF19C952C2B05 /* PreviewLauncherLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewLauncherLogic.swift; sourceTree = "<group>"; };
 		0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FourFingerHoldDetectorTests.swift; sourceTree = "<group>"; };
 		03BADD79FCDF554B4529EDB4 /* WindowTrafficLights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTrafficLights.swift; sourceTree = "<group>"; };
+		064F30129805F4F90C893ED0 /* PluginScene3DAssetCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAssetCache.swift; sourceTree = "<group>"; };
 		065CFA59BAA97E4133D79FE4 /* PluginStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginStorage.swift; sourceTree = "<group>"; };
 		08E40F96DE3DBB325B1B6BC3 /* GridPrerequisiteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteService.swift; sourceTree = "<group>"; };
 		0A46EE486121EF5CD8A2635C /* ThumbnailSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailSize.swift; sourceTree = "<group>"; };
 		0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModelTests.swift; sourceTree = "<group>"; };
 		0BAE04B75198D4E1889F2B47 /* PreviewDockLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewDockLayout.swift; sourceTree = "<group>"; };
 		0CAD41B17CC63DF88E0854E8 /* ShortcutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutService.swift; sourceTree = "<group>"; };
+		0D658A8ED78223A3CE825276 /* Scene3DCameraControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DCameraControllerTests.swift; sourceTree = "<group>"; };
 		1385A2FC8BD8C1C72B6F66A8 /* ThumbnailDiskCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCacheTests.swift; sourceTree = "<group>"; };
+		1461C425980DAD91FFF106BE /* Scene3DHitRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DHitRouter.swift; sourceTree = "<group>"; };
 		156D163E15282FCBFB613474 /* PluginPreviewStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewStep.swift; sourceTree = "<group>"; };
 		1586F73A4F525E88C759A1C8 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		183CF32334EEEE9193113AEF /* DockPreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewPanel.swift; sourceTree = "<group>"; };
 		188BB50FFFB8FB76CC68C1D0 /* DockPreviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewViewModel.swift; sourceTree = "<group>"; };
 		18EB40B59170D7184D10C4D3 /* PluginUINode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginUINode.swift; sourceTree = "<group>"; };
+		19CD962FCFE0697E8B8046DC /* PluginScene3DDescriptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DDescriptorTests.swift; sourceTree = "<group>"; };
 		19D26DF606648C14604F8754 /* PluginConsoleLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginConsoleLine.swift; sourceTree = "<group>"; };
 		1A150EFC35E5F5EDD6F0524B /* DesktopSpaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSpaceService.swift; sourceTree = "<group>"; };
 		1A23977B37EBEA98C4054D8E /* PluginPreviewWorkerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewWorkerSession.swift; sourceTree = "<group>"; };
@@ -344,16 +412,22 @@
 		279A55BC2D30608EC032F116 /* AppSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsTests.swift; sourceTree = "<group>"; };
 		28FF0001F6360C215F7DED5C /* SceneEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneEvaluator.swift; sourceTree = "<group>"; };
 		290E7694EDAC0E810F258F5E /* PluginGrant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginGrant.swift; sourceTree = "<group>"; };
+		2A1223835502CFCC4CAE8498 /* PluginSurfaceRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceRenderer.swift; sourceTree = "<group>"; };
+		2B5FA4FC59DCEBC04D212A3C /* PluginScene3DAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAssembly.swift; sourceTree = "<group>"; };
 		2EC2911083058E80E93458EC /* SwitchlyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwitchlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2F20C0A8D857BAD965EEE6CD /* SystemGestureInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemGestureInterceptor.swift; sourceTree = "<group>"; };
+		2FC247AA1AA1DDAD3FD6625E /* PluginSurfaceRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceRequest.swift; sourceTree = "<group>"; };
 		322D0D38FA253ACEEB6CC192 /* PluginPreviewWorkerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewWorkerProtocol.swift; sourceTree = "<group>"; };
+		32FEDBF7F7A379A83C0B80BF /* PluginScene3DAssemblyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAssemblyTests.swift; sourceTree = "<group>"; };
 		3337C977CD2AF7514192B081 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanelLayoutTests.swift; sourceTree = "<group>"; };
 		385979B435CF361A00665A46 /* MediaBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaBridge.swift; sourceTree = "<group>"; };
+		39A6BDE5A46774EC2D66258F /* Scene3DContractFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DContractFixtureTests.swift; sourceTree = "<group>"; };
 		3AB4907F42A6D8A17408C885 /* ExternalPluginIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPluginIntegrationTests.swift; sourceTree = "<group>"; };
 		3ACDD640F337FBD9F860BE1F /* PluginScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene.swift; sourceTree = "<group>"; };
 		3AE6E588E870018AC7D8DB1C /* DesktopGridPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPreferencesSection.swift; sourceTree = "<group>"; };
 		3C2BCB63C040B6B4271DD2AE /* AllSpacesIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllSpacesIntegrationTests.swift; sourceTree = "<group>"; };
+		3D0A5063255B895BE586DD7C /* PluginPreviewCaptureSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewCaptureSurface.swift; sourceTree = "<group>"; };
 		3D43D871338D3C1938D8ABD7 /* TrackpadGestureServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackpadGestureServiceTests.swift; sourceTree = "<group>"; };
 		3DEDD2810190844B35AF5D61 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		3E3E2C79236802A9D96C8612 /* Desktop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Desktop.swift; sourceTree = "<group>"; };
@@ -367,12 +441,15 @@
 		42493C0F49C6551919403DCB /* FourFingerHoldDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FourFingerHoldDetector.swift; sourceTree = "<group>"; };
 		424C5873B26CA72D29E943BC /* PreviewJSONTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewJSONTreeView.swift; sourceTree = "<group>"; };
 		429241B0962218A3BBA8A97F /* PluginPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreferencesSection.swift; sourceTree = "<group>"; };
+		434685C27B7C2BE83D8F1429 /* PluginScene3DControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DControllerTests.swift; sourceTree = "<group>"; };
+		4434B3DF2088E63B9EB8EFDE /* PluginScene3DAssetLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAssetLoader.swift; sourceTree = "<group>"; };
 		46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewModelTests.swift; sourceTree = "<group>"; };
 		46EBA602A293A20853A59E9F /* PluginRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginRegistry.swift; sourceTree = "<group>"; };
 		492642C496D068F999C0C217 /* PreviewLauncherModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewLauncherModel.swift; sourceTree = "<group>"; };
 		4B327F0F758209F4FAF26918 /* DesktopNavigationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNavigationServiceTests.swift; sourceTree = "<group>"; };
 		4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPanelTests.swift; sourceTree = "<group>"; };
 		4C8009838D763DF1E6325B1F /* StatisticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewModel.swift; sourceTree = "<group>"; };
+		4C9205ECB1D4144319213E3D /* PluginSurfaceDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceDrawing.swift; sourceTree = "<group>"; };
 		4CE9DD90384E7865D8151FA6 /* UsageStatisticsPreferencesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsPreferencesSection.swift; sourceTree = "<group>"; };
 		4DF94C866C07B2D3092D5372 /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
 		4E0E8FE4D53097A66445F548 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -386,6 +463,7 @@
 		56E257EBC8C0FB7879E7D63D /* DockGlassRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockGlassRenderingTests.swift; sourceTree = "<group>"; };
 		57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMatchRulesTests.swift; sourceTree = "<group>"; };
 		57C6D1F998B7FE20E7E9E79D /* PluginOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginOverlayView.swift; sourceTree = "<group>"; };
+		5825AE67EB3FECA84EA4F939 /* PluginScene3DIPodInteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DIPodInteractionTests.swift; sourceTree = "<group>"; };
 		585D0FDE5B7ED9200D75A40D /* AppIconCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconCache.swift; sourceTree = "<group>"; };
 		58738EAF78774734195AB7BB /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
 		58CED393B9343D3736721692 /* DockPreviewPanelRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewPanelRefreshTests.swift; sourceTree = "<group>"; };
@@ -409,6 +487,8 @@
 		6C19BAC5C9EF47AC41565D78 /* DockLayoutSpecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockLayoutSpecTests.swift; sourceTree = "<group>"; };
 		7061442B45449AF9979BA869 /* PreviewLauncherMockDockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewLauncherMockDockView.swift; sourceTree = "<group>"; };
 		70EECBABDCC48455985B5E3C /* WindowSwitchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSwitchService.swift; sourceTree = "<group>"; };
+		714A347C989B61E7853F090A /* PluginScene3DAssetCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAssetCacheTests.swift; sourceTree = "<group>"; };
+		7194D580136054546F66D21E /* Scene3DCameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DCameraController.swift; sourceTree = "<group>"; };
 		71B17A9A95A81A1713DD7FAE /* PreviewDockPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewDockPanelView.swift; sourceTree = "<group>"; };
 		71DD962701C1A4451D4506CE /* NativeCrystalContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCrystalContainer.swift; sourceTree = "<group>"; };
 		755DC04F93DF4634A31FF1F9 /* PreviewStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStrategy.swift; sourceTree = "<group>"; };
@@ -419,6 +499,7 @@
 		7DB20CFF641BFD4F552A0DDB /* SwitchlyPluginPreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwitchlyPluginPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DCB31CC9374434EBD072ECF /* PreferencesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesViewModel.swift; sourceTree = "<group>"; };
 		7FCE7362D3D2B1B5ED72BDE3 /* WindowSwitchFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSwitchFeedback.swift; sourceTree = "<group>"; };
+		80A5E775080EF6B6E142F82F /* GLTFKit2IntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLTFKit2IntegrationTests.swift; sourceTree = "<group>"; };
 		81E8B69F55E3915AA564A11E /* GridPrerequisiteViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPrerequisiteViewModelTests.swift; sourceTree = "<group>"; };
 		834F2190F7DEC17F777E1BC6 /* OnlineWeatherPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherPreferences.swift; sourceTree = "<group>"; };
 		8407BA3473DB8C1A7DB8A4E7 /* DockHoverMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockHoverMonitor.swift; sourceTree = "<group>"; };
@@ -441,9 +522,13 @@
 		96510776297C69649DA4F443 /* GridThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridThumbnailView.swift; sourceTree = "<group>"; };
 		96DD14FAEB036825353009EA /* MultitouchSupportBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultitouchSupportBridge.swift; sourceTree = "<group>"; };
 		98051CF5E45E299CB7A79C78 /* NotificationStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationStrategy.swift; sourceTree = "<group>"; };
+		9877862BF168D5EBF337F5FD /* PluginScene3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DView.swift; sourceTree = "<group>"; };
+		991BD204CCC6CEFCB2175F3F /* Scene3DPointerClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DPointerClassifier.swift; sourceTree = "<group>"; };
+		9A0777FD7DFBA77E60D0E3C1 /* PluginSurfaceRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceRendererTests.swift; sourceTree = "<group>"; };
 		9A1FD713D7B152021DB86947 /* OnlineWeatherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineWeatherTests.swift; sourceTree = "<group>"; };
 		9A938B3D72FC8AB1E6C161FA /* GridOverviewViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModel.swift; sourceTree = "<group>"; };
 		9B6359AF089A8884AD486143 /* PluginPreviewState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewState.swift; sourceTree = "<group>"; };
+		9CEB99453FF67966622923AC /* PluginScene3DDescriptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DDescriptor.swift; sourceTree = "<group>"; };
 		9E530A8BB2B60BBC8D7DB33D /* ThumbnailDiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailDiskCache.swift; sourceTree = "<group>"; };
 		9E9523C9F63B42E9474F3776 /* PluginPreviewWorkerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewWorkerService.swift; sourceTree = "<group>"; };
 		9F1700B16A7499216E47D58C /* PluginInstallerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginInstallerTests.swift; sourceTree = "<group>"; };
@@ -458,9 +543,11 @@
 		A60A2E958ABBD35836FC322F /* PluginStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginStorageTests.swift; sourceTree = "<group>"; };
 		A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		A7C9FFAA0E50CCA50D6D6F5A /* PluginSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSceneView.swift; sourceTree = "<group>"; };
+		A915379DF7009AFC1BE595BA /* Scene3DInputSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DInputSessionTests.swift; sourceTree = "<group>"; };
 		AA37ACF14FDF7DCCE220552E /* PluginHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginHost.swift; sourceTree = "<group>"; };
 		AA61A7C92B5FC46B8B7D582B /* UsageStatisticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsService.swift; sourceTree = "<group>"; };
 		AAF9AC54C2BA7BEEA61A8C65 /* InstalledAppsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledAppsService.swift; sourceTree = "<group>"; };
+		ABD92630117464A83BE2610C /* PluginScene3DController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DController.swift; sourceTree = "<group>"; };
 		B1CE923152DEEFC38FCF4BC7 /* PluginInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginInstaller.swift; sourceTree = "<group>"; };
 		B1E1DF671976C5685BB15FC9 /* TrackpadGestureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackpadGestureService.swift; sourceTree = "<group>"; };
 		B2AF48D72DDB1136EC86020A /* GridPanelLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanelLayout.swift; sourceTree = "<group>"; };
@@ -474,6 +561,8 @@
 		BCAA37AFCB4B01F4F1AF1D53 /* DesktopSpaceServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSpaceServiceTests.swift; sourceTree = "<group>"; };
 		BE57EDC38B0A61357D53D867 /* PluginPreviewFrameCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewFrameCodec.swift; sourceTree = "<group>"; };
 		C00F3E9E41AEC52A42FD4F8D /* SettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsService.swift; sourceTree = "<group>"; };
+		C04E5324E0D7FBC19678E8F1 /* PluginSurfaceSignature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceSignature.swift; sourceTree = "<group>"; };
+		C0F3441F676C835EF85B4F8A /* Scene3DAccessibilityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DAccessibilityModel.swift; sourceTree = "<group>"; };
 		C1B2760466C86A743DE701B4 /* PluginPackageValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPackageValidator.swift; sourceTree = "<group>"; };
 		C3731E6CAD353BCD2A1663E0 /* PluginManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginManifest.swift; sourceTree = "<group>"; };
 		C4D313B3216BABB3D45A8959 /* WindowAttribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAttribution.swift; sourceTree = "<group>"; };
@@ -490,18 +579,23 @@
 		D1151EA3D67CE12E37241EA9 /* PreviewScenarioExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewScenarioExporter.swift; sourceTree = "<group>"; };
 		D12FCD18D257E0236A9E35CD /* PluginPreviewInspect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewInspect.swift; sourceTree = "<group>"; };
 		D167B2F3323C5CDA2AA5BA0D /* PluginPreviewPackageHasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewPackageHasher.swift; sourceTree = "<group>"; };
+		D2C693AEE6A2A0A93B749256 /* GLBPreflightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLBPreflightTests.swift; sourceTree = "<group>"; };
 		D2F7020AED6CC830DB5B8E2E /* GridOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewView.swift; sourceTree = "<group>"; };
 		D34689921552D03B9A0939D3 /* ThumbnailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailService.swift; sourceTree = "<group>"; };
 		D38B7135CBF574BF9DAB0182 /* GridHUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDView.swift; sourceTree = "<group>"; };
+		D48373F59723BB27CD4B70F5 /* CoreGraphicsPluginSurfaceRasterizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreGraphicsPluginSurfaceRasterizer.swift; sourceTree = "<group>"; };
 		D554167CE0F0AE8B040A45CD /* ThumbnailServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailServiceTests.swift; sourceTree = "<group>"; };
 		D6B7F56C3DFDB5EFF266C18D /* DesktopGridCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridCoordinator.swift; sourceTree = "<group>"; };
 		D6BAA4649436C3C22EAAA03E /* GridHUDViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridHUDViewModel.swift; sourceTree = "<group>"; };
 		D6F5C7C95324E78B239798F5 /* PluginFixtureFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginFixtureFileReader.swift; sourceTree = "<group>"; };
 		D71F24664C62BDEC00C14D6D /* DesktopGridPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridPalette.swift; sourceTree = "<group>"; };
+		DA264DA178DB7A44BE4C932C /* PluginSurfaceRasterizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceRasterizing.swift; sourceTree = "<group>"; };
 		DA4E007C8703B1F76B550963 /* PluginPreviewNativeDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewNativeDriver.swift; sourceTree = "<group>"; };
 		DC126ACF76C599D0B4C32B82 /* UsageStatisticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatisticsTests.swift; sourceTree = "<group>"; };
 		DC8BF4C03968DE29F321ED5E /* DesktopGridOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopGridOnboardingView.swift; sourceTree = "<group>"; };
 		DC9228437DFB8AB14E50E9E5 /* WindowAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAction.swift; sourceTree = "<group>"; };
+		DD6DE22BD4523EBBA22BE4DE /* Scene3DPointerClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DPointerClassifierTests.swift; sourceTree = "<group>"; };
+		DE32DFED1A99BE34E9DECF0A /* Scene3DInputSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DInputSession.swift; sourceTree = "<group>"; };
 		DF1FBC046B3B164BC5604AF1 /* SystemGestureInterceptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemGestureInterceptorTests.swift; sourceTree = "<group>"; };
 		DF328BA5F01B73E400A5039E /* PluginPreviewProcessTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewProcessTypes.swift; sourceTree = "<group>"; };
 		DF82AECD444D5ABB6EEB9537 /* WindowMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMonitorService.swift; sourceTree = "<group>"; };
@@ -519,11 +613,15 @@
 		E54F2C8AADF0827EEC8A96D8 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		E5CE51AB1199542766F6B6CD /* PluginSceneDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSceneDrawing.swift; sourceTree = "<group>"; };
 		E5DC6D7B68AA6B89AFB14000 /* StatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarView.swift; sourceTree = "<group>"; };
+		E5DE17001D1A09B9BBE071EA /* PluginScene3DAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAsset.swift; sourceTree = "<group>"; };
 		E661266025E368204707569B /* PluginVirtualClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginVirtualClock.swift; sourceTree = "<group>"; };
 		E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSceneTests.swift; sourceTree = "<group>"; };
 		E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassRenderingTests.swift; sourceTree = "<group>"; };
 		E9E0684C750F8B24DE2AD32B /* SkyLightSpaceBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyLightSpaceBridge.swift; sourceTree = "<group>"; };
 		EA808BAFE0367506C45C90FD /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
+		EAD63D758288601FDBAACB03 /* PluginSurfaceTexture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginSurfaceTexture.swift; sourceTree = "<group>"; };
+		EB4498ADFBB594261D11543D /* Scene3DHitRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DHitRouterTests.swift; sourceTree = "<group>"; };
+		ED970742264747DCED87418E /* GLBPreflight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLBPreflight.swift; sourceTree = "<group>"; };
 		EE15E641C88AF3EAC9DBA315 /* DefaultScenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultScenario.swift; sourceTree = "<group>"; };
 		F2AD5087B5317017E4CDEA23 /* PluginPreviewPipeIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewPipeIO.swift; sourceTree = "<group>"; };
 		F421A5A3D4EBC68C632DD7C5 /* StatisticsChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsChartView.swift; sourceTree = "<group>"; };
@@ -533,9 +631,11 @@
 		F5955DA07BEC3230249E226F /* PluginPreviewWorkerSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewWorkerSupervisor.swift; sourceTree = "<group>"; };
 		F7ABB5FFEE1D8E1CA7614AF7 /* PluginVirtualClockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginVirtualClockTests.swift; sourceTree = "<group>"; };
 		F9A264719C4E63F00D9A944D /* SwitchlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchlyApp.swift; sourceTree = "<group>"; };
+		FA9B6601FB99D2A13DF9C5C6 /* Scene3DHitTestAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DHitTestAdapterTests.swift; sourceTree = "<group>"; };
 		FC8CD30C6683B78FF9301D38 /* GridBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridBackground.swift; sourceTree = "<group>"; };
 		FDC2B539B3A81C820E16ED33 /* SwipeDirectionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeDirectionClassifier.swift; sourceTree = "<group>"; };
 		FEAB4ED3B6192B37D690238D /* UsageStatistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStatistics.swift; sourceTree = "<group>"; };
+		FF5A06D489543030FC3000B2 /* Scene3DHitTestAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene3DHitTestAdapter.swift; sourceTree = "<group>"; };
 		FFB72092BCB9E3B2E5B5931C /* PluginPreviewArtifactBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginPreviewArtifactBuilder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -545,6 +645,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				A5B6DCFD03AE0EDA6856C9CF /* HotKey in Frameworks */,
+				51BE1CEC18849BF8C7754927 /* GLTFKit2 in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D84783E6D5A03B0756B35F8B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				59F4CF1C56F43AF0D571F07D /* GLTFKit2 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -623,6 +732,8 @@
 				0195C16890BCFB03552CB4E8 /* FourFingerHoldDetectorTests.swift */,
 				8A8B16C69B8E7ED74E9F2CEA /* GlassAppearanceTests.swift */,
 				E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */,
+				D2C693AEE6A2A0A93B749256 /* GLBPreflightTests.swift */,
+				80A5E775080EF6B6E142F82F /* GLTFKit2IntegrationTests.swift */,
 				95E4E9CD294869A0C0795734 /* GridHUDViewModelTests.swift */,
 				0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */,
 				34A73CA32BEC59583D43BDDE /* GridPanelLayoutTests.swift */,
@@ -638,13 +749,26 @@
 				9F1700B16A7499216E47D58C /* PluginInstallerTests.swift */,
 				64E3FA3BA196C23A2260E4A0 /* PluginLifecycleTests.swift */,
 				F43BDFA2C436D1D0F6EA6706 /* PluginPreferencesRenderingTests.swift */,
+				32FEDBF7F7A379A83C0B80BF /* PluginScene3DAssemblyTests.swift */,
+				714A347C989B61E7853F090A /* PluginScene3DAssetCacheTests.swift */,
+				434685C27B7C2BE83D8F1429 /* PluginScene3DControllerTests.swift */,
+				19CD962FCFE0697E8B8046DC /* PluginScene3DDescriptorTests.swift */,
+				5825AE67EB3FECA84EA4F939 /* PluginScene3DIPodInteractionTests.swift */,
 				E6FC280B69967E2D933E5667 /* PluginSceneTests.swift */,
 				A60A2E958ABBD35836FC322F /* PluginStorageTests.swift */,
+				9A0777FD7DFBA77E60D0E3C1 /* PluginSurfaceRendererTests.swift */,
 				2075EF2C2BB975028EACF92B /* PluginSystemTests.swift */,
 				F7ABB5FFEE1D8E1CA7614AF7 /* PluginVirtualClockTests.swift */,
 				4B8992FFA7FE4BE724335C0B /* PreviewPanelTests.swift */,
 				CC7550EEAD5A75332CF429EE /* PreviewTriggerMonitorTests.swift */,
 				46224A3CF1A35AD1743F6C7B /* PreviewViewModelTests.swift */,
+				0052ED2BCBC4C98A5B6E0EAF /* Scene3DAccessibilityModelTests.swift */,
+				0D658A8ED78223A3CE825276 /* Scene3DCameraControllerTests.swift */,
+				39A6BDE5A46774EC2D66258F /* Scene3DContractFixtureTests.swift */,
+				EB4498ADFBB594261D11543D /* Scene3DHitRouterTests.swift */,
+				FA9B6601FB99D2A13DF9C5C6 /* Scene3DHitTestAdapterTests.swift */,
+				A915379DF7009AFC1BE595BA /* Scene3DInputSessionTests.swift */,
+				DD6DE22BD4523EBBA22BE4DE /* Scene3DPointerClassifierTests.swift */,
 				A60E2F0A45779E9CB08A1A73 /* SettingsServiceTests.swift */,
 				90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */,
 				F5374F7344D3AA3C685058CB /* SwipeDirectionClassifierTests.swift */,
@@ -707,6 +831,7 @@
 				03BADD79FCDF554B4529EDB4 /* WindowTrafficLights.swift */,
 				A3DDE73DC2DFA5565C71618E /* WorkspaceBarPanel.swift */,
 				F56E5BAACF73672FBDE4450D /* WorkspacesView.swift */,
+				F88E78188E25E7BC111C8493 /* Plugins */,
 			);
 			name = Views;
 			path = Sources/Views;
@@ -715,6 +840,7 @@
 		54794EBE8098747095FB466C /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				3D0A5063255B895BE586DD7C /* PluginPreviewCaptureSurface.swift */,
 				DA4E007C8703B1F76B550963 /* PluginPreviewNativeDriver.swift */,
 				9B6359AF089A8884AD486143 /* PluginPreviewState.swift */,
 				756A911A2233196D768CEBF5 /* PluginPreviewView.swift */,
@@ -777,6 +903,7 @@
 		809E754611EEA603E87A9C45 /* Plugins */ = {
 			isa = PBXGroup;
 			children = (
+				ED970742264747DCED87418E /* GLBPreflight.swift */,
 				385979B435CF361A00665A46 /* MediaBridge.swift */,
 				CA27D10772371E9573FC8678 /* PluginFileReader.swift */,
 				AA37ACF14FDF7DCCE220552E /* PluginHost.swift */,
@@ -784,8 +911,23 @@
 				C1B2760466C86A743DE701B4 /* PluginPackageValidator.swift */,
 				46EBA602A293A20853A59E9F /* PluginRegistry.swift */,
 				9FDBD58543D26CB798059E1C /* PluginRuntime.swift */,
+				2B5FA4FC59DCEBC04D212A3C /* PluginScene3DAssembly.swift */,
+				E5DE17001D1A09B9BBE071EA /* PluginScene3DAsset.swift */,
+				064F30129805F4F90C893ED0 /* PluginScene3DAssetCache.swift */,
+				4434B3DF2088E63B9EB8EFDE /* PluginScene3DAssetLoader.swift */,
+				ABD92630117464A83BE2610C /* PluginScene3DController.swift */,
 				065CFA59BAA97E4133D79FE4 /* PluginStorage.swift */,
+				DA264DA178DB7A44BE4C932C /* PluginSurfaceRasterizing.swift */,
+				2A1223835502CFCC4CAE8498 /* PluginSurfaceRenderer.swift */,
+				2FC247AA1AA1DDAD3FD6625E /* PluginSurfaceRequest.swift */,
+				C04E5324E0D7FBC19678E8F1 /* PluginSurfaceSignature.swift */,
+				EAD63D758288601FDBAACB03 /* PluginSurfaceTexture.swift */,
 				E661266025E368204707569B /* PluginVirtualClock.swift */,
+				C0F3441F676C835EF85B4F8A /* Scene3DAccessibilityModel.swift */,
+				7194D580136054546F66D21E /* Scene3DCameraController.swift */,
+				1461C425980DAD91FFF106BE /* Scene3DHitRouter.swift */,
+				DE32DFED1A99BE34E9DECF0A /* Scene3DInputSession.swift */,
+				991BD204CCC6CEFCB2175F3F /* Scene3DPointerClassifier.swift */,
 			);
 			path = Plugins;
 			sourceTree = "<group>";
@@ -904,6 +1046,7 @@
 				290E7694EDAC0E810F258F5E /* PluginGrant.swift */,
 				C3731E6CAD353BCD2A1663E0 /* PluginManifest.swift */,
 				3ACDD640F337FBD9F860BE1F /* PluginScene.swift */,
+				9CEB99453FF67966622923AC /* PluginScene3DDescriptor.swift */,
 				18EB40B59170D7184D10C4D3 /* PluginUINode.swift */,
 				28FF0001F6360C215F7DED5C /* SceneEvaluator.swift */,
 			);
@@ -992,6 +1135,17 @@
 			path = Sources/Models;
 			sourceTree = "<group>";
 		};
+		F88E78188E25E7BC111C8493 /* Plugins */ = {
+			isa = PBXGroup;
+			children = (
+				D48373F59723BB27CD4B70F5 /* CoreGraphicsPluginSurfaceRasterizer.swift */,
+				9877862BF168D5EBF337F5FD /* PluginScene3DView.swift */,
+				4C9205ECB1D4144319213E3D /* PluginSurfaceDrawing.swift */,
+				FF5A06D489543030FC3000B2 /* Scene3DHitTestAdapter.swift */,
+			);
+			path = Plugins;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1063,6 +1217,7 @@
 			name = Switchly;
 			packageProductDependencies = (
 				B6472048A84916C39E9693F6 /* HotKey */,
+				06210CCDF6AF6C5B988EEDCE /* GLTFKit2 */,
 			);
 			productName = Switchly;
 			productReference = 782DDEA9B760B082A11AE14C /* Switchly.app */;
@@ -1074,6 +1229,7 @@
 			buildPhases = (
 				50C63E8DF6C60E1160FB8683 /* Sources */,
 				62881A0E4E0EEA2B9D593BA6 /* Resources */,
+				D84783E6D5A03B0756B35F8B /* Frameworks */,
 				ACD49FDAA58AF9C1BA63D8FC /* Bundle preview worker */,
 			);
 			buildRules = (
@@ -1083,6 +1239,7 @@
 			);
 			name = SwitchlyPluginPreview;
 			packageProductDependencies = (
+				FE6460E9A98CE02474C3E8A2 /* GLTFKit2 */,
 			);
 			productName = SwitchlyPluginPreview;
 			productReference = 7DB20CFF641BFD4F552A0DDB /* SwitchlyPluginPreview.app */;
@@ -1125,6 +1282,7 @@
 			mainGroup = AF5E0AC37101E1DA4242F468;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				02782C258ABC3790CA643D5D /* XCRemoteSwiftPackageReference "GLTFKit2" */,
 				1DB358598CC7A6C11BAC7AA9 /* XCRemoteSwiftPackageReference "HotKey" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -1207,10 +1365,12 @@
 				12995E670840DF9318E8A3E5 /* AppIconCache.swift in Sources */,
 				B70C61C668D599B8E525D4DB /* AppLogger.swift in Sources */,
 				9DBFD15E6E930FFCB1C95B85 /* AppSettings.swift in Sources */,
+				7B18672091938E21826B0E65 /* CoreGraphicsPluginSurfaceRasterizer.swift in Sources */,
 				94E51B873754304F5C6973BC /* DefaultScenario.swift in Sources */,
 				60B9DBAD7C145E9A9982D88E /* DesignTokens.swift in Sources */,
 				F4E17B578AA89A369A3682B3 /* DockLayoutSpec.swift in Sources */,
 				952EC9DC569A3E3414EF4779 /* DockWindowCard.swift in Sources */,
+				E3BDA2427AD410C1AED391FA /* GLBPreflight.swift in Sources */,
 				50A4C9B050CCCB28A04B988A /* GlassEffect.swift in Sources */,
 				38147395BB14489FE5588E4C /* GridBackground.swift in Sources */,
 				386155ED0238256DEED6A14D /* GridStyle.swift in Sources */,
@@ -1228,6 +1388,7 @@
 				47854C4EFD9DC21776F03707 /* PluginPreviewArtifactBuilder.swift in Sources */,
 				5290FC79BCF59304009A9FC1 /* PluginPreviewArtifactModels.swift in Sources */,
 				A8F6F15D5B65DEBAAC3C2C49 /* PluginPreviewArtifactWriter.swift in Sources */,
+				BFDC08C31D89C7FCA698BE53 /* PluginPreviewCaptureSurface.swift in Sources */,
 				B350218760B76CCF7D5CB18C /* PluginPreviewFrameCodec.swift in Sources */,
 				9628D8A3A7F638165A7BEBC3 /* PluginPreviewInspect.swift in Sources */,
 				6313CE2EE84C1E8C72CF13AC /* PluginPreviewNativeDriver.swift in Sources */,
@@ -1243,10 +1404,23 @@
 				2A0A4B94E03075C0BEF4E307 /* PluginPreviewWorkerSupervisor.swift in Sources */,
 				C2911F7073C505A3C3CE01C4 /* PluginRegistry.swift in Sources */,
 				2BAF625A802983A8CC058665 /* PluginScene.swift in Sources */,
+				4DC656EFC6A0C7DFE4BB2EAF /* PluginScene3DAssembly.swift in Sources */,
+				79987978FAA4008B55065592 /* PluginScene3DAsset.swift in Sources */,
+				72FB001754FD36A1D35F5342 /* PluginScene3DAssetCache.swift in Sources */,
+				4DF4775B688B8E38E0B2A67E /* PluginScene3DAssetLoader.swift in Sources */,
+				E5DC75FB7D8A29E19E998638 /* PluginScene3DController.swift in Sources */,
+				5B37AE9B75C5594B45B5704F /* PluginScene3DDescriptor.swift in Sources */,
+				EF593B5035B005095D634D42 /* PluginScene3DView.swift in Sources */,
 				E097DE1DA795AC819C571E38 /* PluginSceneDrawing.swift in Sources */,
 				383814D400E15E0BAA25119C /* PluginSceneView.swift in Sources */,
 				C34CAEA18AA0D479AE954229 /* PluginSlotSurface.swift in Sources */,
 				78303BF3CD027E13C0717F56 /* PluginStorage.swift in Sources */,
+				C31D00B9EF78087FBD60C243 /* PluginSurfaceDrawing.swift in Sources */,
+				F107CAAB35778E8077238478 /* PluginSurfaceRasterizing.swift in Sources */,
+				32A2F278C61A75885C55A12F /* PluginSurfaceRenderer.swift in Sources */,
+				129D6549188E815A6919E0DC /* PluginSurfaceRequest.swift in Sources */,
+				C055606043DC9FE0EB169E9B /* PluginSurfaceSignature.swift in Sources */,
+				96470FACEE8A33FEBC6122A8 /* PluginSurfaceTexture.swift in Sources */,
 				5965D574F95974E9CCDD08FB /* PluginUINode.swift in Sources */,
 				4B76D383A7EC51BEECD6B874 /* PreviewAppMain.swift in Sources */,
 				DE769BCF31B7EE7149B31CAD /* PreviewCommandLine.swift in Sources */,
@@ -1272,6 +1446,12 @@
 				178603249F61E1BAA6F7A6DB /* PreviewScenario.swift in Sources */,
 				350F00DD12DC80E8D37690EB /* PreviewScenarioExporter.swift in Sources */,
 				3BCE3F97F82CB56973A3733B /* PreviewStrategy.swift in Sources */,
+				6824912D65C38EF53D85BEBD /* Scene3DAccessibilityModel.swift in Sources */,
+				EE4C9AD81C76918A40FAD048 /* Scene3DCameraController.swift in Sources */,
+				79CCD4D6603FB72C505F523D /* Scene3DHitRouter.swift in Sources */,
+				4D8686EF311F3282D5AD650F /* Scene3DHitTestAdapter.swift in Sources */,
+				E5A7A8BCD9EE97516408F88F /* Scene3DInputSession.swift in Sources */,
+				BD37A1B477A80CB7F483F476 /* Scene3DPointerClassifier.swift in Sources */,
 				30B6ACDD05EE5C7A68218356 /* SceneEvaluator.swift in Sources */,
 				E5F729C07BD850AF1C104CE5 /* ShortcutPrefix.swift in Sources */,
 				14C131F5A0F9159CF7FACA2A /* ThemeApplier.swift in Sources */,
@@ -1305,6 +1485,8 @@
 				6CBAA46EEEABA09F7860EC6C /* EnumsTests.swift in Sources */,
 				9C83EB8E1730DD7331B6096D /* ExternalPluginIntegrationTests.swift in Sources */,
 				1260AE175CC5B873AC780E0B /* FourFingerHoldDetectorTests.swift in Sources */,
+				EBE6E7E543310F8D079ECD8D /* GLBPreflightTests.swift in Sources */,
+				1C7B5875AA822149652E7BB0 /* GLTFKit2IntegrationTests.swift in Sources */,
 				F0BB21A07793A02139702B39 /* GlassAppearanceTests.swift in Sources */,
 				81AD0B07D05A179F3E27DDD3 /* GlassRenderingTests.swift in Sources */,
 				674318A2C099EB48DEAA771B /* GridHUDViewModelTests.swift in Sources */,
@@ -1322,13 +1504,26 @@
 				243B037A14206ADC0E41E561 /* PluginInstallerTests.swift in Sources */,
 				B32AACF7C6D7DA1385B8F872 /* PluginLifecycleTests.swift in Sources */,
 				6189D2944B99573EE7AA3B88 /* PluginPreferencesRenderingTests.swift in Sources */,
+				FC818D2A07F6A62834FD616E /* PluginScene3DAssemblyTests.swift in Sources */,
+				6D60F1C8F6976E6042A58890 /* PluginScene3DAssetCacheTests.swift in Sources */,
+				AB69CA4F292CC4A931A80847 /* PluginScene3DControllerTests.swift in Sources */,
+				D5A39A6C8EEED5ABAE2215F3 /* PluginScene3DDescriptorTests.swift in Sources */,
+				56AA945ECACCE75BFBF08503 /* PluginScene3DIPodInteractionTests.swift in Sources */,
 				A5105AB477196D0D6392696C /* PluginSceneTests.swift in Sources */,
 				8B69B3CEAD3BB61B8A93701B /* PluginStorageTests.swift in Sources */,
+				582864A43B78E47E0255B2D8 /* PluginSurfaceRendererTests.swift in Sources */,
 				1A3FB074DE69877640E4C4C3 /* PluginSystemTests.swift in Sources */,
 				CBF3CE7F804C440D02841E79 /* PluginVirtualClockTests.swift in Sources */,
 				CEF449C5116A31F75BAE5AF7 /* PreviewPanelTests.swift in Sources */,
 				0EA1E4834CCF195ECE4166EA /* PreviewTriggerMonitorTests.swift in Sources */,
 				FC4B737FDDAF385608C00299 /* PreviewViewModelTests.swift in Sources */,
+				5EBFE8166F053C491D2C215F /* Scene3DAccessibilityModelTests.swift in Sources */,
+				9AF7D71AEB253FB633D8139B /* Scene3DCameraControllerTests.swift in Sources */,
+				0E05AC7653F6B36B49810D24 /* Scene3DContractFixtureTests.swift in Sources */,
+				2263EA8901D9D7B8CDC9B2AF /* Scene3DHitRouterTests.swift in Sources */,
+				A5709969C82737D454C22E38 /* Scene3DHitTestAdapterTests.swift in Sources */,
+				E3C6C699D64BD5C6C77B5217 /* Scene3DInputSessionTests.swift in Sources */,
+				0EE988D0917A3C1E7BF2F800 /* Scene3DPointerClassifierTests.swift in Sources */,
 				D06DD1F8E4497FA98D2D1C24 /* SettingsServiceTests.swift in Sources */,
 				5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */,
 				9E2F6C9478E07EB44021ED67 /* SwipeDirectionClassifierTests.swift in Sources */,
@@ -1350,6 +1545,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D19825C854D431365BAEF25E /* AppLogger.swift in Sources */,
+				9584E219C24E0123D4C8CEAC /* GLBPreflight.swift in Sources */,
 				D4F117D0913EE5B7792BF96D /* MediaBridge.swift in Sources */,
 				AD10121E29DB38A523BAA187 /* PluginConsoleLine.swift in Sources */,
 				E8123D94AC1AEAE779F20734 /* PluginFileReader.swift in Sources */,
@@ -1366,7 +1562,9 @@
 				897372C6FA6B3A8B88D7D57C /* PluginRegistry.swift in Sources */,
 				3F8A227C123726C6A5AEAFF9 /* PluginRuntime.swift in Sources */,
 				A22DC9C6CF45CD31ED6E8C1A /* PluginScene.swift in Sources */,
+				6491A5EEB03AAE779ADB6168 /* PluginScene3DDescriptor.swift in Sources */,
 				D8428B6E4847EB4A802F4025 /* PluginStorage.swift in Sources */,
+				70C3BD859A501889AF95FDAD /* PluginSurfaceRequest.swift in Sources */,
 				255A53C7D0488BE6696A47BF /* PluginUINode.swift in Sources */,
 				75612BBD2098A5AD4669CADF /* PluginVirtualClock.swift in Sources */,
 				624687C20F919D88169C9299 /* PreviewScenario.swift in Sources */,
@@ -1384,6 +1582,7 @@
 				E261C9AD00EE827BE170FF1C /* AppIconCache.swift in Sources */,
 				020BFDAE3FB688562345AD6C /* AppLogger.swift in Sources */,
 				81B5494B3F6F687518BA2CA8 /* AppSettings.swift in Sources */,
+				30E920EE9CE2460909BA73A8 /* CoreGraphicsPluginSurfaceRasterizer.swift in Sources */,
 				AA7BEAF963CB36DDC1C4FA10 /* DesignTokens.swift in Sources */,
 				D0453BCE9645F02AC3F3C026 /* Desktop.swift in Sources */,
 				A174EF356A7E1CE551E0E288 /* DesktopGridCoordinator.swift in Sources */,
@@ -1400,6 +1599,7 @@
 				0EB8DD16D9BD853BF27E3186 /* DockPreviewViewModel.swift in Sources */,
 				44A2E88EA3EEB87EBC890A79 /* DockWindowCard.swift in Sources */,
 				3872D32FFC7C541791332DF2 /* FourFingerHoldDetector.swift in Sources */,
+				C29D20A57B686488A5C72112 /* GLBPreflight.swift in Sources */,
 				775DDFD010B842421511E6F1 /* GlassEffect.swift in Sources */,
 				29FE3B26CE9FFFCDD9CF0442 /* GridBackground.swift in Sources */,
 				89C446418268E0251BB7C0F3 /* GridCellView.swift in Sources */,
@@ -1440,10 +1640,23 @@
 				3BC8F841531D50863EF0599A /* PluginRegistry.swift in Sources */,
 				6F560B916DBAEEBEC7FEFCA5 /* PluginRuntime.swift in Sources */,
 				4C6789C2DA56826ED31A0EEB /* PluginScene.swift in Sources */,
+				DE7334D904AD8937F77F42A1 /* PluginScene3DAssembly.swift in Sources */,
+				42A253C9B9F18ACCFB0767D2 /* PluginScene3DAsset.swift in Sources */,
+				DD7336E6D0C8498A8D96C26E /* PluginScene3DAssetCache.swift in Sources */,
+				CE461C8CE87F109E290E829E /* PluginScene3DAssetLoader.swift in Sources */,
+				643C30DFE99F9B0B2FD1928A /* PluginScene3DController.swift in Sources */,
+				04E7508EC493790054976867 /* PluginScene3DDescriptor.swift in Sources */,
+				12410B2AE4A2073BEB74244C /* PluginScene3DView.swift in Sources */,
 				AD00BF4A25EEBFC308259DC0 /* PluginSceneDrawing.swift in Sources */,
 				E0014664397567828FF3D23A /* PluginSceneView.swift in Sources */,
 				2FBD22FF2B8C953E92F8931C /* PluginSlotSurface.swift in Sources */,
 				CB2AE0E1E658E4873B506D8B /* PluginStorage.swift in Sources */,
+				4149FCCD2E512F83E2B958E0 /* PluginSurfaceDrawing.swift in Sources */,
+				72FB8AC8FDC000A8615664D5 /* PluginSurfaceRasterizing.swift in Sources */,
+				F15A6FD499DED240E0DFD1AD /* PluginSurfaceRenderer.swift in Sources */,
+				A258942078577A3C10DE1C7D /* PluginSurfaceRequest.swift in Sources */,
+				20030E1BD57CC8C914D0E18D /* PluginSurfaceSignature.swift in Sources */,
+				6453255F175DF5C1E7D385E3 /* PluginSurfaceTexture.swift in Sources */,
 				5D7CC19CB2A8650CF28C160E /* PluginUINode.swift in Sources */,
 				3699A92430BE4CCFADCF40DB /* PluginVirtualClock.swift in Sources */,
 				0AC113AF38FAB4A56F187DBC /* PreferencesView.swift in Sources */,
@@ -1454,6 +1667,12 @@
 				CD3E7E5608B3CEB73C313AEE /* PreviewStrategy.swift in Sources */,
 				0D5D33312D630DEC557DBB80 /* PreviewTriggerMonitor.swift in Sources */,
 				7CE92B9881FC19BB2489D2CF /* PreviewViewModel.swift in Sources */,
+				31C5BB9123C3571171FF2F85 /* Scene3DAccessibilityModel.swift in Sources */,
+				9DF0F7C83BC7E4A026AF20F9 /* Scene3DCameraController.swift in Sources */,
+				C01B786CA9F895C21F491886 /* Scene3DHitRouter.swift in Sources */,
+				3D385B0E9BBAD2B2DCB84A29 /* Scene3DHitTestAdapter.swift in Sources */,
+				0310FB07FDE05AF2366FC823 /* Scene3DInputSession.swift in Sources */,
+				AF76CB9C47E49DE46F011412 /* Scene3DPointerClassifier.swift in Sources */,
 				D0E86F4A6963F3CED6099BCF /* SceneEvaluator.swift in Sources */,
 				AA9419A4F30A62D9FFFEBC58 /* SettingsHelpButton.swift in Sources */,
 				33847CC18D2B19E7BF0C6489 /* SettingsService.swift in Sources */,
@@ -1880,6 +2099,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		02782C258ABC3790CA643D5D /* XCRemoteSwiftPackageReference "GLTFKit2" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/warrenm/GLTFKit2.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.5.15;
+			};
+		};
 		1DB358598CC7A6C11BAC7AA9 /* XCRemoteSwiftPackageReference "HotKey" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/soffes/HotKey.git";
@@ -1891,10 +2118,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		06210CCDF6AF6C5B988EEDCE /* GLTFKit2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 02782C258ABC3790CA643D5D /* XCRemoteSwiftPackageReference "GLTFKit2" */;
+			productName = GLTFKit2;
+		};
 		B6472048A84916C39E9693F6 /* HotKey */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1DB358598CC7A6C11BAC7AA9 /* XCRemoteSwiftPackageReference "HotKey" */;
 			productName = HotKey;
+		};
+		FE6460E9A98CE02474C3E8A2 /* GLTFKit2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 02782C258ABC3790CA643D5D /* XCRemoteSwiftPackageReference "GLTFKit2" */;
+			productName = GLTFKit2;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

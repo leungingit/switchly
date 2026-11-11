@@ -138,6 +138,10 @@ run = "make plugin-preview-native-test"
 description = "T16 视觉基线回归（需 GUI+录屏权限）"
 run = "make plugin-preview-baseline-test"
 
+[tasks."preview:background-test"]
+description = "后台原生输入、截图与无干扰回归（需 GUI+录屏权限）"
+run = "make plugin-preview-background-test"
+
 [tasks."preview:regression"]
 description = "G2 GUI 回归（PLUGINS_REPO=<dir>）"
 run = "make plugin-preview-regression"

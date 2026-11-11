@@ -7,6 +7,13 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 
+import {
+  GLBError,
+  glbAllowedExtensions,
+  glbLimits,
+  inspectGLB,
+} from "./glb.js";
+
 const allowedPermissions = new Set([
   "media.nowPlaying",
   "media.control",
@@ -92,6 +99,7 @@ async function readJSON(file, label, errors) {
 }
 
 async function validatePackageEntries(pluginDir, errors) {
+  const models = [];
   let rootInfo;
   try {
     rootInfo = await lstat(pluginDir);
@@ -100,11 +108,11 @@ async function validatePackageEntries(pluginDir, errors) {
     }
   } catch (error) {
     errors.push(`插件目录不存在或不可读：${error.message}`);
-    return;
+    return models;
   }
   if (!rootInfo.isDirectory()) {
     errors.push("插件路径不是目录");
-    return;
+    return models;
   }
 
   let entries = 0;
@@ -142,9 +150,45 @@ async function validatePackageEntries(pluginDir, errors) {
         errors.push(`插件包超过 ${packageLimits.maxPackageBytes} bytes`);
         return;
       }
+      if (child.name.toLowerCase().endsWith(".glb")) {
+        models.push({
+          file: target,
+          relative: path.relative(pluginDir, target),
+          size: info.size,
+        });
+      }
     }
   }
   await walk(pluginDir);
+  return models;
+}
+
+async function validateModels(models, errors) {
+  for (const model of models) {
+    if (model.size > glbLimits.maxFileBytes) {
+      errors.push(`3D 资产预检失败：${model.relative}（glb-exceeds-byte-budget：glb exceeds byte budget）`);
+      continue;
+    }
+    let data;
+    try {
+      data = await readFile(model.file);
+    } catch (error) {
+      errors.push(`3D 资产预检失败：${model.relative}（无法读取：${error.message}）`);
+      continue;
+    }
+    try {
+      inspectGLB(data);
+    } catch (error) {
+      if (error instanceof GLBError) {
+        const detail = error.reason === error.code
+          ? error.code
+          : `${error.code}：${error.reason}`;
+        errors.push(`3D 资产预检失败：${model.relative}（${detail}）`);
+      } else {
+        errors.push(`3D 资产预检失败：${model.relative}（${error.message}）`);
+      }
+    }
+  }
 }
 
 function validateSettings(settings, errors) {
@@ -472,7 +516,8 @@ export async function validatePluginDirectory(inputDirectory) {
     errors.push(`插件目录不存在或不可读：${error.message}`);
     return { ok: false, directory: pluginDir, id: null, errors, warnings };
   }
-  await validatePackageEntries(pluginDir, errors);
+  const models = await validatePackageEntries(pluginDir, errors);
+  await validateModels(models, errors);
 
   const manifestPath = path.join(pluginDir, "manifest.json");
   try {
@@ -511,5 +556,7 @@ export async function validatePluginDirectory(inputDirectory) {
 
 export const validationConstants = Object.freeze({
   packageLimits,
+  glbLimits,
+  glbAllowedExtensions: Object.freeze([...glbAllowedExtensions]),
   secretFileNames: Object.freeze([...secretFileNames]),
 });

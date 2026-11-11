@@ -1,0 +1,80 @@
+{
+  "name": "valid-barometer",
+  "apiVersion": 2,
+  "uiFeatures": {
+    "scene3d": true
+  },
+  "asset": "assets/barometer.glb",
+  "repositoryAsset": "docs/plugins/assets/3d-loading-probe-2026-11-06/barometer.glb",
+  "renderOutput": [
+    {
+      "slot": "center",
+      "node": {
+        "type": "scene3d",
+        "key": "barometer",
+        "asset": "assets/barometer.glb",
+        "fit": "contain",
+        "camera": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "surfaces": [
+          {
+            "node": "mesh_weather_screen",
+            "size": [
+              320,
+              320
+            ],
+            "content": {
+              "type": "vstack",
+              "spacing": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "18°",
+                  "style": "title"
+                },
+                {
+                  "type": "text",
+                  "value": "Clear",
+                  "style": "caption"
+                }
+              ]
+            }
+          }
+        ],
+        "hits": [
+          {
+            "node": "needle",
+            "id": "refresh",
+            "label": "Refresh weather"
+          }
+        ],
+        "fallback": {
+          "type": "surface",
+          "material": "glass",
+          "children": [
+            {
+              "type": "vstack",
+              "spacing": "xs",
+              "align": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "18°",
+                  "style": "title"
+                },
+                {
+                  "type": "badge",
+                  "value": "Clear",
+                  "tone": "neutral"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

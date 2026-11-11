@@ -15,6 +15,10 @@ enum PluginPreviewArtifactBuilder {
             return [PluginPreviewArtifactAction(pluginID: pluginID, actionID: id, value: .number(value), enabled: true)]
         case .scene(let scene):
             return scene.hits.map { PluginPreviewArtifactAction(pluginID: pluginID, actionID: $0.id, value: nil, enabled: true) }
+        case .scene3d(let scene):
+            return scene.hits.map { PluginPreviewArtifactAction(pluginID: pluginID, actionID: $0.id,
+                                                                value: $0.value.map(PluginPreviewArtifactValue.number),
+                                                                enabled: $0.enabled) }
         default:
             return node.children.flatMap { actions(pluginID: pluginID, node: $0) }
         }

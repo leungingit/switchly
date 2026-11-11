@@ -1,6 +1,6 @@
 #!/bin/bash
 # 失败模式回归：每种常见错误必须得到稳定、可区分的 状态 + 错误码 + 退出码（而不是笼统的 preview-failed）。
-# 这张表同时是 docs/plugin-preview-guide.md「错误修复」一节的事实来源。
+# 这张表同时是 docs/plugins/preview/plugin-preview-guide.md「错误修复」一节的事实来源。
 # 前置：make plugin-preview-build；需要图形会话。退出码：0 通过；1 失败；77 环境不可用。
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

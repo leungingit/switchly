@@ -376,6 +376,210 @@
       }
     },
     {
+      "id": "ui.scene3d",
+      "status": "unimplemented",
+      "contractStatus": "frozen",
+      "frozenAt": "2026-11-06",
+      "decision": "D26",
+      "apiVersions": [
+        2
+      ],
+      "surface": "ui.scene3d",
+      "requires": {
+        "apiVersion": 2,
+        "context": "ctx.uiFeatures.scene3d === true"
+      },
+      "placement": {
+        "slotRootOnly": true,
+        "maxPerSlot": 1,
+        "nesting": "forbidden",
+        "fallbackMustNotContainScene3d": true
+      },
+      "asset": {
+        "format": "self-contained-glTF-2.0-binary",
+        "extension": ".glb",
+        "maxBytes": 8388608,
+        "packageRelative": true,
+        "externalURI": false,
+        "absolutePath": false,
+        "parentTraversal": false,
+        "extensionsAllowed": [
+          "KHR_materials_clearcoat",
+          "KHR_materials_emissive_strength",
+          "KHR_materials_unlit"
+        ],
+        "preflight": "GLBPreflight before any third-party loader"
+      },
+      "fit": [
+        "contain"
+      ],
+      "camera": {
+        "unit": "degrees",
+        "yawRange": [
+          -180,
+          180
+        ],
+        "pitchRange": [
+          -89,
+          89
+        ],
+        "default": {
+          "yaw": 0,
+          "pitch": 0
+        },
+        "hostControlled": [
+          "distance",
+          "fov",
+          "clipping",
+          "lighting",
+          "environment",
+          "antialiasing",
+          "colorSpace"
+        ]
+      },
+      "rotate": {
+        "defaults": {
+          "horizontal": true,
+          "vertical": true,
+          "pitchMin": -55,
+          "pitchMax": 55
+        },
+        "pitchRange": [
+          -89,
+          89
+        ],
+        "finiteNumbers": true,
+        "reduceMotion": "keep-direct-drag; disable-inertia-and-auto-return"
+      },
+      "surfaces": {
+        "maxPerScene": 5,
+        "node": "glTF node.name; exists, unique, resolves to a single visible mesh, complete TEXCOORD_0, not shared with a hit",
+        "size": {
+          "unit": "output-texture-pixels",
+          "integerPerAxis": true,
+          "min": 1,
+          "max": 1024
+        },
+        "contentNodeTypes": [
+          "hstack",
+          "vstack",
+          "zstack",
+          "spacer",
+          "text",
+          "progress",
+          "image",
+          "badge",
+          "marquee"
+        ],
+        "forbiddenContentNodeTypes": [
+          "button",
+          "toggle",
+          "slider",
+          "wheel",
+          "screen",
+          "surface",
+          "scene",
+          "scene3d"
+        ],
+        "origin": "top-left",
+        "pixelFormat": "RGBA",
+        "maxBytesPerInstance": 4194304,
+        "update": "only-on-content-change"
+      },
+      "hits": {
+        "maxPerScene": 12,
+        "required": [
+          "node",
+          "id",
+          "label"
+        ],
+        "node": "same rules as surfaces.node; may also be a surface (a textured button)",
+        "id": "non-empty and unique within scene3d; may reuse an id from its own fallback subtree",
+        "label": "non-empty accessible label",
+        "value": {
+          "types": [
+            "number",
+            "null"
+          ],
+          "default": null
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "sector": {
+          "values": [
+            "top",
+            "right",
+            "bottom",
+            "left"
+          ],
+          "optional": true,
+          "rule": "several hits may share one node only when each names a distinct sector; sector is a quarter of the node's X/Y plane around the centre of its bounds, split on the diagonals"
+        },
+        "visibility": "front-facing visible mesh only; drag inside click threshold does not dispatch"
+      },
+      "fallback": {
+        "required": true,
+        "nodeTypes": "restricted 2d node",
+        "mayContainScene3d": false,
+        "visibleWith3d": false,
+        "accountedInUiBudget": true,
+        "minReadableSlot": {
+          "width": 220,
+          "height": 380,
+          "unit": "pt",
+          "measured": "actual-content-size",
+          "status": "frozen-candidate; real dock size unverified"
+        }
+      },
+      "naming": {
+        "source": "glTF node.name",
+        "meshNameLookup": false,
+        "caseSensitive": true,
+        "fuzzyOrSubstring": false
+      },
+      "limits": {
+        "glbBytes": 8388608,
+        "packageBytes": 33554432,
+        "meshes": 128,
+        "triangles": 150000,
+        "nodes": 256,
+        "textureEdge": 2048,
+        "decodedStaticTextureBytesPerPlugin": 33554432,
+        "dynamicSurfaces": 5,
+        "dynamicSurfaceEdge": 1024,
+        "dynamicSurfaceBytesPerInstance": 4194304,
+        "surfaces": 5,
+        "hits": 12,
+        "uiNodes": 64,
+        "uiDepth": 8
+      },
+      "degradation": {
+        "declarationError": "reject-entire-render-output",
+        "runtimeError": "fallback-current-node-only",
+        "errorCodes": [
+          "scene3d.assetMissing",
+          "scene3d.preflightRejected",
+          "scene3d.decodeFailed",
+          "scene3d.nodeNotFound",
+          "scene3d.nodeAmbiguous",
+          "scene3d.uvMissing",
+          "scene3d.renderFailed",
+          "scene3d.slotTooSmall"
+        ]
+      },
+      "distribution": {
+        "model": "two-release-lines-per-plugin-id",
+        "v1Line": "apiVersion 1 for legacy hosts",
+        "v2Line": "apiVersion 2 for scene3d-capable hosts",
+        "hostLockFile": "exactly one line per host release",
+        "newHostLoads": "v2 only",
+        "legacyHostLoads": "v1 only"
+      },
+      "description": "合同已冻结，宿主 T04–T07 未实现。仅 v2 且 ctx.uiFeatures.scene3d 为 true 时可用；apiVersion 2 本身不代表可渲染 3D。"
+    },
+    {
       "id": "window.focus",
       "status": "unimplemented",
       "apiVersions": [],
@@ -398,6 +602,30 @@
       "status": "unimplemented",
       "apiVersions": [],
       "injected": false
+    },
+    {
+      "id": "ctx.uiFeatures",
+      "status": "unimplemented",
+      "contractStatus": "frozen",
+      "frozenAt": "2026-11-06",
+      "decision": "D26",
+      "apiVersions": [
+        2
+      ],
+      "surface": "ctx.uiFeatures",
+      "injected": false,
+      "fields": [
+        "scene3d"
+      ],
+      "shape": {
+        "scene3d": "boolean"
+      },
+      "negotiation": {
+        "scene3dAvailableWhen": "apiVersion === 2 && ctx.uiFeatures.scene3d === true",
+        "missingMeans": "no-negotiation; plugin must return the 2d tree",
+        "separateFrom": "ctx.capabilities"
+      },
+      "description": "宿主 UI 特性协商快照，不是用户权限表；缺失不表示权限拒绝。合同已冻结，T04–T07 前宿主不注入。"
     },
     {
       "id": "ctx.capabilities",

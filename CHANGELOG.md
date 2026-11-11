@@ -7,9 +7,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+- 插件预览的 `run --background` 接入隐藏原生表面：支持标签点击、真实 3D 视图坐标点击与拖动，输入和截图共用持续更新的共享 Renderer；有效图像或隔离自检失败直接报错，不回退前台。修正预览 App 失败报告与实际进程退出码不一致的问题。当前后台路线的实测范围为 arm64／macOS 27.2。
+
 ### Added
 
-- 插件独立预览与开发工具（本地候选）：本体未运行时用同一份 Runtime/解码器/渲染代码预览插件，`switchly-plugin dev|run` 导出截图、声明式树、动作清单与报告；场景支持固定虚拟时钟（`Date`/`Math.random`/定时器/Scene）、步骤（推进时间、业务动作、文本断言、经可访问树的原生点击）、逐像素视觉基线与差异图。提供离线工具包（`make plugin-preview-package`）与兼容握手；CLI 与预览 App 版本、协议或契约不配套时在启动前拒绝。详见 `docs/plugins/plugin-preview-guide.md`。
+- 插件独立预览与开发工具（本地候选）：本体未运行时用同一份 Runtime/解码器/渲染代码预览插件，`switchly-plugin dev|run` 导出截图、声明式树、动作清单与报告；场景支持固定虚拟时钟（`Date`/`Math.random`/定时器/Scene）、步骤（推进时间、业务动作、文本断言、经可访问树的原生点击）、逐像素视觉基线与差异图。提供离线工具包（`make plugin-preview-package`）与兼容握手；CLI 与预览 App 版本、协议或契约不配套时在启动前拒绝。详见 `docs/plugins/preview/plugin-preview-guide.md`。
 
 - 插件源码与算法测试迁往独立 `switchly-plugins` 仓库，预装包通过文件哈希和来源提交锁定；新增本地 SDK/CLI、完整 API 参考与机器能力清单（尚未发布 npm）。
 - 插件管理新增搜索、状态筛选、选中展开、本地目录安装、用户包替换/卸载与加载失败展示；更新用户包后重新授权并保留业务设置。
@@ -23,6 +25,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- 音乐控制插件默认使用 3D 点按转盘（插件设置「3D 点按转盘」，默认开启）：转盘四个扇区是 glb 中独立的命中节点，对应 喜欢 / 上一首 / 下一首 / 播放暂停；宿主不支持 `scene3d` 或关闭该开关时回退 2D 点按转盘。`scene3d` 的 hit 允许复用其自身 `fallback` 子树中的 action ID，其余跨节点重复仍被拒绝。
 - 插件卡片里的 `scene` 由宿主裁到卡片圆角（`DesignTokens.Radius.control`）：`cover` 背景颜色不再在卡片四角露出直角。
 - 在线天气：城市查不到或服务不可用时，城市输入框变红并在下方给出原因；刷新成功会把取到的天气写回插件手动天气选项（天气 / 温度 / 风速），设置页显示的就是当下抽卡依据。
 - 新增可选的在线天气（默认关闭，使用 Open-Meteo，免费且无需 API 密钥）：在「偏好设置 → 插件 → 天气抽卡」打开并填写城市后，抽卡改用在线天气，失败或未填写时回落手动天气；每 15 分钟最多请求一次、结果缓存 30 分钟。这是应用唯一的联网功能，插件侧只读 `ctx.weather`（权限 `weather.current`），请求细节与原始响应不交给插件。`PRIVACY_POLICY.md` 已同步。

@@ -71,6 +71,9 @@ const ui = Object.freeze({
   scene(scene) {
     return withType("scene", scene);
   },
+  scene3d(options) {
+    return withType("scene3d", options);
+  },
 });
 
 export { definePlugin, ui };

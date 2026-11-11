@@ -204,8 +204,16 @@ export interface PluginCapabilityState {
   readonly available: boolean;
 }
 
+/** 宿主 UI 特性协商快照，不是用户权限表。 */
+export interface PluginUIFeatures {
+  /** 仅当 apiVersion 为 2 且宿主可渲染 scene3d 时为 true。 */
+  readonly scene3d: boolean;
+}
+
 export interface PluginContext {
   readonly capabilities: Readonly<Record<string, PluginCapabilityState | undefined>>;
+  /** v2 协商增量；缺失表示无协商，插件必须返回 2D 树。 */
+  readonly uiFeatures?: PluginUIFeatures;
   readonly app: PluginAppSnapshot;
   readonly window: PluginWindowSnapshot;
   readonly locale: string;
@@ -574,6 +582,75 @@ export interface PluginSceneNode extends PluginScene {
   readonly type: "scene";
 }
 
+/** scene3d 首期只支持等比完整放入槽位。 */
+export type Scene3DFit = "contain";
+
+export interface PluginScene3DCamera {
+  /** 角度制，[-180, 180]，默认 0。 */
+  readonly yaw?: number;
+  /** 角度制，[-89, 89]，默认 0。 */
+  readonly pitch?: number;
+}
+
+export interface PluginScene3DRotate {
+  readonly horizontal?: boolean;
+  readonly vertical?: boolean;
+  readonly pitchMin?: number;
+  readonly pitchMax?: number;
+}
+
+/** 表面只能使用无交互的受限 2D 节点。 */
+export type PluginScene3DSurfaceContentNode =
+  | PluginHStackNode
+  | PluginVStackNode
+  | PluginZStackNode
+  | PluginSpacerNode
+  | PluginTextNode
+  | PluginProgressNode
+  | PluginImageNode
+  | PluginBadgeNode
+  | PluginMarqueeNode;
+
+export interface PluginScene3DSurface {
+  /** glTF node.name；须唯一、单一可见网格且 UV 完整。 */
+  readonly node: string;
+  /** [width, height]，输出纹理像素，每边 1...1024。 */
+  readonly size: readonly [number, number];
+  readonly content: PluginScene3DSurfaceContentNode;
+}
+
+export interface PluginScene3DHit {
+  /** glTF node.name；可同时作为 surface 目标（贴图后的按钮）。 */
+  readonly node: string;
+  /** scene3d 内唯一；可与其自身 fallback 子树复用。 */
+  readonly id: string;
+  readonly label: string;
+  readonly value?: number | null;
+  readonly enabled?: boolean;
+  /** 节点局部 X/Y 平面上以包围盒中心划分的象限（按对角线分割）；同一节点承载多个命中时必填且不可重复。 */
+  readonly sector?: "top" | "right" | "bottom" | "left";
+}
+
+export interface PluginScene3DOptions {
+  /** 同一插件实例内复用场景的稳定 key，1...64 字符。 */
+  readonly key: string;
+  /** 插件包内相对单一 .glb 路径，≤ 8 MiB。 */
+  readonly asset: string;
+  readonly fit?: Scene3DFit;
+  readonly camera?: PluginScene3DCamera;
+  readonly rotate?: PluginScene3DRotate;
+  /** 最多 5 项。 */
+  readonly surfaces?: readonly PluginScene3DSurface[];
+  /** 最多 12 项。 */
+  readonly hits?: readonly PluginScene3DHit[];
+  /** 窄槽或运行期失败时的 2D 后备，不得包含 scene3d。 */
+  readonly fallback: PluginNode;
+}
+
+export interface PluginScene3DNode extends PluginScene3DOptions {
+  readonly type: "scene3d";
+}
+
 export type PluginNode =
   | PluginHStackNode
   | PluginVStackNode
@@ -590,7 +667,8 @@ export type PluginNode =
   | PluginImageNode
   | PluginBadgeNode
   | PluginMarqueeNode
-  | PluginSceneNode;
+  | PluginSceneNode
+  | PluginScene3DNode;
 
 export interface PluginSlotContent {
   readonly slot: PluginSlot;
@@ -637,6 +715,7 @@ export interface PluginUI {
   badge(options: PluginBadgeOptions): PluginBadgeNode;
   marquee(value: string): PluginMarqueeNode;
   scene(scene: PluginScene): PluginSceneNode;
+  scene3d(options: PluginScene3DOptions): PluginScene3DNode;
 }
 
 export declare const ui: Readonly<PluginUI>;

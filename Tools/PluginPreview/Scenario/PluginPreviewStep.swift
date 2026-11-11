@@ -1,5 +1,10 @@
 import Foundation
 
+struct PluginPreviewPoint: Equatable {
+    let x: Double
+    let y: Double
+}
+
 /// 场景步骤（契约 steps v1）。`advance` 推进虚拟时钟；`action` 是直接调用插件 onAction 的
 /// 「业务动作」，不经过原生输入（原生输入回归见 T15）；`expectText` 断言当前渲染树中的文本。
 enum PluginPreviewStep: Equatable {
@@ -9,6 +14,8 @@ enum PluginPreviewStep: Equatable {
     /// 经原生可访问树按标签定位控件并执行 press，再核对路由到会话的动作 ID（T15）。
     /// `expectDisabled` 为 true 时要求控件存在、处于禁用状态且没有动作被路由。
     case nativeClick(label: String, expectAction: String?, expectDisabled: Bool)
+    case nativeClickAt(point: PluginPreviewPoint, expectAction: String?)
+    case nativeDrag(from: PluginPreviewPoint, to: PluginPreviewPoint)
 
     static let maxCount = 64
     static let maxAdvanceMilliseconds: Double = 24 * 60 * 60 * 1000
@@ -21,6 +28,8 @@ enum PluginPreviewStep: Equatable {
         case .action: return "action"
         case .expectText: return "expectText"
         case .nativeClick: return "nativeClick"
+        case .nativeClickAt: return "nativeClickAt"
+        case .nativeDrag: return "nativeDrag"
         }
     }
 
@@ -30,7 +39,7 @@ enum PluginPreviewStep: Equatable {
         case .advance: return "clock"
         case .action: return "business-action"
         case .expectText: return "render-output"
-        case .nativeClick: return "native-input"
+        case .nativeClick, .nativeClickAt, .nativeDrag: return "native-input"
         }
     }
 
@@ -43,6 +52,26 @@ enum PluginPreviewStep: Equatable {
             }
             func only(_ keys: Set<String>) throws {
                 guard Set(object.keys).isSubset(of: keys.union(["type"])) else { throw PreviewScenario.Failure.invalidScenario }
+            }
+            func point(_ key: String) throws -> PluginPreviewPoint {
+                guard let raw = object[key] as? [String: Any], Set(raw.keys) == ["x", "y"] else {
+                    throw PreviewScenario.Failure.invalidScenario
+                }
+                func coordinate(_ key: String) throws -> Double {
+                    guard let value = raw[key] as? NSNumber, CFGetTypeID(value) != CFBooleanGetTypeID(),
+                          value.doubleValue.isFinite, value.doubleValue >= 0 else {
+                        throw PreviewScenario.Failure.invalidScenario
+                    }
+                    return value.doubleValue
+                }
+                return try PluginPreviewPoint(x: coordinate("x"), y: coordinate("y"))
+            }
+            func expectedAction() throws -> String? {
+                guard let raw = object["expectAction"] else { return nil }
+                guard let id = raw as? String, !id.isEmpty, id.count <= maxActionIDLength else {
+                    throw PreviewScenario.Failure.invalidScenario
+                }
+                return id
             }
             switch type {
             case "advance":
@@ -92,6 +121,12 @@ enum PluginPreviewStep: Equatable {
                 }
                 if disabled && expectAction != nil { throw PreviewScenario.Failure.invalidScenario }
                 return .nativeClick(label: label, expectAction: expectAction, expectDisabled: disabled)
+            case "nativeClickAt":
+                try only(["point", "expectAction"])
+                return try .nativeClickAt(point: point("point"), expectAction: expectedAction())
+            case "nativeDrag":
+                try only(["from", "to"])
+                return try .nativeDrag(from: point("from"), to: point("to"))
             default:
                 throw PreviewScenario.Failure.unsupportedSteps
             }
@@ -125,6 +160,8 @@ protocol PluginPreviewStepTarget {
     func renderJSON() async throws -> String
     func availableActions() async throws -> [PluginPreviewStepAction]
     func nativeClick(label: String, expectAction: String?, expectDisabled: Bool) async throws
+    func nativeClickAt(point: PluginPreviewPoint, expectAction: String?) async throws
+    func nativeDrag(from: PluginPreviewPoint, to: PluginPreviewPoint) async throws
 }
 
 struct PluginPreviewStepOutcome: Equatable {
@@ -176,6 +213,10 @@ enum PluginPreviewStepRunner {
                 try await target.perform(actionID: id, value: value)
             case .nativeClick(let label, let expectAction, let expectDisabled):
                 try await target.nativeClick(label: label, expectAction: expectAction, expectDisabled: expectDisabled)
+            case .nativeClickAt(let point, let action):
+                try await target.nativeClickAt(point: point, expectAction: action)
+            case .nativeDrag(let from, let to):
+                try await target.nativeDrag(from: from, to: to)
             case .expectText(let needle):
                 let json = try await target.renderJSON()
                 guard let data = json.data(using: .utf8),

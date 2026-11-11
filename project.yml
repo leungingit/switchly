@@ -24,6 +24,9 @@ packages:
   HotKey:
     url: https://github.com/soffes/HotKey.git
     from: "0.2.0"
+  GLTFKit2:
+    url: https://github.com/warrenm/GLTFKit2.git
+    exactVersion: "0.5.15"
 
 # Project-level xcconfig applied to every build configuration. It carries the
 # committed signing defaults and includes the git-ignored Config/Local.xcconfig
@@ -65,6 +68,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
       - package: HotKey
+      - package: GLTFKit2
     entitlements:
       path: Supporting/Switchly.entitlements
       properties:
@@ -112,6 +116,7 @@ targets:
     platform: macOS
     dependencies:
       - target: SwitchlyPluginPreviewWorker
+      - package: GLTFKit2
     postBuildScripts:
       - name: Bundle preview worker
         script: |
@@ -141,10 +146,35 @@ targets:
       - Sources/Models/Plugins/PluginGrant.swift
       - Sources/Models/Plugins/PluginManifest.swift
       - Sources/Models/Plugins/PluginScene.swift
+      - Sources/Models/Plugins/PluginScene3DDescriptor.swift
       - Sources/Models/Plugins/PluginUINode.swift
       - Sources/Models/Plugins/SceneEvaluator.swift
       - Sources/Services/Plugins/PluginRegistry.swift
       - Sources/Services/Plugins/PluginPackageValidator.swift
+      - Sources/Services/Plugins/GLBPreflight.swift
+      # T04 dynamic surfaces used by scene3d screen nodes. The preview compiles
+      # the same renderer, request model, signature and texture types as the
+      # host instead of carrying a reduced copy.
+      - Sources/Services/Plugins/PluginSurfaceRasterizing.swift
+      - Sources/Services/Plugins/PluginSurfaceRenderer.swift
+      - Sources/Services/Plugins/PluginSurfaceRequest.swift
+      - Sources/Services/Plugins/PluginSurfaceSignature.swift
+      - Sources/Services/Plugins/PluginSurfaceTexture.swift
+      # T05 scene3d input/camera/hit components. They are pure logic shared
+      # verbatim with the host; the preview app compiles them directly rather
+      # than reimplementing them. Rendering wiring itself belongs to T06/T08.
+      - Sources/Services/Plugins/Scene3DAccessibilityModel.swift
+      - Sources/Services/Plugins/Scene3DCameraController.swift
+      - Sources/Services/Plugins/Scene3DHitRouter.swift
+      - Sources/Services/Plugins/Scene3DInputSession.swift
+      - Sources/Services/Plugins/Scene3DPointerClassifier.swift
+      # T06 scene3d asset loading, assembly and per-slot lifecycle. The preview
+      # uses the same native component source as the host; no parallel renderer.
+      - Sources/Services/Plugins/PluginScene3DAsset.swift
+      - Sources/Services/Plugins/PluginScene3DAssetCache.swift
+      - Sources/Services/Plugins/PluginScene3DAssetLoader.swift
+      - Sources/Services/Plugins/PluginScene3DAssembly.swift
+      - Sources/Services/Plugins/PluginScene3DController.swift
       - Sources/Services/Plugins/PluginStorage.swift
       - Sources/Utilities/AppIconCache.swift
       - Sources/Utilities/AppLogger.swift
@@ -157,6 +187,13 @@ targets:
       - Sources/Views/PluginOverlayView.swift
       - Sources/Views/PluginSceneView.swift
       - Sources/Views/PluginSceneDrawing.swift
+      # T05 SceneKit adapter behind Scene3DHitProviding; geometry only, action
+      # mapping stays in Scene3DHitRouter. Host and preview share this file.
+      - Sources/Views/Plugins/Scene3DHitTestAdapter.swift
+      # T06 SwiftUI/SCNView host for the shared scene3d component.
+      - Sources/Views/Plugins/PluginScene3DView.swift
+      - Sources/Views/Plugins/CoreGraphicsPluginSurfaceRasterizer.swift
+      - Sources/Views/Plugins/PluginSurfaceDrawing.swift
       - Sources/Views/ThumbnailLoadState.swift
       - Sources/Views/DockWindowCard.swift
       - Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift
@@ -209,12 +246,15 @@ targets:
     platform: macOS
     sources:
       - Sources/Models/Plugins/PluginConsoleLine.swift
+      - Sources/Models/Plugins/PluginScene3DDescriptor.swift
+      - Sources/Services/Plugins/PluginSurfaceRequest.swift
       - Sources/Models/Plugins/PluginGrant.swift
       - Sources/Models/Plugins/PluginManifest.swift
       - Sources/Models/Plugins/PluginUINode.swift
       - Sources/Models/Plugins/PluginScene.swift
       - Sources/Services/Plugins/PluginRegistry.swift
       - Sources/Services/Plugins/PluginPackageValidator.swift
+      - Sources/Services/Plugins/GLBPreflight.swift
       - Sources/Services/Plugins/PluginRuntime.swift
       - Sources/Services/Plugins/PluginVirtualClock.swift
       - Sources/Services/Plugins/PluginFileReader.swift
