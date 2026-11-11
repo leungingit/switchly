@@ -61,6 +61,12 @@ final class DockPluginOverlayModel: ObservableObject {
     var hasCenter: Bool { !(slots[.center] ?? []).isEmpty }
     var isPreparing: Bool { !hasCommittedRender && !display.slots.isEmpty }
 
+    func hasWindowPlugins(bundleID: String) -> Bool {
+        host.installedPlugins().contains {
+            $0.authorization.isEnabled && $0.package.manifest.renderScope == .window && $0.package.manifest.matches(bundleID: bundleID)
+        }
+    }
+
     /// Upper bound per slot, so one misbehaving plugin cannot push the panel down.
     static let maxEntriesPerSlot = 3
 
@@ -77,8 +83,10 @@ final class DockPluginOverlayModel: ObservableObject {
     static let defaultRefreshInterval: TimeInterval = 1
 
     private let host: PluginHosting
+    private let scope: PluginRenderScope
     private var context: PluginRenderContext?
     private var runtimes: [PluginRuntimeProtocol] = []
+    private var readsMedia: Bool { scope == .app || runtimes.contains { $0.manifest.permissions.contains(.mediaNowPlaying) } }
     private struct OwnedAction {
         let runtime: PluginRuntimeProtocol
         let namespace: PluginActionNamespace
@@ -95,41 +103,50 @@ final class DockPluginOverlayModel: ObservableObject {
     private var renderRevision = 0
     private var pendingActions = 0
 
-    init(host: PluginHosting = PluginHost.shared) {
+    init(host: PluginHosting = PluginHost.shared, scope: PluginRenderScope = .app) {
         self.host = host
+        self.scope = scope
     }
 
 
     func start(context: PluginRenderContext) {
         dispatchPrecondition(condition: .onQueue(.main))
-        guard context.bundleID != self.context?.bundleID || context.windowID != self.context?.windowID else { return }
+        guard context.bundleID != self.context?.bundleID || context.windowID != self.context?.windowID
+                || context.pid != self.context?.pid || context.captureTarget != self.context?.captureTarget else { return }
         stop()
+        var context = context
+        context.presentationID = UUID().uuidString
         self.context = context
         let generation = self.generation
         let host = self.host
         loadingTask = Task { @MainActor [weak self] in
-            let runtimes = await host.loadRuntimes(for: context.bundleID)
-            guard !Task.isCancelled, let self, self.generation == generation, !runtimes.isEmpty else { return }
+            let loaded = await host.loadRuntimes(for: context.bundleID)
+            guard !Task.isCancelled, let self, self.generation == generation else { return }
+            let runtimes = loaded.filter { ($0.manifest.renderScope ?? .app) == self.scope }
+            guard !runtimes.isEmpty else { return }
             self.beginRendering(context: context, runtimes: runtimes, generation: generation)
         }
     }
 
     private func beginRendering(context: PluginRenderContext, runtimes: [PluginRuntimeProtocol], generation: Int) {
         self.runtimes = runtimes
-        mediaInterest = host.acquireMediaRead(for: context.bundleID) { [weak self] in
-            DispatchQueue.main.async {
-                guard let self, self.generation == generation else { return }
-                // 先撤销旧封面；文字与下一批封面仍作为一个状态提交。
-                if self.display.mediaRead?.artworkIsCurrent() != true {
-                    var cleared = self.display
-                    cleared.artwork = nil
-                    cleared.artworkToken = nil
-                    self.display = cleared
-                    self.artworkData = nil
+        if scope == .window { AppLogger.debug("Window plugin started. windowID=\(context.windowID) generation=\(generation) runtimes=\(runtimes.count)") }
+        if readsMedia {
+            mediaInterest = host.acquireMediaRead(for: context.bundleID) { [weak self] in
+                DispatchQueue.main.async {
+                    guard let self, self.generation == generation else { return }
+                    // 先撤销旧封面；文字与下一批封面仍作为一个状态提交。
+                    if self.display.mediaRead?.artworkIsCurrent() != true {
+                        var cleared = self.display
+                        cleared.artwork = nil
+                        cleared.artworkToken = nil
+                        self.display = cleared
+                        self.artworkData = nil
+                    }
+                    // 在途读取可能在通知后才固定最新代际；由发布前的 isCurrent /
+                    // isFresh 判断是否过期，避免把有效首批丢掉后再读一整批。
+                    self.renderOnce(generation: generation)
                 }
-                // 在途读取可能在通知后才固定最新代际；由发布前的 isCurrent /
-                // isFresh 判断是否过期，避免把有效首批丢掉后再读一整批。
-                self.renderOnce(generation: generation)
             }
         }
         runtimeInterest = host.acquireRuntimeVisibility(runtimes) { [weak self] in
@@ -282,7 +299,9 @@ final class DockPluginOverlayModel: ObservableObject {
         }
         renderRevision += 1
         let revision = renderRevision
-        let mediaRead = await host.mediaRead(for: context.bundleID)
+        let mediaRead: MediaReadContext?
+        if readsMedia { mediaRead = await host.mediaRead(for: context.bundleID) }
+        else { mediaRead = nil }
         guard generation == self.generation, revision == renderRevision else { return }
         var merged: [PluginSlot: [PluginSlotEntry]] = [:]
         var owners: [String: OwnedAction] = [:]

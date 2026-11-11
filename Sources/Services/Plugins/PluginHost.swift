@@ -54,7 +54,9 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
     private let registry: PluginRegistryProtocol
     private let grants: () -> [String: PluginGrant]
     private let mediaBridge: MediaBridging
-    private let makeRuntime: (PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol
+    private let makeRuntime: ((PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol)?
+    private let weather: () -> [String: Any]?
+    private var captureRequester: WindowCaptureRequesting?
     private let lock = NSLock()
     private var mediaInterests: [UUID: (bundleID: String, lease: MediaReadInterest)] = [:]
     private var failures: [PluginLoadFailure] = []
@@ -73,16 +75,33 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
         self.registry = registry
         self.grants = grants
         self.mediaBridge = mediaBridge
-        self.makeRuntime = makeRuntime ?? { package, permissions in
-            // Media calls are Apple Event round trips; 1 s leaves room for a
-            // busy target app without letting a stuck plugin linger.
-            PluginRuntime(package: package, timeout: 1, mediaBridge: mediaBridge, permissions: permissions,
-                          libraryBridge: mediaBridge as? MusicLibraryPlaying,
-                          fileReader: PluginFileReader(roots: package.manifest.fsRoots ?? []),
-                          settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
-                          values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
-                          weather: weather, storage: PluginStorage(pluginID: package.manifest.id))
+        self.weather = weather
+        self.makeRuntime = makeRuntime
+    }
+
+    /// App composition installs the capture session before presenting any Dock UI.
+    func configureCapture(_ requester: WindowCaptureRequesting) {
+        lock.lock()
+        captureRequester = requester
+        lock.unlock()
+        reload()
+    }
+
+    func isCaptureAuthorized(pluginID: String) -> Bool {
+        installedPlugins().contains {
+            $0.id == pluginID && $0.authorization.isEnabled && $0.authorization.permissions.contains(.windowCapture)
         }
+    }
+
+    private func createRuntime(_ package: PluginPackage, permissions: Set<PluginCapability>) -> PluginRuntimeProtocol {
+        if let makeRuntime { return makeRuntime(package, permissions) }
+        return PluginRuntime(package: package, timeout: 1, mediaBridge: mediaBridge, permissions: permissions,
+                             libraryBridge: mediaBridge as? MusicLibraryPlaying,
+                             fileReader: PluginFileReader(roots: package.manifest.fsRoots ?? []),
+                             settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
+                             values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
+                             weather: weather, storage: PluginStorage(pluginID: package.manifest.id),
+                             captureRequester: captureRequester)
     }
 
     func installedPlugins() -> [InstalledPlugin] {
@@ -113,7 +132,7 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
                 continue
             }
             if let old = runtimesByID[plugin.id] { stale.append(old.runtime) }
-            let runtime = makeRuntime(plugin.package, auth.permissions)
+            let runtime = createRuntime(plugin.package, permissions: auth.permissions)
             runtimesByID[plugin.id] = (auth.permissions, runtime)
             result.append(runtime)
         }
@@ -277,6 +296,7 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
         packages = nil
         lock.unlock()
         old.forEach { $0.unmount() }
+        DispatchQueue.main.async { [weak self] in self?.captureRequester?.validateAuthorization() }
     }
 
     deinit { cancelEngineWarmup(); releaseMediaInterests() }

@@ -26,6 +26,9 @@ struct PluginRenderContext: Equatable {
     let titleSummary: String
     /// Seconds since 1970 when the app was last frontmost; nil while unknown.
     var lastActiveAt: TimeInterval? = nil
+    /// Host-only identity. Never serialized to JavaScript or accepted from plugin input.
+    var captureTarget: WindowCaptureTarget? = nil
+    var presentationID: String? = nil
 
     static func summarize(title: String, limit: Int = 40) -> String {
         title.count <= limit ? title : String(title.prefix(limit)) + "…"
@@ -107,6 +110,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private let package: PluginPackage
     private let timeout: TimeInterval
+    private let captureRequester: WindowCaptureRequesting?
     private let maxConsecutiveTimeouts: Int
     private let preferredLanguages: [String]
     private let uiFeatures: [String: Bool]
@@ -187,9 +191,11 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          weather: (() -> [String: Any]?)? = nil,
          storage: PluginStorageProviding? = nil,
          virtualClock: PluginVirtualClock? = nil,
+         captureRequester: WindowCaptureRequesting? = nil,
          reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion },
          uiFeatures: [String: Bool] = ["scene3d": true]) {
         self.uiFeatures = uiFeatures
+        self.captureRequester = captureRequester
         self.virtualClock = virtualClock
         self.reduceMotion = reduceMotion
         self.settingsProvider = settings
@@ -317,6 +323,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         return result.flatMap { json in
             do {
                 let slots = try PluginRenderOutput.decode(json: Data(json.utf8))
+                if manifest.renderScope == .window, slots.contains(where: { $0.slot == .center }) {
+                    return .failure(.invalidOutput("窗口范围插件不能使用 center"))
+                }
                 return .success((json, slots))
             } catch {
                 AppLogger.throttledWarning(key: "plugin.output.\(manifest.id)", "Plugin render output rejected. plugin=\(manifest.id) error=\(error)")
@@ -357,7 +366,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                                                "Plugin script error. plugin=\(pluginID) phase=\(method) error=\(message.prefix(Self.maxLogLength))")
                     self?.complete(callID: callID, .failure(.script(message)))
                 }
-                let ctxValue = makeContextValue(ctx, in: js, mediaRead: mediaRead)
+                let ctxValue = makeContextValue(ctx, in: js, mediaRead: mediaRead,
+                                               captureCallID: method == "onAction" ? callID : nil)
                 if method == "prepare" {
                     for key in ["media", "weather", "fs", "storage", "invalidate", "capabilities"] {
                         ctxValue?.deleteProperty(key)
@@ -773,7 +783,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         """)
     }
 
-    private func makeContextValue(_ ctx: PluginRenderContext, in js: JSContext, mediaRead: MediaReadContext? = nil) -> JSValue? {
+    private func makeContextValue(_ ctx: PluginRenderContext, in js: JSContext, mediaRead: MediaReadContext? = nil,
+                                  captureCallID: Int? = nil) -> JSValue? {
         // Manifest defaults, overridden by the user's saved values.
         var settingValues = Dictionary(uniqueKeysWithValues: (manifest.settings ?? []).map { ($0.key, $0.defaultValue.jsValue) })
         for (key, flag) in settingsProvider() where settingValues[key] != nil { settingValues[key] = flag }
@@ -798,6 +809,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             "capabilities": capabilitySnapshot(bundleID: ctx.bundleID),
             "reduceMotion": reduceMotion(),
             "uiFeatures": uiFeatures,
+            "presentationID": ctx.presentationID ?? "",
         ] as [String: Any], in: js)
         let strings = self.strings
         let t: @convention(block) (String) -> String = { key in strings[key] ?? key }
@@ -808,6 +820,33 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         value?.setObject(weather, forKeyedSubscript: "weather" as NSString)
         value?.setObject(t, forKeyedSubscript: "t" as NSString)
         value?.setObject(invalidate, forKeyedSubscript: "invalidate" as NSString)
+        if permissions.contains(.windowCapture) {
+            var consumed = false
+            let call: @convention(block) (JSValue) -> Any = { [weak self, weak js] options in
+                guard let self, let js, self.context === js, !self.suspended, !self.isDisabled,
+                      let callID = captureCallID, self.pending[callID] != nil, !consumed else {
+                    return WindowCaptureSubmission(failure: .noUserAction).jsObject
+                }
+                guard let input = options.toDictionary() as? [String: Any], Set(input.keys) == ["mode"],
+                      let raw = input["mode"] as? String, let mode = WindowCaptureMode(rawValue: raw),
+                      let target = ctx.captureTarget, target.windowID == ctx.windowID, target.pid == ctx.pid,
+                      self.manifest.renderScope == .window else {
+                    return WindowCaptureSubmission(failure: .invalidRequest).jsObject
+                }
+                consumed = true
+                guard let requester = self.captureRequester else {
+                    return WindowCaptureSubmission(failure: .windowUnavailable).jsObject
+                }
+                return requester.submit(WindowCaptureRequest(pluginID: self.manifest.id, target: target, mode: mode)).jsObject
+            }
+            let makeCapture = js.evaluateScript("""
+            (function (call) { return Object.freeze({
+              window: function (options) { return Promise.resolve(call(options)); }
+            }); })
+            """)
+            value?.setObject(makeCapture?.call(withArguments: [unsafeBitCast(call, to: AnyObject.self)]),
+                             forKeyedSubscript: "capture" as NSString)
+        }
         if let makeMedia = js.objectForKeyedSubscript("__switchlyMakeMedia"), !makeMedia.isUndefined {
             value?.setObject(makeMedia.call(withArguments: [ctx.bundleID, permissions.contains(.mediaNowPlaying) && mediaRead != nil,
                 permissions.contains(.mediaNowPlaying) ? (mediaRead?.nowPlaying?.jsObject as Any? ?? NSNull()) : NSNull(),
@@ -831,7 +870,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private func capabilitySnapshot(bundleID: String) -> [String: [String: Bool]] {
         var result: [String: [String: Bool]] = [:]
         let capabilities: [PluginCapability] = [.mediaNowPlaying, .mediaControl, .mediaLibrary,
-                                                .weatherCurrent, .fsRead, .windowFocus]
+                                                .weatherCurrent, .fsRead, .windowFocus, .windowCapture]
         for capability in Set(capabilities + manifest.permissions) {
             let supported: Bool
             let ready: Bool
@@ -841,6 +880,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             case .mediaLibrary: supported = true; ready = libraryBridge != nil
             case .weatherCurrent: supported = true; ready = weatherProvider?() != nil
             case .fsRead: supported = true; ready = fileReader != nil
+            case .windowCapture: supported = true; ready = manifest.renderScope == .window && captureRequester?.isAvailable == true
             case .windowFocus, .appleScript: supported = false; ready = false
             }
             let granted = permissions.contains(capability)

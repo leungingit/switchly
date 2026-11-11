@@ -70,6 +70,10 @@ Dock 卡片可选择横向、纵向或网格布局，窗口较多时可以滚动
 
 音乐插件默认通过本地 MediaRemote／AppleScript 组合桥读取歌曲和流媒体封面，定向控制、喜欢与资料库仍使用 AppleScript。主 App 离线打包固定 Adapter，仅获授权的可见消费者启动采集；当前机器已完成真实 Dock 悬停验收。近期封面在同一读取会话内最多缓存 8 张／8 MiB，来源变化或面板全部关闭时清理。详见[接入设计](docs/plugins/mediaremote/music-mediaremote-integration-plan.md)。
 
+### 窗口截图插件（本地开发版本）
+
+在偏好设置中启用并明确授权窗口截图插件后，各 Dock 窗口卡片提供快速截图与自定义选区。原始图片在本机处理，可复制、保存或使用系统分享；标注交给「预览」，保存并关闭后回到截图窗口读取修改。需要屏幕录制权限，最小化或不可读取的窗口会提示失败；完整支持范围见[验证记录](docs/reviews/window-capture-validation-2026-11-11.md)。
+
 ### 独立预览插件
 
 开发者无需运行 Switchly 本体，即可使用独立预览 App 和合成数据查看插件；它复用本体的 Runtime、解码器和渲染代码。启动器提供模拟 Dock，场景支持执行动作、导出截图和报告、比较视觉基线。默认场景和启动器改进仍在开发中，工具包目前是本地候选，尚未发布到 npm。可用 `make plugin-preview-package` 构建，具体用法与边界见[使用指南](docs/plugins/preview/plugin-preview-guide.md)和[覆盖矩阵](docs/plugins/preview/plugin-preview-coverage.md)。真实 Dock、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。

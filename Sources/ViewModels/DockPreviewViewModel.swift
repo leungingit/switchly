@@ -144,6 +144,16 @@ class DockPreviewViewModel: ObservableObject {
         ))
     }
 
+    func pluginContext(for window: WindowInfo) -> PluginRenderContext? {
+        guard let bundleID = currentBundleID,
+              let started = NSRunningApplication(processIdentifier: window.ownerPID)?.launchDate else { return nil }
+        return PluginRenderContext(bundleID: bundleID, pid: window.ownerPID, appName: appName,
+                                   windowID: window.id, titleSummary: PluginRenderContext.summarize(title: window.windowTitle),
+                                   captureTarget: WindowCaptureTarget(windowID: window.id, pid: window.ownerPID,
+                                                                      processStartedAt: started,
+                                                                      isMinimized: window.isMinimized, isHidden: window.isHidden))
+    }
+
     /// Finds the running application for a hovered Dock icon.
     ///
     /// 1. When the Dock AX item's bundle URL is available, match it against
@@ -255,7 +265,8 @@ class DockPreviewViewModel: ObservableObject {
             spec: settings.dockPreviewLayout.spec,
             count: windows.count,
             cardWidth: settings.dockPreviewCardWidth,
-            visibleSize: visible
+            visibleSize: visible,
+            titleAccessoryHeight: currentBundleID.map { pluginOverlay.hasWindowPlugins(bundleID: $0) } == true ? DesignTokens.Plugin.controlSmall : 0
         )
         let hideStrip = hasPluginCard && pluginOverlay.hidesWindowPreviews(in: settings)
         if hidesWindowStrip != hideStrip { hidesWindowStrip = hideStrip }

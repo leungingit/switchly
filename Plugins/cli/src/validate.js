@@ -20,6 +20,7 @@ const allowedPermissions = new Set([
   "media.library",
   "weather.current",
   "window.focus",
+  "window.capture",
   "fs.read",
 ]);
 
@@ -331,6 +332,10 @@ export function validateManifest(manifest) {
           || manifest.refreshInterval <= 0
           || manifest.refreshInterval > 86400)) {
     errors.push("refreshInterval 必须是 (0, 86400] 内的有限数字");
+  }
+  if (manifest.renderScope !== undefined && manifest.renderScope !== null
+      && !["app", "window"].includes(manifest.renderScope)) {
+    errors.push("renderScope 必须是 app 或 window");
   }
   if (manifest.defaultEnabled !== undefined
       && typeof manifest.defaultEnabled !== "boolean") {

@@ -47,7 +47,7 @@
         "type": "string",
         "minLength": 1
       },
-      "description": "目标应用的 bundle ID。"
+      "description": "目标应用bundle ID；单项*可匹配所有应用。"
     },
     "permissions": {
       "type": "array",
@@ -61,7 +61,8 @@
               "media.library",
               "weather.current",
               "window.focus",
-              "fs.read"
+              "fs.read",
+              "window.capture"
             ]
           },
           {
@@ -108,6 +109,14 @@
     "defaultEnabled": {
       "type": "boolean",
       "description": "仅对内置插件生效；缺省视为 true。"
+    },
+    "renderScope": {
+      "enum": [
+        "app",
+        "window",
+        null
+      ],
+      "description": "默认app；window按每张窗口卡片分别渲染和绑定动作目标。"
     }
   },
   "allOf": [

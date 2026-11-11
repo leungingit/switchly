@@ -20,7 +20,7 @@ enum PluginSpacing: String, Codable { case xs, s, m }
 enum PluginAlignment: String, Codable { case leading, center, trailing }
 enum PluginMaterial: String, Codable { case glass, plain }
 enum PluginControlSize: String, Codable { case s, m, l }
-enum PluginButtonVariant: String, Codable { case plain, prominent }
+enum PluginButtonVariant: String, Codable { case plain, prominent, labeled }
 enum PluginTextStyle: String, Codable { case title, body, caption }
 enum PluginProgressStyle: String, Codable { case linear, circular }
 enum PluginCorner: String, Codable { case s, m }

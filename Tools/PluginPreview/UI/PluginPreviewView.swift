@@ -7,7 +7,9 @@ struct PluginPreviewView: View {
     @ObservedObject var state: PluginPreviewState
     @State private var selectedSlot: PluginSlot = .center
 
-    private let supportedSlots: Set<PluginSlot> = [.center, .bottomBar]
+    private var supportedSlots: Set<PluginSlot> {
+        Set(state.capturedSlots)
+    }
 
     init(state: PluginPreviewState, initialSlot: PluginSlot = .center) {
         self.state = state
@@ -28,6 +30,10 @@ struct PluginPreviewView: View {
         .background(shellBackground)
         .preferredColorScheme(state.environment.theme.colorScheme)
         .environment(\.locale, Locale(identifier: state.environment.language.rawValue))
+        .onChange(of: state.renderScope) { scope in
+            if scope == .window, selectedSlot == .center { selectedSlot = .titleAccessory }
+            else if scope == .app, selectedSlot == .titleAccessory || selectedSlot == .topTrailing { selectedSlot = .center }
+        }
     }
 
     private var header: some View {
@@ -136,7 +142,7 @@ struct PluginPreviewView: View {
                     .foregroundColor(supportedSlots.contains(selectedSlot) ? .accentColor : .secondary)
             }
 
-            if !supportedSlots.contains(selectedSlot) {
+            if !supportedSlots.contains(selectedSlot), state.renderScope == .app {
                 Label(
                     t("Switchly Dock currently connects only the center and bottom bar slots. This view still renders the shared component."),
                     systemImage: "info.circle"

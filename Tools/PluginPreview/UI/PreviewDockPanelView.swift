@@ -163,6 +163,8 @@ struct PreviewDockPanelView: View {
                 settings: settings,
                 // 本体只把 bottomBar 挂到第一张窗口卡片。
                 pluginOverlay: window.id == windows.first?.id ? bottomBarOverlay : nil,
+                pluginAccessory: windowSlot(.titleAccessory, window: window),
+                pluginTopTrailing: windowSlot(.topTrailing, window: window),
                 // 交通灯只作展示：不可点，也不调用 AX。
                 trafficLights: AnyView(PreviewMockTrafficLights()),
                 initialThumbnail: { window in
@@ -180,6 +182,14 @@ struct PreviewDockPanelView: View {
             pluginSurface(bottomBarEntries)
                 .environment(\.pluginSceneNow, state.virtualNowSeconds.map { now in { now } })
         )
+    }
+
+    /// Worker 一次预览一个合成窗口上下文；只挂到它对应的第一张 mock 卡片。
+    private func windowSlot(_ slot: PluginSlot, window: WindowInfo) -> AnyView? {
+        guard state.renderScope == .window, window.id == windows.first?.id,
+              let entries = state.slots[slot], !entries.isEmpty else { return nil }
+        return AnyView(pluginSurface(entries)
+            .environment(\.pluginSceneNow, state.virtualNowSeconds.map { now in { now } }))
     }
 
     // MARK: - Center slot

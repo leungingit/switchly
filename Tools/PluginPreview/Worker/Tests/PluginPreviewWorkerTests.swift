@@ -40,7 +40,28 @@ private enum PluginPreviewWorkerTests {
         try testRawRenderJSONUsesTheHostValidator()
         try testWorkerLifecycleAndFrames()
         try testVirtualClockAdvance()
+        try testWindowCaptureIsSimulated()
         print("PluginPreviewWorker tests passed")
+    }
+
+    private static func testWindowCaptureIsSimulated() throws {
+        let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("capture-worker-\(UUID())")
+        let plugin = temporary.appendingPathComponent("plugin")
+        try FileManager.default.createDirectory(at: plugin, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        try Data(#"{"id":"com.example.capture","name":{"en":"Capture"},"version":"1","apiVersion":2,"matches":["*"],"permissions":["window.capture"],"entry":"main.js","renderScope":"window"}"#.utf8)
+            .write(to: plugin.appendingPathComponent("manifest.json"))
+        let source = #"globalThis.__switchlyPlugin={render(){return []},async onAction(ctx){const r=await ctx.capture.window({mode:'full'});if(JSON.stringify(r)!=='{\"status\":\"accepted\"}')throw Error('capture was not simulated');}};"#
+        try Data(source.utf8).write(to: plugin.appendingPathComponent("main.js"))
+        let scenario = #"{"schemaVersion":1,"id":"capture-test","environment":{"locale":"en","appearance":"light","glass":false,"reduceMotion":true,"contentWidthPoints":480},"target":{"bundleID":"com.example.fixture","appName":"Fixture"},"fixtures":{},"grants":["window.capture"],"settings":{},"storageSeed":{},"steps":[]}"#
+        let scenarioURL = temporary.appendingPathComponent("scenario.json")
+        try Data(scenario.utf8).write(to: scenarioURL)
+        let prepared = try PluginPreviewWorkerLoader.load(pluginDirectory: plugin.path, scenarioPath: scenarioURL.path)
+        let result = waitForAsync { await prepared.runtime.performAction(id: "capture", value: nil, context: prepared.context) }
+        guard case .success = result else { throw WorkerTestFailure(description: "mock capture failed: \(result)") }
+        prepared.runtime.unmount()
+        let files = try FileManager.default.contentsOfDirectory(atPath: temporary.path)
+        try expectEqual(Set(files), Set(["plugin", "scenario.json"]), "capture mock must not create an image or edit session")
     }
 
     private static func testProtocolErrorIsAFrame() throws {

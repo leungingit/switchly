@@ -328,7 +328,12 @@
         "maxNodes": 64,
         "uniqueSlots": true,
         "uniqueActionIds": true
-      }
+      },
+      "buttonVariants": [
+        "plain",
+        "prominent",
+        "labeled"
+      ]
     },
     {
       "id": "ui.image.artwork",
@@ -644,6 +649,47 @@
       ],
       "surface": "ctx.capabilities",
       "description": "按能力名查询 supported/granted/available；window.focus 与 appleScript 始终报告未实现，storage 是基础能力。"
+    },
+    {
+      "id": "ctx.capture.window",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "ctx.capture.window",
+      "injected": "when-authorized",
+      "permission": "window.capture",
+      "returns": "Promise<accepted|failed>",
+      "description": "仅真实onAction有效期间单次提交，绑定宿主窗口目标；不接收windowID、不返回像素/路径，accepted不是输出完成。Preview/Worker纯模拟。"
+    },
+    {
+      "id": "manifest.renderScope",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "values": [
+        "app",
+        "window"
+      ],
+      "default": "app",
+      "description": "window按卡片渲染，应用范围插件保持原行为；matches支持通用*。",
+      "windowSlots": [
+        "titleAccessory",
+        "topTrailing",
+        "bottomBar"
+      ]
+    },
+    {
+      "id": "ctx.presentationID",
+      "status": "stable",
+      "apiVersions": [
+        1,
+        2
+      ],
+      "surface": "ctx.presentationID",
+      "injected": true,
+      "description": "一次叠层展示的宿主标识；可重置展开状态，不用于窗口身份。"
     }
   ],
   "permissions": [
@@ -683,6 +729,12 @@
       "id": "appleScript:<bundleID>",
       "status": "unimplemented",
       "injectedWhenGranted": false
+    },
+    {
+      "id": "window.capture",
+      "status": "stable",
+      "injectedWhenGranted": true,
+      "builtinRequiresExplicitGrant": true
     }
   ],
   "forbiddenGlobals": [

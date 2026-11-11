@@ -11,7 +11,7 @@
 Switchly 是一款**完全在本地运行的 macOS 原生工具应用**。
 1. **默认无网络传输**：除下文「可选的在线天气」外，本应用不包含任何网络请求代码，也未申请任何网络相关 entitlement，不会向任何外部服务器发送数据。
 2. **不收集个人信息**：我们不会收集、存储、上传或与任何第三方共享您的个人身份信息、系统日志或操作行为。**本应用会在您的设备本地记录自身功能的使用次数（例如预览面板被打开的次数、快速切换被触发的次数），并据此估算这些快捷操作相对鼠标操作节省的时间。该数据仅包含计数值，不含任何窗口内容、应用名称或时间点明细；不上传，可随时一键清除。**
-3. **数据不出本地**：所有窗口预览、快捷键触发及窗口切换均在您的本地设备上进行处理。
+3. **本地处理，不自动发送**：所有窗口预览、快捷键触发、窗口切换与截图编辑流程均在本机处理。您主动选择保存位置或系统分享服务时，图片按您的选择交给文件系统或该系统服务；不会自动上传，也不向插件提供图片或路径。
 
 ### 可选的在线天气（默认关闭）
 
@@ -39,6 +39,14 @@ Switchly 是一款**完全在本地运行的 macOS 原生工具应用**。
   * **本地处理**：窗口缩略图在本机内存中渲染，短期内存缓存可在关闭预览面板后保留，用于再次展示。退出 Switchly 后内存缓存释放。
   * **有限的本地图片缓存**：为在重启 Switchly 后快速显示预览，本应用将压缩的小尺寸窗口缩略图保存在 `~/Library/Caches/Switchly/Thumbnails/`。仅允许身份匹配且截图时间在 24 小时内的旧图作为占位，并在后台尝试刷新；刷新失败不会延长旧图有效期。磁盘图片及元数据总量不超过 64 MB，最多保留 200 个文件；单张图片最长边不超过 1200 像素。不保存放大预览原图，不上传任何截图。
   * **替代方案**：如果您未授予此权限，本应用将仅显示对应应用程序的默认图标和窗口标题，而无法显示窗口内容预览，但核心的窗口切换功能依然可用。
+
+### 用户主动触发的窗口截图与标注
+
+窗口截图插件需要单独授权 `window.capture`，且只能在您点击窗口卡片操作后请求该卡片的截图。原始图片和裁剪过程在本机内存中处理，不写入缩略图缓存，不提供给插件 JavaScript，也不会自动上传。最小化或不可读取的窗口不会用旧缓存图片冒充新截图。
+
+只有点击“在预览中编辑”时，本应用才在仅当前用户可访问的临时会话目录写入 PNG，交给系统「预览」进行标注。请在「预览」保存并关闭该图片后返回截图窗口，确认读取已保存的修改。外部编辑尚未确认结束时不自动删除该文件；正常结束后清理本会话，启动时清理过期且不属于其他运行实例的残留。临时 PNG 未额外加密。您主动保存的文件和剪贴板内容由您管理；主动使用系统分享时，所选系统服务会按您的操作接收图片，本应用不自动发送，也不会向插件返回保存路径或接收方信息。
+
+English: Window capture requires a separate plugin grant and a user action on the target window card. Full-resolution images and region crops stay in local memory and are never passed to plugin JavaScript or the thumbnail disk cache. A private temporary PNG is created only when you choose to edit in Preview. Save and close that image, then explicitly reload the saved changes in Switchly before exporting. The temporary file remains while external editing is unconfirmed and is removed when the session ends; stale files from inactive sessions are cleaned on launch. Temporary PNGs are not additionally encrypted. Files you explicitly save and clipboard contents remain under your control. System sharing sends the image only to the service you select; Switchly does not automatically upload it or disclose output paths or recipients to plugins.
 
 ### 3. 自动化权限 (Apple Events)
 * **使用目的**：本应用使用 Apple Events 管理和聚焦窗口；用户授权音乐插件后，也用于定向读取 Apple Music 的歌曲、播放状态、喜欢状态及资料库信息，并执行播放、暂停、切歌、喜欢和资料库播放命令。

@@ -873,3 +873,18 @@ node --test Plugins/sdk/test/sdk.test.js Plugins/cli/test/cli.test.js Plugins/cl
 - 发布包格式、运行协议、SDK 和宿主版本分别演进，不能用一个版本号代替全部含义。
 - 当前没有公开 npm 发布，不应把本地包名当成已发布制品。
 - 未在能力清单标记 `stable` 的能力不得在插件市场、官网或 README 中宣传为稳定。
+
+
+## 窗口卡片截图（本地开发增量）
+
+manifest 可声明 `renderScope: "window"`，缺省仍为 `"app"`。窗口范围插件各自绑定卡片上下文；`matches: ["*"]` 可匹配所有应用。普通应用范围插件保持原挂载行为。titleAccessory、topTrailing、bottomBar 在各窗口卡片挂载；center 仍属于应用级内容，窗口范围插件不应用它替代整个窗口条。
+
+`window.capture` 必须由用户明确确认，预装包也不自动获得。获准后提供 `ctx.capture.window({ mode: "full" | "region" })`，只接受 mode，不接受 windowID、PID、文件名或路径；目标由宿主动作上下文绑定。仅真实 onAction 的有效调用期间可提交一次，render、受控定时器或已结束调用保存的引用不能开始截图。`ctx.capabilities["window.capture"]` 区分 supported、granted、available；available 为当前屏幕录制权限与宿主提交器均就绪，不表示所有窗口内容均可读。
+
+返回 Promise 仅确认短提交：`{status:"accepted"}` 或 `{status:"failed",reason}`。accepted 不表示已保存、复制或分享；长流程由独立宿主会话持有，Dock 隐藏后仍继续。窗口消失、最小化、撤权、超时与其他失败由宿主处理，不把旧缩略图当成新截图。插件不会收到图片像素、文件路径或分享接收方。预览/Worker 使用纯模拟提交器，不链接真实抓取流程。
+
+首期先截取完整冻结位图；region 模式在冻结图上选择区域。系统标注使用「预览」：用户保存并关闭图片后，显式返回宿主读取修改，再复制、选择保存位置或通过系统分享。只有外部编辑需要临时 PNG；不写入 ThumbnailDiskCache。详见 [窗口截图合同](window-capture-plan.md) WC-D08～D13。
+
+窗口入口支持 button.variant=labeled（显示标签并扩大同一按钮点击区）；ctx.presentationID 为一次叠层展示的宿主标识，可重置展开状态，不用于窗口身份。
+
+窗口范围的 ctx.app.pid 表示当前卡片窗口的实际拥有进程，bundleID/name 仍表示 Dock 目标产品；宿主将拥有进程、进程启动时间与 windowID 绑定。window 范围不接受 center 输出；卡片标题行固定容纳小尺寸控件，面板高度预算共用同一几何值。

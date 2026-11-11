@@ -15,6 +15,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- 窗口截图插件的本地开发接入：按卡片绑定目标、原始图片截图、冻结图片选区、复制／保存／系统分享，以及「预览」编辑后的显式重读；截图权限需用户单独确认，插件不接收像素或路径。新增仅操作自身样例窗口的原生验收工具。
+
 - 音乐插件默认使用本地 MediaRemote／AppleScript 组合桥，支持流媒体封面配对、共享读取兴趣及有界近期封面缓存，保留定向控制、喜欢与资料库能力；主 App 离线编译并打包固定 Adapter。
 
 - 插件独立预览与开发工具（本地候选）：本体未运行时用同一份 Runtime/解码器/渲染代码预览插件，`switchly-plugin dev|run` 导出截图、声明式树、动作清单与报告；场景支持固定虚拟时钟（`Date`/`Math.random`/定时器/Scene）、步骤（推进时间、业务动作、文本断言、经可访问树的原生点击）、逐像素视觉基线与差异图。提供离线工具包（`make plugin-preview-package`）与兼容握手；CLI 与预览 App 版本、协议或契约不配套时在启动前拒绝。详见 `docs/plugins/preview/plugin-preview-guide.md`。

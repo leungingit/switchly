@@ -20,6 +20,8 @@ struct DockWindowCard: View {
     /// Pre-rendered plugin content for the card's bottom bar. The host builds
     /// it so this file stays free of the plugin overlay model.
     private let pluginOverlay: AnyView?
+    private let pluginAccessory: AnyView?
+    private let pluginTopTrailing: AnyView?
     /// Pre-rendered traffic light controls. The host injects the AX-backed
     /// buttons; a host without Accessibility can pass nil or its own view.
     private let trafficLights: AnyView?
@@ -47,6 +49,8 @@ struct DockWindowCard: View {
         isSelected: Bool,
         settings: AppSettings,
         pluginOverlay: AnyView? = nil,
+        pluginAccessory: AnyView? = nil,
+        pluginTopTrailing: AnyView? = nil,
         trafficLights: AnyView? = nil,
         initialThumbnail: @escaping (WindowInfo) -> ThumbnailLoadState = { _ in .loading },
         loadThumbnail: @escaping (WindowInfo, CGSize) async throws -> NSImage = { _, _ in
@@ -58,6 +62,8 @@ struct DockWindowCard: View {
         self.isSelected = isSelected
         self.settings = settings
         self.pluginOverlay = pluginOverlay
+        self.pluginAccessory = pluginAccessory
+        self.pluginTopTrailing = pluginTopTrailing
         self.trafficLights = trafficLights
         self.initialThumbnail = initialThumbnail
         self.loadThumbnailImage = loadThumbnail
@@ -66,7 +72,7 @@ struct DockWindowCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DockPanelMetrics.labelSpacing) {
             ZStack(alignment: .topLeading) {
                 thumbnailContainer
                     .frame(width: cardThumbnailWidth, height: cardThumbnailHeight)
@@ -77,6 +83,11 @@ struct DockWindowCard: View {
                             pluginOverlay
                                 .frame(maxHeight: cardThumbnailHeight * DesignTokens.Plugin.bottomBarMaxHeightFraction)
                                 .padding(DesignTokens.Spacing.xs)
+                        }
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        if let pluginTopTrailing {
+                            pluginTopTrailing.padding(DesignTokens.Spacing.xs)
                         }
                     }
 
@@ -102,11 +113,17 @@ struct DockWindowCard: View {
                 }
             }
 
-            Text(primaryTitle)
-                .font(.caption2.weight(.medium))
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .frame(width: cardThumbnailWidth, alignment: .leading)
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                Text(primaryTitle)
+                    .font(.caption2.weight(.medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                pluginAccessory
+            }
+            .frame(width: cardThumbnailWidth, height: pluginAccessory == nil ? nil : DesignTokens.Plugin.controlSmall, alignment: .leading)
+            .clipped()
+            .contentShape(Rectangle())
         }
         .padding(6)
         .cardSurface(

@@ -64,6 +64,7 @@ struct PluginPreviewEnvironment: Equatable {
 final class PluginPreviewState: ObservableObject {
     @Published var pluginID = ""
     @Published var pluginVersion = ""
+    @Published var renderScope: PluginRenderScope = .app
     @Published var generation = 0
     @Published var status: PluginPreviewStatus = .idle
     @Published var slots: [PluginSlot: [PluginSlotSurface.Entry]] = [:]
@@ -72,6 +73,10 @@ final class PluginPreviewState: ObservableObject {
     @Published var environment = PluginPreviewEnvironment()
     /// 场景声明 `clock` 时的虚拟当前时刻（Unix 秒），供 Scene 绘制；nil 表示使用系统时间。
     @Published var virtualNowSeconds: Double?
+
+    var capturedSlots: [PluginSlot] {
+        renderScope == .window ? [.titleAccessory, .topTrailing, .bottomBar] : [.center, .bottomBar]
+    }
 
     var reloadHandler: (() -> Void)?
     var resetHandler: (() -> Void)?
