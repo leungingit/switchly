@@ -108,6 +108,27 @@ enum WindowSystemIdentity {
     }
 }
 
+/// Electron / Chromium 应用默认不构建辅助功能树，此时读取 kAXWindows 返回 kAXErrorAPIDisabled，
+/// 应用的窗口既无法枚举也无法聚焦（最小化窗口只能经 AX 发现，会从预览中消失）。
+/// 官方约定的开关是 AXManualAccessibility；每个进程只尝试一次，对不支持该属性的应用无副作用。
+enum AXManualAccessibility {
+    private static let lock = NSLock()
+    private static var attempted: Set<pid_t> = []
+
+    /// 首次对该进程调用时设置开关并返回 true（调用方应稍等后重读）；之后返回 false。
+    static func enableOnce(_ appElement: AXUIElement, pid: pid_t) -> Bool {
+        lock.lock()
+        let isFirst = attempted.insert(pid).inserted
+        lock.unlock()
+        guard isFirst else { return false }
+        let result = AXUIElementSetAttributeValue(appElement, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        AppLogger.info("Enabled manual accessibility for app. pid=\(pid), result=\(result.rawValue)")
+        guard result == .success else { return false }
+        Thread.sleep(forTimeInterval: 0.2)
+        return true
+    }
+}
+
 /// 每次快照读取一次活动桌面；未知归属不猜成当前桌面或其他桌面。
 struct WindowSpaceSnapshot {
     private typealias Connection = @convention(c) () -> Int32

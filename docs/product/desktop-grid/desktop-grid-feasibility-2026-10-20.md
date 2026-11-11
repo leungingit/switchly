@@ -33,7 +33,7 @@
 
 本机命令实际报告：`macOS 27.0.1 (26A434)`、`arm64`、SIP enabled；按原样记录，未将其推定为 macOS 26 的兼容测试。Xcode 路径为 `/Applications/Xcode.app/Contents/Developer`。
 
-探针：[`space-readonly-probe.m`](../research/desktop-grid/space-readonly-probe.m)。动态加载系统 SkyLight，调用：
+探针：[`space-readonly-probe.m`](../../research/desktop-grid/space-readonly-probe.m)。动态加载系统 SkyLight，调用：
 
 - `SLSCopyManagedDisplaySpaces`：读取显示器与桌面快照；
 - `SLSManagedDisplayGetCurrentSpace`：逐显示器读取当前桌面；

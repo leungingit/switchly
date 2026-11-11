@@ -1,7 +1,7 @@
 # Switchly 九宫格虚拟桌面设计说明
 
 > 状态：设计定稿（2026-10-23），**工程尚未实施**。本文描述目标形态与移植约束，不声称任何源码已修改。
-> 长期视觉规范仍以 [设计系统](design-system.md) 与 [界面工程约束](ui-guidelines.md) 为准；本文只补充九宫格专属的部分，冲突时按“项目文档 > 本文 > 设计过程草稿”的顺序裁决。
+> 长期视觉规范仍以 [设计系统](../design-system.md) 与 [界面工程约束](../ui-guidelines.md) 为准；本文只补充九宫格专属的部分，冲突时按“项目文档 > 本文 > 设计过程草稿”的顺序裁决。
 > 原型 `.taste-design/work/proto/v003.html` 是过程资料，**不会入库**；它只用于对照视觉与交互，图文不一致时以本文为准。
 > 输入材料：`.taste-design/work/handoff/DESIGN.md`、`.taste-design/work/handoff/HANDOFF.md`、`.taste-design/work/tokens.css`、`.taste-design/work/assets/spec.md`、`.taste-design/work/qa/manual-checks.md`。
 
@@ -279,6 +279,6 @@
 ## 14. 验收边界
 
 - 本文是设计契约，不是实现证据。原型截图、无头浏览器结果不能替代原生材质、AX 枚举、真实桌面切换与多显示器验证。
-- 实施验收以 `make build`、`make test-unit`、`./verify.sh` 为门禁，并按 [manual-checks](../../.taste-design/work/qa/manual-checks.md) 在目标 Mac 上逐项人工确认。
+- 实施验收以 `make build`、`make test-unit`、`./verify.sh` 为门禁，并按 [manual-checks](../../../.taste-design/work/qa/manual-checks.md) 在目标 Mac 上逐项人工确认。
 - 未执行或无法执行的项目必须写明原因，不得报告为通过。
 - 原生行为证据、截图与性能数据随实施 PR 提交；过程截图放系统临时目录，不入库。

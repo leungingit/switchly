@@ -6,8 +6,8 @@
 
 ## 1. 现状与不可混淆的边界
 
-- 音乐插件在 JavaScriptCore 中执行 `render()`，返回 `screen`、`wheel` 等声明式节点；宿主在 SwiftUI 中绘制。媒体数据来自 `ctx.media.nowPlaying()`，操作经 `onAction` 返回插件。参见 [插件 API](plugin-api-reference.md) 与外仓 `plugins/com.switchly.music-controls/main.js`。
-- 现有 `scene` 是宿主绘制的二维声明式动画；它不提供透视、三维网格或物理材质。[原设计台账](dock-preview-plugins-design.md) 的 D03 决定首期不开放 Canvas / WebView 自由绘制；D12 将例外明确为宿主播放的声明式 `scene`。本文只提出下一阶段的选择，不静默取代这两项裁决。
+- 音乐插件在 JavaScriptCore 中执行 `render()`，返回 `screen`、`wheel` 等声明式节点；宿主在 SwiftUI 中绘制。媒体数据来自 `ctx.media.nowPlaying()`，操作经 `onAction` 返回插件。参见 [插件 API](../plugin-api-reference.md) 与外仓 `plugins/com.switchly.music-controls/main.js`。
+- 现有 `scene` 是宿主绘制的二维声明式动画；它不提供透视、三维网格或物理材质。[原设计台账](../dock-preview-plugins-design.md) 的 D03 决定首期不开放 Canvas / WebView 自由绘制；D12 将例外明确为宿主播放的声明式 `scene`。本文只提出下一阶段的选择，不静默取代这两项裁决。
 - 当前 iPod HTML 原型使用 Three.js/WebGL、Canvas 屏幕贴图和浏览器指针事件。JavaScriptCore 不提供它依赖的 DOM、Canvas 和 WebGL；原型不能直接当作现行插件代码运行。
 - 原型中旋转时的屏幕条纹曾与近乎共面的 LCD/画面以及透明混合有关。它说明屏幕深度关系和纹理合成是验收项，并不证明某一种框架天然不会撕裂。
 
@@ -133,7 +133,7 @@ child material=screen_dynamic
 screen texture assignment=true
 ```
 
-用 `SCNRenderer.snapshot` 生成原生离屏画面，并实际检查了[正面](assets/3d-loading-probe-2026-11-06/front.png)、[斜侧](assets/3d-loading-probe-2026-11-06/side.png)、[背面](assets/3d-loading-probe-2026-11-06/back.png)。正面可见一张运行时生成的文字贴图，斜侧可见厚度，背面与正面不同；这些只证明 **USD 资产进入原生渲染器、命名节点可定位、单独屏幕材质可替换并出现于快照**。初版用薄盒当屏幕时，文字纹理未正常铺开；改成 UV 平面后才可见，因而目标网格的 UV 和朝向需要成为资产验收项。快照中的转盘与金属反射仍粗糙，不满足当前原型的写实目标。
+用 `SCNRenderer.snapshot` 生成原生离屏画面，并实际检查了[正面](../assets/3d-loading-probe-2026-11-06/front.png)、[斜侧](../assets/3d-loading-probe-2026-11-06/side.png)、[背面](../assets/3d-loading-probe-2026-11-06/back.png)。正面可见一张运行时生成的文字贴图，斜侧可见厚度，背面与正面不同；这些只证明 **USD 资产进入原生渲染器、命名节点可定位、单独屏幕材质可替换并出现于快照**。初版用薄盒当屏幕时，文字纹理未正常铺开；改成 UV 平面后才可见，因而目标网格的 UV 和朝向需要成为资产验收项。快照中的转盘与金属反射仍粗糙，不满足当前原型的写实目标。
 
 **阶段结论 C-V02**：`USD（.usdc / .usdz）→ Model I/O / SceneKit → 运行时表面纹理` 是本机已运行的技术路径；`.glb → Model I/O / SceneKit` 仍不成立。若采用 USD，建议插件交付端在构建时转换与校验，再由宿主只加载经过验证的本地 USD 资产；`.usdz` 可作为单文件交付候选，但外部纹理及完整材质仍需实测。需要评估转换工具的可重复性、第三方插件发布流程和 macOS 12 兼容性。若坚持 glb 为插件包格式，则必须引入经评估的 glTF 加载或构建期转换工具，不能把系统原生框架当作现成 glb 加载器。
 
@@ -151,7 +151,7 @@ screen texture assignment=true
 
 在系统临时目录创建 macOS 12 SwiftPM 命令行探针，依赖 `GLTFKit2` 的 `master`（解析为 `be89e833aa85bde67bd27d4ecff3b7816c58ce56`）；其 `Package.swift` 实际下载固定的 **0.5.15 XCFramework**。`swift build --package-path <临时探针目录>` 成功。命令行首次直接运行时报 `dyld: Library not loaded: @rpath/GLTFKit2.framework`；在临时探针指定 `DYLD_FRAMEWORK_PATH=<SwiftPM Products/Debug>` 后运行成功。正式 App 集成必须核对框架嵌入、签名及运行时路径，不能把此临时环境变量当作发布办法。
 
-用 Blender 按原型的尺寸、薄封闭机身、白色正面、金属侧边和背板制作六网格[glb 管线样本](assets/3d-loading-probe-2026-11-06/ipod-gltfkit2.glb)（155316 字节）；其中白色正面和金属背板使用 `KHR_materials_clearcoat`，屏幕为有 UV 的独立平面。此样本仍非原型的完整精确导出。`GLTFAsset.load(with:) → SCNScene(gltfAsset:)` 的实测摘要：
+用 Blender 按原型的尺寸、薄封闭机身、白色正面、金属侧边和背板制作六网格[glb 管线样本](../assets/3d-loading-probe-2026-11-06/ipod-gltfkit2.glb)（155316 字节）；其中白色正面和金属背板使用 `KHR_materials_clearcoat`，屏幕为有 UV 的独立平面。此样本仍非原型的完整精确导出。`GLTFAsset.load(with:) → SCNScene(gltfAsset:)` 的实测摘要：
 
 ```text
 mesh back_metal material=metal_back uv=1 metal=0.72 rough=0.18 coat=1
@@ -165,15 +165,15 @@ side png bytes=35809
 back png bytes=96833
 ```
 
-用 SceneKit 离屏渲染并实际查看了[正面](assets/3d-loading-probe-2026-11-06/gltfkit2-front.png)、[斜侧](assets/3d-loading-probe-2026-11-06/gltfkit2-side.png)、[背面](assets/3d-loading-probe-2026-11-06/gltfkit2-back.png)。正面文字经宿主探针生成的图像贴到 `mesh_screen`，侧面显示机身厚度，背面与正面不同。glb 的坐标轴与上一轮 USD 样本不同，探针需要调整相机朝向；未来插件合同应约定模型轴向与单位。简化转盘和反射尚不符合写实目标，屏幕内容也没有接入 Switchly 的真实媒体与声明式 UI。
+用 SceneKit 离屏渲染并实际查看了[正面](../assets/3d-loading-probe-2026-11-06/gltfkit2-front.png)、[斜侧](../assets/3d-loading-probe-2026-11-06/gltfkit2-side.png)、[背面](../assets/3d-loading-probe-2026-11-06/gltfkit2-back.png)。正面文字经宿主探针生成的图像贴到 `mesh_screen`，侧面显示机身厚度，背面与正面不同。glb 的坐标轴与上一轮 USD 样本不同，探针需要调整相机朝向；未来插件合同应约定模型轴向与单位。简化转盘和反射尚不符合写实目标，屏幕内容也没有接入 Switchly 的真实媒体与声明式 UI。
 
 **阶段结论 C-V04**：固定二进制 0.5.15 已在本机通过 glb 解析、命名网格、基础 PBR 与 clearcoat 数值映射、UV 和运行时屏幕贴图的离屏验证。它使 glb 成为比强制 USD 转换更有依据的优先资产格式候选；尚未验证完整 iPod、macOS 12 实机、原生面板、拖动拾取、无障碍、外部资源限制或多卡片性能。因此继续保持“候选”，不修改现行插件 API 或宿主工程依赖。
 
 ### C-V05：原型几何导出、表面更新与旋转命中（2026-11-06）
 
-用与浏览器原型相同版本的 Three.js r186，抽取 `roundShape`、`slab`、机身三层、屏幕边框/LCD 与转盘几何及原有 `MeshPhysicalMaterial` 参数，经 Three.js `GLTFExporter` 导出[原型几何 glb](assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb)（487760 字节、11 个网格）。将原型的像素尺寸统一乘 `0.01`，避免 SceneKit 默认相机裁剪面吞掉模型。glb 包含 `KHR_materials_clearcoat`、`KHR_materials_emissive_strength` 和 `KHR_materials_unlit`。原型中以浏览器 Canvas 实时绘制的歌曲屏幕、转盘文字与背板刻字**不属于静态几何资产**；它们仍需宿主的动态表面能力。原型程序生成的反射环境也没有随 glb 导出，宿主需提供环境光贴图和色彩合同。
+用与浏览器原型相同版本的 Three.js r186，抽取 `roundShape`、`slab`、机身三层、屏幕边框/LCD 与转盘几何及原有 `MeshPhysicalMaterial` 参数，经 Three.js `GLTFExporter` 导出[原型几何 glb](../assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb)（487760 字节、11 个网格）。将原型的像素尺寸统一乘 `0.01`，避免 SceneKit 默认相机裁剪面吞掉模型。glb 包含 `KHR_materials_clearcoat`、`KHR_materials_emissive_strength` 和 `KHR_materials_unlit`。原型中以浏览器 Canvas 实时绘制的歌曲屏幕、转盘文字与背板刻字**不属于静态几何资产**；它们仍需宿主的动态表面能力。原型程序生成的反射环境也没有随 glb 导出，宿主需提供环境光贴图和色彩合同。
 
-在系统临时目录用固定 revision `be89e833aa85bde67bd27d4ecff3b7816c58ce56` 对应的 GLTFKit2 0.5.15 二进制包运行 `GLTFAsset → SCNScene → SCNRenderer`，加载全部 11 个命名网格且每个都有一组 UV。生成屏幕图像时，SceneKit 贴图坐标与绘制图像的纵向约定不同；设置 `diffuse.contentsTransform` 的 Y 翻转和偏移后，文字正向显示。实际查看了[正面](assets/3d-loading-probe-2026-11-06/source-front.png)、[侧面](assets/3d-loading-probe-2026-11-06/source-side.png)、[背面](assets/3d-loading-probe-2026-11-06/source-back.png)及[换歌后正面](assets/3d-loading-probe-2026-11-06/source-screen-updated.png)。
+在系统临时目录用固定 revision `be89e833aa85bde67bd27d4ecff3b7816c58ce56` 对应的 GLTFKit2 0.5.15 二进制包运行 `GLTFAsset → SCNScene → SCNRenderer`，加载全部 11 个命名网格且每个都有一组 UV。生成屏幕图像时，SceneKit 贴图坐标与绘制图像的纵向约定不同；设置 `diffuse.contentsTransform` 的 Y 翻转和偏移后，文字正向显示。实际查看了[正面](../assets/3d-loading-probe-2026-11-06/source-front.png)、[侧面](../assets/3d-loading-probe-2026-11-06/source-side.png)、[背面](../assets/3d-loading-probe-2026-11-06/source-back.png)及[换歌后正面](../assets/3d-loading-probe-2026-11-06/source-screen-updated.png)。
 
 通过 `SCNRenderer.hitTest` 对同一屏幕坐标取射线、旋转模型而不移动相机，实际输出：
 
@@ -191,7 +191,7 @@ SCREEN_UPDATED 32724 differentFromFront true
 
 ### C-V06：独立 AppKit 面板合成与鼠标事件路径（2026-11-06）
 
-在系统临时 SwiftPM 工程中使用同一[原型几何 glb](assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb)、GLTFKit2 0.5.15、`SCNView` 与 `NSPanel`／`NSVisualEffectView` 创建可见的原生面板。部署目标为 macOS 12，但实际运行于当前机器。通过 `screencapture -l <windowID>` 截取真实 WindowServer 窗口；命令返回 `front/side/back/dragged status=0`。已实际查看[正面](assets/3d-loading-probe-2026-11-06/panel-front.png)、[拖动后](assets/3d-loading-probe-2026-11-06/panel-dragged.png)、[侧面](assets/3d-loading-probe-2026-11-06/panel-side.png)、[背面](assets/3d-loading-probe-2026-11-06/panel-back.png)：白色正面、薄金属侧边、金属背板和文字屏幕在真实窗口合成中可见；静态图未见屏幕条纹。它们不证明连续旋转过程无撕裂。
+在系统临时 SwiftPM 工程中使用同一[原型几何 glb](../assets/3d-loading-probe-2026-11-06/ipod-source-geometry.glb)、GLTFKit2 0.5.15、`SCNView` 与 `NSPanel`／`NSVisualEffectView` 创建可见的原生面板。部署目标为 macOS 12，但实际运行于当前机器。通过 `screencapture -l <windowID>` 截取真实 WindowServer 窗口；命令返回 `front/side/back/dragged status=0`。已实际查看[正面](../assets/3d-loading-probe-2026-11-06/panel-front.png)、[拖动后](../assets/3d-loading-probe-2026-11-06/panel-dragged.png)、[侧面](../assets/3d-loading-probe-2026-11-06/panel-side.png)、[背面](../assets/3d-loading-probe-2026-11-06/panel-back.png)：白色正面、薄金属侧边、金属背板和文字屏幕在真实窗口合成中可见；静态图未见屏幕条纹。它们不证明连续旋转过程无撕裂。
 
 面板 `SCNView` 接受 AppKit 鼠标事件，水平拖动改变模型偏航角；探针向 `NSPanel.sendEvent` 发送模拟鼠标按下、拖动与抬起以检查窗口分发和拾取，实际输出：
 
@@ -207,7 +207,7 @@ CLICK target=back_metal
 
 ### C-V07：第二种造型、资源样本与资产引用边界（2026-11-06）
 
-用 Blender 生成与 iPod 外形不同的[圆形气压计 glb](assets/3d-loading-probe-2026-11-06/barometer.glb)：黄铜圆壳、表盘、指针及独立 `mesh_weather_screen`，共 4 个网格。与 iPod 一起使用同一 `GLTFAsset → SCNScene → SCNRenderer` 代码加载；仅资产路径、表面名称与相机位置由样本配置决定。实际输出包括 `SCENE 0 ipod meshes 11 surface true`、`SCENE 1 barometer meshes 4 surface true`。已查看[气压计原生快照](assets/3d-loading-probe-2026-11-06/barometer.png)和[增加环境图像后的 iPod 快照](assets/3d-loading-probe-2026-11-06/ipod-with-env.png)。第二种造型没有要求添加设备专用渲染分支，说明 **资产和命名表面可泛化到另一外形**；但该样本只有静态指针，未验证动态表面的排版或命中动作。环境图像下的金属仍未达到浏览器原型的写实反射。
+用 Blender 生成与 iPod 外形不同的[圆形气压计 glb](../assets/3d-loading-probe-2026-11-06/barometer.glb)：黄铜圆壳、表盘、指针及独立 `mesh_weather_screen`，共 4 个网格。与 iPod 一起使用同一 `GLTFAsset → SCNScene → SCNRenderer` 代码加载；仅资产路径、表面名称与相机位置由样本配置决定。实际输出包括 `SCENE 0 ipod meshes 11 surface true`、`SCENE 1 barometer meshes 4 surface true`。已查看[气压计原生快照](../assets/3d-loading-probe-2026-11-06/barometer.png)和[增加环境图像后的 iPod 快照](../assets/3d-loading-probe-2026-11-06/ipod-with-env.png)。第二种造型没有要求添加设备专用渲染分支，说明 **资产和命名表面可泛化到另一外形**；但该样本只有静态指针，未验证动态表面的排版或命中动作。环境图像下的金属仍未达到浏览器原型的写实反射。
 
 同一命令行探针以 `/usr/bin/time -l` 在当前机器的热缓存条件下顺序运行，单场景输出 `LOAD_MS 90`、`RENDER_MS 116`、最大驻留集 `46579712` 字节；四场景（iPod、气压计各两份）输出 `LOAD_MS 49`、`RENDER_MS 129`、最大驻留集 `53788672` 字节。加载时间反而下降，说明缓存和 GPU 初始化影响显著；这些数字只描述本机短命进程与 512×512 离屏快照，**不能作为真实常驻面板首帧、能耗或多卡片预算通过证据**。
 
@@ -240,7 +240,7 @@ CLICK target=back_metal
 
 ## 6. 若进入实施，先锁定的契约与验收
 
-1. 在 [插件设计台账](dock-preview-plugins-design.md) 新增经确认的裁决编号，明确 D03/D12 的保留或取代关系；同步 [API 参考](plugin-api-reference.md)、`Plugins/api/`、`Plugins/sdk/` 与 [预览契约](preview/plugin-preview-contract.md)。本文本身不改现行合同。
+1. 在 [插件设计台账](../dock-preview-plugins-design.md) 新增经确认的裁决编号，明确 D03/D12 的保留或取代关系；同步 [API 参考](../plugin-api-reference.md)、`Plugins/api/`、`Plugins/sdk/` 与 [预览契约](../preview/plugin-preview-contract.md)。本文本身不改现行合同。
 2. 原生或网页渲染小样先在真实宿主面板内验证薄封闭机身、白色正面、金属侧边/背板、反射随视角变化、屏幕无条纹以及旋转和点击行为。原型的浏览器截图只作为视觉参照。
 3. 记录正面、侧面、背面及拖动中的截图或视频，并分别测量首帧、空闲、拖动及多个卡片同时显示时的 CPU/GPU/内存；验收阈值在实施前确定，避免事后改标准。
 4. 运行插件外仓 `npm test`、`npm run build`，宿主 `make build`、`make test-unit` 和适用的 `make plugin-preview-contract-check`；预览工具使用与宿主一致的渲染实现验收。
