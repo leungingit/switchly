@@ -67,7 +67,7 @@ ifdef SIGN_IDENTITY
 SIGN_FLAG := CODE_SIGN_IDENTITY="$(SIGN_IDENTITY)"
 endif
 
-build: version prepare-plugins ## Build the project (Debug)
+build: version prepare-plugins mediaremote-adapter-verify ## Build the project (Debug)
 	@echo "${YELLOW}🔨 Building ${PROJECT_NAME} (Debug)...${NC}"
 	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -81,7 +81,7 @@ build: version prepare-plugins ## Build the project (Debug)
 	@echo "   ${BLUE}→ $(DERIVED_DATA)/Build/Products/Debug/$(APP_NAME).app${NC}"
 	@echo "   ${BLUE}   运行最新版: make run（会先退出旧实例）${NC}"
 
-build-release: version prepare-plugins verify-plugin-release ## Build the project (Release)
+build-release: version prepare-plugins verify-plugin-release mediaremote-adapter-verify ## Build the project (Release)
 	@echo "${YELLOW}🔨 Building ${PROJECT_NAME} (Release)...${NC}"
 	@Scripts/xcodebuild-no-warnings.sh -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -97,7 +97,7 @@ build-release: version prepare-plugins verify-plugin-release ## Build the projec
 
 # --- Testing ---
 
-test: prepare-plugins ## Run the full test suite (unit + UI)
+test: prepare-plugins mediaremote-adapter-verify ## Run the full test suite (unit + UI)
 	@echo "${YELLOW}🧪 Running tests...${NC}"
 	@xcodebuild -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -106,7 +106,7 @@ test: prepare-plugins ## Run the full test suite (unit + UI)
 		test
 	@echo "${GREEN}✅ Tests complete!${NC}"
 
-test-unit: prepare-plugins ## Run unit tests only (what CI runs)
+test-unit: prepare-plugins mediaremote-adapter-verify ## Run unit tests only (what CI runs)
 	@echo "${YELLOW}🧪 Running unit tests...${NC}"
 	@xcodebuild -project $(PROJECT_NAME).xcodeproj \
 		-scheme $(SCHEME) \
@@ -117,6 +117,21 @@ test-unit: prepare-plugins ## Run unit tests only (what CI runs)
 	@echo "${GREEN}✅ Unit tests complete!${NC}"
 
 # --- Distribution ---
+
+.PHONY: mediaremote-adapter-verify mediaremote-adapter-build mediaremote-adapter-stage mediaremote-adapter-test
+mediaremote-adapter-verify: ## 离线校验固定 MediaRemote Adapter 源码
+	@python3 Scripts/mediaremote-adapter.py verify
+
+mediaremote-adapter-build: ## 显式离线构建媒体依赖（须传 MEDIAREMOTE_OUTPUT）
+	@test -n "$(MEDIAREMOTE_OUTPUT)" || (echo '请指定 MEDIAREMOTE_OUTPUT 输出目录'; exit 1)
+	@python3 Scripts/mediaremote-adapter.py build --output "$(MEDIAREMOTE_OUTPUT)"
+
+mediaremote-adapter-stage: ## 在新路径生成未签名验收的候选 App（须传 MEDIAREMOTE_APP / MEDIAREMOTE_OUTPUT）
+	@test -n "$(MEDIAREMOTE_APP)" -a -n "$(MEDIAREMOTE_OUTPUT)" || (echo "请指定 MEDIAREMOTE_APP 和 MEDIAREMOTE_OUTPUT"; exit 1)
+	@python3 Scripts/mediaremote-adapter.py stage --app "$(MEDIAREMOTE_APP)" --output "$(MEDIAREMOTE_OUTPUT)"
+
+mediaremote-adapter-test: ## 校验媒体依赖的篡改、缺失与额外文件拒绝
+	@python3 -B Tests/MediaRemote/test_dependency.py
 
 dist: build-release ## Build and copy app to build/ directory
 	@echo "${YELLOW}📦 Preparing distribution build...${NC}"

@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import Switchly
 
@@ -227,9 +228,14 @@ private final class FakeMediaBridge: MediaBridging, @unchecked Sendable {
     private(set) var commands: [MediaCommand] = []
 
     var artworkData: Data?
+    /// Simulates Music answering Apple Events slowly (queued skips).
+    var nowPlayingDelay: TimeInterval = 0
     func supports(bundleID: String) -> Bool { bundleID == "com.apple.Music" }
     func artwork(bundleID: String) throws -> Data? { artworkData }
-    func nowPlaying(bundleID: String) throws -> NowPlaying? { current }
+    func nowPlaying(bundleID: String) throws -> NowPlaying? {
+        if nowPlayingDelay > 0 { Thread.sleep(forTimeInterval: nowPlayingDelay) }
+        return current
+    }
     func perform(_ command: MediaCommand, bundleID: String) throws {
         commands.append(command)
         if command == .togglePlayPause, let c = current {
@@ -260,6 +266,71 @@ final class PluginMediaTests: XCTestCase {
     }
 
 
+}
+
+// MARK: - Music toggle state reconciliation
+
+/// Music's `player state` can lag `playpause`. The bridge must publish the
+/// requested state on the very next render, without waiting inside a script,
+/// and must stop doing so as soon as Music agrees or the deadline expires.
+final class MediaPlayStateReconciliationTests: XCTestCase {
+    private func snapshot(_ playing: Bool) -> NowPlaying {
+        NowPlaying(isPlaying: playing, title: "Song", artist: "Artist", album: "Album",
+                   position: 30, duration: 120, liked: false, canLike: true)
+    }
+
+    func testStalePlayerStateIsOverriddenImmediately() {
+        let now = DispatchTime.now()
+        let pending = MediaPlayStateExpectation(isPlaying: false, deadline: now + .milliseconds(600))
+        let resolved = MediaPlayStateReconciler.resolve(snapshot: snapshot(true), last: nil,
+                                                        expectation: pending, now: now)
+        XCTAssertEqual(resolved.snapshot?.isPlaying, false)
+        XCTAssertEqual(resolved.snapshot?.title, "Song", "track metadata must survive the override")
+        XCTAssertNotNil(resolved.expectation)
+    }
+
+    func testExpectationClearsOnceMusicCatchesUp() {
+        let now = DispatchTime.now()
+        let pending = MediaPlayStateExpectation(isPlaying: false, deadline: now + .milliseconds(600))
+        let resolved = MediaPlayStateReconciler.resolve(snapshot: snapshot(false), last: nil,
+                                                        expectation: pending, now: now)
+        XCTAssertEqual(resolved.snapshot?.isPlaying, false)
+        XCTAssertNil(resolved.expectation)
+    }
+
+    func testExpiredExpectationCannotFakePlaybackState() {
+        let now = DispatchTime.now()
+        let expired = MediaPlayStateExpectation(isPlaying: false, deadline: now + .milliseconds(-1))
+        let resolved = MediaPlayStateReconciler.resolve(snapshot: snapshot(true), last: nil,
+                                                        expectation: expired, now: now)
+        XCTAssertEqual(resolved.snapshot?.isPlaying, true)
+        XCTAssertNil(resolved.expectation)
+    }
+
+    func testStoppedSnapshotKeepsLastTrackWhileTransportSettles() {
+        let now = DispatchTime.now()
+        let pending = MediaPlayStateExpectation(isPlaying: true, deadline: now + .milliseconds(600))
+        let resolved = MediaPlayStateReconciler.resolve(snapshot: nil, last: snapshot(false),
+                                                        expectation: pending, now: now)
+        XCTAssertEqual(resolved.snapshot?.isPlaying, true)
+        XCTAssertEqual(resolved.snapshot?.title, "Song")
+        XCTAssertNotNil(resolved.expectation)
+    }
+
+    func testWithoutPendingToggleTheRealSnapshotIsUntouched() {
+        let resolved = MediaPlayStateReconciler.resolve(snapshot: snapshot(true), last: snapshot(false),
+                                                        expectation: nil, now: .now())
+        XCTAssertEqual(resolved.snapshot, snapshot(true))
+        XCTAssertNil(resolved.expectation)
+    }
+
+    /// Music reports a streaming track's cover one queue position late, so
+    /// those covers must fall back to the placeholder; library tracks keep theirs.
+    func testStreamingTrackArtworkIsNotTrusted() {
+        XCTAssertFalse(MusicAppleScriptBridge.trustsArtwork(trackClass: "URL track"))
+        XCTAssertTrue(MusicAppleScriptBridge.trustsArtwork(trackClass: "file track"))
+        XCTAssertTrue(MusicAppleScriptBridge.trustsArtwork(trackClass: "shared track"))
+    }
 }
 
 // MARK: - Authorization and host
@@ -320,6 +391,25 @@ final class PluginAuthorizationTests: XCTestCase {
         XCTAssertFalse(first[0] === host.runtimes(for: "com.apple.Music")[0])
         XCTAssertEqual(created, [[.mediaNowPlaying], [.mediaNowPlaying, .mediaControl]])
         XCTAssertTrue(host.runtimes(for: "com.other").isEmpty)
+    }
+
+    func testTimeoutsWaitingOnHostDoNotDisablePlugin() async throws {
+        let source = #"globalThis.__switchlyPlugin = { render(ctx) { return ctx.media.nowPlaying().then(n => [{ slot: "center", node: { type: "text", value: n ? n.title : "-" } }]); } };"#
+        let p = PluginPackage(manifest: package(.user).manifest, directory: URL(fileURLWithPath: "/tmp/p"),
+                              source: source, origin: .user)
+        let ctx = PluginRenderContext(bundleID: "com.apple.Music", pid: 1, appName: "Music", windowID: 1, titleSummary: "")
+        let bridge = FakeMediaBridge()
+        bridge.nowPlayingDelay = 0.1
+        let rt = PluginRuntime(package: p, timeout: 0.02, mediaBridge: bridge, permissions: [.mediaNowPlaying])
+        for _ in 0..<4 {
+            let result = await rt.render(context: ctx)
+            XCTAssertEqual(result.map { _ in 0 }, .failure(.timedOut))
+        }
+        XCTAssertFalse(rt.isDisabled)
+        bridge.nowPlayingDelay = 0
+        try await Task.sleep(nanoseconds: 500_000_000)  // drain the queued slow reads
+        let recovered = try await rt.render(context: ctx).get()
+        XCTAssertEqual(recovered.first?.node, .text(value: "Song", style: .body, lines: nil))
     }
 
     func testRuntimeInjectsOnlyGrantedMedia() async throws {

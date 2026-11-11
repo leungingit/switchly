@@ -58,6 +58,7 @@ protocol PluginRuntimeProtocol: AnyObject {
     /// The plugin's own directory, for assets named by `scene` sprites.
     var assetDirectory: URL? { get }
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError>
+    func render(context: PluginRenderContext, mediaRead: MediaReadContext?) async -> Result<[PluginSlotContent], PluginRuntimeError>
     func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError>
     func suspend()
     func resume()
@@ -66,6 +67,9 @@ protocol PluginRuntimeProtocol: AnyObject {
 
 extension PluginRuntimeProtocol {
     var assetDirectory: URL? { nil }
+    func render(context: PluginRenderContext, mediaRead: MediaReadContext?) async -> Result<[PluginSlotContent], PluginRuntimeError> {
+        await render(context: context)
+    }
     func suspend() {}
     func resume() {}
 }
@@ -132,6 +136,10 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private var nextCallID = 1
     private var pending: [Int: (Result<String, PluginRuntimeError>) -> Void] = [:]
     private var consecutiveTimeouts = 0
+    /// Host bridge calls (Apple Events to Music) still running for this VM.
+    /// A call that times out while one is pending waited on the host, not on
+    /// the plugin's own script, so it does not count toward disabling.
+    private var hostCallsInFlight = 0
     private var disabled = false
     private var suspended = false
     private var strings: [String: String] = [:]
@@ -209,11 +217,31 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         await renderValidated(context: context).map(\.slots)
     }
 
+    func render(context: PluginRenderContext, mediaRead: MediaReadContext?) async -> Result<[PluginSlotContent], PluginRuntimeError> {
+        await renderValidated(context: context, mediaRead: mediaRead).map(\.slots)
+    }
+
     /// The worker forwards the original JSON after the same strict host decode.
     /// Re-encoding decoded UI values would lose unknown fields and create a second
     /// render representation.
     func renderJSON(context: PluginRenderContext) async -> Result<String, PluginRuntimeError> {
-        await renderValidated(context: context).map(\.json)
+        // Worker 只持有 fixture 桥。每次 render 冻结一次元数据；动作仍走实时桥。
+        var read: MediaReadContext?
+        if permissions.contains(.mediaNowPlaying), let bridge = mediaBridge {
+            let sampled: Result<NowPlaying?, Error> = await withCheckedContinuation { continuation in
+                bridge.queue.async {
+                    continuation.resume(returning: Result { try bridge.nowPlaying(bundleID: context.bundleID) })
+                }
+            }
+            switch sampled {
+            case .success(let playing):
+                read = MediaReadContext(nowPlaying: playing, source: .fixture, artwork: nil, artworkToken: nil, validate: { true })
+            case .failure(let error):
+                read = MediaReadContext(nowPlaying: nil, readError: String(describing: error), artwork: nil,
+                                        artworkToken: nil, validate: { true })
+            }
+        }
+        return await renderValidated(context: context, mediaRead: read).map(\.json)
     }
 
     func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError> {
@@ -249,8 +277,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     // MARK: - Invocation
 
-    private func renderValidated(context: PluginRenderContext) async -> Result<(json: String, slots: [PluginSlotContent]), PluginRuntimeError> {
-        let result = await invoke("render", context: context, extra: [])
+    private func renderValidated(context: PluginRenderContext, mediaRead: MediaReadContext? = nil) async -> Result<(json: String, slots: [PluginSlotContent]), PluginRuntimeError> {
+        let result = await invoke("render", context: context, extra: [], mediaRead: mediaRead)
         return result.flatMap { json in
             do {
                 let slots = try PluginRenderOutput.decode(json: Data(json.utf8))
@@ -262,7 +290,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         }
     }
 
-    private func invoke(_ method: String, context ctx: PluginRenderContext, extra: [Any]) async -> Result<String, PluginRuntimeError> {
+    private func invoke(_ method: String, context ctx: PluginRenderContext, extra: [Any], mediaRead: MediaReadContext? = nil) async -> Result<String, PluginRuntimeError> {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
                 guard !isDisabled else { return continuation.resume(returning: .failure(.disabled)) }
@@ -294,7 +322,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                                                "Plugin script error. plugin=\(pluginID) phase=\(method) error=\(message.prefix(Self.maxLogLength))")
                     self?.complete(callID: callID, .failure(.script(message)))
                 }
-                let ctxValue = makeContextValue(ctx, in: js)
+                let ctxValue = makeContextValue(ctx, in: js, mediaRead: mediaRead)
                 js.objectForKeyedSubscript("__switchlyInvoke")?
                     .call(withArguments: [method, ctxValue as Any, extra, unsafeBitCast(ok, to: AnyObject.self),
                                           unsafeBitCast(fail, to: AnyObject.self)])
@@ -313,6 +341,13 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private func handleTimeout(callID: Int, method: String) {
         guard pending[callID] != nil else { return }
         callTimeouts.removeValue(forKey: callID)?.cancel()
+        if hostCallsInFlight > 0 {
+            // Rapid skips queue Apple Events behind each other; the plugin is
+            // waiting on Music, so fail this call without counting it.
+            AppLogger.warning("Plugin call timed out waiting on host. plugin=\(manifest.id) phase=\(method) hostCalls=\(hostCallsInFlight)")
+            complete(callID: callID, .failure(.timedOut))
+            return
+        }
         consecutiveTimeouts += 1
         AppLogger.warning("Plugin call timed out. plugin=\(manifest.id) phase=\(method) consecutive=\(consecutiveTimeouts)")
         let shouldDisable = consecutiveTimeouts >= maxConsecutiveTimeouts
@@ -518,6 +553,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             guard let self else { return }
             let text = argument.isString ? argument.toString() ?? "" : ""
             let words = (argument.toArray() as? [String]) ?? []
+            self.hostCallsInFlight += 1
             bridge.queue.async {
                 let outcome: Result<Any, Error> = Result {
                     switch method {
@@ -528,6 +564,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                     }
                 }
                 self.queue.async {
+                    self.hostCallsInFlight -= 1
                     guard let js, self.context === js else { return }
                     switch outcome {
                     case .success(let value): resolve.call(withArguments: [value])
@@ -648,6 +685,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                 reject.call(withArguments: ["Permission denied: \(method)"])
                 return
             }
+            self.hostCallsInFlight += 1
             bridge.queue.async {
                 let outcome: Result<Any, Error> = Result {
                     if let command {
@@ -657,6 +695,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                     return try bridge.nowPlaying(bundleID: bundleID)?.jsObject ?? NSNull()
                 }
                 self.queue.async {
+                    self.hostCallsInFlight -= 1
                     // Drop results for a VM that was unmounted meanwhile.
                     guard let js, self.context === js else { return }
                     switch outcome {
@@ -672,18 +711,21 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         if canControl { methods += ["togglePlayPause", "next", "previous"] }
         let list = methods.map { "\"\($0)\"" }.joined(separator: ",")
         js.evaluateScript("""
-        globalThis.__switchlyMakeMedia = function (bundleID) {
+        globalThis.__switchlyMakeMedia = function (bundleID, pinned, snapshot, readError) {
           const call = function (m) { return function () { return new Promise(function (res, rej) { __switchlyMediaCall(m, bundleID, res, rej); }); }; };
           const media = {};
           [\(list)].forEach(function (m) { media[m] = call(m); });
           \(canControl ? "media.setLiked = function (on) { return call(on ? \"like\" : \"unlike\")(); };" : "")
+          if (pinned && typeof media.nowPlaying === "function") {
+            media.nowPlaying = function () { if (readError) return Promise.reject(new Error(readError)); return Promise.resolve(snapshot === null ? null : Object.freeze(Object.assign({}, snapshot))); };
+          }
           if (globalThis.__switchlyLibrary) media.library = globalThis.__switchlyLibrary;
           return Object.freeze(media);
         };
         """)
     }
 
-    private func makeContextValue(_ ctx: PluginRenderContext, in js: JSContext) -> JSValue? {
+    private func makeContextValue(_ ctx: PluginRenderContext, in js: JSContext, mediaRead: MediaReadContext? = nil) -> JSValue? {
         // Manifest defaults, overridden by the user's saved values.
         var settingValues = Dictionary(uniqueKeysWithValues: (manifest.settings ?? []).map { ($0.key, $0.defaultValue.jsValue) })
         for (key, flag) in settingsProvider() where settingValues[key] != nil { settingValues[key] = flag }
@@ -719,7 +761,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         value?.setObject(t, forKeyedSubscript: "t" as NSString)
         value?.setObject(invalidate, forKeyedSubscript: "invalidate" as NSString)
         if let makeMedia = js.objectForKeyedSubscript("__switchlyMakeMedia"), !makeMedia.isUndefined {
-            value?.setObject(makeMedia.call(withArguments: [ctx.bundleID]), forKeyedSubscript: "media" as NSString)
+            value?.setObject(makeMedia.call(withArguments: [ctx.bundleID, permissions.contains(.mediaNowPlaying) && mediaRead != nil,
+                permissions.contains(.mediaNowPlaying) ? (mediaRead?.nowPlaying?.jsObject as Any? ?? NSNull()) : NSNull(),
+                permissions.contains(.mediaNowPlaying) ? (mediaRead?.readError as Any? ?? NSNull()) : NSNull()]), forKeyedSubscript: "media" as NSString)
         } else if let library = js.objectForKeyedSubscript("__switchlyLibrary"), library.isObject {
             // Library without nowPlaying / control: ctx.media exists with just `library`.
             let media = JSValue(newObjectIn: js)
