@@ -3,15 +3,71 @@
 //  SwitchlyTests
 //
 //  Headless tests for the dock-hover decisions that keep the preview from
-//  being stranded on screen. The monitor itself is wired to NSEvent, timers
-//  and DockPreviewPanel, so it is covered here through its two pure decisions
-//  rather than by faking the window server.
+//  being stranded on screen or block the pointer loop with synchronous AX
+//  work. The monitor itself is wired to NSEvent, timers and DockPreviewPanel.
 //
 
 import XCTest
 @testable import Switchly
 
 final class DockHoverMonitorTests: XCTestCase {
+    func testNativePointResultIsNotReusedForAnotherPointerLocation() {
+        let calls = LockedCallCounter()
+        let monitor = DockHoverMonitor(queryDockIconAtPoint: { point in
+            calls.increment()
+            return DockIconInfo(appName: point.x < 50 ? "A" : "B",
+                                frame: CGRect(x: 0, y: 0, width: 100, height: 100), bundleURL: nil)
+        }, now: { Date(timeIntervalSince1970: 100) })
+        defer { monitor.stop() }
+        XCTAssertNil(monitor.dockIconAtLocation(NSPoint(x: 20, y: 20)))
+        waitForDockIconScanToFinish(monitor)
+        XCTAssertEqual(monitor.dockIconAtLocation(NSPoint(x: 20, y: 20))?.appName, "A")
+        XCTAssertNil(monitor.dockIconAtLocation(NSPoint(x: 80, y: 20)), "放大布局旧命中不能冒充新位置")
+        waitForDockIconScanToFinish(monitor)
+        XCTAssertEqual(monitor.dockIconAtLocation(NSPoint(x: 80, y: 20))?.appName, "B")
+        XCTAssertEqual(calls.value, 2)
+    }
+
+    func testHiddenDockPointDoesNotBecomeAnIconFromCachedGeometry() {
+        let calls = LockedCallCounter()
+        let monitor = DockHoverMonitor(queryDockIconAtPoint: { _ in calls.increment(); return nil },
+                                      now: { Date(timeIntervalSince1970: 100) })
+        defer { monitor.stop() }
+        XCTAssertNil(monitor.dockIconAtLocation(NSPoint(x: 20, y: 20)))
+        waitForDockIconScanToFinish(monitor)
+        XCTAssertNil(monitor.dockIconAtLocation(NSPoint(x: 20, y: 20)))
+        XCTAssertEqual(calls.value, 1)
+    }
+
+    func testAnchorComparisonTracksMagnificationButIgnoresAXVerticalOrigin() {
+        let original = CGRect(x: 100, y: 900, width: 54, height: 70)
+        XCTAssertTrue(DockPanelMetrics.sameAnchor(original, original.offsetBy(dx: 0, dy: -200)))
+        XCTAssertFalse(DockPanelMetrics.sameAnchor(original, CGRect(x: 80, y: 870, width: 94, height: 103)))
+    }
+    func testQueuedPointerBurstProcessesOnlyTheLatestTarget() {
+        let samples = DockPointerSamples()
+        let drained = expectation(description: "latest pointer target processed")
+        var processed: [NSPoint] = []
+        for x in 0..<100 {
+            if samples.offer(NSPoint(x: x, y: 20)) {
+                DispatchQueue.main.async {
+                    if let point = samples.take() { processed.append(point) }
+                    drained.fulfill()
+                }
+            }
+        }
+        wait(for: [drained], timeout: 1)
+        XCTAssertEqual(processed, [NSPoint(x: 99, y: 20)])
+    }
+
+    func testStoppedPointerBurstDoesNotRestoreAnOldTarget() {
+        let samples = DockPointerSamples()
+        XCTAssertTrue(samples.offer(NSPoint(x: 20, y: 20)))
+        samples.clear()
+        XCTAssertNil(samples.take())
+        XCTAssertTrue(samples.offer(NSPoint(x: 80, y: 20)))
+        XCTAssertEqual(samples.take(), NSPoint(x: 80, y: 20))
+    }
 
     // MARK: Desync recovery
 
@@ -86,6 +142,150 @@ final class DockHoverMonitorTests: XCTestCase {
                                                     pointerInPanel: false))
     }
 
+    // MARK: Hover-delay scheduling
+
+    /// Regression: moving within one Dock icon kept invalidating and recreating
+    /// the show-delay timer, pushing the preview deadline out indefinitely.
+    func testSameIconKeepsPendingShowDelay() {
+        let url = URL(fileURLWithPath: "/Applications/Same.app")
+        let current = DockIconInfo(appName: "Same",
+                                   frame: CGRect(x: 0, y: 0, width: 40, height: 40),
+                                   bundleURL: url)
+        let hovered = DockIconInfo(appName: "Same",
+                                   frame: CGRect(x: 0, y: 0, width: 80, height: 80),
+                                   bundleURL: url)
+
+        XCTAssertEqual(DockHoverState.iconTransition(currentIcon: current,
+                                                     hoveredIcon: hovered,
+                                                     isShowing: false),
+                       .retain)
+    }
+
+    /// The delay belongs to the hovered product, so crossing to another icon
+    /// must replace it before it can show the previous target.
+    func testDifferentIconRestartsPendingShowDelay() {
+        let current = DockIconInfo(appName: "Previous",
+                                   frame: CGRect(x: 0, y: 0, width: 40, height: 40),
+                                   bundleURL: nil)
+        let hovered = DockIconInfo(appName: "Next",
+                                   frame: CGRect(x: 40, y: 0, width: 40, height: 40),
+                                   bundleURL: nil)
+
+        XCTAssertEqual(DockHoverState.iconTransition(currentIcon: current,
+                                                     hoveredIcon: hovered,
+                                                     isShowing: false),
+                       .startDelay)
+    }
+
+    /// Once visible, crossing icons still switches immediately without
+    /// introducing the hover delay again.
+    func testDifferentIconSwitchesImmediatelyWhileShowing() {
+        let current = DockIconInfo(appName: "Previous",
+                                   frame: CGRect(x: 0, y: 0, width: 40, height: 40),
+                                   bundleURL: nil)
+        let hovered = DockIconInfo(appName: "Next",
+                                   frame: CGRect(x: 40, y: 0, width: 40, height: 40),
+                                   bundleURL: nil)
+
+        XCTAssertEqual(DockHoverState.iconTransition(currentIcon: current,
+                                                     hoveredIcon: hovered,
+                                                     isShowing: true),
+                       .switchImmediately)
+    }
+
+    // MARK: Background AX scheduling
+
+    /// A slow AX walk must not block the pointer loop, and repeated samples
+    /// while it runs must not enqueue another scan.
+    func testMissingCacheSchedulesOneNonBlockingBackgroundScan() {
+        let scanStarted = expectation(description: "background scan started")
+        let scanGate = DispatchSemaphore(value: 0)
+        let calls = LockedCallCounter()
+        let monitor = DockHoverMonitor(queryDockIcons: {
+            calls.increment()
+            scanStarted.fulfill()
+            scanGate.wait()
+            return []
+        })
+        defer {
+            scanGate.signal()
+            monitor.stop()
+        }
+
+        let point = NSPoint(x: 20, y: 20)
+        XCTAssertNil(monitor.dockIconAtLocation(point))
+        XCTAssertNil(monitor.dockIconAtLocation(point))
+
+        wait(for: [scanStarted], timeout: 2)
+        XCTAssertEqual(calls.value, 1)
+        XCTAssertTrue(monitor.isDockIconScanInFlight)
+
+        scanGate.signal()
+        waitForDockIconScanToFinish(monitor)
+    }
+
+    /// The first sample can return nil before the background walk finishes;
+    /// the published cache then answers the next pointer sample immediately.
+    func testCompletedBackgroundScanPublishesCacheForNextSample() {
+        let scanStarted = expectation(description: "background scan started")
+        let scanGate = DispatchSemaphore(value: 0)
+        let calls = LockedCallCounter()
+        let result = DockIconInfo(appName: "Result",
+                                  frame: CGRect(x: 0, y: 0, width: 100, height: 100),
+                                  bundleURL: nil)
+        let monitor = DockHoverMonitor(queryDockIcons: {
+            calls.increment()
+            scanStarted.fulfill()
+            scanGate.wait()
+            return [result]
+        }, now: { Date(timeIntervalSince1970: 100) })
+        defer {
+            scanGate.signal()
+            monitor.stop()
+        }
+
+        let point = NSPoint(x: 20, y: 20)
+        XCTAssertNil(monitor.dockIconAtLocation(point))
+        wait(for: [scanStarted], timeout: 2)
+        scanGate.signal()
+        waitForDockIconScanToFinish(monitor)
+
+        XCTAssertEqual(monitor.cachedDockIcons?.first?.appName, "Result")
+        XCTAssertEqual(monitor.dockIconAtLocation(point)?.appName, "Result")
+        XCTAssertEqual(calls.value, 1)
+    }
+
+    /// Stopping invalidates the scan generation. The queue task must finish so
+    /// the in-flight latch clears, but its stale result cannot repopulate cache.
+    func testStopRejectsLateBackgroundScanResult() {
+        let scanStarted = expectation(description: "background scan started")
+        let scanGate = DispatchSemaphore(value: 0)
+        let calls = LockedCallCounter()
+        let result = DockIconInfo(appName: "Stale",
+                                  frame: CGRect(x: 0, y: 0, width: 100, height: 100),
+                                  bundleURL: nil)
+        let monitor = DockHoverMonitor(queryDockIcons: {
+            calls.increment()
+            scanStarted.fulfill()
+            scanGate.wait()
+            return [result]
+        })
+        defer {
+            scanGate.signal()
+            monitor.stop()
+        }
+
+        XCTAssertNil(monitor.dockIconAtLocation(NSPoint(x: 20, y: 20)))
+        wait(for: [scanStarted], timeout: 2)
+        monitor.stop()
+        XCTAssertTrue(monitor.isDockIconScanInFlight)
+
+        scanGate.signal()
+        waitForDockIconScanToFinish(monitor)
+        XCTAssertNil(monitor.cachedDockIcons)
+        XCTAssertEqual(calls.value, 1)
+    }
+
     // MARK: Icon matching
 
     private func icon(_ name: String, x: CGFloat, y: CGFloat, size: CGFloat = 40) -> DockIconInfo {
@@ -147,5 +347,33 @@ final class DockHoverMonitorTests: XCTestCase {
     func testAutohideExtentUsesWidthForSideDock() {
         let tall = DockIconInfo(appName: "A", frame: CGRect(x: 0, y: 0, width: 120, height: 30), bundleURL: nil)
         XCTAssertEqual(DockHoverState.autohideExtent(icons: [tall], orientation: "left"), 136)
+    }
+
+    private func waitForDockIconScanToFinish(_ monitor: DockHoverMonitor) {
+        let finished = XCTNSPredicateExpectation(
+            predicate: NSPredicate { object, _ in
+                guard let monitor = object as? DockHoverMonitor else { return false }
+                return !monitor.isDockIconScanInFlight
+            },
+            object: monitor
+        )
+        wait(for: [finished], timeout: 2)
+    }
+}
+
+private final class LockedCallCounter {
+    private let lock = NSLock()
+    private var count = 0
+
+    var value: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return count
+    }
+
+    func increment() {
+        lock.lock()
+        count += 1
+        lock.unlock()
     }
 }

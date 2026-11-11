@@ -56,10 +56,11 @@ class DockPreviewViewModel: ObservableObject {
     func showPanel(forApp appName: String, bundleURL: URL? = nil) {
         // A Dock panel can stay ordered out while Preferences changes. Read
         // before presenting, even if SwiftUI has not mounted its view yet.
-        settings = settingsService.loadSettings()
-        self.appName = appName
+        let latest = settingsService.loadSettings()
+        if settings != latest { settings = latest }
+        if self.appName != appName { self.appName = appName }
         self.currentBundleURL = bundleURL
-        isPanelVisible = true
+        if !isPanelVisible { isPanelVisible = true }
         refreshOnlineWeatherIfNeeded()
         refreshWindows(forApp: appName, bundleURL: bundleURL)
     }
@@ -155,6 +156,7 @@ class DockPreviewViewModel: ObservableObject {
     ///    discrepancies between the Dock AX title and the system's localized
     ///    name (e.g. "Visual Studio Code" vs "Code").
     private func findRunningApp(named axTitle: String, bundleURL: URL?) -> NSRunningApplication? {
+        let runningApps = NSWorkspace.shared.runningApplications
         if let bundleURL {
             // Match any .regular process belonging to the product root (see
             // WindowAttribution). A nested bundle inside the app (e.g.
@@ -164,10 +166,10 @@ class DockPreviewViewModel: ObservableObject {
                 AppLogger.warning("Dock preview: could not resolve product root. axTitle=\(axTitle), bundleURL=\(bundleURL.path)")
                 return nil
             }
-            let byURL = NSWorkspace.shared.runningApplications.filter {
-                $0.activationPolicy == .regular && WindowAttribution.process($0, belongsTo: productRoot)
+            let byURL = runningApps.first {
+                WindowAttribution.process($0, belongsTo: productRoot) && $0.activationPolicy == .regular
             }
-            if let app = byURL.first {
+            if let app = byURL {
                 AppLogger.verbose("Dock preview: matched by product root. axTitle=\(axTitle), root=\(productRoot.path), pid=\(app.processIdentifier)")
                 return app
             }
@@ -182,8 +184,8 @@ class DockPreviewViewModel: ObservableObject {
         // ambiguous prefer the process that actually has visible windows on
         // the current space — otherwise the wrong app's windows would be
         // shown and switching would jump to that app.
-        let exactMatches = NSWorkspace.shared.runningApplications.filter {
-            $0.activationPolicy == .regular && $0.localizedName == axTitle
+        let exactMatches = runningApps.filter {
+            $0.localizedName == axTitle && $0.activationPolicy == .regular
         }
         if let best = disambiguate(exactMatches) {
             AppLogger.debug("Dock preview: exact match. axTitle=\(axTitle), localizedName=\(best.localizedName ?? "nil"), pid=\(best.processIdentifier)")
@@ -193,9 +195,9 @@ class DockPreviewViewModel: ObservableObject {
         // 2. Fuzzy match: the AX title contains the localized name, or vice versa.
         let axLower = axTitle.lowercased()
         var fuzzyMatches: [NSRunningApplication] = []
-        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+        for app in runningApps {
             guard let name = app.localizedName?.lowercased() else { continue }
-            if axLower.contains(name) || name.contains(axLower) {
+            if (axLower.contains(name) || name.contains(axLower)) && app.activationPolicy == .regular {
                 fuzzyMatches.append(app)
             }
         }

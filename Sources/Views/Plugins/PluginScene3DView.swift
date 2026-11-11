@@ -25,6 +25,7 @@ final class PluginScene3DPointerView: SCNView, PluginScene3DSceneHosting {
     private lazy var hitAdapter = Scene3DHitTestAdapter(view: self)
 
     override init(frame: NSRect, options: [String: Any]? = nil) {
+        let started = DispatchTime.now().uptimeNanoseconds
         super.init(frame: frame, options: options)
         wantsLayer = true
         backgroundColor = .clear
@@ -35,6 +36,7 @@ final class PluginScene3DPointerView: SCNView, PluginScene3DSceneHosting {
         rendersContinuously = false
         antialiasingMode = .multisampling4X
         preferredFramesPerSecond = 60
+        AppLogger.performance("Scene3DHost", since: started)
     }
 
     required init?(coder: NSCoder) {
@@ -187,6 +189,7 @@ struct PluginScene3DView: View {
     let onAction: (String, Double?) -> Void
 
     @StateObject private var controller: PluginScene3DController
+    @Environment(\.colorScheme) private var colorScheme
     @State private var loveBurst = false
 
     init(descriptor: PluginScene3DDescriptor,
@@ -235,11 +238,13 @@ struct PluginScene3DView: View {
                         }
                     }
                     .onAppear {
+                        controller.updateHostAppearance(dark: colorScheme == .dark)
                         controller.updateActionSink(handleAction)
                         controller.updateSlotSize(proxy.size)
                         controller.start()
                     }
                     .onChange(of: proxy.size) { controller.updateSlotSize($0) }
+                    .onChange(of: colorScheme) { controller.updateHostAppearance(dark: $0 == .dark) }
                     .onDisappear { controller.stop() }
                     .onChange(of: configuration) { updated in
                         controller.updateActionSink(handleAction)

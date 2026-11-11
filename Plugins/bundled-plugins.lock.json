@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": "leungingit/switchly-plugins",
-  "sourceRevision": "c2487864ae70e877ee539291884f4ae6e807fd11",
+  "sourceRevision": "5665e5871b6767519892c4f2448894e3e6ea62ca",
   "plugins": [
     {
       "id": "com.switchly.music-controls",
@@ -10,9 +10,9 @@
       "files": {
         "assets/blank.png": "43739c566e26fd7cb88f69d3864ea34740372f5ee99acac169e090beffbce5c6",
         "assets/ipod.glb": "772be7f3fa8b0208ed8a2703d8f281011b20e8d567ff900dc582261fc714c342",
-        "locales/en.json": "78a31d2b862bd6342a5ca75c8c1912633e4658186e7a1ea47983bb60f32f377d",
-        "locales/zh-Hans.json": "d4949f50e430331aa9f3e8ea0652c2ddcc75b8227e1926e69f2ac0aa3455a812",
-        "main.js": "fc72c5da5440353389c7ed5dbe0f2dd33585ba02397edfe1f9b2ebcc7bd5d375",
+        "locales/en.json": "84b8f2298721d8f266444ba8c3038ed76e241edcca15119b3d8d37d4948741b3",
+        "locales/zh-Hans.json": "ed0ced47b5fc712450e3901ad2c7c47f4922e92af2690820d4785f7647f9c815",
+        "main.js": "87ae668e74ee70225725f32e8955ab66b45a4e553bf106d393162cc484a53f86",
         "manifest.json": "d59a8fb0507da95fed0c370c53ed0ea37029797fa015b10429491a5facd1c1d2"
       }
     },

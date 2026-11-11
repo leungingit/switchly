@@ -57,6 +57,8 @@ final class PluginSurfaceRenderer {
                                            pixelSize: pixelSize,
                                            pixelsPerPoint: pixelsPerPoint,
                                            contentSignature: signature)
+        let started = DispatchTime.now().uptimeNanoseconds
+        defer { AppLogger.performance("Scene3DSurface", since: started) }
         guard let texture = rasterizer.rasterize(plan) else { return nil }
         store(texture, for: signature)
         return texture

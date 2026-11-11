@@ -681,6 +681,8 @@ export type PluginRenderOutput =
   | undefined;
 
 export interface PluginDefinition {
+  /** 与媒体读取并行的初始界面；没有媒体、文件、存储或动作能力。旧宿主忽略此方法。 */
+  prepare?(ctx: Pick<PluginContext, "app" | "window" | "locale" | "settings" | "reduceMotion" | "uiFeatures" | "t">): PluginRenderOutput | Promise<PluginRenderOutput>;
   render(ctx: PluginContext): PluginRenderOutput | Promise<PluginRenderOutput>;
   onAction?(
     ctx: PluginContext,

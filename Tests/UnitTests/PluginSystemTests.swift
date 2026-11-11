@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import XCTest
 @testable import Switchly
 
@@ -341,7 +342,88 @@ private final class StubRegistry: PluginRegistryProtocol {
     func reload() -> (plugins: [PluginPackage], failures: [PluginLoadFailure]) { (plugins, []) }
 }
 
+private final class GatedRegistry: PluginRegistryProtocol {
+    let began: XCTestExpectation
+    let release = DispatchSemaphore(value: 0)
+    init(began: XCTestExpectation) { self.began = began }
+    func reload() -> (plugins: [PluginPackage], failures: [PluginLoadFailure]) {
+        XCTAssertFalse(Thread.isMainThread, "包扫描与 GLB 预检不能阻塞面板主线程")
+        began.fulfill()
+        _ = release.wait(timeout: .now() + 2)
+        return ([], [])
+    }
+}
+
+private final class WarmRuntime: PluginRuntimeProtocol {
+    let manifest: PluginManifest
+    var onInvalidate: (() -> Void)?
+    private let onWarm: @MainActor (Int) async -> Void
+    private let lock = NSLock()
+    private var calls = 0
+    init(manifest: PluginManifest, onWarm: @escaping @MainActor (Int) async -> Void) {
+        self.manifest = manifest
+        self.onWarm = onWarm
+    }
+    private func nextCall() -> Int {
+        lock.lock(); defer { lock.unlock() }
+        calls += 1
+        return calls
+    }
+    func prewarmEngine() async { await onWarm(nextCall()) }
+    func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> { .success([]) }
+    func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError> { .success(()) }
+    func unmount() {}
+}
+
 final class PluginAuthorizationTests: XCTestCase {
+    @MainActor
+    func testRapidHoverWarmupKeepsOnlyOneLatestPendingTarget() async throws {
+        let manifest = PluginManifest(id: "com.example.warm", name: ["en":"Warm"], version: "1", apiVersion: 1,
+            matches: ["com.apple.Music", "com.apple.finder", "com.apple.Safari"], permissions: [], entry: "main.js", refreshInterval: nil)
+        let package = PluginPackage(manifest: manifest, directory: URL(fileURLWithPath: "/tmp/warm"), source: "", origin: .builtin)
+        let began = expectation(description: "first engine warmup began")
+        let second = expectation(description: "only latest pending warmup runs")
+        let unexpected = expectation(description: "intermediate pending target discarded")
+        unexpected.isInverted = true
+        var finishFirst: (() -> Void)?
+        let runtime = WarmRuntime(manifest: manifest) { count in
+            if count == 1 {
+                await withCheckedContinuation { continuation in
+                    finishFirst = { continuation.resume() }
+                    began.fulfill()
+                }
+            } else if count == 2 { second.fulfill() } else { unexpected.fulfill() }
+        }
+        let host = PluginHost(registry: StubRegistry([package]), grants: { [:] }, mediaBridge: FakeMediaBridge(),
+                              makeRuntime: { _, _ in runtime })
+        defer { finishFirst?(); host.unmountAll() }
+        let music = try XCTUnwrap(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Music"))
+        let finder = try XCTUnwrap(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.finder"))
+        let safari = try XCTUnwrap(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari"))
+        host.prewarmEngine(for: music)
+        await fulfillment(of: [began], timeout: 2)
+        host.prewarmEngine(for: finder)
+        host.prewarmEngine(for: safari)
+        finishFirst?(); finishFirst = nil
+        await fulfillment(of: [second], timeout: 2)
+        await fulfillment(of: [unexpected], timeout: 0.1)
+    }
+    @MainActor
+    func testAsyncPluginDiscoveryLeavesMainThreadAvailable() async {
+        let began = expectation(description: "background package scan began")
+        let finished = expectation(description: "package scan returned")
+        let registry = GatedRegistry(began: began)
+        let host = PluginHost(registry: registry, grants: { [:] }, mediaBridge: FakeMediaBridge())
+        let task = Task {
+            let runtimes = await host.loadRuntimes(for: "com.apple.Music")
+            XCTAssertTrue(runtimes.isEmpty)
+            finished.fulfill()
+        }
+        defer { registry.release.signal(); task.cancel() }
+        await fulfillment(of: [began], timeout: 1)
+        registry.release.signal()
+        await fulfillment(of: [finished], timeout: 1)
+    }
     private func package(_ origin: PluginOrigin, permissions: [PluginCapability] = [.mediaNowPlaying, .mediaControl]) -> PluginPackage {
         let manifest = PluginManifest(id: "com.example.p", name: ["en": "P"], version: "1", apiVersion: 1,
                                       matches: ["com.apple.Music"], permissions: permissions, entry: "main.js",

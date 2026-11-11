@@ -1,6 +1,8 @@
 import AppKit
 import SwiftUI
 import ScreenCaptureKit
+import SceneKit
+import Combine
 import XCTest
 @testable import Switchly
 
@@ -29,6 +31,7 @@ final class MediaRemoteLiveIntegrationTests: XCTestCase {
         let bridge = CompositeMediaBridge(script: script, session: session, identity: identity)
         let pluginID = "com.switchly.music-controls"
         let mode = LiveMediaMode()
+        mode.setThreeD(environment["SWITCHLY_MEDIAREMOTE_LIVE_3D"] == "1")
         let host = PluginHost(registry: LiveMusicRegistry(directory: URL(fileURLWithPath: plugins)),
                               grants: { [pluginID: PluginGrant(isEnabled: true, permissions: ["media.nowPlaying", "media.control"])] },
                               mediaBridge: bridge, weather: { nil }, makeRuntime: { package, permissions in
@@ -46,13 +49,28 @@ final class MediaRemoteLiveIntegrationTests: XCTestCase {
         let overlay = DockPluginOverlayModel(host: host)
         let model = DockPreviewViewModel(settingsService: settingsService, pluginOverlay: overlay)
         let panel = DockPreviewPanel(viewModel: model)
-        let screen = try XCTUnwrap(NSScreen.main)
+        let screen = try XCTUnwrap(NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main)
+        let performance = environment["SWITCHLY_MEDIAREMOTE_LIVE_PERFORMANCE"] == "1"
+        let probe = LivePanelPerformance(directory: directory)
+        if performance { try await probe.start(screen: screen, panel: panel, overlay: overlay) }
         defer {
+            probe.stop()
             panel.hide()
             model.hidePanel()
             host.unmountAll()
             defaults.removePersistentDomain(forName: suite)
         }
+        if environment["SWITCHLY_MEDIAREMOTE_LIVE_WAIT"] == "1" {
+            try JSONSerialization.data(withJSONObject: ["pid": ProcessInfo.processInfo.processIdentifier])
+                .write(to: directory.appendingPathComponent("ready.json"))
+            let deadline = Date().addingTimeInterval(60)
+            while Date() < deadline {
+                if let data = try? Data(contentsOf: directory.appendingPathComponent("live-command.json")),
+                   let command = try? JSONSerialization.jsonObject(with: data) as? [String: Any], command["begin"] as? Bool == true { break }
+                try await Task.sleep(nanoseconds: 50_000_000)
+            }
+        }
+        if performance { probe.begin(panel: panel) }
         panel.show(forApp: app.localizedName ?? "Music", aboveIconFrame: CGRect(x: screen.visibleFrame.midX,
                    y: screen.visibleFrame.minY + 30, width: 48, height: 48), bundleURL: app.bundleURL)
         let events = directory.appendingPathComponent("live-samples.jsonl")
@@ -76,6 +94,13 @@ final class MediaRemoteLiveIntegrationTests: XCTestCase {
                     panel.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
                 }
                 if let action = command["action"] as? String { overlay.perform(pluginID: pluginID, actionID: action) }
+                if command["sample"] as? Bool == true {
+                    probe.begin(panel: panel)
+                    let target = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? screen
+                    panel.show(forApp: app.localizedName ?? "Music", aboveIconFrame: CGRect(x: target.visibleFrame.midX,
+                               y: target.visibleFrame.minY + 30, width: 48, height: 48), bundleURL: app.bundleURL)
+                }
+                if let marker = command["marker"] as? String { probe.marker(marker) }
                 if let capture = command["capture"] as? String,
                    capture.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" }), let view = panel.contentView {
                     view.layoutSubtreeIfNeeded()
@@ -113,6 +138,9 @@ final class MediaRemoteLiveIntegrationTests: XCTestCase {
                 "remoteConnection": remote?.token.connection.uuidString as Any? ?? NSNull(),
                 "remoteTrack": remote?.token.track as Any? ?? NSNull(),
                 "remoteArtwork": remote?.artworkToken as Any? ?? NSNull(),
+                "panelFrame": NSStringFromRect(panel.frame),
+                "screen": panel.screen?.localizedName ?? "none",
+                "windows": model.windows.map { ["id": $0.id, "currentSpace": $0.isOnCurrentSpace] },
             ]
             try output.write(contentsOf: JSONSerialization.data(withJSONObject: sample) + Data([10]))
             sampled += 1
@@ -122,7 +150,142 @@ final class MediaRemoteLiveIntegrationTests: XCTestCase {
         XCTAssertTrue(finishes, "验收窗口超时；需通过命令文件显式结束")
         XCTAssertGreaterThan(sampled, 5)
         XCTAssertGreaterThan(covered, 0, "没有取得真实配对后的系统封面，不能把回退占位当作通过")
+        if performance { try await probe.finish() }
         print("MediaRemote live evidence: samples=\(sampled) covered=\(covered)")
+    }
+}
+
+/// 显式验收才启用。合成帧在后台复制面板区域，先缓存在内存，停止后写盘；
+/// 时间为采集回调到达上界，包含 ScreenCaptureKit 传递成本。
+@available(macOS 14.0, *)
+private final class LivePanelFrames: NSObject, SCStreamOutput, @unchecked Sendable {
+    private let lock = NSLock()
+    private let context = CIContext()
+    private var crop: CGRect = .zero
+    private var until: Double = 0
+    private var frames: [(Double, CGImage)] = []
+    func update(crop: CGRect, until: Double) {
+        lock.lock(); self.crop = crop; self.until = until; lock.unlock()
+    }
+    func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        let now = ProcessInfo.processInfo.systemUptime
+        lock.lock(); let region = crop; let capture = now <= until && frames.count < 180; lock.unlock()
+        guard type == .screen, capture, !region.isEmpty,
+              sampleBuffer.isValid, let buffer = sampleBuffer.imageBuffer else { return }
+        let source = CIImage(cvPixelBuffer: buffer)
+        let flipped = CGRect(x: region.minX, y: source.extent.height - region.maxY,
+                             width: region.width, height: region.height).intersection(source.extent)
+        guard !flipped.isEmpty, let image = context.createCGImage(source.cropped(to: flipped), from: flipped) else { return }
+        lock.lock(); frames.append((now, image)); lock.unlock()
+    }
+    func drain() -> [(Double, CGImage)] {
+        lock.lock(); defer { lock.unlock() }
+        let result = frames; frames.removeAll(); return result
+    }
+}
+
+private final class LiveRenderObserver: NSObject, SCNSceneRendererDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var rendered: Double?
+    func renderer(_ renderer: SCNSceneRenderer, didRenderScene scene: SCNScene, atTime time: TimeInterval) {
+        lock.lock(); if rendered == nil { rendered = ProcessInfo.processInfo.systemUptime }; lock.unlock()
+    }
+    func reset() { lock.lock(); rendered = nil; lock.unlock() }
+    var first: Double? { lock.lock(); defer { lock.unlock() }; return rendered }
+}
+
+@MainActor
+private final class LivePanelPerformance {
+    let directory: URL
+    private var timer: Timer?
+    private var stream: AnyObject?
+    private var frames: AnyObject?
+    private var displayBounds: CGRect = .zero
+    private var observations: [[String: Any]] = []
+    private var subscription: AnyCancellable?
+    private var started = ProcessInfo.processInfo.systemUptime
+    private var lastTick = ProcessInfo.processInfo.systemUptime
+    private var observer = LiveRenderObserver()
+    private weak var panel: DockPreviewPanel?
+    private var cycle = 0
+    private var sceneSeen = false
+    private var renderedSeen = false
+    private var deadline: Double = 0
+    init(directory: URL) { self.directory = directory }
+    func start(screen: NSScreen, panel: DockPreviewPanel, overlay: DockPluginOverlayModel) async throws {
+        guard #available(macOS 14.0, *) else { throw XCTSkip("合成首帧采样需要 macOS 14+") }
+        let content = try await SCShareableContent.current
+        let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+        let display = try XCTUnwrap(content.displays.first { $0.displayID == id })
+        displayBounds = screen.frame
+        let config = SCStreamConfiguration()
+        config.width = Int(screen.frame.width); config.height = Int(screen.frame.height)
+        config.minimumFrameInterval = CMTime(value: 1, timescale: 60)
+        config.queueDepth = 3; config.showsCursor = false
+        let output = LivePanelFrames()
+        let stream = SCStream(filter: SCContentFilter(display: display, excludingWindows: []), configuration: config, delegate: nil)
+        try stream.addStreamOutput(output, type: .screen, sampleHandlerQueue: DispatchQueue(label: "com.switchly.tests.live-frames"))
+        try await stream.startCapture()
+        self.stream = stream; frames = output
+        subscription = overlay.slotsPublisher.dropFirst().sink { [weak self] slots in
+            self?.observations.append(["event": "slots", "time": ProcessInfo.processInfo.systemUptime, "count": slots.count])
+        }
+        timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.tick() }
+        }
+    }
+    func begin(panel: DockPreviewPanel) {
+        self.panel = panel; cycle += 1; sceneSeen = false; renderedSeen = false
+        started = ProcessInfo.processInfo.systemUptime; lastTick = started; deadline = started + 3
+        observer.reset(); marker("show-\(cycle)")
+    }
+    func marker(_ name: String) {
+        observations.append(["event": name, "time": ProcessInfo.processInfo.systemUptime, "cycle": cycle])
+    }
+    private func tick() {
+        let now = ProcessInfo.processInfo.systemUptime
+        let gap = (now - lastTick) * 1000; lastTick = now
+        if gap > 20 { observations.append(["event": "mainGap", "ms": gap, "time": now, "cycle": cycle]) }
+        guard let panel else { return }
+        if #available(macOS 14.0, *), let frames = frames as? LivePanelFrames {
+            let rect = panel.frame
+            frames.update(crop: CGRect(x: rect.minX - displayBounds.minX,
+                y: displayBounds.maxY - rect.maxY, width: rect.width, height: rect.height), until: panel.isVisible ? deadline : 0)
+        }
+        guard let root = panel.contentView else { return }
+        var queue = [root]
+        while let view = queue.popLast() {
+            if let host = view as? PluginScene3DPointerView, host.scene != nil {
+                if !sceneSeen {
+                    sceneSeen = true; host.delegate = observer
+                    observations.append(["event": "sceneMounted", "ms": (now - started) * 1000, "time": now, "cycle": cycle])
+                }
+                if !renderedSeen, let rendered = observer.first {
+                    renderedSeen = true
+                    observations.append(["event": "didRender", "ms": (rendered - started) * 1000, "time": rendered, "cycle": cycle])
+                }
+                break
+            }
+            queue.append(contentsOf: view.subviews)
+        }
+    }
+    func stop() { timer?.invalidate(); timer = nil; subscription = nil }
+    func finish() async throws {
+        stop()
+        if #available(macOS 14.0, *), let stream = stream as? SCStream, let frames = frames as? LivePanelFrames {
+            try await stream.stopCapture()
+            var rows: [[String: Any]] = []
+            for (i, frame) in frames.drain().enumerated() {
+                let name = String(format: "frame-%03d.png", i)
+                try XCTUnwrap(NSBitmapImageRep(cgImage: frame.1).representation(using: .png, properties: [:]))
+                    .write(to: directory.appendingPathComponent(name))
+                rows.append(["file": name, "time": frame.0])
+            }
+            try JSONSerialization.data(withJSONObject: rows, options: [.prettyPrinted, .sortedKeys])
+                .write(to: directory.appendingPathComponent("frames.json"))
+        }
+        try JSONSerialization.data(withJSONObject: observations, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("performance.json"))
     }
 }
 

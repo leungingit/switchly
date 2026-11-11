@@ -59,5 +59,5 @@ enum PluginPreviewContract {
     static let scenarioSchemaVersion = 1
     /// 共享渲染源码的 revision，由 `renderer-revision.sh --check` 校验；变化即视觉基线失效。
     static let rendererRevision = "sha256:f727aebcb34d2b64b7e1a48c18a4b518bd417328c947a9bd2382d73c7045eca1"
-    static let sdkContractHash = "sha256:23e48934daf60d04e7f5029b24b89fe2c3dfba998afc6ee89bd1adc226f73d51"
+    static let sdkContractHash = "sha256:b853e950f58220ae9de999c94f2e8047e6772a3161cefe983c41ce42814adf88"
 }

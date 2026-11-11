@@ -79,9 +79,17 @@
         2
       ],
       "methods": [
+        "prepare",
         "render",
         "onAction"
       ],
+      "preparation": {
+        "optional": true,
+        "parallelWithMediaRead": true,
+        "contextFields": ["app", "window", "locale", "settings", "reduceMotion", "uiFeatures", "t"],
+        "actionsEnabled": false,
+        "lateResultAfterRender": "discard"
+      },
       "supports": [
         "sync",
         "promise",

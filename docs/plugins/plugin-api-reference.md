@@ -260,6 +260,8 @@ export default definePlugin({
 
 `render` 和 `onAction` 可以同步返回、返回 Promise 或抛错。宿主通过 `JSON.stringify` 接收返回值；`undefined` 按 `null` 处理。
 
+可选 `prepare(ctx)` 与首次媒体读取并行，返回同格式的初始 UI；旧宿主忽略该方法，没有声明时行为不变。`ctx` 仅提供 `app`、`window`、`locale`、`settings`、`reduceMotion`、`uiFeatures` 和 `t`，不提供媒体、文件、存储、天气或 invalidate 接口。准备界面不代表播放状态，宿主不注册其动作；只有正式 render 的媒体批次通过校验后才启用动作并原子替换。初始界面复用完整 UI／Scene3D 解码和预算，关闭、切目标或正式批次已提交后会丢弃迟到结果。该阶段沿用软超时，不增加硬隔离保证。
+
 生产 Dock 预览的调用超时为 1 秒。JavaScriptCore 没有公开的硬中断 API，因此这是软超时：
 
 - 超时后宿主丢弃迟到结果。

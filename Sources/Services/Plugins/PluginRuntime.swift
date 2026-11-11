@@ -57,6 +57,8 @@ protocol PluginRuntimeProtocol: AnyObject {
     var onInvalidate: (() -> Void)? { get set }
     /// The plugin's own directory, for assets named by `scene` sprites.
     var assetDirectory: URL? { get }
+    func prewarmEngine() async
+    func prepare(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError>
     func render(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError>
     func render(context: PluginRenderContext, mediaRead: MediaReadContext?) async -> Result<[PluginSlotContent], PluginRuntimeError>
     func performAction(id: String, value: Double?, context: PluginRenderContext) async -> Result<Void, PluginRuntimeError>
@@ -66,7 +68,9 @@ protocol PluginRuntimeProtocol: AnyObject {
 }
 
 extension PluginRuntimeProtocol {
+    func prewarmEngine() async {}
     var assetDirectory: URL? { nil }
+    func prepare(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> { .success([]) }
     func render(context: PluginRenderContext, mediaRead: MediaReadContext?) async -> Result<[PluginSlotContent], PluginRuntimeError> {
         await render(context: context)
     }
@@ -128,6 +132,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     // Everything below is confined to `queue`.
     private var context: JSContext?
+    private var prewarmedContext: JSContext?
+    /// stateLock 保护代际；Context 本身仍只在插件串行队列访问。
+    private var engineGeneration = 0
     private var invalidateHandler: (() -> Void)?
     private var timers: [Int: ControlledTimer] = [:]
     private var callTimeouts: [Int: DispatchWorkItem] = [:]
@@ -221,6 +228,34 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         await renderValidated(context: context, mediaRead: mediaRead).map(\.slots)
     }
 
+    func prepare(context: PluginRenderContext) async -> Result<[PluginSlotContent], PluginRuntimeError> {
+        await renderValidated(context: context, method: "prepare").map(\.slots)
+    }
+
+    /// 只创建空引擎；插件源码、桥接函数、Timer 和媒体读取仍留到正式可见调用。
+    func prewarmEngine() async {
+        guard !Task.isCancelled else { return }
+        let generation = currentEngineGeneration()
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            queue.async { [self] in
+                defer { continuation.resume() }
+                stateLock.lock()
+                let current = engineGeneration == generation && !disabled
+                stateLock.unlock()
+                guard current, context == nil, prewarmedContext == nil else { return }
+                let started = DispatchTime.now().uptimeNanoseconds
+                prewarmedContext = JSContext(virtualMachine: JSVirtualMachine())
+                AppLogger.performance("PluginEngineWarm", since: started)
+            }
+        }
+    }
+
+    private func currentEngineGeneration() -> Int {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return engineGeneration
+    }
+
     /// The worker forwards the original JSON after the same strict host decode.
     /// Re-encoding decoded UI values would lose unknown fields and create a second
     /// render representation.
@@ -277,8 +312,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     // MARK: - Invocation
 
-    private func renderValidated(context: PluginRenderContext, mediaRead: MediaReadContext? = nil) async -> Result<(json: String, slots: [PluginSlotContent]), PluginRuntimeError> {
-        let result = await invoke("render", context: context, extra: [], mediaRead: mediaRead)
+    private func renderValidated(context: PluginRenderContext, mediaRead: MediaReadContext? = nil, method: String = "render") async -> Result<(json: String, slots: [PluginSlotContent]), PluginRuntimeError> {
+        let result = await invoke(method, context: context, extra: [], mediaRead: mediaRead)
         return result.flatMap { json in
             do {
                 let slots = try PluginRenderOutput.decode(json: Data(json.utf8))
@@ -323,6 +358,11 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                     self?.complete(callID: callID, .failure(.script(message)))
                 }
                 let ctxValue = makeContextValue(ctx, in: js, mediaRead: mediaRead)
+                if method == "prepare" {
+                    for key in ["media", "weather", "fs", "storage", "invalidate", "capabilities"] {
+                        ctxValue?.deleteProperty(key)
+                    }
+                }
                 js.objectForKeyedSubscript("__switchlyInvoke")?
                     .call(withArguments: [method, ctxValue as Any, extra, unsafeBitCast(ok, to: AnyObject.self),
                                           unsafeBitCast(fail, to: AnyObject.self)])
@@ -365,6 +405,10 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     }
 
     private func tearDown(reason: PluginRuntimeError) {
+        stateLock.lock()
+        engineGeneration += 1
+        stateLock.unlock()
+        prewarmedContext = nil
         dispatchPrecondition(condition: .onQueue(queue))
         timers.values.forEach { $0.workItem?.cancel() }
         timers.removeAll()
@@ -385,7 +429,11 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     // MARK: - Context setup
 
     private func loadContext() -> JSContext? {
-        guard let js = JSContext(virtualMachine: JSVirtualMachine()) else { return nil }
+        let started = DispatchTime.now().uptimeNanoseconds
+        defer { AppLogger.performance("PluginVM", since: started) }
+        let candidate = prewarmedContext ?? JSContext(virtualMachine: JSVirtualMachine())
+        prewarmedContext = nil
+        guard let js = candidate else { return nil }
         let pluginID = manifest.id
         js.name = "Switchly plugin \(pluginID)"
         js.exceptionHandler = { _, exception in

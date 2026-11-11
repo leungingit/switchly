@@ -27,30 +27,34 @@ final class CompositeMediaBridge: MediaReadProviding, MusicLibraryPlaying, @unch
         let process = identity()
         let before = try script.nowPlaying(bundleID: bundleID)
         let (candidate, image, epoch) = session.snapshot()
-        let after = try script.nowPlaying(bundleID: bundleID)
-        let current = session.snapshot().0
-        if let process, let before, let after, let candidate, let current,
-           MediaRemotePairing.matches(candidate, before: MusicMediaSample(process: process, nowPlaying: before),
-                                      after: MusicMediaSample(process: identity() ?? process, nowPlaying: after),
-                                      currentToken: current.token), identity() == process {
-            let remote = candidate.nowPlaying
-            var playing = NowPlaying(isPlaying: after.isPlaying, title: remote.title, artist: remote.artist,
-                                     album: remote.album, position: remote.position, duration: remote.duration,
-                                     liked: after.liked, canLike: after.canLike)
-            playing.trackID = after.trackID
-            let read = MediaReadContext(nowPlaying: playing, source: .mediaRemote, artwork: image, artworkToken: candidate.artworkToken,
-                                        validateFreshness: { [weak self] in self?.session.isCurrent(epoch) == true },
-                                        validateArtwork: { [weak self] in
-                self?.session.isArtworkCurrent(candidate.artworkToken) == true
-            }) { [weak self] in
-                guard let self, self.session.isCurrent(epoch), self.identity() == process,
-                      let latest = try? self.script.nowPlaying(bundleID: bundleID) else { return false }
-                return MediaReadContext.sameTrack(after, latest) && latest.liked == after.liked && latest.isPlaying == after.isPlaying
+        var fallbackBefore = before
+        if let process, let before, let candidate {
+            let after = try script.nowPlaying(bundleID: bundleID)
+            fallbackBefore = after
+            let current = session.snapshot().0
+            if let after, let current,
+               MediaRemotePairing.matches(candidate, before: MusicMediaSample(process: process, nowPlaying: before),
+                                          after: MusicMediaSample(process: identity() ?? process, nowPlaying: after),
+                                          currentToken: current.token), identity() == process {
+                let remote = candidate.nowPlaying
+                var playing = NowPlaying(isPlaying: after.isPlaying, title: remote.title, artist: remote.artist,
+                                         album: remote.album, position: remote.position, duration: remote.duration,
+                                         liked: after.liked, canLike: after.canLike)
+                playing.trackID = after.trackID
+                let read = MediaReadContext(nowPlaying: playing, source: .mediaRemote, artwork: image, artworkToken: candidate.artworkToken,
+                                            validateFreshness: { [weak self] in self?.session.isCurrent(epoch) == true },
+                                            validateArtwork: { [weak self] in
+                    self?.session.isArtworkCurrent(candidate.artworkToken) == true
+                }) { [weak self] in
+                    guard let self, self.session.isCurrent(epoch), self.identity() == process,
+                          let latest = try? self.script.nowPlaying(bundleID: bundleID) else { return false }
+                    return MediaReadContext.sameTrack(after, latest) && latest.liked == after.liked && latest.isPlaying == after.isPlaying
+                }
+                return read
             }
-            return read
         }
         // 整组回退：授权失败、来源不符和配对歧义不拼接系统图片。
-        let fallback = try script.frozenRead(bundleID: bundleID)
+        let fallback = try script.frozenRead(bundleID: bundleID, before: fallbackBefore)
         let read = MediaReadContext(nowPlaying: fallback.nowPlaying, artwork: fallback.artwork,
                                     artworkToken: fallback.artworkToken,
                                     validateFreshness: { [weak self] in self?.session.isCurrent(epoch) == true }) { [weak self] in
