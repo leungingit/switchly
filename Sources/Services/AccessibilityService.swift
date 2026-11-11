@@ -776,6 +776,14 @@ class AccessibilityService: AccessibilityServiceProtocol {
             }
 
             AppLogger.warning("Failed to copy AX windows. pid=\(ownerPID), attempt=\(attempt + 1), timeout=\(timeout), result=\(result.rawValue), hasValue=\(windowsValue != nil)")
+            // Electron 应用未开启辅助功能树时返回 apiDisabled；开启后立即重读，不消耗后续重试。
+            if result == .apiDisabled, AXManualAccessibility.enableOnce(appElement, pid: ownerPID) {
+                var retried: CFTypeRef?
+                if AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &retried) == .success,
+                   let windows = retried as? [AXUIElement] {
+                    return windows
+                }
+            }
             Thread.sleep(forTimeInterval: 0.08)
         }
 

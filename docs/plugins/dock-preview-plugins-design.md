@@ -5,6 +5,8 @@
 
 > 2026-11-02 外迁实现更新：当前 API 以 [API 参考](plugin-api-reference.md) 为准，执行与验收见 [外迁台账](plugin-externalization-progress.md)。历史路径与阶段说明保留作轨迹，D20–D23 补充/覆盖关系见台账。
 
+> 2026-11-10 媒体方案更新：[本地探针摘要](../reviews/music-mediaremote/music-mediaremote-probe-2026-11-10.md)记录了当前机器的流媒体封面与浏览器抢占结果；[接入设计](mediaremote/music-mediaremote-integration-plan.md)及[实施记录](../reviews/music-mediaremote/music-mediaremote-implementation-2026-11-10.md)区分了已完成的独立依赖／进程／状态机与尚未接入的默认桥、原子渲染。下文 R2a 是特定历史样本，不能推导所有当前 URL track 都无图；R6 / D02 / D09 的现行运行态边界保留，独立组件不代表已通过宿主集成门禁。
+
 ## 1. 目标与非目标
 
 **目标**
@@ -91,7 +93,7 @@ com.example.music-controls/
 - 每个插件一个 `JSVirtualMachine` + `JSContext`，在插件私有串行队列执行；JSC 对象不跨队列使用。
 - 注入最小全局：`console`（→ `AppLogger`，带 `plugin=<id>`）、`setTimeout/clearTimeout`（宿主实现，随插件卸载清除）、`Promise`（JSC 原生）、SDK 所需的 `__switchly` 桥对象。
 - **不注入**：`fetch`、`XMLHttpRequest`、文件系统、进程、`eval` 外部源加载。
-- 超时：单次 `render` / `onAction` 默认 200ms 软超时；超时则丢弃结果并记日志，连续 N 次超时自动停用插件并在设置页提示。（数值待验证）
+- 超时：`PluginRuntime` 默认 200ms 软超时（测试与校验工具），生产 Dock 预览由 `PluginHost` 传入 1s，见 [插件 API 参考 §5.2](plugin-api-reference.md#52-调用与超时)；超时则丢弃结果并记日志，连续 3 次超时停用该运行时。媒体命令必须在单次调用内完成，不能靠脚本内 `delay` 等待外部应用状态。
 - 异常：捕获 `JSContext.exceptionHandler`，记录 `plugin=<id> phase=render error=...`，卡片回落为无叠层。
 - 生命周期：Dock 预览出现 → 匹配插件 `mount`；面板关闭 / 切换应用 → `unmount`，取消定时器与订阅。重复 mount/unmount 必须安全。
 
@@ -296,7 +298,7 @@ render: async (ctx) => {
 | D17 | 2026-10-30 | 设置页只给一个插件目录入口（用户目录 `~/Library/Application Support/Switchly/Plugins`），不再单独打开应用包内的内置插件目录；内置插件由卡片上的「内置」徽标识别，页面下方一行说明两类位置。理由：内置目录是 `Contents/Resources/Plugins`，Debug 构建时位于仓库内的 `DerivedData`，两个目录并存既无安装意义，也容易被当成「插件装错了地方」 | 用户反馈；D06 的打包位置不变 |
 | D18 | 2026-10-30 | scene 新增 `image` 图层（插件目录内静态图片，减少动态效果下仍显示）；纹理预算落地：单张边长 ≤2048、累计解码 ≤32 MiB，超限拒绝并留空。内置插件 `com.switchly.whale`（鲸娘）基于它实现；D10 / D11 仍待裁决，`fs.read` 未实现，会话数暂由设置项 `running` / `unread` 演示 | `WhalePluginTests`（含路径逃逸、纹理预算、横幅跟手几何）；`make test-unit` 0 失败 |
 | D19 | 2026-10-30 | **用户批准 D11 的方案 A（授权目录只读）并要求设计授权规则**；鲸娘的目标宿主应用为 DeepSeek Harness 桌面版（`com.deepseek.dsh`，取自 `/Applications/DeepSeek Harness.app` 的 `CFBundleIdentifier`），`matches` 由终端改为该 ID。规则见 §8.6；本条只批准设计，实现与读取真实目录须按 §8.6 的步骤逐步进行 | 用户答复「deepseek harness desktop；批准，设计授权等规则」；`defaults read` 取得 bundle ID |
-| D24 | 2026-11-06 | `scene3d` 采用 C-D01 的受限 glb + 宿主原生渲染方向，沿用 D03 的宿主绘制和 D12 的声明式增量原则；二维 `scene` 语义不变。表面与命中引用 glTF `node.name`，因为现有 iPod 样本的 `mesh.name` 为空。拟采用 v2 功能协商，旧 v2 宿主收到新插件时必须由 JS 返回 2D 树；已发布 v1.3.0 宿主只接受 v1 包，v2 插件包不能声称兼容。正式字段、预算、兼容交付与 G0 仍待冻结，当前宿主不具备此能力 | C-D01；三份 glb JSON 检查；`PluginManifest.validate()` 与 v1.3.0 历史源码核对；`plugin-scene3d-tasks.md` T00 |
+| D24 | 2026-11-06 | `scene3d` 采用 C-D01 的受限 glb + 宿主原生渲染方向，沿用 D03 的宿主绘制和 D12 的声明式增量原则；二维 `scene` 语义不变。表面与命中引用 glTF `node.name`，因为现有 iPod 样本的 `mesh.name` 为空。拟采用 v2 功能协商，旧 v2 宿主收到新插件时必须由 JS 返回 2D 树；已发布 v1.3.0 宿主只接受 v1 包，v2 插件包不能声称兼容。正式字段、预算、兼容交付与 G0 仍待冻结，当前宿主不具备此能力 | C-D01；三份 glb JSON 检查；`PluginManifest.validate()` 与 v1.3.0 历史源码核对；`scene3d/plugin-scene3d-tasks.md` T00 |
 | D25 | 2026-11-06 | 经用户裁决，D24 遗留的 v1/v2 交付路径定为：外仓同时保留 v1 的 2D 音乐包（供 v1.3.0 等旧宿主）与另发的 v2 `scene3d` 包（供新宿主），新宿主只加载 v2 包；v2 包仍须依据 `ctx.uiFeatures.scene3d` 在不支持时返回 2D 树。不放宽 v1 对未知节点的拒绝。两包的并存命名、发布与锁文件细节仍属 T00/T09 待冻结项，G0 尚未通过 | 用户答复「保留 v1 包 + 另发 v2 包」；D24 |
 | D26 | 2026-11-06 | **T00 合同冻结（G0 未通过）**。公开合同冻结为：`scene3d` 仅 `apiVersion: 2` 且 `ctx.uiFeatures.scene3d === true` 时可用，与 `ctx.capabilities` 权限表分离；只接受自包含单文件 glTF 2.0 `.glb`，语义标识只按 glTF `node.name`；`fit` 仅 `contain`，相机角度单位为度，`rotate` 受限且减少动态效果下禁用惯性/自动回正；表面 `node`、`size`（纹理像素）、`content` 受限 2D 子集，命中 `node`/`id`/`label`/`value`/`enabled`；`fallback` 必填且不得递归 `scene3d`。`scene3d` 只能是 slot 根节点，每 slot 至多一个。预算冻结为 glb ≤8 MiB、整包 ≤32 MiB、mesh ≤128、三角 ≤150000、资产节点 ≤256、静态纹理边 ≤2048、每插件累计解码 ≤32 MiB、动态表面 ≤2 张且各 ≤1024×1024、hit ≤12、扩展仅 clearcoat/emissive strength/unlit；最小可读边界候选冻结为 220×380 pt。窄槽或运行期资产/渲染失败仅当前节点降级 `fallback`，声明结构错误仍拒绝整次输出。D25 分发规则冻结为同一插件 ID 的两条发行线：v1 线继续供旧宿主，v2 线供新宿主；任一宿主锁文件只能锁一条线，v1 包不进入新宿主，新宿主只加载 v2 包；外仓目录/分支/revision 与锁文件由 T09 落地。G0 仍不通过：真实 Dock 尺寸与 2D 性能基线未测、v1.3.0 旧宿主实机回退未验、宿主 `scene3d` 解码/渲染尚未实现（T04–T07） | T00 合同与夹具；`plugin-api-reference.md`、`Plugins/api/capabilities.json`、SDK；用户任务要求；C-D01/D03/D12/D24/D25 |
 

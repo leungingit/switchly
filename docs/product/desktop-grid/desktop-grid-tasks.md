@@ -51,7 +51,7 @@ HANDOFF §4 的 6 个人工核对步骤分布：① 实施与原型对照 → T0
 - 验收：
   - `make build`、`make test-unit` 通过；
   - `rg -n "#[0-9A-Fa-f]{6}" Sources/Views/` 无本次新增的内联色值；
-  - 对照 `docs/product/desktop-grid-design-spec.md` §7.1 / §7.2 逐行核对，复用项不重复定义。
+  - 对照 `docs/product/desktop-grid/desktop-grid-design-spec.md` §7.1 / §7.2 逐行核对，复用项不重复定义。
 - 状态：已完成（2026-10-23）。新增 `DesignTokens.Grid`、`DesignTokens.Typography`、`DesignTokensTests`（4 例）；`make build` 通过，`make test-unit` 255 例 0 失败。
 
 ### T02 材质、语义色与背景令牌
@@ -174,7 +174,7 @@ HANDOFF §4 的 6 个人工核对步骤分布：① 实施与原型对照 → T0
 - 依赖：T01、T03、T08
 - 验收：
   - `make build`、`make test-unit` 通过；
-  - 人工核对 1（实施与原型对照）：`make run` 后在 light / dark × 米白 / 纯白 × C / B 共 8 种组合截图，与 `docs/product/desktop-grid-design-spec.md` §3.1 对照；截图存系统临时目录，不入库；
+  - 人工核对 1（实施与原型对照）：`make run` 后在 light / dark × 米白 / 纯白 × C / B 共 8 种组合截图，与 `docs/product/desktop-grid/desktop-grid-design-spec.md` §3.1 对照；截图存系统临时目录，不入库；
   - 1440 与窄屏两种宽度下三行不出屏、无横向滚动、长桌面色名截断不遮操作。
 - 状态：已完成（2026-10-23，离屏渲染对照）。新增 `Sources/Views/GridOverviewView.swift`、`Sources/Views/GridCellView.swift`、`Sources/Views/GridThumbnailView.swift`；C 使用 `DesignTokens.Grid` 的列/行比例、9° 倾斜与 0.88 缩放，B 使用 176pt 行高与 900pt 上限；两样式共享信息层级。离屏 PNG（`$TMPDIR/switchly-grid-stage3/shots/`）：`c-cream-light`、`c-white-light`、`b-cream-light`、`b-white-light`、`c-dark`、`b-dark`。1440×880 与 B 900×720 下三行完整入屏。剩余差异：桌面名暂用“桌面 N”（无别名模型）；离屏图标为字母块，真机走 `AppIconCache`；C 网格宽度上限 1260pt 并水平居中（新增 `DesignTokens.Grid.styleCMaxWidth`），透视值新增 `DesignTokens.Grid.perspective = 0.9`（原型 1800px 透视 ÷ 1260px 网格宽），倾角仍为令牌 9°；操作提示两种样式统一放页脚居中；原型当前格的蓝底用 accent 6% 近似。待人工验证：真机浅/深 × C/B 共 8 组合、1440 与窄屏实际截图；减少动态下的目标格脉冲随 T22。
 
@@ -425,7 +425,7 @@ HANDOFF §4 的 6 个人工核对步骤分布：① 实施与原型对照 → T0
 
 - 目标：把 HANDOFF §4 的 6 个步骤完整走一遍并留下证据，形成交付结论。
 - 涉及文件：
-  - `docs/product/desktop-grid-design-spec.md`（存在）
+  - `docs/product/desktop-grid/desktop-grid-design-spec.md`（存在）
   - `.taste-design/work/qa/manual-checks.md`（存在，过程材料）
   - 本次新增与修改的文件
 - 依赖：T01–T23

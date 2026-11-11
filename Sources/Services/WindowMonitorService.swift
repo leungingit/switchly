@@ -243,11 +243,21 @@ class WindowMonitorService: WindowMonitorServiceProtocol {
             let appElement = AXUIElementCreateApplication(app.processIdentifier)
             AXUIElementSetMessagingTimeout(appElement, 0.3)
             var windowsValue: CFTypeRef?
-            guard AXUIElementCopyAttributeValue(
+            var windowsResult = AXUIElementCopyAttributeValue(
                 appElement,
                 kAXWindowsAttribute as CFString,
                 &windowsValue
-            ) == .success,
+            )
+            // Electron 应用默认不开启辅助功能树（apiDisabled），否则其窗口（含最小化窗口）会整体丢失。
+            if windowsResult == .apiDisabled,
+               AXManualAccessibility.enableOnce(appElement, pid: app.processIdentifier) {
+                windowsResult = AXUIElementCopyAttributeValue(
+                    appElement,
+                    kAXWindowsAttribute as CFString,
+                    &windowsValue
+                )
+            }
+            guard windowsResult == .success,
                   let axWindows = windowsValue as? [AXUIElement] else {
                 continue
             }

@@ -46,7 +46,7 @@
 }
 ```
 
-字段已由 D26/T00 冻结，正式形状见 [API 参考 §9](plugin-api-reference.md) 与 `Plugins/sdk/index.d.ts`；下方仅为示意。`asset` 必须在当前插件包内；表面与命中的 `node` 引用 glTF `node.name`，名称在资产中唯一且对应单个可见网格，屏幕有完整且方向一致的 UV。现有探针资产的语义名称位于 `node.name`，原型 iPod 的 `mesh.name` 为空；不得按 `mesh.name` 查找。表面内容只接受有界的布局、文本、封面、进度和基础形状子集，复用现有 `PluginUINode` 语义与宿主封面缓存；不允许按钮、`scene3d` 递归或任意 HTML。宿主在状态变更时栅格化、必要时更新纹理，旋转时只旋转场景，**不要求 JS 逐帧 render**。T03 对比 SwiftUI 离屏渲染与共享 Canvas 绘制，采用在预览和宿主均可得到相同像素的路径；已知 `ImageRenderer` 对系统 `ProgressView` 存在偏差，不能直接假定可复用。二维内容的可访问文本和动作须由宿主建立独立语义树，纹理本身不提供 VoiceOver。
+字段已由 D26/T00 冻结，正式形状见 [API 参考 §9](../plugin-api-reference.md) 与 `Plugins/sdk/index.d.ts`；下方仅为示意。`asset` 必须在当前插件包内；表面与命中的 `node` 引用 glTF `node.name`，名称在资产中唯一且对应单个可见网格，屏幕有完整且方向一致的 UV。现有探针资产的语义名称位于 `node.name`，原型 iPod 的 `mesh.name` 为空；不得按 `mesh.name` 查找。表面内容只接受有界的布局、文本、封面、进度和基础形状子集，复用现有 `PluginUINode` 语义与宿主封面缓存；不允许按钮、`scene3d` 递归或任意 HTML。宿主在状态变更时栅格化、必要时更新纹理，旋转时只旋转场景，**不要求 JS 逐帧 render**。T03 对比 SwiftUI 离屏渲染与共享 Canvas 绘制，采用在预览和宿主均可得到相同像素的路径；已知 `ImageRenderer` 对系统 `ProgressView` 存在偏差，不能直接假定可复用。二维内容的可访问文本和动作须由宿主建立独立语义树，纹理本身不提供 VoiceOver。
 
 ### 2.3 资产格式、安全与预算
 
@@ -98,6 +98,6 @@ GLTFKit2 只负责加载和桥接；宿主提供固定的环境反射、色彩�
 
 ## 5. 文件边界与交付门禁
 
-正式契约先于代码：在 [Dock 插件设计台账](dock-preview-plugins-design.md) 为 C-D01 增加正式裁决编号；同步 [插件 API 参考](plugin-api-reference.md)、`Plugins/api/capabilities.json`、`Plugins/sdk/`、`Plugins/cli/`、[预览契约](preview/plugin-preview-contract.md)及其哈希和 renderer revision。新增通用 Swift 类型建议分别置于 `Sources/Models/Plugins/`（解码/预算）、`Sources/Services/Plugins/`（校验/加载）、`Sources/Views/`（共享 3D 视图与表面），以 `project.yml` 接线；具体文件名由 T00 冻结。预览必须编译同一实现，不在 `Tools/PluginPreview` 另写渲染器。宿主不依赖外仓插件源码，外仓不实现 glb 解析器。
+正式契约先于代码：在 [Dock 插件设计台账](../dock-preview-plugins-design.md) 为 C-D01 增加正式裁决编号；同步 [插件 API 参考](../plugin-api-reference.md)、`Plugins/api/capabilities.json`、`Plugins/sdk/`、`Plugins/cli/`、[预览契约](../preview/plugin-preview-contract.md)及其哈希和 renderer revision。新增通用 Swift 类型建议分别置于 `Sources/Models/Plugins/`（解码/预算）、`Sources/Services/Plugins/`（校验/加载）、`Sources/Views/`（共享 3D 视图与表面），以 `project.yml` 接线；具体文件名由 T00 冻结。预览必须编译同一实现，不在 `Tools/PluginPreview` 另写渲染器。宿主不依赖外仓插件源码，外仓不实现 glb 解析器。
 
 实现前后的每个门禁、命令和可接受证据见[任务书](plugin-scene3d-tasks.md)。最终必须运行外仓 `npm test`、`npm run build`，宿主 `make prepare-plugins`、`make build`、`make test-unit`、`make plugin-preview-contract-check`、`./verify.sh`，再看真实插件预览与 Dock 面板截图。签名包、旧系统、Intel、真实媒体与用户视觉验收分别报告；单元测试通过不等于产品验收。本文不授权提交、推送或发布。

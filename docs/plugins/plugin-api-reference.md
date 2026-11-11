@@ -381,6 +381,8 @@ ctx.media.library.pause(): Promise<void>;
 
 当前媒体桥只支持 Apple Music。插件只提交固定命令、关键词或曲目 ID，不提交 AppleScript。封面字节由宿主读取并绘制，不传给插件 JS。
 
+宿主内部每批叠层渲染固定一份媒体读取上下文，文字与图片整组发布；`media.control` 不获得读取快照的权限，动作使用实时授权与定向控制。候选 `CompositeMediaBridge` 通过注入启用，以 MediaRemote 精确来源／进程及前后歌曲采样做保守配对，不可靠时整组回退 AppleScript；它继续提供喜欢与资料库接口。**默认装配仍为 `MusicAppleScriptBridge`**，当前发行包没有新增 Adapter。共享读取与封面解码预算见 [接入设计](mediaremote/music-mediaremote-integration-plan.md)，公开 JS 字段与 manifest 不变。
+
 ### 6.4 `ctx.fs`
 
 `ctx.fs` 只有用户确认 `fs.read` 后才存在。
