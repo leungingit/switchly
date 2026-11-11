@@ -335,7 +335,7 @@ class DockPreviewViewModel: ObservableObject {
     }
 
     private func setupObservers() {
-        pluginOverlay.$slots
+        pluginOverlay.slotsPublisher
             .map { $0[.center] != nil }
             .removeDuplicates()
             .receive(on: DispatchQueue.main)

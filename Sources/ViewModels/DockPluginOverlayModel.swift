@@ -10,6 +10,7 @@
 //
 
 import AppKit
+import Combine
 
 /// A host-owned action address. Percent-encoding each component keeps plugin
 /// IDs and action IDs separate even when either contains punctuation.
@@ -36,10 +37,27 @@ struct PluginSlotEntry: Identifiable, Equatable {
 }
 
 final class DockPluginOverlayModel: ObservableObject {
-    @Published private(set) var slots: [PluginSlot: [PluginSlotEntry]] = [:]
-    /// Cover for `image(source: {artwork})`, drawn by the host only.
-    @Published private(set) var artwork: NSImage?
+    private struct DisplayState {
+        var slots: [PluginSlot: [PluginSlotEntry]] = [:]
+        var artwork: NSImage?
+        var artworkToken: String?
+        var owners: [String: OwnedAction] = [:]
+        var mediaRead: MediaReadContext?
+    }
+    @Published private var display = DisplayState()
+    var slots: [PluginSlot: [PluginSlotEntry]] { display.slots }
+    var slotsPublisher: AnyPublisher<[PluginSlot: [PluginSlotEntry]], Never> {
+        $display.map(\.slots).removeDuplicates().eraseToAnyPublisher()
+    }
+    var artwork: NSImage? { display.artwork }
+    var artworkToken: String? { display.artworkToken }
+    var mediaRead: MediaReadContext? { display.mediaRead }
+    private var artworkRevision = 0
     private var artworkData: Data?
+    private var mediaInterest: MediaReadInterest?
+    private var runtimeInterest: PluginLifetime?
+    private var rendering = false
+    private var renderRequested = false
     var hasCenter: Bool { !(slots[.center] ?? []).isEmpty }
 
     /// Upper bound per slot, so one misbehaving plugin cannot push the panel down.
@@ -64,11 +82,14 @@ final class DockPluginOverlayModel: ObservableObject {
         let runtime: PluginRuntimeProtocol
         let namespace: PluginActionNamespace
     }
-    private var actionOwners: [String: OwnedAction] = [:]
+    private var actionOwners: [String: OwnedAction] { display.owners }
     private var loopTask: Task<Void, Never>?
     /// Bumped on every start/stop so a render that finishes after the
     /// target changed cannot overwrite newer state.
     private var generation = 0
+    /// Prevent an older async refresh from publishing after a newer one.
+    private var renderRevision = 0
+    private var pendingActions = 0
 
     init(host: PluginHosting = PluginHost.shared) {
         self.host = host
@@ -84,11 +105,23 @@ final class DockPluginOverlayModel: ObservableObject {
         self.context = context
         self.runtimes = runtimes
         let generation = self.generation
-        for runtime in runtimes {
-            runtime.onInvalidate = { [weak self] in
-                DispatchQueue.main.async { self?.renderOnce(generation: generation) }
+        mediaInterest = host.acquireMediaRead(for: context.bundleID) { [weak self] in
+            DispatchQueue.main.async {
+                guard let self, self.generation == generation else { return }
+                // 先撤销旧封面；文字与下一批封面仍作为一个状态提交。
+                if self.display.mediaRead?.artworkIsCurrent() != true {
+                    var cleared = self.display
+                    cleared.artwork = nil
+                    cleared.artworkToken = nil
+                    self.display = cleared
+                    self.artworkData = nil
+                }
+                self.renderRevision += 1
+                self.renderOnce(generation: generation)
             }
-            runtime.resume()
+        }
+        runtimeInterest = host.acquireRuntimeVisibility(runtimes) { [weak self] in
+            DispatchQueue.main.async { self?.renderOnce(generation: generation) }
         }
         let interval = runtimes.compactMap { $0.manifest.effectiveRefreshInterval }.min() ?? Self.defaultRefreshInterval
         loopTask = Task { @MainActor [weak self] in
@@ -102,17 +135,18 @@ final class DockPluginOverlayModel: ObservableObject {
     func stop() {
         dispatchPrecondition(condition: .onQueue(.main))
         generation += 1
+        renderRevision += 1
+        pendingActions = 0
         loopTask?.cancel()
         loopTask = nil
-        runtimes.forEach {
-            $0.onInvalidate = nil
-            $0.suspend()
-        }
+        runtimeInterest?.cancel()
+        runtimeInterest = nil
+        mediaInterest?.cancel()
+        mediaInterest = nil
+        renderRequested = false
         runtimes = []
-        actionOwners = [:]
         context = nil
-        if !slots.isEmpty { slots = [:] }
-        artwork = nil
+        display = DisplayState()
         artworkData = nil
     }
 
@@ -130,7 +164,10 @@ final class DockPluginOverlayModel: ObservableObject {
     }
 
     deinit {
-        host.unmountAll()
+        loopTask?.cancel()
+        runtimeInterest?.cancel()
+        mediaInterest?.cancel()
+        // Host 可被多个叠层共享；销毁一个消费者不能卸载其他人的 VM 和读取兴趣。
     }
 
     /// Routes a control event to the plugin that rendered it, then re-renders.
@@ -150,14 +187,30 @@ final class DockPluginOverlayModel: ObservableObject {
     }
 
     private func perform(owned: OwnedAction, value: Double?, context: PluginRenderContext) {
+        if owned.namespace.actionID == "next" || owned.namespace.actionID == "previous" {
+            artworkData = nil
+            display.artwork = nil
+            display.artworkToken = nil
+        }
         let generation = self.generation
+        pendingActions += 1
+        renderRevision += 1
         Task { @MainActor [weak self] in
             if case .failure(let error) = await owned.runtime.performAction(
                 id: owned.namespace.actionID, value: value, context: context
             ) {
                 AppLogger.warning("Plugin action failed. plugin=\(owned.runtime.manifest.id) action=\(owned.namespace.actionID) error=\(error)")
             }
-            await self?.render(generation: generation)
+            guard let self, generation == self.generation else { return }
+            self.pendingActions -= 1
+            if self.pendingActions == 0 { await self.render(generation: generation) }
+            // External state can settle after the command returns (Music's
+            // `player state` lags `playpause`). One bounded reconciliation
+            // repaints the control without waiting for the next refresh tick;
+            // a hidden panel or a newer action drops the late render.
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard generation == self.generation, self.pendingActions == 0 else { return }
+            await self.render(generation: generation)
         }
     }
 
@@ -177,19 +230,32 @@ final class DockPluginOverlayModel: ObservableObject {
         return matches[0]
     }
 
-    private func renderOnce(generation: Int) {
-        Task { @MainActor [weak self] in await self?.render(generation: generation) }
+    private func renderOnce(generation: Int, allowRetry: Bool = true) {
+        Task { @MainActor [weak self] in await self?.render(generation: generation, allowRetry: allowRetry) }
     }
 
     @MainActor
-    private func render(generation: Int) async {
-        guard generation == self.generation, let context else { return }
+    private func render(generation: Int, allowRetry: Bool = true) async {
+        guard generation == self.generation, pendingActions == 0, let context else { return }
+        if rendering { renderRequested = true; return }
+        rendering = true
+        defer {
+            rendering = false
+            if renderRequested {
+                renderRequested = false
+                renderOnce(generation: self.generation, allowRetry: false)
+            }
+        }
+        renderRevision += 1
+        let revision = renderRevision
+        let mediaRead = await host.mediaRead(for: context.bundleID)
+        guard generation == self.generation, revision == renderRevision else { return }
         var merged: [PluginSlot: [PluginSlotEntry]] = [:]
         var owners: [String: OwnedAction] = [:]
         for runtime in runtimes {
             // A failing plugin only loses its own overlay.
-            guard case .success(let contents) = await runtime.render(context: context) else { continue }
-            guard generation == self.generation else { return }
+            guard case .success(let contents) = await runtime.render(context: context, mediaRead: mediaRead) else { continue }
+            guard generation == self.generation, revision == renderRevision else { return }
             // Plugins render in registry order and stack inside a slot, capped.
             for content in contents {
                 guard (merged[content.slot]?.count ?? 0) < Self.maxEntriesPerSlot else { continue }
@@ -202,13 +268,38 @@ final class DockPluginOverlayModel: ObservableObject {
                 }
             }
         }
-        guard generation == self.generation else { return }
-        actionOwners = owners
-        if merged != slots { slots = merged }
-        guard merged.values.contains(where: { $0.contains { $0.node.usesArtwork } }) else { return }
-        let data = await host.artwork(for: context.bundleID)
-        guard generation == self.generation, data != artworkData else { return }
-        artworkData = data
-        artwork = data.flatMap(NSImage.init(data:))
+        guard generation == self.generation, revision == renderRevision else { return }
+        let usesArtwork = merged.values.contains { $0.contains { $0.node.usesArtwork } }
+        let image: NSImage?
+        let token: String?
+        if let mediaRead {
+            guard await host.mediaReadIsCurrent(mediaRead, bundleID: context.bundleID) else {
+                renderRequested = allowRetry
+                return
+            }
+            image = usesArtwork ? mediaRead.artwork : nil
+            token = usesArtwork ? mediaRead.artworkToken : nil
+        } else if usesArtwork {
+            // 自定义 Host/fixture 的兼容路径也先准备图片再整批发布。
+            let data = usesArtwork ? await host.artwork(for: context.bundleID) : nil
+            let decoded = await Task.detached {
+                MediaReadContext(nowPlaying: nil, artwork: data.flatMap { MediaArtworkDecoder.decode($0) },
+                                 artworkToken: nil, validate: { true })
+            }.value
+            image = decoded.artwork
+            if data != artworkData { artworkRevision += 1 }
+            artworkData = data
+            token = image == nil ? nil : "artwork-\(artworkRevision)"
+        } else {
+            image = nil
+            token = nil
+            artworkData = nil
+        }
+        guard generation == self.generation, revision == renderRevision else { return }
+        guard mediaRead?.isFresh() != false else {
+            renderRequested = allowRetry
+            return
+        }
+        display = DisplayState(slots: merged, artwork: image, artworkToken: token, owners: owners, mediaRead: mediaRead)
     }
 }

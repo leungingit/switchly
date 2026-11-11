@@ -35,6 +35,8 @@ xcrun swiftc \
     Sources/Services/Plugins/PluginFileReader.swift \
     Sources/Services/Plugins/PluginStorage.swift \
     Sources/Services/Plugins/MediaBridge.swift \
+    Sources/Services/Plugins/MediaReadContext.swift \
+    Sources/Services/Plugins/PluginLifetime.swift \
     Sources/Utilities/AppLogger.swift \
     Tools/PluginPreview/Protocol/PluginPreviewFrameCodec.swift \
     Tools/PluginPreview/Scenario/PreviewScenario.swift \

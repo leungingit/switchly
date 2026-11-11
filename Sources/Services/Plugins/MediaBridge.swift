@@ -13,6 +13,7 @@ import AppKit
 import Foundation
 
 struct NowPlaying: Equatable {
+    var trackID: String = ""
     let isPlaying: Bool
     let title: String
     let artist: String
@@ -24,9 +25,43 @@ struct NowPlaying: Equatable {
 
     var progress: Double { duration > 0 ? min(max(position / duration, 0), 1) : 0 }
 
+    func withPlaying(_ newValue: Bool) -> NowPlaying {
+        var updated = NowPlaying(isPlaying: newValue, title: title, artist: artist, album: album,
+                                 position: position, duration: duration, liked: liked, canLike: canLike)
+        updated.trackID = trackID
+        return updated
+    }
+
     var jsObject: [String: Any] {
         ["playing": isPlaying, "title": title, "artist": artist, "album": album, "position": position,
          "duration": duration, "progress": progress, "liked": liked, "canLike": canLike]
+    }
+}
+
+/// Music applies `playpause` asynchronously: `player state` can keep reporting
+/// the old value for a short moment afterwards. A toggle records the state it
+/// requested, and `nowPlaying()` publishes it until Music catches up. The
+/// deadline bounds the optimism, so a command that never took effect cannot
+/// fake a state forever. Pure so the reconciliation is unit-testable without
+/// sending Apple Events.
+struct MediaPlayStateExpectation {
+    let isPlaying: Bool
+    let deadline: DispatchTime
+}
+
+enum MediaPlayStateReconciler {
+    /// Returns the snapshot to publish and the expectation to keep (nil once
+    /// Music agrees, the deadline has passed, or no toggle is pending).
+    static func resolve(snapshot: NowPlaying?,
+                        last: NowPlaying?,
+                        expectation: MediaPlayStateExpectation?,
+                        now: DispatchTime) -> (snapshot: NowPlaying?, expectation: MediaPlayStateExpectation?) {
+        guard let expectation, now <= expectation.deadline,
+              snapshot?.isPlaying != expectation.isPlaying else { return (snapshot, nil) }
+        // A stopped app can briefly report no current track at all; keep the
+        // last known track's metadata while the transport icon settles.
+        guard let base = snapshot ?? last else { return (snapshot, expectation) }
+        return (base.withPlaying(expectation.isPlaying), expectation)
     }
 }
 
@@ -95,7 +130,12 @@ final class MusicAppleScriptBridge: MediaBridging, MusicLibraryPlaying, @uncheck
     private var compiled: [String: NSAppleScript] = [:]
     private var consentRequested = false
     /// Artwork of the last seen track; fetched again only when the track changes.
-    private var artworkCache: (trackID: String, data: Data?)?
+    /// `nil` data is cached only for streaming tracks, whose cover is never used.
+    private var artworkCache: (track: NowPlaying, data: Data?)?
+    /// State requested by the last `playpause`, kept until Music reports it.
+    private var playStateExpectation: MediaPlayStateExpectation?
+    /// Last successful snapshot; used when Music briefly reports no track.
+    private var lastNowPlaying: NowPlaying?
     private let isRunning: (String) -> Bool
 
     init(isRunning: @escaping (String) -> Bool = { bundleID in
@@ -113,13 +153,16 @@ final class MusicAppleScriptBridge: MediaBridging, MusicLibraryPlaying, @uncheck
         tell application id "\(bundleID)"
           if player state is stopped then return {}
           set t to current track
-          return {(player state is playing), name of t, artist of t, album of t, player position, duration of t, favorited of t}
+          return {(player state is playing), name of t, artist of t, album of t, player position, duration of t, favorited of t, persistent ID of t}
         end tell
         """
+        let snapshot: NowPlaying?
         do {
-            guard let result = try run(script), result.numberOfItems == 7 else { return nil }
+            guard let result = try run(script), result.numberOfItems == 8 else {
+                return reconcile(nil)
+            }
             func item(_ i: Int) -> NSAppleEventDescriptor? { result.atIndex(i) }
-            return NowPlaying(
+            var playing = NowPlaying(
                 isPlaying: item(1)?.booleanValue ?? false,
                 title: item(2)?.stringValue ?? "",
                 artist: item(3)?.stringValue ?? "",
@@ -129,9 +172,25 @@ final class MusicAppleScriptBridge: MediaBridging, MusicLibraryPlaying, @uncheck
                 liked: item(7)?.booleanValue ?? false,
                 canLike: true
             )
+            playing.trackID = item(8)?.stringValue ?? ""
+            snapshot = playing
         } catch MediaBridgeError.scriptFailed(-1728) {
-            return nil  // no current track
+            return reconcile(nil)  // no current track
         }
+        return reconcile(snapshot)
+    }
+
+    /// Applies the pending toggle's requested state to a fresh snapshot. All
+    /// callers run on `queue`, so the expectation and last snapshot stay
+    /// confined to that serial queue.
+    private func reconcile(_ snapshot: NowPlaying?) -> NowPlaying? {
+        let resolved = MediaPlayStateReconciler.resolve(snapshot: snapshot,
+                                                        last: lastNowPlaying,
+                                                        expectation: playStateExpectation,
+                                                        now: .now())
+        if let snapshot { lastNowPlaying = snapshot }
+        playStateExpectation = resolved.expectation
+        return resolved.snapshot
     }
 
     func perform(_ command: MediaCommand, bundleID: String) throws {
@@ -140,9 +199,26 @@ final class MusicAppleScriptBridge: MediaBridging, MusicLibraryPlaying, @uncheck
         guard ensureConsent(bundleID: bundleID) else { throw MediaBridgeError.notAuthorized }
         let body: String
         switch command {
-        case .togglePlayPause: body = "playpause"
-        case .next: body = "next track"
-        case .previous: body = "previous track"
+        case .togglePlayPause:
+            // One fast `playpause` event. Music's `player state` can lag behind
+            // it, so read the state before toggling and hand the requested
+            // result to `nowPlaying()` instead of waiting inside this script:
+            // `delay` / `repeat` in a tell block is slow and unreliable, and a
+            // stale read paints the old play/pause icon on the next render.
+            playStateExpectation = nil
+            let requested = try run("""
+            tell application id "\(bundleID)"
+              set wasPlaying to (player state is playing)
+              playpause
+              return (not wasPlaying)
+            end tell
+            """)?.booleanValue
+            playStateExpectation = requested.map {
+                MediaPlayStateExpectation(isPlaying: $0, deadline: .now() + .milliseconds(600))
+            }
+            return
+        case .next, .previous:
+            body = command == .next ? "next track" : "previous track"
         case .like: body = "set favorited of current track to true"
         case .unlike: body = "set favorited of current track to false"
         }
@@ -152,29 +228,110 @@ final class MusicAppleScriptBridge: MediaBridging, MusicLibraryPlaying, @uncheck
     func artwork(bundleID: String) throws -> Data? {
         guard supports(bundleID: bundleID) else { throw MediaBridgeError.unsupportedApp }
         guard isRunning(bundleID), ensureConsent(bundleID: bundleID) else { return nil }
-        let trackID: String
-        do {
-            guard let id = try run("tell application id \"\(bundleID)\" to return persistent ID of current track")?.stringValue
-            else { return nil }
-            trackID = id
-        } catch MediaBridgeError.scriptFailed(-1728) {
-            return nil
-        }
-        if let cache = artworkCache, cache.trackID == trackID { return cache.data }
+        guard let track = lastNowPlaying else { return nil }
+        // The screen's text and cover are fetched separately. Never publish a
+        // cover from a track that advanced between those two reads.
+        if let cache = artworkCache, Self.sameTrack(cache.track, track) { return cache.data }
+        // One script reads identity, artwork count and bytes together so the
+        // result can be checked against the snapshot the screen shows. Music's
+        // `current track` is a live reference: it may move between statements.
         let script = """
         tell application id "\(bundleID)"
           try
-            return raw data of artwork 1 of current track
-          on error
-            return missing value
+            set t to current track
+            set idBefore to persistent ID of t
+            set trackClass to "unknown"
+            try
+              set trackClass to (class of t) as text
+            end try
+            if trackClass is "URL track" then return {idBefore, idBefore, trackClass, 0, ""}
+            set artCount to count of artworks of t
+            if artCount > 0 then
+              set coverData to raw data of artwork 1 of t
+              set idAfter to persistent ID of current track
+              return {idBefore, idAfter, trackClass, artCount, coverData}
+            end if
+            set idAfter to persistent ID of current track
+            return {idBefore, idAfter, trackClass, artCount, ""}
+          on error errText number errNum
+            return {"", "", "error " & errNum, -1, ""}
           end try
         end tell
         """
-        let descriptor = try run(script)
-        let data = descriptor.flatMap { $0.descriptorType == typeType ? nil : $0.data }.flatMap { $0.isEmpty ? nil : $0 }
-        artworkCache = (trackID, data)
-        AppLogger.debug("Artwork fetched. hasArtwork=\(data != nil) bytes=\(data?.count ?? 0)")
+        let result = try run(script)
+        let probe = Self.parseArtworkProbe(result)
+        let tag = "track=\(Self.shortID(track.trackID)) class=\(probe.kind) artworks=\(probe.count) "
+            + "idBefore=\(Self.shortID(probe.idBefore)) idAfter=\(Self.shortID(probe.idAfter)) "
+            + "bytes=\(probe.data?.count ?? 0) hash=\(probe.data.map(Self.fingerprint) ?? "-")"
+        // Reject a cover whose track moved while it was being read, or that
+        // belongs to a different track than the one the screen shows.
+        guard probe.idBefore == track.trackID, probe.idAfter == track.trackID else {
+            AppLogger.debug("Artwork discarded: track changed during read. \(tag)")
+            return nil
+        }
+        guard let latest = lastNowPlaying, Self.sameTrack(track, latest) else {
+            AppLogger.debug("Artwork discarded: snapshot advanced. \(tag)")
+            return nil
+        }
+        // Streaming tracks are one reused `URL track` proxy whose artwork lags
+        // one queue position behind: track N reports track N-1's cover, stable
+        // over time (measured 0.1–8 s after a skip). Showing it would always be
+        // wrong, so the screen keeps its placeholder for these tracks.
+        guard Self.trustsArtwork(trackClass: probe.kind) else {
+            artworkCache = (track, nil)
+            AppLogger.debug("Artwork skipped: streaming track. \(tag)")
+            return nil
+        }
+        // Music may expose the new track before its artwork is ready. Do not
+        // cache nil: retry on the next normal refresh.
+        guard let data = probe.data else {
+            AppLogger.debug("Artwork unavailable. \(tag)")
+            return nil
+        }
+        artworkCache = (track, data)
+        AppLogger.debug("Artwork fetched. \(tag)")
         return data
+    }
+
+    private struct ArtworkProbe {
+        var idBefore = "", idAfter = "", kind = "?"
+        var count = -1
+        var data: Data?
+    }
+
+    private static func parseArtworkProbe(_ descriptor: NSAppleEventDescriptor?) -> ArtworkProbe {
+        guard let d = descriptor, d.numberOfItems == 5 else { return ArtworkProbe() }
+        var probe = ArtworkProbe()
+        probe.idBefore = d.atIndex(1)?.stringValue ?? ""
+        probe.idAfter = d.atIndex(2)?.stringValue ?? ""
+        probe.kind = d.atIndex(3)?.stringValue ?? "?"
+        probe.count = Int(d.atIndex(4)?.int32Value ?? -1)
+        if probe.count > 0, let raw = d.atIndex(5) {
+            let bytes = raw.data
+            probe.data = bytes.isEmpty ? nil : bytes
+        }
+        return probe
+    }
+
+    /// Music's script reports covers of streaming (`URL track`) items one
+    /// queue position late; only library-backed track classes are trusted.
+    static func trustsArtwork(trackClass: String) -> Bool { trackClass != "URL track" }
+
+    private static func shortID(_ id: String) -> String { String(id.suffix(6)) }
+
+    /// Cheap content fingerprint for logs only (FNV-1a over the first 4 KiB).
+    private static func fingerprint(_ data: Data) -> String {
+        var h: UInt64 = 0xcbf29ce484222325
+        for b in data.prefix(4096) { h = (h ^ UInt64(b)) &* 0x100000001b3 }
+        return String(h, radix: 16)
+    }
+
+    private static func sameTrack(_ a: NowPlaying, _ b: NowPlaying) -> Bool {
+        a.trackID == b.trackID && a.title == b.title && a.artist == b.artist && a.album == b.album
+    }
+
+    private static func scriptString(_ value: String) -> String {
+        value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
     }
 
     func pickRandomTrack(genreKeywords: [String]) throws -> PickedTrack? {
