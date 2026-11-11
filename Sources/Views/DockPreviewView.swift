@@ -146,18 +146,15 @@ struct DockPreviewView: View {
     @ViewBuilder
     private var windowCards: some View {
         ForEach(viewModel.windows) { window in
-            DockWindowCard(
+            DockWindowPluginCard(
                 window: window,
                 isSelected: viewModel.selectedWindow?.id == window.id,
                 settings: settings,
-                // Plugins render against the first window (ctx.window).
-                pluginOverlay: window.id == viewModel.windows.first?.id
+                context: viewModel.pluginContext(for: window),
+                isPanelVisible: viewModel.isPanelVisible,
+                appBottomBar: window.id == viewModel.windows.first?.id
                     ? AnyView(DockPluginSlotView(overlay: viewModel.pluginOverlay, slots: [.bottomBar], settings: settings, fallback: nil))
-                    : nil,
-                trafficLights: DockWindowCardHostDefaults.trafficLights(for: window, language: settings.language),
-                initialThumbnail: DockWindowCardHostDefaults.initialThumbnail,
-                loadThumbnail: DockWindowCardHostDefaults.loadThumbnail,
-                thumbnailRefresh: DockWindowCardHostDefaults.thumbnailRefresh
+                    : nil
             )
             .transition(.opacity)
             .onTapGesture {
@@ -238,7 +235,7 @@ struct DockPreviewView: View {
 /// Host defaults for `DockWindowCard`'s injection points. They live here —
 /// not in the card file — so the card itself compiles in hosts without
 /// ScreenCaptureKit or Accessibility (the standalone plugin preview app).
-private enum DockWindowCardHostDefaults {
+enum DockWindowCardHostDefaults {
     static func trafficLights(for window: WindowInfo, language: AppLanguage) -> AnyView {
         AnyView(WindowTrafficLightButtons(window: window, language: language, diameter: 10))
     }

@@ -13,6 +13,7 @@ cd "$repo_root"
 xcrun swiftc -swift-version 5 -D PLUGIN_PREVIEW_WORKER_TESTS \
     Sources/Models/Plugins/PluginConsoleLine.swift \
     Sources/Models/Plugins/PluginManifest.swift \
+    Sources/Models/WindowCapture.swift \
     Sources/Models/Plugins/PluginGrant.swift \
     Sources/Models/Plugins/PluginUINode.swift \
     Sources/Models/Plugins/PluginScene.swift \

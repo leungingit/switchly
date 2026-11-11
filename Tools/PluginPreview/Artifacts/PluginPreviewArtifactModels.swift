@@ -37,7 +37,7 @@ enum PluginPreviewArtifactFailureCode: String, Codable, Equatable {
         case .unsupported: return "The preview scenario uses an unsupported capability."
         case .environmentUnavailable: return "The preview environment is unavailable."
         case .stepFailed: return "A scenario step failed; see the step trace in this report."
-        case .noCapturableSlot: return "The plugin rendered no content in a captured slot (center, bottomBar); topTrailing and titleAccessory are not captured."
+        case .noCapturableSlot: return "The plugin rendered no content in a captured slot for its render scope."
         case .emptyRender: return "The plugin rendered no content in any slot."
         }
     }

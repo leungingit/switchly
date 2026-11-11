@@ -21,6 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Last observed value of `AppSettings.gridEnabled`, so the ⌃1–9 hotkeys
     /// are only re-registered when the master switch actually flips.
     private var gridEnabledAtLaunch = false
+    private var captureCoordinator: WindowCaptureCoordinator?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppLogger.isFileLoggingEnabled = SettingsService.shared.loadSettings().fileLoggingEnabled
@@ -34,6 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationWillTerminate(_ notification: Notification) {
         AppLogger.info("Application will terminate")
+        captureCoordinator?.shutdown()
         DesktopGridCoordinator.shared.stop()
         DockHoverMonitor.shared.stop()
         PreviewTriggerMonitor.shared.stop()
@@ -57,6 +59,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AppLogger.info("Setting up services")
         let settings = SettingsService.shared.loadSettings()
         ThemeApplier.apply(settings.theme)
+        let documents = WindowCaptureDocumentService()
+        let presenter = WindowCapturePresenter(documents: documents, settings: { SettingsService.shared.loadSettings() })
+        let capture = WindowCaptureCoordinator(capturer: RawWindowCaptureService(), presenter: presenter,
+                                              authorized: { PluginHost.shared.isCaptureAuthorized(pluginID: $0) },
+                                              dismissDock: { DockPreviewPanel.shared.hide() })
+        captureCoordinator = capture
+        PluginHost.shared.configureCapture(capture)
+        Task { await documents.cleanupStale() }
+        NotificationCenter.default.publisher(for: .settingsDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.captureCoordinator?.validateAuthorization() }
+            .store(in: &cancellables)
         AppLogger.debug("Loaded startup settings. launchAtLogin=\(settings.launchAtLogin), hideMainWindowOnLaunch=\(settings.hideMainWindowOnLaunch), monitoredApps=\(settings.monitoredApps.count), globalShortcutKey=\(settings.globalShortcutKey ?? "nil"), monitorFrequency=\(settings.monitorFrequency.rawValue)")
         WindowMonitorService.shared.startMonitoring()
         ShortcutService.shared.setupGlobalShortcuts()

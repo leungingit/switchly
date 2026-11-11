@@ -20,6 +20,7 @@ xcrun swiftc \
     -swift-version 5 \
     -target "$arch-apple-macosx12.0" \
     -parse-as-library \
+    Sources/Models/WindowCapture.swift \
     Sources/Models/Plugins/PluginManifest.swift \
     Sources/Models/Plugins/PluginConsoleLine.swift \
     Sources/Models/Plugins/PluginGrant.swift \

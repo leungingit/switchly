@@ -122,7 +122,7 @@ struct PluginOverlayView: View {
             return AnyView(PluginWheel(items: children.map { render($0) }))
         case .button(let id, let symbol, let label, let size, let variant, let enabled, let selected):
             return AnyView(PluginSymbolButton(symbol: symbol, label: label, size: size,
-                                              prominent: variant == .prominent, selected: selected) {
+                                              prominent: variant == .prominent, selected: selected, showsLabel: variant == .labeled) {
                 emit(id, nil)
             }
             .disabled(!enabled))
@@ -229,6 +229,7 @@ struct PluginSymbolButton: View {
     let size: PluginControlSize
     let prominent: Bool
     let selected: Bool
+    var showsLabel = false
     let action: () -> Void
 
     @State private var isHovered = false
@@ -237,12 +238,18 @@ struct PluginSymbolButton: View {
     var body: some View {
         let side = PluginMetrics.control(size)
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: side * 0.45, weight: .semibold))
-                .foregroundColor(prominent ? .white : (selected ? .accentColor : .primary))
-                .frame(width: side, height: side)
-                .background(Circle().fill(fill))
-                .contentShape(Circle())
+            HStack(spacing: 0) {
+                Image(systemName: symbol)
+                    .font(.system(size: side * 0.45, weight: .semibold))
+                    .frame(width: side, height: side)
+                if showsLabel { Text(label).font(.caption).lineLimit(1).padding(.trailing, DesignTokens.Spacing.sm) }
+            }
+            .foregroundColor(prominent ? .white : (selected ? .accentColor : .primary))
+            .background {
+                if showsLabel { RoundedRectangle(cornerRadius: DesignTokens.Radius.chip).fill(fill) }
+                else { Circle().fill(fill) }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: showsLabel ? DesignTokens.Radius.chip : side / 2))
         }
         .buttonStyle(PluginPressStyle())
         .opacity(isEnabled ? 1 : 0.4)

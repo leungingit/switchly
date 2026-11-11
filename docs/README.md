@@ -57,6 +57,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | [plugin-api-reference.md](plugins/plugin-api-reference.md) | 宿主插件公开 API 参考；机器可读清单在 `Plugins/api/` |
+| [window-capture-plan.md](plugins/window-capture-plan.md) | 窗口截图合同、任务与范围；[验证记录](reviews/window-capture-validation-2026-11-11.md) |
 | [plugin-api-roadmap.md](plugins/plugin-api-roadmap.md) | API / SDK 能力开放路线 |
 | [plugin-ecosystem-plan.md](plugins/plugin-ecosystem-plan.md) | 插件外置化、管理机制与 API 标准化方案 |
 | [plugin-externalization-progress.md](plugins/plugin-externalization-progress.md) | 外迁实施台账与已完成范围 |

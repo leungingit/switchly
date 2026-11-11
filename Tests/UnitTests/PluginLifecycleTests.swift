@@ -102,7 +102,10 @@ final class PluginLifecycleTests: XCTestCase {
         let runtime = TestRuntime(id: "com.example.media", node: actionNode)
         let model = DockPluginOverlayModel(host: TestHost(runtimes: [runtime]))
         let initial = expectation(description: "initial render")
-        runtime.onRender = { initial.fulfill() }
+        let initialObservation = model.slotsPublisher
+            .filter { $0[.center]?.first?.node == self.actionNode }.prefix(1)
+            .sink { _ in initial.fulfill() }
+        defer { initialObservation.cancel() }
         model.start(context: context)
         await fulfillment(of: [initial], timeout: 1)
         runtime.onRender = nil
@@ -118,8 +121,13 @@ final class PluginLifecycleTests: XCTestCase {
         let reconciled = expectation(description: "bounded reconciliation")
         reconciled.expectedFulfillmentCount = 2
         runtime.onRender = { reconciled.fulfill() }
+        let published = expectation(description: "reconciled state published")
+        let publication = model.slotsPublisher
+            .filter { $0[.center]?.first?.node == .text(value: "paused", style: .body, lines: nil) }.prefix(1)
+            .sink { _ in published.fulfill() }
+        defer { publication.cancel() }
         model.perform(actionID: "toggle")
-        await fulfillment(of: [reconciled], timeout: 0.8)
+        await fulfillment(of: [reconciled, published], timeout: 0.8)
         XCTAssertEqual(model.slots[.center]?.first?.node, .text(value: "paused", style: .body, lines: nil))
         model.stop()
     }
