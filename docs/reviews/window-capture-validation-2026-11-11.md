@@ -158,3 +158,9 @@ rendererRevision=sha256:9515d9a1a46eb96deb02a651abbcb06996d86e674ac7189379809fd9
 配套外仓 PR：[switchly-plugins #2](https://github.com/leungingit/switchly-plugins/pull/2)。重锁后再次执行宿主 `make build`，退出 0；暂存全部本次文件后 `./verify.sh` 为 0 failed、2 warnings。
 
 原工作区未被写回；原音乐与性能 WIP 对齐、V08 平台验收仍为后续事项。未执行合并、发布、签名或公证。
+
+## V11 CI 失败修复（2026-11-11）
+
+PR #31 首轮 CI 的 `Preview — JSC & protocol (macOS)` 失败，日志显示 `Tests/PluginPreview/run-session-tests.sh` 编译 `PluginRuntime.swift` 时找不到 `WindowCaptureTarget`、`WindowCaptureRequesting` 等类型。本地运行同一脚本复现。原因是该脚本直接列出 Swift 编译输入，新增截图模型后只同步了 Worker harness，漏掉了 Session harness。
+
+修复只在 Session 脚本的真实 Worker 编译输入中加入 `Sources/Models/WindowCapture.swift`，没有关闭检查或改动断言。随后完整运行 CI 中相同的七组脚本：Protocol 8/8、Session 5/5、ProcessSupervisor 7/7，Scenario、Artifact、Reload、Worker 全部通过。CI 的最终结果以 PR 检查记录为准。
