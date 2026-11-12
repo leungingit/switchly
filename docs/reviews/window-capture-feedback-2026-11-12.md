@@ -18,8 +18,8 @@
 在 macOS 27.2／arm64 上执行：
 
 ```sh
-make build SWITCHLY_PLUGIN_SOURCE=/Users/liangkaijun/workspace/swift/switchly-plugins-capture-wt/dist-v2/Plugins
-make test-unit SWITCHLY_PLUGIN_SOURCE=/Users/liangkaijun/workspace/swift/switchly-plugins-capture-wt/dist-v2/Plugins
+make build SWITCHLY_PLUGIN_SOURCE=../switchly-plugins-capture-wt/dist-v2/Plugins
+make test-unit SWITCHLY_PLUGIN_SOURCE=../switchly-plugins-capture-wt/dist-v2/Plugins
 plutil -lint Resources/en.lproj/Localizable.strings Resources/zh-Hans.lproj/Localizable.strings
 git diff --check
 ```
