@@ -114,6 +114,7 @@ private final class CaptureProbe: NSObject, NSApplicationDelegate {
     }
     private var model: ProbeModel!
     private var window: NSWindow!
+    private var preferencesWindow: NSWindow?
     private var snapshotIndex = 0
     private var screenshotWindow: NSWindow? {
         NSApp.windows.first { $0.isVisible && $0.delegate is WindowCapturePresenter }
@@ -125,6 +126,8 @@ private final class CaptureProbe: NSObject, NSApplicationDelegate {
         commands.addItem(withTitle: "保存当前窗口验证图", action: #selector(snapshot), keyEquivalent: "").target = self
         commands.addItem(withTitle: "缩到最小窗口", action: #selector(compactWindow), keyEquivalent: "").target = self
         commands.addItem(withTitle: "验证 SCK 原图", action: #selector(captureSCKFixture), keyEquivalent: "").target = self
+        commands.addItem(withTitle: "验证插件设置", action: #selector(showPluginPreferences), keyEquivalent: "").target = self
+        commands.addItem(withTitle: "放大 B 样例以验证滚动", action: #selector(enlargeFixture), keyEquivalent: "").target = self
         commands.addItem(withTitle: "退出验证工具", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         application.submenu = commands; menu.addItem(application); NSApp.mainMenu = menu
         model = ProbeModel(); model.settings.language = .simplifiedChinese
@@ -181,7 +184,10 @@ private final class CaptureProbe: NSObject, NSApplicationDelegate {
     }
 
     @objc private func snapshot() {
-        let current = screenshotWindow ?? window!
+        for candidate in NSApp.windows where candidate.delegate is WindowCapturePresenter {
+            AppLogger.info("Capture probe session window. visible=\(candidate.isVisible) key=\(candidate.isKeyWindow) frame=\(NSStringFromRect(candidate.frame))")
+        }
+        let current = screenshotWindow ?? NSApp.keyWindow ?? window!
         guard current.isVisible, !current.isMiniaturized else { return }
         let number = CGWindowID(current.windowNumber)
         snapshotIndex += 1
@@ -191,7 +197,13 @@ private final class CaptureProbe: NSObject, NSApplicationDelegate {
                 let image = try await WindowImageCaptureBackend.shared.captureCG(windowID: number, timeout: 2)
                 guard current.isVisible, !current.isMiniaturized, current.windowNumber == Int(number) else { return }
                 try await WindowCaptureDocumentService().save(image: image, to: url)
-                AppLogger.info("Capture probe snapshot saved. file=\(url.lastPathComponent) pixels=\(image.width)x\(image.height)")
+                let matchesSource = model.sources.contains { $0.frame == current.frame }
+                AppLogger.info("Capture probe snapshot saved. file=\(url.lastPathComponent) pixels=\(image.width)x\(image.height) frame=\(NSStringFromRect(current.frame)) sourceFrameMatched=\(matchesSource)")
+                if let toolbar = NSApp.windows.first(where: { $0 is WindowCaptureRegionPanel && !$0.canBecomeKey && $0.isVisible }) {
+                    let toolbarImage = try await WindowImageCaptureBackend.shared.captureCG(windowID: CGWindowID(toolbar.windowNumber), timeout: 2)
+                    let toolbarURL = url.deletingPathExtension().appendingPathExtension("toolbar.png")
+                    try await WindowCaptureDocumentService().save(image: toolbarImage, to: toolbarURL)
+                }
             } catch { model.error = String(describing: error) }
         }
     }
@@ -201,6 +213,27 @@ private final class CaptureProbe: NSObject, NSApplicationDelegate {
         var frame = current.frame
         frame.size = current.minSize
         current.setFrame(frame, display: true)
+    }
+
+    @objc private func enlargeFixture() {
+        guard model.sources.count > 1 else { return }
+        model.sources[1].setContentSize(NSSize(width: 1200, height: 900))
+    }
+
+    @objc private func showPluginPreferences() {
+        if let preferencesWindow { preferencesWindow.makeKeyAndOrderFront(nil); return }
+        let preferences = NSWindow(contentRect: NSRect(x: 120, y: 120, width: 760, height: 600),
+                                   styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        preferences.title = "插件设置验证（不保存）"
+        preferences.isReleasedWhenClosed = false
+        let model = model!
+        preferences.contentView = NSHostingView(rootView: ScrollView {
+            PluginPreferencesSection(settings: model.settings, onSettingsChange: { _ in },
+                                     onOnlineWeatherChange: { _ in }, host: model.host)
+                .padding(DesignTokens.Spacing.xl)
+        })
+        preferences.center(); preferences.makeKeyAndOrderFront(nil)
+        preferencesWindow = preferences
     }
 
     @objc private func captureSCKFixture() {

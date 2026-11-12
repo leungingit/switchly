@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 protocol WindowCapturePresenting: AnyObject {
-    func present(image: CGImage, mode: WindowCaptureMode, sessionID: UUID, finished: @escaping () -> Void)
+    func present(image: CGImage, mode: WindowCaptureMode, sourceBounds: CGRect?, sessionID: UUID, finished: @escaping () -> Void)
     func showFailure(_ failure: WindowCaptureFailure)
     func interrupt()
     func abandon()
@@ -18,15 +18,25 @@ final class WindowCaptureCoordinator: WindowCaptureRequesting, @unchecked Sendab
     private let screenAccess: () -> Bool
     private let authorized: (String) -> Bool
     private let dismissDock: @MainActor () -> Void
+    private let sourceBounds: (WindowCaptureTarget) -> CGRect?
     @MainActor private var captureTask: Task<Void, Never>?
     @MainActor private var presenting = false
 
     init(capturer: RawWindowCapturing, presenter: WindowCapturePresenting,
          screenAccess: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() },
          authorized: @escaping (String) -> Bool,
+         sourceBounds: @escaping (WindowCaptureTarget) -> CGRect? = { target in
+             let windows = CGWindowListCopyWindowInfo(.optionIncludingWindow, target.windowID) as? [[String: Any]] ?? []
+             guard let info = windows.first(where: {
+                 ($0[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == target.pid &&
+                 ($0[kCGWindowNumber as String] as? NSNumber)?.uint32Value == target.windowID
+             }), let bounds = info[kCGWindowBounds as String] as? NSDictionary else { return nil }
+             return CGRect(dictionaryRepresentation: bounds)
+         },
          dismissDock: @escaping @MainActor () -> Void) {
         self.capturer = capturer; self.presenter = presenter
         self.screenAccess = screenAccess; self.authorized = authorized; self.dismissDock = dismissDock
+        self.sourceBounds = sourceBounds
     }
 
     var isAvailable: Bool { screenAccess() }
@@ -55,9 +65,11 @@ final class WindowCaptureCoordinator: WindowCaptureRequesting, @unchecked Sendab
                 let image = try await capturer.capture(target: request.target)
                 try Task.checkCancellation()
                 guard isCurrent(id), authorized(request.pluginID) else { finish(id); return }
+                let bounds = sourceBounds(request.target)
+                if request.mode == .region && bounds == nil { throw WindowCaptureFailure.windowGone }
                 captureTask = nil
                 presenting = true
-                presenter.present(image: image, mode: request.mode, sessionID: id) { [weak self] in self?.finish(id) }
+                presenter.present(image: image, mode: request.mode, sourceBounds: bounds, sessionID: id) { [weak self] in self?.finish(id) }
             } catch {
                 guard isCurrent(id) else { return }
                 finish(id)

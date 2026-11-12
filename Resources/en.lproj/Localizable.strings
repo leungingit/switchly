@@ -644,3 +644,13 @@
 "Save…" = "Save…";
 "Copy" = "Copy";
 "Share" = "Share";
+
+// 窗口截图反馈修正
+"No additional settings" = "No additional settings";
+"Allowed" = "Allowed";
+"Hover over an app in the Dock, click the camera beside a window title, then choose Quick capture or Select region." = "Hover over an app in the Dock, click the camera beside a window title, then choose Quick capture or Select region.";
+"Screen Recording permission is required. Images stay on this Mac; plugins cannot read image data." = "Screen Recording permission is required. Images stay on this Mac; plugins cannot read image data.";
+"Actual size" = "Actual size";
+"Fit to window" = "Fit to window";
+"Image size" = "Image size";
+"Select again" = "Select again";

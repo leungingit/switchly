@@ -9,6 +9,8 @@ final class WindowCaptureSessionModel: ObservableObject {
     @Published private(set) var working = false
     @Published private(set) var revoked = false
     @Published var errorKey: String?
+    @Published var regionSelection: CGRect?
+    private(set) var usesOriginalSelectionSource = true
     let language: AppLanguage
     private let sessionID: UUID
     private let documents: WindowCaptureDocumentServicing
@@ -18,12 +20,13 @@ final class WindowCaptureSessionModel: ObservableObject {
     private var closed = false
     private var editURL: URL?
     private var exporting = false
+    private var selectionSource: CGImage
 
     init(image: CGImage, mode: WindowCaptureMode, sessionID: UUID, language: AppLanguage,
          documents: WindowCaptureDocumentServicing,
          openEditor: @escaping (URL) async throws -> Void,
          finished: @escaping () -> Void) {
-        self.image = image; self.selecting = mode == .region
+        self.image = image; self.selectionSource = image; self.selecting = mode == .region
         self.sessionID = sessionID; self.language = language
         self.documents = documents; self.openEditor = openEditor; self.finished = finished
     }
@@ -35,6 +38,15 @@ final class WindowCaptureSessionModel: ObservableObject {
     func crop(_ rect: CGRect) {
         guard !closed, selecting, !revoked, let cropped = image.cropping(to: rect) else { return }
         image = cropped; selecting = false
+        regionSelection = nil
+    }
+
+    func reselect() {
+        guard canOutput else { return }
+        image = selectionSource
+        errorKey = nil
+        regionSelection = nil
+        selecting = true
     }
 
     func edit() {
@@ -73,6 +85,8 @@ final class WindowCaptureSessionModel: ObservableObject {
                 let edited = try await documents.loadEditedImage(url: editURL)
                 guard !closed, !revoked else { working = false; return }
                 image = edited
+                selectionSource = edited
+                usesOriginalSelectionSource = false
                 editingExternally = false
                 self.editURL = nil
                 await documents.cleanup(sessionID: sessionID)

@@ -134,6 +134,18 @@ struct PluginPreferencesSection: View {
         return VStack(spacing: 0) {
             header(plugin, isSelected: isSelected)
             if isSelected {
+                if options.isEmpty {
+                    Divider().padding(.leading, 14)
+                    Text(t("No additional settings"))
+                        .font(.callout).foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 14).padding(.vertical, 10)
+                }
+                if plugin.package.manifest.permissions.contains(.windowCapture) {
+                    Divider().padding(.leading, 14)
+                    captureAccessDetails(plugin)
+                        .padding(.horizontal, 14).padding(.vertical, 10)
+                }
                 if plugin.package.manifest.permissions.contains(.fsRead) {
                     Divider().padding(.leading, 14)
                     folderAccessRow(plugin)
@@ -318,6 +330,22 @@ struct PluginPreferencesSection: View {
     }
 
     // MARK: - Options
+
+    private func captureAccessDetails(_ plugin: InstalledPlugin) -> some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            HStack {
+                Label(t(PluginCapability.windowCapture.displayKey), systemImage: PluginCapability.windowCapture.systemImageName)
+                Spacer()
+                Text(t(plugin.authorization.permissions.contains(.windowCapture) ? "Allowed" : "Not allowed yet"))
+                    .foregroundColor(.secondary)
+            }
+            Text(t("Hover over an app in the Dock, click the camera beside a window title, then choose Quick capture or Select region."))
+                .foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(t("Screen Recording permission is required. Images stay on this Mac; plugins cannot read image data."))
+                .foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.callout)
+    }
 
     /// One option row: label on the left, its control on the right, so every
     /// kind lines up instead of macOS centring a switch next to its label.
