@@ -68,6 +68,17 @@ enum WindowCaptureLimits {
 
 /// Image display uses a top-left origin; crop coordinates use the bitmap's pixels.
 enum WindowCaptureGeometry {
+    static func displaySize(image: CGSize, viewport: CGSize, displayScale: CGFloat, fitsWindow: Bool) -> CGSize {
+        if fitsWindow { return imageRect(image: image, in: viewport).size }
+        return CGSize(width: image.width / max(1, displayScale), height: image.height / max(1, displayScale))
+    }
+
+    static func displayRect(image: CGSize, viewport: CGSize, displayScale: CGFloat, fitsWindow: Bool) -> CGRect {
+        let size = displaySize(image: image, viewport: viewport, displayScale: displayScale, fitsWindow: fitsWindow)
+        return CGRect(x: max(0, (viewport.width - size.width) / 2), y: max(0, (viewport.height - size.height) / 2),
+                      width: size.width, height: size.height)
+    }
+
     static func imageRect(image: CGSize, in viewport: CGSize) -> CGRect {
         guard image.width > 0, image.height > 0, viewport.width > 0, viewport.height > 0 else { return .zero }
         let scale = min(viewport.width / image.width, viewport.height / image.height)

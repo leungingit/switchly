@@ -146,7 +146,7 @@ class DockPreviewViewModel: ObservableObject {
 
     func pluginContext(for window: WindowInfo) -> PluginRenderContext? {
         guard let bundleID = currentBundleID,
-              let started = NSRunningApplication(processIdentifier: window.ownerPID)?.launchDate else { return nil }
+              let started = WindowCaptureProcessIdentity.startedAt(pid: window.ownerPID) else { return nil }
         return PluginRenderContext(bundleID: bundleID, pid: window.ownerPID, appName: appName,
                                    windowID: window.id, titleSummary: PluginRenderContext.summarize(title: window.windowTitle),
                                    captureTarget: WindowCaptureTarget(windowID: window.id, pid: window.ownerPID,

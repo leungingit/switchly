@@ -3,6 +3,28 @@ import XCTest
 @testable import Switchly
 
 final class WindowCaptureGeometryTests: XCTestCase {
+    func testActualSizePreservesPhysicalPixelsAndFitChangesDisplayOnly() throws {
+        let image = CGSize(width: 640, height: 504)
+        let viewport = CGSize(width: 868, height: 500)
+        let rect = WindowCaptureGeometry.displayRect(image: image, viewport: viewport, displayScale: 2, fitsWindow: false)
+        XCTAssertEqual(rect.size, CGSize(width: 320, height: 252), "小窗口不得被放大填满画布")
+        let selection = CGRect(x: rect.minX + 10, y: rect.minY + 20, width: 100, height: 50)
+        XCTAssertEqual(WindowCaptureGeometry.pixelRect(selection: selection, imageRect: rect, pixels: image),
+                       CGRect(x: 20, y: 40, width: 200, height: 100))
+        let fit = WindowCaptureGeometry.displayRect(image: image, viewport: viewport, displayScale: 2, fitsWindow: true)
+        XCTAssertEqual(fit.height, 500, accuracy: 0.001)
+        XCTAssertEqual(WindowCaptureGeometry.pixelRect(selection: fit, imageRect: fit, pixels: image)?.size, image)
+    }
+
+    func testActualSizeLargeImageSelectionUsesScrolledCanvasCoordinates() {
+        let image = CGSize(width: 3000, height: 2000)
+        let rect = WindowCaptureGeometry.displayRect(image: image, viewport: CGSize(width: 600, height: 300), displayScale: 2, fitsWindow: false)
+        XCTAssertEqual(rect, CGRect(x: 0, y: 0, width: 1500, height: 1000))
+        XCTAssertEqual(WindowCaptureGeometry.pixelRect(selection: CGRect(x: 1100, y: 700, width: 200, height: 100),
+                                                     imageRect: rect, pixels: image),
+                       CGRect(x: 2200, y: 1400, width: 400, height: 200))
+    }
+
     func testLetterboxedSelectionMapsToOriginalPixelsAndClipsOutside() throws {
         let pixels = CGSize(width: 1120, height: 744)
         let displayed = WindowCaptureGeometry.imageRect(image: pixels, in: CGSize(width: 900, height: 500))
@@ -19,6 +41,17 @@ final class WindowCaptureGeometryTests: XCTestCase {
                                                                  imageRect: rect, pixels: CGSize(width: 1500, height: 1000)))
         XCTAssertEqual(result, CGRect(x: 0, y: 0, width: 1500, height: 1000))
         XCTAssertFalse(WindowCaptureLimits.accepts(width: .max, height: .max))
+    }
+}
+
+final class WindowCaptureProcessIdentityTests: XCTestCase {
+    func testKernelStartTimeIsStableAndRejectsMissingProcesses() throws {
+        let start = try XCTUnwrap(WindowCaptureProcessIdentity.startedAt(pid: getpid()))
+        XCTAssertEqual(WindowCaptureProcessIdentity.startedAt(pid: getpid()), start)
+        XCTAssertLessThanOrEqual(start, Date())
+        XCTAssertNil(WindowCaptureProcessIdentity.startedAt(pid: 0))
+        XCTAssertNil(WindowCaptureProcessIdentity.startedAt(pid: -1))
+        XCTAssertNil(WindowCaptureProcessIdentity.startedAt(pid: .max))
     }
 }
 

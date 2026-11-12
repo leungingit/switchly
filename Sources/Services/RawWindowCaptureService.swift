@@ -13,7 +13,7 @@ final class RawWindowCaptureService: RawWindowCapturing {
 
     init(backend: WindowImageCapturing = WindowImageCaptureBackend.shared,
          screenAccess: @escaping () -> Bool = { CGPreflightScreenCaptureAccess() },
-         processStart: @escaping (Int32) -> Date? = { NSRunningApplication(processIdentifier: $0)?.launchDate },
+         processStart: @escaping (Int32) -> Date? = { WindowCaptureProcessIdentity.startedAt(pid: $0) },
          windowDetails: @escaping (CGWindowID) -> [[String: Any]] = {
              CGWindowListCopyWindowInfo(.optionIncludingWindow, $0) as? [[String: Any]] ?? []
          }) {

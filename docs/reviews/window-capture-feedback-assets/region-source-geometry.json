@@ -1,0 +1,32 @@
+{
+  "source": "SwitchlyCaptureProbe own fixture A",
+  "imagePixels": [
+    640,
+    504
+  ],
+  "sourceFrame": {
+    "x": 80,
+    "y": 180,
+    "width": 320,
+    "height": 252
+  },
+  "selectionFrame": {
+    "x": 80,
+    "y": 180,
+    "width": 320,
+    "height": 252
+  },
+  "sourceFrameMatched": true,
+  "firstCropPixels": [
+    300,
+    155
+  ],
+  "secondCropPixels": [
+    600,
+    425
+  ],
+  "editorFramePoints": [
+    600,
+    440
+  ]
+}

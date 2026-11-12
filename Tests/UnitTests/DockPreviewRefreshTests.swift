@@ -45,6 +45,14 @@ final class DockPreviewRefreshTests: XCTestCase {
         let name = finder.localizedName ?? "Finder"
         model.refreshWindows(forApp: name)
         XCTAssertEqual(model.windows.map(\.id), [9001])
+        let context = try XCTUnwrap(model.pluginContext(for: monitor.windows[0]))
+        XCTAssertEqual(context.captureTarget?.pid, finder.processIdentifier)
+        XCTAssertEqual(context.captureTarget?.processStartedAt, WindowCaptureProcessIdentity.startedAt(pid: finder.processIdentifier))
+
+        let ownWindow = WindowInfo(id: 9002, ownerPID: getpid(), ownerName: "Fixture", windowTitle: "Fixture",
+                                   bounds: .zero, isOnCurrentSpace: true, windowNumber: 9002)
+        XCTAssertEqual(model.pluginContext(for: ownWindow)?.captureTarget?.pid, getpid(),
+                       "窗口插件绑定真实 owner，不得改用 Dock 所属主进程")
 
         var emissions = 0
         var bag = Set<AnyCancellable>()

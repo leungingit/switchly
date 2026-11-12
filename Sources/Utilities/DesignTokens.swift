@@ -19,6 +19,8 @@ enum DesignTokens {
         static let windowHeight: CGFloat = 680
         static let minimumWidth: CGFloat = 600
         static let minimumHeight: CGFloat = 440
+        static let selectionToolbarWidth: CGFloat = 620
+        static let selectionToolbarHeight: CGFloat = 76
     }
 
     enum Spacing {

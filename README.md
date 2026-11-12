@@ -76,6 +76,8 @@ Built-in plugin source and assets live in the separate [switchly-plugins reposit
 
 After you enable and explicitly authorize Window Capture in Preferences, each Dock window card offers a full-resolution capture or a region selected from a frozen capture. Copy, save, or share the image using macOS services. Edit annotations in Preview, save and close the image, then explicitly reload the changes in Switchly. Screen Recording permission is required; minimized or unreadable windows report failure. See the [validation record](docs/reviews/window-capture-validation-2026-11-11.md) for the tested scope.
 
+框选时，冻结图像覆盖在原窗口的位置和大小上；裁剪后进入结果窗口，可按原尺寸查看、滚动或切换“适应窗口”。点击“重新框选”即可返回同一原位冻结图像。设置展开区会显示授权状态及相机入口用法。
+
 ### Preview plugins independently
 
 Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/preview/plugin-preview-guide.md) and [coverage matrix](docs/plugins/preview/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.

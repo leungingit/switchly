@@ -644,3 +644,13 @@
 "Save…" = "保存…";
 "Copy" = "复制";
 "Share" = "分享";
+
+// 窗口截图反馈修正
+"No additional settings" = "无需额外设置";
+"Allowed" = "已允许";
+"Hover over an app in the Dock, click the camera beside a window title, then choose Quick capture or Select region." = "将鼠标移到 Dock 中的应用，点击窗口标题旁的相机，再选择快速截图或框选截图。";
+"Screen Recording permission is required. Images stay on this Mac; plugins cannot read image data." = "需要系统屏幕录制权限。图像仅在本机处理，插件无法读取图像数据。";
+"Actual size" = "原尺寸";
+"Fit to window" = "适应窗口";
+"Image size" = "图像显示大小";
+"Select again" = "重新框选";

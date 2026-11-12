@@ -32,8 +32,9 @@ struct DockWindowPluginCard: View {
                 appBottomBar
                 slot(.bottomBar)
             }),
-            pluginAccessory: overlay.slots[.titleAccessory]?.isEmpty == false ? AnyView(slot(.titleAccessory)) : nil,
-            pluginTopTrailing: AnyView(slot(.topTrailing)),
+            pluginAccessory: overlay.slots[.titleAccessory]?.isEmpty == false
+                ? AnyView(slot(.titleAccessory).fixedSize(horizontal: true, vertical: false)) : nil,
+            pluginTopTrailing: AnyView(slot(.topTrailing).fixedSize(horizontal: true, vertical: false)),
             trafficLights: DockWindowCardHostDefaults.trafficLights(for: window, language: settings.language),
             initialThumbnail: { window in thumbnail.map(ThumbnailLoadState.loaded) ?? DockWindowCardHostDefaults.initialThumbnail(for: window) },
             loadThumbnail: { window, size in

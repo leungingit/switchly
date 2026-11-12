@@ -1,0 +1,14 @@
+import Darwin
+import Foundation
+
+/// AppKit 的 launchDate 对部分正在运行的应用为 nil；绑定和复核使用同一内核身份。
+enum WindowCaptureProcessIdentity {
+    static func startedAt(pid: pid_t) -> Date? {
+        guard pid > 0 else { return nil }
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size,
+              info.pbi_pid == UInt32(pid), info.pbi_start_tvsec > 0 else { return nil }
+        return Date(timeIntervalSince1970: Double(info.pbi_start_tvsec) + Double(info.pbi_start_tvusec) / 1_000_000)
+    }
+}

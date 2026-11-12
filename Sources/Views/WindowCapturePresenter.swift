@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,12 +11,16 @@ final class WindowCapturePresenter: NSObject, WindowCapturePresenting, NSWindowD
     private var model: WindowCaptureSessionModel?
     private var finish: (() -> Void)?
     private var closing = false
+    private var sourceFrame: CGRect?
+    private var selectionWindow: WindowCaptureRegionPanel?
+    private var selectionToolbar: WindowCaptureRegionPanel?
+    private var selectionSubscription: AnyCancellable?
 
     init(documents: WindowCaptureDocumentServicing, settings: @escaping () -> AppSettings) {
         self.documents = documents; self.settings = settings
     }
 
-    func present(image: CGImage, mode: WindowCaptureMode, sessionID: UUID, finished: @escaping () -> Void) {
+    func present(image: CGImage, mode: WindowCaptureMode, sourceBounds: CGRect? = nil, sessionID: UUID, finished: @escaping () -> Void) {
         let settings = settings()
         let model = WindowCaptureSessionModel(image: image, mode: mode, sessionID: sessionID,
                                              language: settings.language, documents: documents,
@@ -26,7 +31,37 @@ final class WindowCapturePresenter: NSObject, WindowCapturePresenting, NSWindowD
             _ = try await NSWorkspace.shared.open([url], withApplicationAt: application, configuration: NSWorkspace.OpenConfiguration())
         }) { [weak self] in self?.complete() }
         self.model = model; finish = finished
-        let available = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1024, height: 768)
+        sourceFrame = sourceBounds.map {
+            PreviewReplicaPanel.replicaRect(forWindowBounds: $0,
+                                           primaryScreenHeight: NSScreen.screens.first?.frame.height ?? 0,
+                                           visibleFrame: .zero)
+        }
+        selectionSubscription = model.$selecting.dropFirst().sink { [weak self, weak model] selecting in
+            DispatchQueue.main.async { [weak self, weak model] in
+                guard let self, let model, self.model === model else { return }
+                self.updateSelection(selecting)
+            }
+        }
+        updateSelection(model.selecting)
+    }
+
+    private func updateSelection(_ selecting: Bool) {
+        guard let model else { return }
+        AppLogger.debug("Window capture presentation changed. selecting=\(selecting) original=\(model.usesOriginalSelectionSource) pixels=\(model.image.width)x\(model.image.height)")
+        if selecting, model.usesOriginalSelectionSource, let sourceFrame, sourceFrame.width > 0, sourceFrame.height > 0 {
+            window?.orderOut(nil)
+            showRegion(model: model, frame: sourceFrame)
+        } else {
+            closeRegion()
+            NSApp.activate(ignoringOtherApps: true)
+            if let window { window.makeKeyAndOrderFront(nil) }
+            else { showEditor(model: model) }
+        }
+    }
+
+    private func showEditor(model: WindowCaptureSessionModel) {
+        let available = sourceFrame.flatMap { frame in NSScreen.screens.first { $0.frame.intersects(frame) } }?.visibleFrame
+            ?? NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1024, height: 768)
         let size = NSSize(width: min(available.width, DesignTokens.Capture.windowWidth),
                           height: min(available.height, DesignTokens.Capture.windowHeight))
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
@@ -54,7 +89,50 @@ final class WindowCapturePresenter: NSObject, WindowCapturePresenting, NSWindowD
         window.delegate = self
         window.makeKeyAndOrderFront(nil)
         self.window = window
-        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func showRegion(model: WindowCaptureSessionModel, frame: CGRect) {
+        closeRegion()
+        let panel = WindowCaptureRegionPanel(frame: frame, acceptsKeyboard: true)
+        panel.title = model.t("Select an area")
+        panel.appearance = NSApp.appearance
+        let hosting = WindowCaptureRegionHostingView(rootView: WindowCaptureRegionView(model: model,
+                                                                     cancel: { [weak self] in self?.requestClose() }))
+        // 原位覆盖层必须保持源窗口尺寸，不能被控件的最小布局反向撑大。
+        if #available(macOS 13.0, *) { hosting.sizingOptions = [] }
+        panel.contentView = hosting
+        panel.setFrame(frame, display: false)
+        panel.delegate = self
+        selectionWindow = panel
+
+        let available = NSScreen.screens.first { $0.frame.intersects(frame) }?.visibleFrame
+            ?? NSScreen.main?.visibleFrame ?? frame
+        let size = CGSize(width: min(available.width, DesignTokens.Capture.selectionToolbarWidth),
+                          height: min(available.height, DesignTokens.Capture.selectionToolbarHeight))
+        let gap = DesignTokens.Spacing.sm
+        let below = frame.minY - size.height - gap
+        let y = below >= available.minY ? below : frame.maxY + gap
+        let toolbarFrame = CGRect(x: min(max(frame.midX - size.width / 2, available.minX), available.maxX - size.width),
+                                  y: min(max(y, available.minY), available.maxY - size.height),
+                                  width: size.width, height: size.height)
+        let toolbar = WindowCaptureRegionPanel(frame: toolbarFrame, acceptsKeyboard: false)
+        toolbar.title = model.t("Select an area")
+        toolbar.appearance = NSApp.appearance
+        let controls = WindowCaptureRegionHostingView(rootView: WindowCaptureRegionToolbar(model: model,
+                                                                          cancel: { [weak self] in self?.requestClose() }))
+        if #available(macOS 13.0, *) { controls.sizingOptions = [] }
+        toolbar.contentView = controls
+        toolbar.setFrame(toolbarFrame, display: false)
+        selectionToolbar = toolbar
+        panel.makeKeyAndOrderFront(nil)
+        toolbar.orderFront(nil)
+    }
+
+    private func closeRegion() {
+        closing = true
+        selectionWindow?.close(); selectionToolbar?.close()
+        closing = false
+        selectionWindow = nil; selectionToolbar = nil
     }
 
     func showFailure(_ failure: WindowCaptureFailure) {
@@ -98,12 +176,17 @@ final class WindowCapturePresenter: NSObject, WindowCapturePresenting, NSWindowD
     func interrupt() { model?.interrupt() }
 
     func abandon() {
+        selectionSubscription?.cancel(); selectionSubscription = nil
         model?.abandon()
+        closeRegion()
         closing = true; window?.close(); closing = false
         window = nil; model = nil; finish = nil
     }
 
     private func complete() {
+        AppLogger.debug("Window capture presentation completed.")
+        selectionSubscription?.cancel(); selectionSubscription = nil
+        closeRegion()
         closing = true; window?.close(); closing = false
         window = nil; model = nil
         let callback = finish; finish = nil; callback?()

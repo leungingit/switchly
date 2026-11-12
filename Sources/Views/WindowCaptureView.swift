@@ -8,12 +8,20 @@ struct WindowCaptureView: View {
     @State private var selection: CGRect?
     @State private var dragOrigin: CGPoint?
     @State private var viewportSize: CGSize = .zero
+    @State private var fitsWindow = false
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
             HStack {
                 Text(model.t(model.selecting ? "Select an area" : "Window screenshot")).font(.headline)
                 Spacer()
+                Picker(model.t("Image size"), selection: $fitsWindow) {
+                    Text(model.t("Actual size")).tag(false)
+                    Text(model.t("Fit to window")).tag(true)
+                }
+                .labelsHidden().pickerStyle(.segmented).fixedSize()
+                .accessibilityLabel(Text(model.t("Image size")))
                 Text("\(model.image.width) × \(model.image.height)").font(.caption.monospacedDigit()).foregroundColor(.secondary)
             }
             if model.selecting {
@@ -22,41 +30,49 @@ struct WindowCaptureView: View {
             }
             GeometryReader { proxy in
                 let pixels = CGSize(width: model.image.width, height: model.image.height)
-                let rect = WindowCaptureGeometry.imageRect(image: pixels, in: proxy.size)
-                ZStack(alignment: .topLeading) {
-                    Color(nsColor: .underPageBackgroundColor)
-                    Image(decorative: model.image, scale: 1)
-                        .resizable().interpolation(.high)
-                        .frame(width: rect.width, height: rect.height)
-                        .offset(x: rect.minX, y: rect.minY)
-                    if model.selecting {
-                        Color.black.opacity(0.25).allowsHitTesting(false)
-                        if let selection, let crop = WindowCaptureGeometry.pixelRect(selection: selection, imageRect: rect, pixels: pixels) {
-                            Rectangle().stroke(Color.accentColor, lineWidth: DesignTokens.hairline * 4)
-                                .frame(width: selection.width, height: selection.height)
-                                .offset(x: selection.minX, y: selection.minY)
-                            Text("\(Int(crop.width)) × \(Int(crop.height))")
-                                .font(.caption.monospacedDigit()).padding(DesignTokens.Spacing.xs)
-                                .background(.regularMaterial)
-                                .offset(x: min(selection.minX, max(0, proxy.size.width - 100)),
-                                        y: max(0, selection.minY - DesignTokens.Spacing.xl))
+                let rect = WindowCaptureGeometry.displayRect(image: pixels, viewport: proxy.size,
+                                                            displayScale: displayScale, fitsWindow: fitsWindow)
+                let canvas = CGSize(width: max(proxy.size.width, rect.maxX), height: max(proxy.size.height, rect.maxY))
+                ScrollView([.horizontal, .vertical]) {
+                    ZStack(alignment: .topLeading) {
+                        Color(nsColor: .underPageBackgroundColor)
+                        Image(decorative: model.image, scale: 1)
+                            .resizable().interpolation(.high)
+                            .frame(width: rect.width, height: rect.height)
+                            .offset(x: rect.minX, y: rect.minY)
+                        if model.selecting {
+                            Color.black.opacity(0.25).allowsHitTesting(false)
+                            if let selection, let crop = WindowCaptureGeometry.pixelRect(selection: selection, imageRect: rect, pixels: pixels) {
+                                Rectangle().stroke(Color.accentColor, lineWidth: DesignTokens.hairline * 4)
+                                    .frame(width: selection.width, height: selection.height)
+                                    .offset(x: selection.minX, y: selection.minY)
+                                Text("\(Int(crop.width)) × \(Int(crop.height))")
+                                    .font(.caption.monospacedDigit()).padding(DesignTokens.Spacing.xs)
+                                    .background(.regularMaterial)
+                                    .offset(x: min(selection.minX, max(0, proxy.size.width - 100)),
+                                            y: max(0, selection.minY - DesignTokens.Spacing.xl))
+                            }
+                            Color.clear.contentShape(Rectangle())
+                                .gesture(DragGesture(minimumDistance: 1)
+                                    .onChanged { value in
+                                        let origin = dragOrigin ?? value.startLocation
+                                        if dragOrigin == nil { dragOrigin = origin }
+                                        let raw = CGRect(x: min(origin.x, value.location.x), y: min(origin.y, value.location.y),
+                                                         width: abs(value.location.x - origin.x), height: abs(value.location.y - origin.y))
+                                        let clipped = raw.intersection(rect)
+                                        selection = clipped.isNull ? nil : clipped
+                                    }
+                                    .onEnded { _ in dragOrigin = nil })
+                                .accessibilityLabel(Text(model.t("Screenshot selection area")))
                         }
-                        Color.clear.contentShape(Rectangle())
-                            .gesture(DragGesture(minimumDistance: 1)
-                                .onChanged { value in
-                                    let origin = dragOrigin ?? value.startLocation
-                                    if dragOrigin == nil { dragOrigin = origin }
-                                    let raw = CGRect(x: min(origin.x, value.location.x), y: min(origin.y, value.location.y),
-                                                     width: abs(value.location.x - origin.x), height: abs(value.location.y - origin.y))
-                                    let clipped = raw.intersection(rect)
-                                    selection = clipped.isNull ? nil : clipped
-                                }
-                                .onEnded { _ in dragOrigin = nil })
-                            .accessibilityLabel(Text(model.t("Screenshot selection area")))
                     }
+                    .frame(width: canvas.width, height: canvas.height)
                 }
                 .onAppear { viewportSize = proxy.size }
-                .onChange(of: proxy.size) { viewportSize = $0; selection = nil }
+                .onChange(of: proxy.size) { viewportSize = $0; selection = nil; dragOrigin = nil }
+                .onChange(of: displayScale) { _ in selection = nil; dragOrigin = nil }
+                .onChange(of: fitsWindow) { _ in selection = nil; dragOrigin = nil }
+                .onChange(of: model.selecting) { _ in selection = nil; dragOrigin = nil }
                 .clipped()
                 .overlay(RoundedRectangle(cornerRadius: DesignTokens.Radius.chip).stroke(.secondary.opacity(0.3), lineWidth: DesignTokens.hairline))
             }
@@ -79,6 +95,12 @@ struct WindowCaptureView: View {
                     Button(model.t("Crop selection"), action: confirmCrop)
                         .disabled(selection == nil).keyboardShortcut(.defaultAction)
                 } else {
+                    Button(model.t("Select again")) { model.reselect() }.disabled(!model.canOutput)
+                }
+            }
+            if !model.editingExternally && !model.selecting {
+                HStack(spacing: DesignTokens.Spacing.sm) {
+                    Spacer()
                     Button(model.t("Edit in Preview")) { model.edit() }.disabled(!model.canOutput)
                     CaptureShareButton(image: model.image, title: model.t("Share"), enabled: model.canOutput) { model.shared() }
                         .fixedSize()
@@ -93,7 +115,8 @@ struct WindowCaptureView: View {
 
     private func confirmCrop() {
         let pixels = CGSize(width: model.image.width, height: model.image.height)
-        let rect = WindowCaptureGeometry.imageRect(image: pixels, in: viewportSize)
+        let rect = WindowCaptureGeometry.displayRect(image: pixels, viewport: viewportSize,
+                                                    displayScale: displayScale, fitsWindow: fitsWindow)
         guard let selection, let crop = WindowCaptureGeometry.pixelRect(selection: selection, imageRect: rect, pixels: pixels) else { return }
         model.crop(crop)
         self.selection = nil
