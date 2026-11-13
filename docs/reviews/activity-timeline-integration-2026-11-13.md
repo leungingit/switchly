@@ -17,6 +17,7 @@
 3. **停止采样隐藏历史截图**：展示原本还受 `summary.screenshotsEnabled` 门控。现仅以截图读取授权和查询结果控制历史展示；停采只增加说明，历史图片及子分页继续可用。
 4. **趋势失效被当作普通降级**：趋势请求返回 `activityInvalidated` 时，旧逻辑仍展示同批成功结果。现整批显示失败，既有图表、会话和截图均不输出，不自动重试；普通趋势查询失败仍可降级。
 5. **默认状态文档不一致**：外仓 README 的“默认启用”修正为与 manifest 一致的“默认关闭，需用户明确授权”。活动设置属性与使用次数注释的归属也已整理。
+6. **独立脚本编译依赖遗漏**：首轮远端 CI 的 JSC／协议任务失败，原因是手工列举编译输入的脚本漏掉 `PluginTimelineItem`、`ActivityTrackingSettings` 及活动 Worker 夹具依赖。已补齐六组脚本，并同步默认场景测试中新增活动夹具枚举及 inspect 的四类精确输出；新增检查确认活动能力只接受显式合成夹具，不回退内置样例。协议、场景、产物、监听、Worker、Session 和进程监管七组脚本逐项本机重跑。
 
 第 3、4 项新增回归先在旧实现上执行：相应两项新用例及更新后的停采提示断言共 3 项失败；修正后外仓全部 82 项通过，没有跳过或降低断言。
 
@@ -31,6 +32,7 @@
 | `make plugin-preview-build` | App／Worker 构建通过 |
 | `make plugin-preview-contract-check` | 契约、渲染器摘要及 35 个共享核心类型守卫通过 |
 | Worker 独立测试 | `PluginPreviewWorker tests passed` |
+| CI 使用的七组 Swift 独立测试脚本 | 协议、场景、产物、监听、Worker、Session、进程监管全部通过 |
 | `make mediaremote-adapter-test` | 13 项通过 |
 | `Tests/PluginPreview/run-baseline-tests.sh` | 接受新基线、同场景零差异、修改检出及玻璃拒绝基线全部通过 |
 | `make prepare-plugins`／`make verify-plugin-release` | 5 个插件摘要与不可变来源提交检查通过 |

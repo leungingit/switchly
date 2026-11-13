@@ -5,7 +5,7 @@ TEST_DIR="$(mktemp -d "${TMPDIR:-$(getconf DARWIN_USER_TEMP_DIR)}/switchly-previ
 trap 'python3 -c "import shutil,sys; shutil.rmtree(sys.argv[1])" "$TEST_DIR"' EXIT
 cd "$ROOT"
 xcrun swiftc -swift-version 5 -parse-as-library \
-  Sources/Models/Plugins/PluginManifest.swift Sources/Models/Plugins/PluginUINode.swift Sources/Models/Plugins/PluginScene.swift \
+  Sources/Models/Plugins/PluginManifest.swift Sources/Models/Plugins/PluginTimelineItem.swift Sources/Models/Plugins/PluginUINode.swift Sources/Models/Plugins/PluginScene.swift \
   Sources/Models/Plugins/PluginScene3DDescriptor.swift Sources/Services/Plugins/PluginSurfaceRequest.swift \
   Sources/Services/Plugins/GLBPreflight.swift \
   Sources/Services/Plugins/PluginRegistry.swift Sources/Services/Plugins/PluginPackageValidator.swift Sources/Utilities/AppLogger.swift \

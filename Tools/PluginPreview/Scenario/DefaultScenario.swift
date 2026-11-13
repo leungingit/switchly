@@ -73,7 +73,7 @@ struct PreviewScenarioDraft: Equatable {
         var seed: UInt32
     }
 
-    /// 三种合成能力各自的来源；`none` 表示该能力不可用（场景中省略）。
+    /// 四种合成能力各自的来源；`none` 表示该能力不可用（场景中省略）。
     struct FixtureFiles: Equatable {
         var media: FixtureSource = .none
         var weather: FixtureSource = .none

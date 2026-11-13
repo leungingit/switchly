@@ -71,6 +71,11 @@ enum DefaultScenarioTests {
         precondition(fsDraft.fixtures.isEmpty)
         precondition(fsDraft.missingRequiredFixtureKind(for: fs) == .fs)
 
+        let activity = try makeManifest(permissions: ["activity.read", "activity.snapshots"])
+        let activityDraft = PreviewScenarioDraft.derive(manifest: activity)
+        precondition(activityDraft.fixtures.activity == .none)
+        precondition(activityDraft.missingRequiredFixtureKind(for: activity) == .activity)
+
         // GUI「清除」把内置样例置为不可用，不回退。
         var cleared = PreviewScenarioDraft.derive(manifest: manifest)
         cleared.fixtures.media = .none
@@ -321,7 +326,7 @@ enum DefaultScenarioTests {
             switch kind {
             case .media: return media
             case .weather: return weather
-            case .fs: return nil
+            case .fs, .activity: return nil
             }
         }
 
@@ -356,7 +361,7 @@ enum DefaultScenarioTests {
         let data = try PluginPreviewInspectReport.data(manifest: manifest)
         let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
         let fixtures = object["fixtures"] as? [[String: Any]] ?? []
-        precondition(fixtures.map { $0["source"] as? String } == ["builtin", "builtin", "none"])
+        precondition(fixtures.map { $0["source"] as? String } == ["builtin", "builtin", "none", "none"])
 
         let fs = try fsManifest()
         let fsData = try PluginPreviewInspectReport.data(manifest: fs)
@@ -369,6 +374,15 @@ enum DefaultScenarioTests {
 
         let message = PreviewFixtureHint.message(kind: .fs, localize: { _ in PreviewFixtureHint.messageKey })
         precondition(message == "This plugin needs a fs fixture. Pick a file in Custom mode or use --fixture fs=<file>.")
+
+        let activity = try makeManifest(permissions: ["activity.read"])
+        let activityData = try PluginPreviewInspectReport.data(manifest: activity)
+        let activityObject = try JSONSerialization.jsonObject(with: activityData) as? [String: Any] ?? [:]
+        let activityFixtures = activityObject["fixtures"] as? [[String: Any]] ?? []
+        precondition(activityFixtures[3]["needed"] as? Bool == true)
+        precondition(activityFixtures[3]["source"] as? String == "none")
+        precondition(activityFixtures[3]["reason"] as? String
+            == "manifest declares activity.read; requires an explicit synthetic fixture")
     }
 
     private static func required(_ value: String) throws -> String {
@@ -457,9 +471,10 @@ enum DefaultScenarioTests {
         precondition(settings[2]["step"] as? Double == 20)
 
         let fixtures = object["fixtures"] as? [[String: Any]] ?? []
-        precondition(fixtures.map { $0["kind"] as? String } == ["media", "weather", "fs"])
-        precondition(fixtures.map { $0["needed"] as? Bool } == [true, true, false])
-        precondition(fixtures.map { $0["source"] as? String } == ["builtin", "builtin", "none"])
+        precondition(fixtures.map { $0["kind"] as? String } == ["media", "weather", "fs", "activity"])
+        precondition(fixtures.map { $0["needed"] as? Bool } == [true, true, false, false])
+        precondition(fixtures.map { $0["source"] as? String } == ["builtin", "builtin", "none", "none"])
         precondition(fixtures[2]["reason"] as? String == "manifest does not declare fs.read")
+        precondition(fixtures[3]["reason"] as? String == "manifest does not declare activity.read")
     }
 }

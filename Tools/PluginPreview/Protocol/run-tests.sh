@@ -11,6 +11,7 @@ ARCH="$(uname -m)"
 SOURCES=(
   "$ROOT/Sources/Models/Plugins/PluginScene.swift"
   "$ROOT/Sources/Models/Plugins/PluginUINode.swift"
+  "$ROOT/Sources/Models/Plugins/PluginTimelineItem.swift"
   "$ROOT/Sources/Models/Plugins/PluginScene3DDescriptor.swift"
   "$ROOT/Sources/Services/Plugins/PluginSurfaceRequest.swift"
   "$ROOT/Sources/Models/Plugins/PluginManifest.swift"

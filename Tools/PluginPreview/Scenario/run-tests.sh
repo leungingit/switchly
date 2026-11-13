@@ -20,6 +20,7 @@ xcrun swiftc -swift-version 5 -parse-as-library \
   "$ROOT/Tools/PluginPreview/Scenario/PluginPreviewStep.swift" \
   "$ROOT/Tools/PluginPreview/Entry/PreviewCommandLine.swift" \
   "$ROOT/Sources/Models/AppSettings.swift" \
+  "$ROOT/Sources/Models/ActivityTrackingSettings.swift" \
   "$ROOT/Sources/Models/DockLayoutSpec.swift" \
   "$ROOT/Sources/Models/MenuBarIcon.swift" \
   "$ROOT/Sources/Models/MonitoredApp.swift" \
