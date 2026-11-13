@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sessions": [
+    {
+      "id": "A83A0194-847C-401B-BA39-66E2A623B821",
+      "bundleID": "com.example.editor",
+      "appName": "样例编辑器",
+      "start": 1794445200,
+      "end": 1794448800,
+      "seconds": 3600,
+      "endReason": "switched"
+    },
+    {
+      "id": "83FD3C7B-111A-41B0-87A6-C689C173A339",
+      "bundleID": "com.example.reader",
+      "appName": "样例阅读器",
+      "start": 1794448800,
+      "end": 1794452400,
+      "seconds": 3600,
+      "endReason": "idle"
+    }
+  ]
+}

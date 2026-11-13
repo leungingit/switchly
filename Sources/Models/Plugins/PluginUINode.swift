@@ -10,6 +10,7 @@
 import Foundation
 
 enum PluginSlot: String, Codable, CaseIterable {
+    case panel
     case bottomBar
     case center
     case topTrailing
@@ -30,8 +31,11 @@ enum PluginImageSource: Equatable, Codable {
     case symbol(String)
     case pluginAsset(String)
     case artwork
+    case activitySnapshot(String)
 
-    private enum CodingKeys: String, CodingKey { case symbol, pluginAsset, artwork }
+    private enum CodingKeys: String, CodingKey {
+        case symbol, pluginAsset, artwork, activitySnapshot
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -44,6 +48,15 @@ enum PluginImageSource: Equatable, Codable {
             self = .pluginAsset(asset)
         } else if try c.decodeIfPresent(Bool.self, forKey: .artwork) == true {
             self = .artwork
+        } else if let reference = try c.decodeIfPresent(String.self, forKey: .activitySnapshot) {
+            guard reference.utf8.count <= 200, UUID(uuidString: reference) != nil else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .activitySnapshot,
+                    in: c,
+                    debugDescription: "Activity snapshot reference must be a UUID"
+                )
+            }
+            self = .activitySnapshot(reference)
         } else {
             throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown image source"))
         }
@@ -55,6 +68,60 @@ enum PluginImageSource: Equatable, Codable {
         case .symbol(let s): try c.encode(s, forKey: .symbol)
         case .pluginAsset(let a): try c.encode(a, forKey: .pluginAsset)
         case .artwork: try c.encode(true, forKey: .artwork)
+        case .activitySnapshot(let reference): try c.encode(reference, forKey: .activitySnapshot)
+        }
+    }
+}
+
+struct PluginBarItem: Equatable, Decodable {
+    let label: String
+    let value: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case label, value
+    }
+
+    init(label: String, value: Double) {
+        self.label = label
+        self.value = value
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let label = try c.decode(String.self, forKey: .label)
+        guard label.utf8.count <= 200 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .label,
+                in: c,
+                debugDescription: "Bar label exceeds 200 bytes"
+            )
+        }
+        let value = try c.decode(Double.self, forKey: .value)
+        guard value.isFinite, value >= 0 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .value,
+                in: c,
+                debugDescription: "Bar value must be finite and nonnegative"
+            )
+        }
+        self.label = label
+        self.value = value
+    }
+}
+
+struct PluginLineSeries: Equatable, Decodable {
+    let label: String
+    let items: [PluginBarItem]
+
+    private enum CodingKeys: String, CodingKey { case label, items }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        label = try c.decode(String.self, forKey: .label)
+        items = try c.decode([PluginBarItem].self, forKey: .items)
+        guard !label.isEmpty, label.utf8.count <= 200, items.count <= 64 else {
+            throw DecodingError.dataCorruptedError(forKey: .items, in: c,
+                                                  debugDescription: "Invalid line series label or point budget")
         }
     }
 }
@@ -84,10 +151,18 @@ indirect enum PluginUINode: Equatable, Decodable {
     case scene(PluginScene)
     /// Generic 3D model slot (scene3d). Its fallback is a regular 2D tree.
     case scene3d(PluginScene3DDescriptor)
+    /// Plugin panels may expose richer controls and activity-only content.
+    case segmented(id: String, options: [String], selected: Int)
+    case dateRange(id: String, from: Double, to: Double, label: String)
+    case barChart(items: [PluginBarItem])
+    case lineChart(items: [PluginBarItem], series: [PluginLineSeries] = [], label: String? = nil)
+    case timeline(items: [PluginTimelineItem])
+    case grid(children: [PluginUINode])
 
     private enum CodingKeys: String, CodingKey {
         case type, children, spacing, align, material, id, symbol, label, size, variant, enabled, selected
         case symbolOn, symbolOff, isOn, value, step, style, lines, rate, source, corner, tone
+        case options, from, to, items, series
     }
 
     init(from decoder: Decoder) throws {
@@ -169,6 +244,81 @@ indirect enum PluginUINode: Equatable, Decodable {
                 throw DecodingError.dataCorruptedError(forKey: .type, in: c, debugDescription: "Invalid scene3d: \(error)")
             }
             self = .scene3d(descriptor)
+        case "segmented":
+            let options = try c.decode([String].self, forKey: .options)
+            guard options.count <= 6 else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .options,
+                    in: c,
+                    debugDescription: "segmented accepts at most 6 options"
+                )
+            }
+            let selected = try c.decode(Int.self, forKey: .selected)
+            guard options.indices.contains(selected) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .selected,
+                    in: c,
+                    debugDescription: "segmented selection is out of range"
+                )
+            }
+            self = .segmented(id: try nonEmpty(.id), options: options, selected: selected)
+        case "dateRange":
+            let from = try c.decode(Double.self, forKey: .from)
+            let to = try c.decode(Double.self, forKey: .to)
+            guard from.isFinite, to.isFinite else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .from,
+                    in: c,
+                    debugDescription: "dateRange bounds must be finite"
+                )
+            }
+            guard from < to, to - from <= 400 * 86_400 else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .to,
+                    in: c,
+                    debugDescription: "dateRange must be ordered and span at most 400 days"
+                )
+            }
+            self = .dateRange(id: try nonEmpty(.id), from: from, to: to,
+                              label: try c.decode(String.self, forKey: .label))
+        case "barChart", "lineChart":
+            let items = try c.decode([PluginBarItem].self, forKey: .items)
+            let maximum = type == "lineChart" ? 64 : 12
+            guard items.count <= maximum else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .items,
+                    in: c,
+                    debugDescription: "\(type) accepts at most \(maximum) items"
+                )
+            }
+            if type == "lineChart" {
+                let series = try c.decodeIfPresent([PluginLineSeries].self, forKey: .series) ?? []
+                let label = try c.decodeIfPresent(String.self, forKey: .label)
+                guard series.count <= 6,
+                      series.allSatisfy({ $0.items.map(\.label) == items.map(\.label) }),
+                      label.map({ !$0.isEmpty && $0.utf8.count <= 200 }) ?? series.isEmpty else {
+                    throw DecodingError.dataCorruptedError(forKey: .series, in: c,
+                                                          debugDescription: "Line series require aligned labels and at most 6 additional series")
+                }
+                self = .lineChart(items: items, series: series, label: label)
+            } else { self = .barChart(items: items) }
+        case "timeline":
+            let items = try c.decode([PluginTimelineItem].self, forKey: .items)
+            guard items.count <= 12 else {
+                throw DecodingError.dataCorruptedError(forKey: .items, in: c,
+                                                      debugDescription: "timeline accepts at most 12 items")
+            }
+            self = .timeline(items: items)
+        case "grid":
+            let items = try children()
+            guard items.count <= 6 else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .children,
+                    in: c,
+                    debugDescription: "grid accepts at most 6 children"
+                )
+            }
+            self = .grid(children: items)
         default:
             throw DecodingError.dataCorruptedError(forKey: .type, in: c, debugDescription: "Unknown node type \(type)")
         }
@@ -176,7 +326,10 @@ indirect enum PluginUINode: Equatable, Decodable {
 
     var children: [PluginUINode] {
         switch self {
-        case .hstack(let c, _, _), .vstack(let c, _, _), .zstack(let c), .surface(let c, _), .wheel(let c), .screen(let c): return c
+        case .timeline(let items): return items.map(\.content)
+        case .hstack(let c, _, _), .vstack(let c, _, _), .zstack(let c), .surface(let c, _),
+             .wheel(let c), .screen(let c), .grid(let c):
+            return c
         default: return []
         }
     }
@@ -185,6 +338,8 @@ indirect enum PluginUINode: Equatable, Decodable {
     var actionIDs: [String] {
         switch self {
         case .button(let id, _, _, _, _, _, _), .toggle(let id, _, _, _, _), .slider(let id, _, _, _): return [id]
+        case .segmented(let id, _, _): return [id]
+        case .dateRange(let id, _, _, _): return ["\(id).from", "\(id).to"]
         case .scene(let scene): return scene.hits.map(\.id)
         case .scene3d(let d):
             // hit 与自身 fallback 可复用同一业务 ID（两条分支不会同时可见），取并集避免全局去重误判。

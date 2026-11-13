@@ -1,0 +1,95 @@
+{
+  "说明": "正式 Switchly 采集器与独立原生测试窗口的真实时间验收；仅保留本轮测试应用数据，不含其他个人活动。",
+  "timezone": "Asia/Singapore",
+  "environment": {
+    "architecture": "arm64",
+    "macOS": "27.2"
+  },
+  "host": {
+    "revokedPID": 70146,
+    "restoredAndCooldownPID": 94953,
+    "restoredAndCooldownBinarySHA256": "5dbd55c2145a7fbd15594fbd1d89208558f2a94f934b21b9fa6f7c6e42b28e78"
+  },
+  "revocation": {
+    "permissionObservedMissing": true,
+    "observedAt": 1794469019.4898171,
+    "qualifiedPersistedSession": {
+      "id": "32AD95A7-FE2F-4432-A990-C0C7DB2EC58F",
+      "bundleID": "com.switchly.acceptance.cycleb",
+      "start": 1794468920.2158508,
+      "end": 1794469017.205906,
+      "seconds": 96.99005541700171,
+      "endReason": "checkpoint"
+    },
+    "fixtureMaximumContinuous": 98.00098141666967,
+    "fixtureIdleSeconds": 2.31760575,
+    "newSnapshotCount": 0
+  },
+  "restoration": {
+    "firstSnapshot": {
+      "sessionID": "9E1E4F41-B9EE-4C01-9D25-8A1FEEFA797E",
+      "bundleID": "com.switchly.acceptance.cycleb",
+      "capturedAt": 1794469351.585956,
+      "id": "E470EB43-C66A-43C4-9597-154DB9132094"
+    },
+    "fixtureMaximumContinuous": 64.50082112499513
+  },
+  "crossSessionCooldown": {
+    "observationAt": 1794469567.8478642,
+    "newQualifiedSession": {
+      "id": "11E98606-E55B-4434-80BA-DEEA45BD9B27",
+      "bundleID": "com.switchly.acceptance.cycleb",
+      "start": 1794469496.018153,
+      "end": 1794469554.3646717,
+      "seconds": 58.34651887504151,
+      "endReason": "terminated"
+    },
+    "fixtureMaximumContinuous": 58.000518375018146,
+    "BCount": 1
+  },
+  "boundary": {
+    "lastObservationBefore600": {
+      "observedAt": 1794469950.355434,
+      "secondsSinceFirst": 598.7694778442383,
+      "BCount": 1,
+      "capturedAt": [
+        1794469351.585956
+      ],
+      "fixturePhase": "cooldown-boundary",
+      "active": true,
+      "continuous": 16.994070208340418,
+      "idleSeconds": 11.624672791,
+      "fixtureObservedAt": 1794469949.148463,
+      "hostPID": 94953
+    },
+    "qualifiedAdjacentBefore600": false,
+    "secondSnapshot": {
+      "sessionID": "A161959A-CFE4-49CB-8509-733D88DF3A81",
+      "bundleID": "com.switchly.acceptance.cycleb",
+      "capturedAt": 1794469956.5955272,
+      "id": "78991B62-740A-4D71-A9FF-ECB5A413048C"
+    },
+    "intervalSeconds": 605.0095710754395,
+    "afterObservation": {
+      "observedAt": 1794469958.372682,
+      "secondsSinceFirst": 606.7867259979248,
+      "BCount": 2,
+      "capturedAt": [
+        1794469351.585956,
+        1794469956.5955272
+      ],
+      "fixturePhase": "cooldown-boundary",
+      "active": true,
+      "continuous": 25.495276125031523,
+      "idleSeconds": 0.62587875,
+      "fixtureObservedAt": 1794469957.6496692,
+      "hostPID": 94953
+    },
+    "sameAppDifferentSessions": true,
+    "before600AllCountsOne": true
+  },
+  "sampleTimesLocal": [
+    "2026-11-12T15:42:31.585956+08:00",
+    "2026-11-12T15:52:36.595527+08:00"
+  ]
+}

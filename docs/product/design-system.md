@@ -16,6 +16,7 @@
 | 偏好设置 | 分类设置、表单、分段选择器、滑块和材质示意。 |
 | 工作区管理 | 工作区列表和编辑区域，保持编辑任务的信息层级。 |
 | 使用统计 | 图表、次数和效率估算明细，优先保证数据可读。 |
+| 插件选择器与独立插件面板 | 复用偏好设置的 `WindowCrystalModifier` 和普通窗口背景结构；内容保持插件自身布局，主题、材质与密度随共享设置即时更新。 |
 
 ## 共享实现入口
 
@@ -28,6 +29,10 @@
 | 材质参数、布局、旧设置迁移 | [AppSettings.swift](../../Sources/Models/AppSettings.swift) |
 | 持久化和运行态通知 | [SettingsService.swift](../../Sources/Services/SettingsService.swift) |
 | 九宫格面板定位（多显示器 / visibleFrame） | [GridPanelLayout.swift](../../Sources/Utilities/GridPanelLayout.swift) |
+
+### MB-D01 — 菜单栏图标独立于应用主题（2026-11-13）
+
+「跟随系统／亮色／暗色」控制应用内容及普通窗口；菜单栏图标始终使用模板图，由系统根据菜单栏背景着色，与相邻系统状态项保持一致。主题应用不得覆盖包含 `NSStatusBarButton` 的系统窗口及其内容视图外观，识别仅使用公开 AppKit 类型；普通窗口继续应用用户选择的主题。验收需覆盖三个应用主题并对照真实菜单栏，不能用设置页主题映射或离屏模板图代替。
 
 ## 尺度与排印
 
@@ -85,6 +90,7 @@ Dock 预览的共享设置由 `DockPreviewViewModel` 订阅，并在每次显示
 
 - 面板负责系统模糊与桌面透射。卡片复用面板底层，只叠半透明语义底、上亮下透柔光及镜面边；不为每张卡片创建 `NSVisualEffectView`。
 - 复用 `.panelGlass()`、`.cardSurface()`、`.crystalSpecularRim()` 和普通窗口材质封装。连续圆角与内描边保持边界完整，装饰不能侵占内容安全区。
+- 活动图表复用 `DesignTokens.Plugin.sequenceColor(at:)` 的系统蓝、紫、粉、橙、绿、青、靛蓝；汇总与各应用分别固定用色并有图例，时间轴文字继续使用语义文字色。会话轴和排行按显示顺序轮换；具体边界见活动合同 AT-D23／D24。
 - 强调色用 `Color.accentColor`；主文字和底色优先系统语义色。次要文字使用跟随同一主题的语义墨色；`crystalSecondary(on:)` 不再强制深色，也不声称采样了实际壁纸亮度。
 - 共享颜色按正在绘制的视图的 `effectiveAppearance` 解析。不要在构造时用应用级外观快照替代动态颜色；离屏或窗口独立主题可能与应用外观不同。
 - 普通控件复用现有背景而不创建嵌套模糊；透明面板通过 AppKit 原生玻璃容器实现，不依赖 SwiftUI `View.glassEffect`。所有新 API 保留 macOS 12 降级。

@@ -20,6 +20,7 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
     private struct ActivePlugin {
         let runtime: PluginRuntime
         let context: PluginRenderContext
+        let activityProvider: PluginFixtureActivityProvider?
         let generation: UInt64
         let storage: PluginPreviewFixtureStorage
         let hasVirtualClock: Bool
@@ -119,7 +120,14 @@ final class PluginPreviewWorkerSession: @unchecked Sendable {
         lock.lock()
         previous = active
         currentGeneration = request.generation
-        let activePlugin = ActivePlugin(runtime: prepared.runtime, context: prepared.context, generation: request.generation, storage: prepared.storage, hasVirtualClock: prepared.hasVirtualClock)
+        let activePlugin = ActivePlugin(
+            runtime: prepared.runtime,
+            context: prepared.context,
+            activityProvider: prepared.activityProvider,
+            generation: request.generation,
+            storage: prepared.storage,
+            hasVirtualClock: prepared.hasVirtualClock
+        )
         active = activePlugin
         lock.unlock()
 

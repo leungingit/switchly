@@ -42,7 +42,7 @@ enum PreviewScenarioExporter {
                                                        scenarioDirectory: directory,
                                                        maximumBytes: PluginStorage.maxTotalBytes)
             let scenario = try PreviewScenario.decode(readBack)
-            let paths = [scenario.fixtures?.media, scenario.fixtures?.weather, scenario.fixtures?.fs].compactMap { $0 }
+            let paths = [scenario.fixtures?.media, scenario.fixtures?.weather, scenario.fixtures?.fs, scenario.fixtures?.activity].compactMap { $0 }
             for path in paths {
                 _ = try PreviewFixtureFile.read(relativePath: path, scenarioDirectory: directory,
                                                 maximumBytes: PluginPackageValidator.maxPackageBytes)

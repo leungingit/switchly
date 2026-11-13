@@ -89,7 +89,8 @@ struct PluginSurfaceDrawing {
             return textSize(value, attributes: marqueeAttributes, maxWidth: width)
         case .badge(let value, let tone):
             return badgeSize(value, tone: tone, maxWidth: width)
-        case .surface, .button, .toggle, .slider, .wheel, .screen, .scene, .scene3d:
+        case .surface, .button, .toggle, .slider, .wheel, .screen, .scene, .scene3d,
+             .segmented, .dateRange, .barChart, .lineChart, .timeline, .grid:
             // Forbidden by §9.4; the renderer rejects the whole request before
             // drawing, so these branches only keep the switch exhaustive.
             return .zero
@@ -152,7 +153,8 @@ struct PluginSurfaceDrawing {
         case .hstack:
             return false
         case .badge, .text, .progress, .image,
-             .surface, .screen, .button, .toggle, .slider, .wheel, .scene, .scene3d:
+             .surface, .screen, .button, .toggle, .slider, .wheel, .scene, .scene3d,
+             .segmented, .dateRange, .barChart, .lineChart, .timeline, .grid:
             return false
         }
     }
@@ -189,7 +191,8 @@ struct PluginSurfaceDrawing {
             drawImage(source, size: size, corner: corner, in: rect)
         case .badge(let value, let tone):
             drawBadge(value, tone: tone, in: rect)
-        case .surface, .button, .toggle, .slider, .wheel, .screen, .scene, .scene3d:
+        case .surface, .button, .toggle, .slider, .wheel, .screen, .scene, .scene3d,
+             .segmented, .dateRange, .barChart, .lineChart, .timeline, .grid:
             // Forbidden by §9.4. The renderer rejects the whole request before
             // drawing; these branches only keep the switch exhaustive.
             break
@@ -411,6 +414,10 @@ struct PluginSurfaceDrawing {
             } else {
                 drawPlaceholder(in: box, radius: radius)
             }
+        case .activitySnapshot:
+            // Activity snapshots are panel-only and resolved by the host UI.
+            // Never turn them into a scene3d texture.
+            drawPlaceholder(in: box, radius: radius)
         }
     }
 

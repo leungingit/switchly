@@ -52,9 +52,14 @@ export type PluginPermission =
   | "media.library"
   | "weather.current"
   | "window.focus"
+  | "activity.read"
+  | "activity.snapshots"
   | "window.capture"
   | "fs.read"
   | AppleScriptPermission;
+
+/** 插件声明可装载的表面；缺省时仅 Dock 预览。 */
+export type PluginSurface = "dockPreview" | "panel";
 
 export interface PluginFSRoot {
   readonly id: string;
@@ -76,6 +81,7 @@ export interface PluginManifest {
   readonly settings?: readonly PluginSetting[] | null;
   readonly fsRoots?: readonly PluginFSRoot[] | null;
   readonly defaultEnabled?: boolean | null;
+  readonly surfaces?: readonly PluginSurface[];
 }
 
 export interface NowPlaying {
@@ -200,6 +206,101 @@ export interface PluginWindowSnapshot {
   readonly title: string;
 }
 
+export type ActivityGroupBy = "app" | "hour" | "day" | "month";
+
+/** 所有时间值均为 Unix epoch 秒。 */
+export interface ActivitySummaryOptions {
+  readonly from: number;
+  readonly to: number;
+  readonly groupBy?: ActivityGroupBy;
+  readonly timeZone?: string;
+}
+
+export interface ActivitySummaryItem {
+  readonly bundleID: string;
+  /** 应用名；对应当前会话的 appName。 */
+  readonly name: string;
+  readonly seconds: number;
+  readonly sessions: number;
+  /** 非 app 分组时存在。 */
+  readonly bucketStart?: number;
+  readonly bucketEnd?: number;
+}
+
+export interface ActivitySummary {
+  readonly items: readonly ActivitySummaryItem[];
+  readonly availableFrom: number | null;
+  readonly revision: number;
+  readonly recording: boolean;
+  readonly screenshotsEnabled: boolean;
+}
+
+export interface ActivitySessionsOptions {
+  readonly from: number;
+  readonly to: number;
+  readonly limit?: number;
+  readonly cursor?: string | null;
+  readonly bundleID?: string;
+}
+
+export type ActivityEndReason =
+  | "checkpoint"
+  | "switched"
+  | "disabled"
+  | "idle"
+  | "blocked"
+  | "terminated"
+  | "clockChanged";
+
+export interface ActivitySessionItem {
+  readonly id: string;
+  readonly bundleID: string;
+  readonly appName: string;
+  readonly start: number;
+  readonly end: number;
+  readonly seconds: number;
+  readonly endReason: ActivityEndReason;
+}
+
+export interface ActivitySessions {
+  readonly items: readonly ActivitySessionItem[];
+  readonly nextCursor: string | null;
+  readonly revision: number;
+}
+
+export interface ActivitySnapshotsOptions {
+  readonly from: number;
+  readonly to: number;
+  readonly limit?: number;
+  readonly cursor?: string | null;
+  readonly bundleID?: string;
+}
+
+export interface ActivitySnapshotItem {
+  /** 宿主签发的不透明引用，可直接用于 image.activitySnapshot。 */
+  readonly ref: string;
+  readonly capturedAt: number;
+  readonly bundleID: string;
+  /** 关联已有 ActivitySessionItem.id 的不透明 UUID；不是路径，旧宿主可能缺省。 */
+  readonly sessionID?: string;
+}
+
+export interface ActivitySnapshots {
+  readonly items: readonly ActivitySnapshotItem[];
+  readonly nextCursor: string | null;
+  readonly revision: number;
+}
+
+/** 仅当 activity.read 获准且宿主活动服务可用时注入。 */
+export interface PluginActivity {
+  summary(options: ActivitySummaryOptions): Promise<ActivitySummary>;
+  sessions(options: ActivitySessionsOptions): Promise<ActivitySessions>;
+  /** 仅同时获准 activity.read 与 activity.snapshots 时存在。 */
+  readonly snapshots?: (
+    options: ActivitySnapshotsOptions,
+  ) => Promise<ActivitySnapshots>;
+}
+
 export interface PluginCapabilityState {
   readonly supported: boolean;
   readonly granted: boolean;
@@ -210,6 +311,16 @@ export interface PluginCapabilityState {
 export interface PluginUIFeatures {
   /** 仅当 apiVersion 为 2 且宿主可渲染 scene3d 时为 true。 */
   readonly scene3d: boolean;
+  /** 宿主是否支持 panel surface 与 panel 槽位。 */
+  readonly panel?: boolean;
+  /** 宿主是否支持 activity 节点与 ctx.activity 查询。 */
+  readonly activity?: boolean;
+  /** 宿主是否支持解码 lineChart；缺失或 false 时插件应使用原有 2D 节点。 */
+  readonly lineChart?: boolean;
+  /** lineChart 是否接受按应用对齐的附加序列。 */
+  readonly lineChartSeries?: boolean;
+  /** 宿主是否支持解码 timeline；缺失或 false 时插件应回退到同顺序纵向内容列表。 */
+  readonly timeline?: boolean;
 }
 
 export interface PluginContext {
@@ -223,8 +334,10 @@ export interface PluginContext {
     >;
   };
   readonly capabilities: Readonly<Record<string, PluginCapabilityState | undefined>>;
-  /** v2 协商增量；缺失表示无协商，插件必须返回 2D 树。 */
+  /** v2 能力协商快照；缺失或具体字段为 false 时按对应节点回退。 */
   readonly uiFeatures?: PluginUIFeatures;
+  /** Dock 预览为 "dockPreview"；旧宿主可能缺省。panel 使用专用上下文类型。 */
+  readonly surface?: "dockPreview";
   readonly app: PluginAppSnapshot;
   readonly window: PluginWindowSnapshot;
   readonly locale: string;
@@ -240,9 +353,20 @@ export interface PluginContext {
   readonly media?: PluginMedia;
   /** 仅当 fs.read 被授权时存在。 */
   readonly fs?: PluginFS;
+  /** 仅当 activity.read 被授权且活动服务可用时存在。 */
+  readonly activity?: PluginActivity;
+}
+
+/** panel 实例没有前台应用或窗口，但保留其他 PluginContext 能力。 */
+export interface PluginPanelContext
+  extends Omit<PluginContext, "app" | "window" | "surface"> {
+  readonly surface: "panel";
+  readonly app: null;
+  readonly window: null;
 }
 
 export type PluginSlot =
+  | "panel"
   | "bottomBar"
   | "center"
   | "topTrailing"
@@ -306,7 +430,8 @@ export interface PluginProgressOptions {
 export type PluginImageSource =
   | { readonly symbol: string }
   | { readonly pluginAsset: string }
-  | { readonly artwork: true };
+  | { readonly artwork: true }
+  | { readonly activitySnapshot: string };
 
 export interface PluginImageOptions {
   readonly source: PluginImageSource;
@@ -390,6 +515,75 @@ export interface PluginBadgeNode extends PluginBadgeOptions {
 export interface PluginMarqueeNode {
   readonly type: "marquee";
   readonly value: string;
+}
+
+export interface PluginSegmentedOptions {
+  readonly id: string;
+  /** 最多 6 项。 */
+  readonly options: readonly string[];
+  readonly selected: number;
+}
+
+export interface PluginSegmentedNode extends PluginSegmentedOptions {
+  readonly type: "segmented";
+}
+
+export interface PluginDateRangeOptions {
+  readonly id: string;
+  /** Unix epoch 秒，满足 from < to 且跨度不超过 400 天。 */
+  readonly from: number;
+  readonly to: number;
+  readonly label: string;
+}
+
+export interface PluginDateRangeNode extends PluginDateRangeOptions {
+  readonly type: "dateRange";
+}
+
+export interface PluginBarItem {
+  readonly label: string;
+  /** 秒；宿主按本地化时长绘制坐标和提示。 */
+  readonly value: number;
+}
+
+export interface PluginBarChartNode {
+  readonly type: "barChart";
+  /** 最多 12 项；label 与 value 须满足宿主节点约束。 */
+  readonly items: readonly PluginBarItem[];
+}
+
+export interface PluginLineChartNode {
+  readonly type: "lineChart";
+  /** 仅 panel，最多 64 点；复用 PluginBarItem 的 label/value 约束。 */
+  readonly items: readonly PluginBarItem[];
+  /** 汇总图例，UTF-8 1…200 字节；附加序列存在时必填。 */
+  readonly label?: string;
+  /** 需 lineChartSeries 协商；最多 6 列，与 items 时间标签逐项一致。 */
+  readonly series?: readonly PluginLineSeries[];
+}
+
+export interface PluginLineSeries {
+  readonly label: string;
+  readonly items: readonly PluginBarItem[];
+}
+
+export interface PluginTimelineItem {
+  /** 非负有限 epoch 秒。 */
+  readonly timestamp: number;
+  /** 与 timeline 节点共同计入整树 64 节点、深度 8 预算。 */
+  readonly content: PluginNode;
+}
+
+export interface PluginTimelineNode {
+  readonly type: "timeline";
+  /** 仅 panel，最多 12 项；content 沿用整树 64 节点、深度 8 预算。 */
+  readonly items: readonly PluginTimelineItem[];
+}
+
+export interface PluginGridNode {
+  readonly type: "grid";
+  /** 最多 6 项。 */
+  readonly children: readonly PluginNode[];
 }
 
 export type SceneVec = readonly [number, number];
@@ -678,6 +872,12 @@ export type PluginNode =
   | PluginImageNode
   | PluginBadgeNode
   | PluginMarqueeNode
+  | PluginSegmentedNode
+  | PluginDateRangeNode
+  | PluginBarChartNode
+  | PluginLineChartNode
+  | PluginTimelineNode
+  | PluginGridNode
   | PluginSceneNode
   | PluginScene3DNode;
 
@@ -691,12 +891,12 @@ export type PluginRenderOutput =
   | null
   | undefined;
 
-export interface PluginDefinition {
+export interface PluginDefinition<C = PluginContext> {
   /** 与媒体读取并行的初始界面；没有媒体、文件、存储或动作能力。旧宿主忽略此方法。 */
   prepare?(ctx: Pick<PluginContext, "app" | "window" | "locale" | "settings" | "reduceMotion" | "uiFeatures" | "t">): PluginRenderOutput | Promise<PluginRenderOutput>;
-  render(ctx: PluginContext): PluginRenderOutput | Promise<PluginRenderOutput>;
+  render(ctx: C): PluginRenderOutput | Promise<PluginRenderOutput>;
   onAction?(
-    ctx: PluginContext,
+    ctx: C,
     id: string,
     value: number | null,
   ): void | Promise<void>;
@@ -727,6 +927,12 @@ export interface PluginUI {
   image(options: PluginImageOptions): PluginImageNode;
   badge(options: PluginBadgeOptions): PluginBadgeNode;
   marquee(value: string): PluginMarqueeNode;
+  segmented(options: PluginSegmentedOptions): PluginSegmentedNode;
+  dateRange(options: PluginDateRangeOptions): PluginDateRangeNode;
+  barChart(items: readonly PluginBarItem[]): PluginBarChartNode;
+  lineChart(items: readonly PluginBarItem[], options?: { label?: string; series?: readonly PluginLineSeries[] }): PluginLineChartNode;
+  timeline(items: readonly PluginTimelineItem[]): PluginTimelineNode;
+  grid(children: readonly PluginNode[]): PluginGridNode;
   scene(scene: PluginScene): PluginSceneNode;
   scene3d(options: PluginScene3DOptions): PluginScene3DNode;
 }
@@ -734,6 +940,9 @@ export interface PluginUI {
 export declare const ui: Readonly<PluginUI>;
 
 export declare function definePlugin<T extends PluginDefinition>(plugin: T): T;
+export declare function definePanelPlugin<
+  T extends PluginDefinition<PluginPanelContext>,
+>(plugin: T): T;
 
 declare global {
   var __switchlyPlugin: PluginDefinition | undefined;

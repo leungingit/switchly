@@ -76,6 +76,8 @@ enum PluginPreviewInspectReport {
         case .weather:
             return needed ? "manifest declares weather.current"
                           : "manifest does not declare weather.current"
+        case .activity:
+            return needed ? "manifest declares activity.read; requires an explicit synthetic fixture" : "manifest does not declare activity.read"
         case .fs:
             return needed ? "manifest declares fs.read; requires an explicit fixture file"
                           : "manifest does not declare fs.read"

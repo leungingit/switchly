@@ -328,6 +328,7 @@ struct PluginPreviewLoadedFixtures {
     let media: PluginPreviewMediaFixture?
     let weather: PluginPreviewWeatherFixture?
     let fs: PluginFixtureFileReader?
+    let activityFixture: PluginPreviewActivityFixture?
     let storage: PluginPreviewFixtureStorage
     let sources: [String: String]
 }
@@ -340,6 +341,7 @@ struct PluginPreviewPreparedPlugin {
     let fixtureSources: [String: String]
     let artworkBase64: String?
     let storage: PluginPreviewFixtureStorage
+    let activityProvider: PluginFixtureActivityProvider?
     let hasVirtualClock: Bool
 }
 
@@ -393,6 +395,9 @@ enum PluginPreviewWorkerLoader {
 
         let mediaBridge = fixtures.media.map(PluginPreviewMediaBridge.init(fixture:))
         let weather = fixtures.weather
+        let activityProvider = authorization.permissions.contains(.activityRead)
+            ? fixtures.activityFixture.map(PluginFixtureActivityProvider.init(fixture:))
+            : nil
         let virtualClock = scenario.clock.map {
             PluginVirtualClock(startMilliseconds: $0.startEpochMs, seed: $0.seed)
         }
@@ -410,6 +415,7 @@ enum PluginPreviewWorkerLoader {
             storage: fixtures.storage,
             virtualClock: virtualClock,
             captureRequester: PluginPreviewCaptureRequester(),
+            activityProvider: activityProvider,
             reduceMotion: { scenario.environment.reduceMotion }
         )
         let context = PluginRenderContext(
@@ -420,7 +426,8 @@ enum PluginPreviewWorkerLoader {
             titleSummary: PluginRenderContext.summarize(title: scenario.target.titleSummary ?? ""),
             lastActiveAt: scenario.target.lastActiveAt,
             captureTarget: package.manifest.renderScope == .window
-                ? WindowCaptureTarget(windowID: 1, pid: 1, processStartedAt: Date(timeIntervalSince1970: 0)) : nil
+                ? WindowCaptureTarget(windowID: 1, pid: 1, processStartedAt: Date(timeIntervalSince1970: 0)) : nil,
+            surface: scenario.surface ?? "dockPreview"
         )
         return PluginPreviewPreparedPlugin(
             runtime: runtime,
@@ -430,6 +437,7 @@ enum PluginPreviewWorkerLoader {
             fixtureSources: fixtures.sources,
             artworkBase64: authorization.permissions.contains(.mediaNowPlaying) ? fixtures.media?.artworkBase64 : nil,
             storage: fixtures.storage,
+            activityProvider: activityProvider,
             hasVirtualClock: virtualClock != nil
         )
     }
@@ -521,6 +529,19 @@ enum PluginPreviewWorkerLoader {
             fs = nil
         }
 
+        let activityFixture: PluginPreviewActivityFixture?
+        if let path = scenario.fixtures?.activity {
+            let data = try fixtureData(path, scenarioDirectory: scenarioDirectory)
+            do {
+                activityFixture = try JSONDecoder().decode(PluginPreviewActivityFixture.self, from: data).validated()
+            } catch {
+                throw PluginPreviewWorkerFailure.invalidFixture
+            }
+            sources["activity"] = "fixture"
+        } else {
+            activityFixture = nil
+        }
+
         let storage: PluginPreviewFixtureStorage
         do {
             let seed: [String: JSONValue]
@@ -533,7 +554,14 @@ enum PluginPreviewWorkerLoader {
         } catch {
             throw PluginPreviewWorkerFailure.invalidFixture
         }
-        return PluginPreviewLoadedFixtures(media: media, weather: weather, fs: fs, storage: storage, sources: sources)
+        return PluginPreviewLoadedFixtures(
+            media: media,
+            weather: weather,
+            fs: fs,
+            activityFixture: activityFixture,
+            storage: storage,
+            sources: sources
+        )
     }
 
     private static func fixtureData(_ path: String, scenarioDirectory: URL) throws -> Data {

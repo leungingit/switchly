@@ -1,0 +1,41 @@
+{
+  "decision": "AT-D25",
+  "pluginTests": {
+    "passed": 80,
+    "failed": 0
+  },
+  "hostTests": {
+    "executed": 940,
+    "skipped": 9,
+    "failed": 0
+  },
+  "buildPassed": true,
+  "signaturePassed": true,
+  "actualSessionPagesOneAndTwoViewed": true,
+  "newestScreenshotRepeatedOnHistoricalPages": false,
+  "darkFixtureWithAssociatedImagesViewed": true,
+  "themeMappingCodeCorrect": true,
+  "formalDarkSettingsViewed": true,
+  "menuBarGlyphActualTintVerified": false,
+  "menuBarBlocker": "SystemUIServer 连接 timeoutReached；菜单栏裁切不含目标图标",
+  "liveRevisionMayResetPage": true,
+  "allBaselineSessionIDsRetained": true,
+  "baselineSessions": 464,
+  "currentSessionsAtAudit": 477,
+  "baselineCheckpointFinalizedOnQuit": true,
+  "currentSnapshotsAtAudit": 7,
+  "allBaselineJPEGHashesMatch": true,
+  "allSnapshotsHaveOwnersAndFiles": true,
+  "previousRecoveryGapsResolved": false,
+  "finalDecision": "AT-D26",
+  "sdkContractHash": "sha256:b748c257e61bf5c5a4439f775720ca215da30bdffd2ac933a579bc3922681c5a",
+  "liveRevisionResetCondition": "仅查询、采集代次或已读前缀变化时；尾部追加不重置",
+  "continuousCollectionHistoricalPagingPassed": true,
+  "livePageTwoRetainedThenPageThreeOpened": true,
+  "prefixMutationAndClearStillRejectOldCursorTestPassed": true,
+  "currentSessionsAtFinalAudit": 489,
+  "currentSnapshotsAtFinalAudit": 7,
+  "allPreCursorBuildDataIDsRetained": true,
+  "allPreCursorBuildJPEGsUnchanged": true,
+  "beforeAfterScreenshotsElapsedSeconds": 48.639256715774536
+}

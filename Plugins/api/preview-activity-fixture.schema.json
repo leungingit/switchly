@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchly.local/plugin-api/preview-activity-fixture.schema.json",
+  "title": "Switchly 预览活动纯夹具",
+  "description": "只含合成活动会话与不透明截图引用；不得包含路径、文件、位图或真实采集数据。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sessions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "sessions": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "bundleID", "appName", "start", "end", "seconds", "endReason"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "bundleID": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "appName": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "start": { "type": "number", "minimum": 0 },
+          "end": { "type": "number", "minimum": 0 },
+          "seconds": { "type": "number", "minimum": 0 },
+          "endReason": {
+            "enum": ["checkpoint", "switched", "disabled", "idle", "blocked", "terminated", "clockChanged"]
+          }
+        }
+      }
+    },
+    "snapshots": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "format": "uuid" },
+      "description": "仅供合成视图引用的 UUID；Preview/Worker 不解析文件，也不返回真实图片。"
+    }
+  }
+}

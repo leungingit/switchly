@@ -1,8 +1,14 @@
 {
   "schemaVersion": 2,
   "repository": "leungingit/switchly-plugins",
-  "sourceRevision": "f994a8a26bbeb708c83d6d5b3cf7d91d81c90463",
+  "sourceRevision": "419a662b6b7ae4d040d2339b971ce4bd8a63c2cc",
   "plugins": [
+    {
+      "id": "com.switchly.activity-timeline",
+      "version": "0.1.0",
+      "apiVersion": 2,
+      "contentHash": "sha256:45252fd59c1bc8e2546ce2075e0ccd24e05e95f12407416ffcd43bcb1bc1eefd"
+    },
     {
       "id": "com.switchly.music-controls",
       "version": "1.0.0",

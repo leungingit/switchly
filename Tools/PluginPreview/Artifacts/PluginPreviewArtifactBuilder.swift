@@ -13,6 +13,10 @@ enum PluginPreviewArtifactBuilder {
             return [PluginPreviewArtifactAction(pluginID: pluginID, actionID: id, value: .bool(isOn), enabled: true)]
         case .slider(let id, let value, _, _):
             return [PluginPreviewArtifactAction(pluginID: pluginID, actionID: id, value: .number(value), enabled: true)]
+        case .segmented(let id, _, let selected):
+            return [PluginPreviewArtifactAction(pluginID: pluginID, actionID: id, value: .number(Double(selected)), enabled: true)]
+        case .dateRange(let id, let from, let to, _):
+            return [PluginPreviewArtifactAction(pluginID: pluginID, actionID: id + ".from", value: .number(from), enabled: true), PluginPreviewArtifactAction(pluginID: pluginID, actionID: id + ".to", value: .number(to), enabled: true)]
         case .scene(let scene):
             return scene.hits.map { PluginPreviewArtifactAction(pluginID: pluginID, actionID: $0.id, value: nil, enabled: true) }
         case .scene3d(let scene):

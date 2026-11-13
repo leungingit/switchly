@@ -92,6 +92,8 @@ struct AppSettings: Codable, Equatable {
     /// shake-to-find-the-pointer.
     var previewShakeEnabled: Bool
 
+    var activityTracking = ActivityTrackingSettings()
+
     /// Local usage counters. Defaults to on (the panel can be cleared and the
     /// switch turned off; recorded data is never deleted behind the user's back).
     var usageStatisticsEnabled: Bool
@@ -293,6 +295,7 @@ struct AppSettings: Codable, Equatable {
         case previewHotspotEnabled
         case previewHotspotEdge
         case previewShakeEnabled
+        case activityTracking
         case usageStatisticsEnabled
         case fileLoggingEnabled
         case efficiencyBaselinePreset
@@ -409,6 +412,7 @@ struct AppSettings: Codable, Equatable {
         // Absent in settings written before the statistics panel existed:
         // statistics default to on, and the baseline falls back to the
         // recommended preset (EfficiencyBaseline.resolved does the clamping).
+        self.activityTracking = try container.decodeIfPresent(ActivityTrackingSettings.self, forKey: .activityTracking) ?? ActivityTrackingSettings()
         self.usageStatisticsEnabled = try container.decodeIfPresent(Bool.self, forKey: .usageStatisticsEnabled) ?? true
         self.fileLoggingEnabled = try container.decodeIfPresent(Bool.self, forKey: .fileLoggingEnabled) ?? false
         self.efficiencyBaselinePreset = try container.decodeIfPresent(EfficiencyBaselinePreset.self, forKey: .efficiencyBaselinePreset) ?? .standard

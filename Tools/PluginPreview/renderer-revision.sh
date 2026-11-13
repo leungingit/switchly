@@ -8,12 +8,16 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 files=(
   Sources/Models/Plugins/PluginScene.swift
   Sources/Models/Plugins/PluginUINode.swift
+  Sources/Models/Plugins/PluginTimelineItem.swift
   Sources/Models/Plugins/SceneEvaluator.swift
   Sources/Utilities/DesignTokens.swift
   Sources/Utilities/GlassEffect.swift
   Sources/Utilities/MotionTokens.swift
   Sources/Utilities/NativeCrystalContainer.swift
   Sources/Utilities/ThemeApplier.swift
+  Sources/Views/PluginActivityImage.swift
+  Sources/Views/PluginLineChart.swift
+  Sources/Views/PluginTimelineView.swift
   Sources/Views/PluginOverlayView.swift
   Sources/Views/PluginSceneDrawing.swift
   Sources/Views/PluginSceneView.swift

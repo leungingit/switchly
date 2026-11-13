@@ -177,8 +177,19 @@ private struct PreviewLauncherStageView: View {
 
     private var stage: some View {
         ZStack {
-            stageHint
-            PreviewMockDockView(model: model, state: state, hoverController: hoverController)
+            if model.displayedDraft?.surface == "panel" {
+                ScrollView {
+                    PluginSlotSurface(entries: state.slots[.panel] ?? [], material: state.environment.material,
+                                      isGlassActive: state.environment.glassEnabled, artwork: nil, fallback: nil,
+                                      onAction: state.perform)
+                        .padding(DesignTokens.Spacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .environment(\.locale, Locale(identifier: state.environment.language.rawValue))
+            } else {
+                stageHint
+                PreviewMockDockView(model: model, state: state, hoverController: hoverController)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()

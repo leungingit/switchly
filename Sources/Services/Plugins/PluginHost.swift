@@ -28,6 +28,7 @@ protocol PluginHosting: AnyObject {
     func mediaReadIsCurrent(_ read: MediaReadContext, bundleID: String) async -> Bool
     func acquireMediaRead(for bundleID: String, invalidate: @escaping () -> Void) -> MediaReadInterest?
     func acquireRuntimeVisibility(_ runtimes: [PluginRuntimeProtocol], invalidate: @escaping () -> Void) -> PluginLifetime
+    func loadPanelRuntime(pluginID: String) async -> PluginRuntimeProtocol?
     func unmountAll()
     func reload()
 }
@@ -39,6 +40,7 @@ extension PluginHosting {
         let lease = visibility.acquire(runtimes, invalidate: invalidate)
         return PluginLifetime { lease.cancel(); withExtendedLifetime(visibility) {} }
     }
+    func loadPanelRuntime(pluginID: String) async -> PluginRuntimeProtocol? { nil }
     func loadFailures() -> [PluginLoadFailure] { [] }
     func mediaRead(for bundleID: String) async -> MediaReadContext? { nil }
     func mediaReadIsCurrent(_ read: MediaReadContext, bundleID: String) async -> Bool { read.isCurrent() }
@@ -56,6 +58,10 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
     private let mediaBridge: MediaBridging
     private let makeRuntime: ((PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol)?
     private let weather: () -> [String: Any]?
+    private let preferredLanguages: () -> [String]
+    private let pluginSettings: (String) -> [String: Bool]
+    private let pluginValues: (String) -> [String: PluginSettingValue]
+    private var activityProvider: PluginActivityProviding?
     private var captureRequester: WindowCaptureRequesting?
     private let lock = NSLock()
     private var mediaInterests: [UUID: (bundleID: String, lease: MediaReadInterest)] = [:]
@@ -64,18 +70,28 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
     private var engineWarmupTask: Task<Void, Never>?
     private var engineWarmupID: UUID?
     private var pendingEngineWarmupURL: URL?
-    /// Keyed by id; the permission set is kept so a grant change rebuilds the VM.
-    private var runtimesByID: [String: (permissions: Set<PluginCapability>, runtime: PluginRuntimeProtocol)] = [:]
+    /// 按插件 ID 缓存；权限或语言改变时重建 Panel / Dock 共用的 VM。
+    private var runtimesByID: [String: (permissions: Set<PluginCapability>, preferredLanguages: [String], runtime: PluginRuntimeProtocol)] = [:]
 
     init(registry: PluginRegistryProtocol = PluginRegistry(),
          grants: @escaping () -> [String: PluginGrant] = { SettingsService.shared.loadSettings().pluginGrants },
          mediaBridge: MediaBridging,
          weather: @escaping () -> [String: Any]? = { OnlineWeatherService.shared.current()?.jsObject },
+         preferredLanguages: @escaping () -> [String] = { [SettingsService.shared.loadSettings().language.rawValue] },
+         pluginSettings: @escaping (String) -> [String: Bool] = {
+             SettingsService.shared.loadSettings().pluginSettings[$0] ?? [:]
+         },
+         pluginValues: @escaping (String) -> [String: PluginSettingValue] = {
+             SettingsService.shared.loadSettings().pluginValues[$0] ?? [:]
+         },
          makeRuntime: ((PluginPackage, Set<PluginCapability>) -> PluginRuntimeProtocol)? = nil) {
         self.registry = registry
         self.grants = grants
         self.mediaBridge = mediaBridge
         self.weather = weather
+        self.preferredLanguages = preferredLanguages
+        self.pluginSettings = pluginSettings
+        self.pluginValues = pluginValues
         self.makeRuntime = makeRuntime
     }
 
@@ -93,15 +109,48 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
         }
     }
 
-    private func createRuntime(_ package: PluginPackage, permissions: Set<PluginCapability>) -> PluginRuntimeProtocol {
+    private func createRuntime(_ package: PluginPackage, permissions: Set<PluginCapability>,
+                               preferredLanguages: [String]) -> PluginRuntimeProtocol {
         if let makeRuntime { return makeRuntime(package, permissions) }
-        return PluginRuntime(package: package, timeout: 1, mediaBridge: mediaBridge, permissions: permissions,
+        return PluginRuntime(package: package, timeout: 1, preferredLanguages: preferredLanguages,
+                             mediaBridge: mediaBridge, permissions: permissions,
                              libraryBridge: mediaBridge as? MusicLibraryPlaying,
                              fileReader: PluginFileReader(roots: package.manifest.fsRoots ?? []),
-                             settings: { SettingsService.shared.loadSettings().pluginSettings[package.manifest.id] ?? [:] },
-                             values: { SettingsService.shared.loadSettings().pluginValues[package.manifest.id] ?? [:] },
+                             settings: { [pluginSettings] in pluginSettings(package.manifest.id) },
+                             values: { [pluginValues] in pluginValues(package.manifest.id) },
                              weather: weather, storage: PluginStorage(pluginID: package.manifest.id),
-                             captureRequester: captureRequester)
+                             captureRequester: captureRequester, activityProvider: activityProvider)
+    }
+
+
+    func configureActivity(_ provider: PluginActivityProviding) {
+        lock.lock(); activityProvider = provider; lock.unlock(); reload()
+    }
+
+    func isAuthorized(pluginID: String, capability: PluginCapability) -> Bool {
+        installedPlugins().contains { $0.id == pluginID && $0.authorization.isEnabled && $0.authorization.permissions.contains(capability) }
+    }
+
+    func loadPanelRuntime(pluginID: String) async -> PluginRuntimeProtocol? {
+        await withCheckedContinuation { continuation in
+            loadingQueue.async { [self] in
+                let languages = preferredLanguages()
+                lock.lock()
+                guard let plugin = loadedPackages().map(resolve).first(where: { $0.id == pluginID && $0.package.manifest.supportsPanel && $0.authorization.isEnabled }) else {
+                    lock.unlock(); continuation.resume(returning: nil); return
+                }
+                let auth = plugin.authorization
+                if let old = runtimesByID[pluginID], old.permissions == auth.permissions,
+                   old.preferredLanguages == languages {
+                    lock.unlock(); continuation.resume(returning: old.runtime); return
+                }
+                let old = runtimesByID.removeValue(forKey: pluginID)?.runtime
+                let runtime = createRuntime(plugin.package, permissions: auth.permissions,
+                                            preferredLanguages: languages)
+                runtimesByID[pluginID] = (auth.permissions, languages, runtime)
+                lock.unlock(); old?.unmount(); continuation.resume(returning: runtime)
+            }
+        }
     }
 
     func installedPlugins() -> [InstalledPlugin] {
@@ -118,22 +167,25 @@ final class PluginHost: PluginHosting, @unchecked Sendable {
     }
 
     func runtimes(for bundleID: String) -> [PluginRuntimeProtocol] {
+        let languages = preferredLanguages()
         lock.lock()
         var stale: [PluginRuntimeProtocol] = []
         var result: [PluginRuntimeProtocol] = []
-        for plugin in loadedPackages().map(resolve) where plugin.package.manifest.matches(bundleID: bundleID) {
+        for plugin in loadedPackages().map(resolve) where plugin.package.manifest.supportsDock && plugin.package.manifest.matches(bundleID: bundleID) {
             let auth = plugin.authorization
             guard auth.isEnabled else {
                 if let old = runtimesByID.removeValue(forKey: plugin.id) { stale.append(old.runtime) }
                 continue
             }
-            if let existing = runtimesByID[plugin.id], existing.permissions == auth.permissions {
+            if let existing = runtimesByID[plugin.id], existing.permissions == auth.permissions,
+               existing.preferredLanguages == languages {
                 result.append(existing.runtime)
                 continue
             }
             if let old = runtimesByID[plugin.id] { stale.append(old.runtime) }
-            let runtime = createRuntime(plugin.package, permissions: auth.permissions)
-            runtimesByID[plugin.id] = (auth.permissions, runtime)
+            let runtime = createRuntime(plugin.package, permissions: auth.permissions,
+                                        preferredLanguages: languages)
+            runtimesByID[plugin.id] = (auth.permissions, languages, runtime)
             result.append(runtime)
         }
         lock.unlock()

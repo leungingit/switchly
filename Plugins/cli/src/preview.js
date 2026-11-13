@@ -98,7 +98,7 @@ function parseSetting(value) {
   return { key, value: value.slice(separator + 1) };
 }
 
-const FIXTURE_KINDS = Object.freeze(["media", "weather", "fs"]);
+const FIXTURE_KINDS = Object.freeze(["media", "weather", "fs", "activity"]);
 
 function parseFixture(value) {
   const separator = value.indexOf("=");
@@ -106,11 +106,11 @@ function parseFixture(value) {
     if (FIXTURE_KINDS.includes(value)) {
       throw argumentError(`--fixture ${value} 需要显式文件路径；请使用 --fixture ${value}=<文件路径>。`);
     }
-    throw argumentError('--fixture 需要 kind=<文件路径>，media、weather、fs 三种都必须提供文件；例如 --fixture media=./media.json。');
+    throw argumentError('--fixture 需要 kind=<文件路径>，media、weather、fs、activity 四种都必须提供文件；例如 --fixture media=./media.json。');
   }
   const kind = value.slice(0, separator);
   if (!FIXTURE_KINDS.includes(kind)) {
-    throw argumentError(`--fixture 只接受 media、weather 或 fs；收到 "${kind}"，例如 --fixture media=./media.json。`);
+    throw argumentError(`--fixture 只接受 media、weather、fs 或 activity；收到 "${kind}"，例如 --fixture media=./media.json。`);
   }
   const file = value.slice(separator + 1);
   if (!file) {

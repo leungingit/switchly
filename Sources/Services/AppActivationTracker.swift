@@ -24,6 +24,7 @@ final class AppActivationTracker: AppActivationTracking {
     private var frontmost: String?
     private var leftFront: [String: Date] = [:]
     private var observer: NSObjectProtocol?
+    private var subscribers: [UUID: (String?) -> Void] = [:]
 
     init(center: NotificationCenter = NSWorkspace.shared.notificationCenter,
          frontmost: String? = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
@@ -50,10 +51,24 @@ final class AppActivationTracker: AppActivationTracking {
 
     func activated(bundleID: String?) {
         lock.lock()
-        defer { lock.unlock() }
-        guard bundleID != frontmost else { return }
+        guard bundleID != frontmost else { lock.unlock(); return }
         if let previous = frontmost { leftFront[previous] = now() }
         frontmost = bundleID
+        let listeners = Array(subscribers.values)
+        lock.unlock()
+        listeners.forEach { $0(bundleID) }
+    }
+
+
+    /// 共享前台通知源；回调在锁外执行，调用方持有订阅标识并显式退订。
+    func subscribe(_ handler: @escaping (String?) -> Void) -> UUID {
+        lock.lock(); defer { lock.unlock() }
+        let id = UUID(); subscribers[id] = handler; return id
+    }
+
+    func unsubscribe(_ id: UUID) {
+        lock.lock(); defer { lock.unlock() }
+        subscribers.removeValue(forKey: id)
     }
 
     func lastActiveAt(bundleID: String) -> Date? {

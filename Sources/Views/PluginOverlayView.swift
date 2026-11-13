@@ -24,6 +24,8 @@ struct PluginOverlayView: View {
     var assetDirectory: URL? = nil
     /// Owning plugin ID; scene3d caches and logs are keyed by it.
     var pluginID: String = ""
+    /// Host-owned activity image resolver. Preview leaves this nil.
+    var activityImages: PluginActivityImageResolving? = nil
     let onAction: (String, Double?) -> Void
     @State private var assets: SceneAssets
 
@@ -34,6 +36,7 @@ struct PluginOverlayView: View {
          artworkToken: String? = nil,
          assetDirectory: URL? = nil,
          pluginID: String = "",
+         activityImages: PluginActivityImageResolving? = nil,
          onAction: @escaping (String, Double?) -> Void) {
         self.node = node
         self.material = material
@@ -42,6 +45,7 @@ struct PluginOverlayView: View {
         self.artworkToken = artworkToken
         self.assetDirectory = assetDirectory
         self.pluginID = pluginID
+        self.activityImages = activityImages
         self.onAction = onAction
         _assets = State(initialValue: SceneAssets(directory: assetDirectory))
     }
@@ -147,7 +151,15 @@ struct PluginOverlayView: View {
             return AnyView(ProgressView(value: value).progressViewStyle(.linear).controlSize(.small)
                 .accessibilityValue(Text("\(Int(value * 100))%")))
         case .image(let source, let size, let corner):
-            return AnyView(PluginImage(source: source, size: size, corner: corner, artwork: artwork, assets: assets))
+            return AnyView(PluginImage(
+                source: source,
+                size: size,
+                corner: corner,
+                artwork: artwork,
+                assets: assets,
+                activityImages: activityImages,
+                pluginID: pluginID
+            ))
         case .badge(let value, let tone):
             return AnyView(Text(value)
                 .font(.caption2.weight(.semibold))
@@ -155,6 +167,41 @@ struct PluginOverlayView: View {
                 .padding(.vertical, 1)
                 .foregroundColor(tone == .neutral ? .primary : .white)
                 .background(Capsule().fill(badgeFill(tone))))
+        case .segmented(let id, let options, let selected):
+            return AnyView(PluginSegmentedControl(
+                id: id,
+                options: options,
+                selected: selected,
+                onChange: { emit(id, Double($0)) }
+            ))
+        case .dateRange(let id, let from, let to, let label):
+            return AnyView(PluginDateRangeControl(
+                id: id,
+                from: from,
+                to: to,
+                label: label,
+                onChange: { emit($0, $1) }
+            ))
+        case .barChart(let items):
+            return AnyView(PluginBarChart(items: items))
+        case .lineChart(let items, let series, let label):
+            return AnyView(PluginLineChart(items: items, series: series, label: label))
+        case .timeline(let items):
+            return AnyView(PluginTimelineView(items: items, content: render))
+        case .grid(let children):
+            return AnyView(LazyVGrid(
+                columns: [
+                    GridItem(.flexible(minimum: 0), spacing: DesignTokens.Spacing.xs),
+                    GridItem(.flexible(minimum: 0), spacing: DesignTokens.Spacing.xs)
+                ],
+                alignment: .leading,
+                spacing: DesignTokens.Spacing.xs
+            ) {
+                ForEach(Array(children.enumerated()), id: \.offset) {
+                    render($0.element)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            })
         }
     }
 
@@ -309,12 +356,144 @@ private struct PluginSlider: View {
     }
 }
 
+private struct PluginSegmentedControl: View {
+    let id: String
+    let options: [String]
+    let selected: Int
+    let onChange: (Int) -> Void
+
+    @State private var optimisticSelection: Int?
+
+    var body: some View {
+        Picker(selection: Binding(
+            get: { optimisticSelection ?? selected },
+            set: {
+                optimisticSelection = $0
+                onChange($0)
+            }
+        )) {
+            ForEach(options.indices, id: \.self) { index in
+                Text(options[index]).tag(index)
+            }
+        } label: {
+            Text(id)
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.small)
+        .labelsHidden()
+        .accessibilityLabel(Text(id))
+        .onChange(of: selected) { _ in optimisticSelection = nil }
+    }
+}
+
+private struct PluginDateRangeControl: View {
+    let id: String
+    let from: Double
+    let to: Double
+    let label: String
+    let onChange: (String, Double) -> Void
+
+    @State private var optimisticFrom: Date?
+    @State private var optimisticTo: Date?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            Text(label)
+                .font(.caption)
+                .lineLimit(1)
+                .foregroundColor(.secondary)
+            HStack(spacing: DesignTokens.Spacing.xs) {
+                datePicker(
+                    selection: Binding(
+                        get: { optimisticFrom ?? Date(timeIntervalSince1970: from) },
+                        set: {
+                            optimisticFrom = $0
+                            onChange("\(id).from", $0.timeIntervalSince1970)
+                        }
+                    ),
+                    accessibilityID: "\(id).from", isStart: true
+                )
+                Image(systemName: "arrow.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+                datePicker(
+                    selection: Binding(
+                        get: { optimisticTo ?? Date(timeIntervalSince1970: to) },
+                        set: {
+                            optimisticTo = $0
+                            onChange("\(id).to", $0.timeIntervalSince1970)
+                        }
+                    ),
+                    accessibilityID: "\(id).to", isStart: false
+                )
+            }
+        }
+        .onChange(of: from) { _ in optimisticFrom = nil }
+        .onChange(of: to) { _ in optimisticTo = nil }
+    }
+
+    private func datePicker(selection: Binding<Date>, accessibilityID: String, isStart: Bool) -> some View {
+        DatePicker(selection: selection, displayedComponents: [.date]) {
+            Image(systemName: "calendar")
+        }
+        .accessibilityLabel(Text(LocalizedStringKey(isStart ? "Start date" : "End date (exclusive)")))
+        .accessibilityIdentifier(accessibilityID)
+    }
+}
+
+private struct PluginBarChart: View {
+    let items: [PluginBarItem]
+    @Environment(\.locale) private var locale
+
+    private var maximum: Double {
+        max(1, items.map(\.value).max() ?? 0)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                    HStack(spacing: DesignTokens.Spacing.xs) {
+                        Text(item.label)
+                            .font(.caption)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(duration(item.value))
+                            .font(.caption2.monospacedDigit())
+                            .foregroundColor(.secondary)
+                    }
+                    ProgressView(value: item.value, total: maximum)
+                        .progressViewStyle(.linear)
+                        .tint(DesignTokens.Plugin.sequenceColor(at: index))
+                        .controlSize(.small)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(item.label))
+                .accessibilityValue(Text(duration(item.value)))
+            }
+        }
+    }
+
+    private func duration(_ seconds: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        var calendar = Calendar(identifier: .gregorian); calendar.locale = locale
+        formatter.calendar = calendar
+        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.maximumUnitCount = 3
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: seconds) ?? "0"
+    }
+}
+
 private struct PluginImage: View {
     let source: PluginImageSource
     let size: PluginControlSize
     let corner: PluginCorner?
     let artwork: NSImage?
     let assets: SceneAssets
+    let activityImages: PluginActivityImageResolving?
+    let pluginID: String
 
     var body: some View {
         let side = PluginMetrics.image(size)
@@ -322,7 +501,9 @@ private struct PluginImage: View {
         Group {
             switch source {
             case .symbol(let name):
-                Image(systemName: name).font(.system(size: side * 0.6))
+                Image(systemName: name)
+                    .font(.system(size: side * 0.6))
+                    .frame(width: side, height: side)
             case .artwork:
                 if let artwork {
                     Image(nsImage: artwork)
@@ -343,9 +524,16 @@ private struct PluginImage: View {
                 } else {
                     placeholder(side: side, radius: radius)
                 }
+            case .activitySnapshot(let reference):
+                PluginActivityImage(
+                    reference: reference,
+                    pluginID: pluginID,
+                    size: size,
+                    corner: corner,
+                    resolver: activityImages
+                )
             }
         }
-        .frame(width: side, height: side)
         .accessibilityHidden(true)
     }
 

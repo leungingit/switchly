@@ -187,6 +187,10 @@ enum PluginSurfaceContentValidator {
         switch node {
         case .hstack(let children, _, _), .vstack(let children, _, _), .zstack(let children):
             for child in children { try validate(child) }
+        case .image(.activitySnapshot, _, _):
+            throw Violation.forbiddenNode("activitySnapshot")
+        case .segmented, .dateRange, .barChart, .lineChart, .timeline, .grid:
+            throw Violation.forbiddenNode("panelControl")
         case .spacer, .text, .progress, .image, .badge, .marquee:
             return
         case .surface:

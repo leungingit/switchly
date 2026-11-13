@@ -93,6 +93,52 @@ test("api describe --json 输出机器能力清单", () => {
   assert.equal(capabilities.packageLimits.symlinksAllowed, false);
 });
 
+test("api describe --json 转交 lineChart 节点与 UI 协商契约", () => {
+  const output = execFileSync(process.execPath, [cliPath, "api", "describe", "--json"], {
+    encoding: "utf8",
+  });
+  const capabilities = JSON.parse(output);
+  const feature = (id) => capabilities.features.find((item) => item.id === id);
+  const preparation = feature("runtime.invoke").preparation.contextFields;
+  const ui = feature("ctx.uiFeatures");
+  const lineChart = feature("ui.lineChart");
+  const activityControls = feature("ui.activity-panel-controls");
+  const scene3d = feature("ui.scene3d");
+
+  assert.ok(preparation.includes("uiFeatures"));
+  assert.equal(ui.status, "stable");
+  assert.equal(ui.shape.lineChart, "boolean");
+  assert.equal(ui.negotiation.lineChartAvailableWhen, "ctx.uiFeatures.lineChart === true");
+  assert.equal(ui.negotiation.missingMeans.includes("2d tree"), true);
+  assert.equal(lineChart.status, "stable");
+  assert.deepEqual(lineChart.apiVersions, [2]);
+  assert.equal(lineChart.surface, "panel");
+  assert.equal(lineChart.requires.context, "ctx.uiFeatures.lineChart === true");
+  assert.equal(lineChart.node.type, "lineChart");
+  assert.equal(lineChart.itemType, "PluginBarItem");
+  assert.equal(lineChart.limits.maxItems, 64);
+  assert.equal(lineChart.limits.labelMaxBytes, 200);
+  assert.equal(lineChart.limits.labelEncoding, "UTF-8");
+  assert.equal(lineChart.limits.value, "finite nonnegative number");
+  assert.deepEqual(lineChart.placement.allowedSurfaces, ["panel"]);
+  assert.ok(lineChart.placement.forbiddenSurfaces.includes("dockPreview"));
+  assert.ok(lineChart.placement.forbiddenSurfaces.includes("scene3d.surface"));
+  assert.equal(lineChart.placement.scene3dFallback, "allowed only in a panel 2d fallback; forbidden in Dock");
+  assert.ok(activityControls.nodes.includes("lineChart"));
+  assert.ok(scene3d.surfaces.forbiddenContentNodeTypes.includes("lineChart"));
+});
+
+test("api describe --json 保留纵向时间线预算与既有协商入口", () => {
+  const capabilities = JSON.parse(execFileSync(process.execPath, [cliPath, "api", "describe", "--json"], { encoding: "utf8" }));
+  const feature = (id) => capabilities.features.find((item) => item.id === id);
+  assert.equal(feature("ctx.uiFeatures").shape.timeline, "boolean");
+  assert.equal(feature("ui.timeline").requires.context, "ctx.uiFeatures.timeline === true");
+  assert.equal(feature("ui.timeline").limits.maxItems, 12);
+  assert.deepEqual(feature("ui.timeline").placement.allowedSurfaces, ["panel"]);
+  assert.ok(feature("ui.scene3d").surfaces.forbiddenContentNodeTypes.includes("timeline"));
+  assert.equal(feature("ctx.activity").snapshotSessionID.type, "optional UUID string");
+});
+
 test("公共 manifest 校验接受 toggle/select/number 并拒绝设置漂移", () => {
   const valid = validateManifest(manifestWithSettings([
     { key: "enabled", title: { en: "Enabled" }, default: true },

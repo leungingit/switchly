@@ -21,6 +21,8 @@ const allowedPermissions = new Set([
   "weather.current",
   "window.focus",
   "window.capture",
+  "activity.read",
+  "activity.snapshots",
   "fs.read",
 ]);
 
@@ -32,6 +34,7 @@ const sensitiveHomeRoots = [
   ".kube",
   ".docker",
   ".config/gcloud",
+  "Library/Application Support/Switchly/Activity",
   "Library/Keychains",
   "Library/Cookies",
   "Library/Safari",
@@ -332,6 +335,15 @@ export function validateManifest(manifest) {
           || manifest.refreshInterval <= 0
           || manifest.refreshInterval > 86400)) {
     errors.push("refreshInterval 必须是 (0, 86400] 内的有限数字");
+  }
+  if (manifest.apiVersion !== 2 && Array.isArray(manifest.permissions)
+      && manifest.permissions.some((permission) => ["activity.read", "activity.snapshots"].includes(permission))) {
+    errors.push("activity permissions require apiVersion 2");
+  }
+  if (manifest.surfaces !== undefined && (!Array.isArray(manifest.surfaces) || manifest.surfaces.length === 0
+      || new Set(manifest.surfaces).size !== manifest.surfaces.length
+      || manifest.surfaces.some((surface) => !["panel", "dockPreview"].includes(surface)) || manifest.apiVersion !== 2)) {
+    errors.push("surfaces 必须是 API 2 的非空 panel/dockPreview 数组且不重复");
   }
   if (manifest.renderScope !== undefined && manifest.renderScope !== null
       && !["app", "window"].includes(manifest.renderScope)) {

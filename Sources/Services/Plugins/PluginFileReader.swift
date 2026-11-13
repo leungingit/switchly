@@ -119,6 +119,8 @@ final class PluginFileReader: PluginFileReading, @unchecked Sendable {
         for case let item as URL in walker {
             visited += 1
             if visited > Self.maxScanVisited { break }
+            let safe = PluginFSRoot(id: "scan", path: item.resolvingSymlinksInPath().path, summary: [:])
+            guard safe.isAcceptable(home: home.resolvingSymlinksInPath()) else { walker.skipDescendants(); continue }
             let values = try? item.resourceValues(forKeys: Set(keys))
             // Links are never followed during a scan.
             if values?.isSymbolicLink == true { walker.skipDescendants(); continue }
@@ -175,7 +177,7 @@ final class PluginFileReader: PluginFileReading, @unchecked Sendable {
         guard real.isAcceptable(home: homeReal), try !holdsSecrets(base) else { throw PluginFSError.denied }
 
         let target = path.isEmpty || path == "." ? base : base.appendingPathComponent(path).resolvingSymlinksInPath()
-        guard Self.contains(base, target) else { throw PluginFSError.denied }
+        guard PluginFSRoot(id: id, path: target.path, summary: [:]).isAcceptable(home: homeReal), Self.contains(base, target) else { throw PluginFSError.denied }
         return (base, target)
     }
 
@@ -201,7 +203,7 @@ final class PluginFileReader: PluginFileReading, @unchecked Sendable {
 
     private func entry(at url: URL, under base: URL) throws -> PluginFSEntry {
         let real = url.resolvingSymlinksInPath()
-        guard Self.contains(base, real) else { throw PluginFSError.denied }
+        guard PluginFSRoot(id: "entry", path: real.path, summary: [:]).isAcceptable(home: home.resolvingSymlinksInPath()), Self.contains(base, real) else { throw PluginFSError.denied }
         let values = try real.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey])
         return PluginFSEntry(name: url.lastPathComponent, isDirectory: values.isDirectory ?? false,
                              size: values.fileSize ?? 0,

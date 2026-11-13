@@ -36,6 +36,8 @@ struct PluginPreferencesSection: View {
     let onSettingsChange: (AppSettings) -> Void
     /// Host-level controls for every plugin authorized to read weather.
     let onOnlineWeatherChange: (OnlineWeatherSettings) -> Void
+    var activityTracking: ActivityTrackingService? = nil
+    var requestedPluginID: String? = nil
     var host: PluginHosting = PluginHost.shared
     var installer: PluginInstalling = PluginInstaller()
 
@@ -112,7 +114,14 @@ struct PluginPreferencesSection: View {
         }
         .background(Button(t("Search plugins")) { searchFocused = true }
             .keyboardShortcut("f", modifiers: .command).hidden())
-        .onAppear(perform: refresh)
+        .onAppear {
+            if let requestedPluginID { selectPlugin(requestedPluginID) }
+            refresh()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openPreferences)) { notification in
+            guard let id = notification.userInfo?["pluginID"] as? String else { return }
+            statusFilter = .all; searchText = ""; selectPlugin(id)
+        }
         .onChange(of: settings.pluginGrants) { _ in refresh() }
         .onChange(of: searchText) { _ in synchronizeSelection() }
         .onChange(of: statusFilter) { _ in synchronizeSelection() }
@@ -134,7 +143,23 @@ struct PluginPreferencesSection: View {
         return VStack(spacing: 0) {
             header(plugin, isSelected: isSelected)
             if isSelected {
-                if options.isEmpty {
+                if !plugin.authorization.pendingPermissions.isEmpty {
+                    Divider().padding(.leading, 14)
+                    HStack {
+                        Label(t("Plugin permissions need confirmation"), systemImage: "checkmark.shield")
+                            .font(.callout)
+                        Spacer()
+                        Button(t("Review permissions...")) { pendingConfirmation = plugin }
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                }
+                if plugin.package.manifest.permissions.contains(.activityRead) {
+                    Divider().padding(.leading, 14)
+                    ActivityTrackingPreferencesSection(settings: Binding(
+                        get: { settings.activityTracking },
+                        set: { value in var updated = settings; updated.activityTracking = value; onSettingsChange(updated) }
+                    ), language: language, tracking: activityTracking)
+                } else if options.isEmpty {
                     Divider().padding(.leading, 14)
                     Text(t("No additional settings"))
                         .font(.callout).foregroundColor(.secondary)

@@ -15,6 +15,7 @@ export const CLI_COMPAT = Object.freeze({
 
 // 与 Tools/PluginPreview/contract-hash.sh 使用同一文件集合与顺序。
 const CONTRACT_FILES = [
+  "preview-activity-fixture.schema.json",
   "capabilities.json",
   "manifest.schema.json",
   "preview-fs-fixture.schema.json",

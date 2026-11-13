@@ -67,11 +67,22 @@ test("npm pack 后的 SDK types 路径可由 tsc 解析", async (t) => {
   await cp(packedPackage, installedPackage, { recursive: true });
   await writeFile(path.join(root, "consumer.mts"), `
 import {
+  definePanelPlugin,
   definePlugin,
   ui,
+  type ActivitySnapshotItem,
+  type PluginBarItem,
   type PluginContext,
+  type PluginDefinition,
+  type PluginLineChartNode,
   type PluginManifest,
+  type PluginNode,
+  type PluginPanelContext,
+  type PluginTimelineItem,
+  type PluginTimelineNode,
+  type PluginSlotContent,
   type PluginScene,
+  type PluginUIFeatures,
 } from "@switchly/plugin-sdk";
 
 const manifest: PluginManifest = {
@@ -80,8 +91,9 @@ const manifest: PluginManifest = {
   version: "1",
   apiVersion: 2,
   matches: ["com.example.app"],
-  permissions: [],
+  permissions: ["activity.read", "activity.snapshots"],
   entry: "main.js",
+  surfaces: ["dockPreview", "panel"],
 };
 
 const scene: PluginScene = {
@@ -96,11 +108,119 @@ definePlugin({
   async render(ctx: PluginContext) {
     const value = await ctx.storage.get("key");
     await ctx.storage.set("key", value);
+    const bundleID: string = ctx.app.bundleID;
+    const title: string = ctx.window.title;
+    const surface: "dockPreview" | undefined = ctx.surface;
+    const panelSupported: boolean | undefined = ctx.uiFeatures?.panel;
+    const activitySupported: boolean | undefined = ctx.uiFeatures?.activity;
+    const lineChartSupported: boolean | undefined = ctx.uiFeatures?.lineChart;
+    const timelineSupported: boolean | undefined = ctx.uiFeatures?.timeline;
+    if (ctx.activity) {
+      const summary = await ctx.activity.summary({
+        from: 1_699_920_000,
+        to: 1_700_006_400,
+        groupBy: "day",
+        timeZone: "Asia/Singapore",
+      });
+      const availableFrom: number | null = summary.availableFrom;
+      const recording: boolean = summary.recording;
+      const screenshotsEnabled: boolean = summary.screenshotsEnabled;
+      const revision: number = summary.revision;
+      for (const item of summary.items) {
+        const name: string = item.name;
+        const bucketStart: number | undefined = item.bucketStart;
+      }
+
+      const sessions = await ctx.activity.sessions({
+        from: 1_699_920_000,
+        to: 1_700_006_400,
+        limit: 100,
+        cursor: null,
+        bundleID,
+      });
+      const nextCursor: string | null = sessions.nextCursor;
+      for (const item of sessions.items) {
+        const id: string = item.id;
+        const appName: string = item.appName;
+        const endReason = item.endReason;
+      }
+
+      if (ctx.activity.snapshots) {
+        const snapshots = await ctx.activity.snapshots({
+          from: 1_699_920_000,
+          to: 1_700_006_400,
+          limit: 6,
+        });
+        for (const item of snapshots.items) {
+          const ref: string = item.ref;
+          const capturedAt: number = item.capturedAt;
+          const sessionID: string | undefined = item.sessionID;
+          const snapshot: ActivitySnapshotItem = item;
+          void [sessionID, snapshot];
+        }
+      }
+      void [availableFrom, recording, screenshotsEnabled, revision, nextCursor, title, surface,
+        panelSupported, activitySupported, lineChartSupported, timelineSupported];
+    }
     return [{ slot: "center", node: ui.scene(scene) }];
   },
 });
 
-void manifest;
+const points: readonly PluginBarItem[] = [
+  { label: "Safari", value: 3_600 },
+  { label: "Xcode", value: 5_400 },
+];
+const lineChart: PluginLineChartNode = ui.lineChart(points);
+const appChart: PluginLineChartNode = ui.lineChart(points, {
+  label: "Total", series: [{ label: "Editor", items: points }],
+});
+const multiLineNegotiation: PluginUIFeatures = { scene3d: false, lineChartSeries: true };
+const timelineItems: readonly PluginTimelineItem[] = [
+  { timestamp: 1_699_920_000, content: ui.text({ value: "Safari" }) },
+  { timestamp: 1_700_006_400, content: ui.text({ value: "Xcode" }) },
+];
+const timeline: PluginTimelineNode = ui.timeline(timelineItems);
+const negotiation: PluginUIFeatures = { scene3d: true, lineChart: true, timeline: true };
+
+const panelNodes: readonly PluginNode[] = [
+  ui.segmented({ id: "dimension", options: ["hour", "day", "month"], selected: 2 }),
+  ui.dateRange({ id: "range", from: 1_699_920_000, to: 1_700_006_400, label: "最近 1 天" }),
+  ui.barChart([{ label: "Safari", value: 3_600 }]),
+  lineChart,
+  appChart,
+  timeline,
+  ui.grid([
+    ui.image({
+      source: { activitySnapshot: "A1B2C3D4-E5F6-4789-90AB-CDEF01234567" },
+    }),
+  ]),
+];
+const panelOutput: readonly PluginSlotContent[] = [{ slot: "panel", node: panelNodes[0]! }];
+
+const panelDefinition: PluginDefinition<PluginPanelContext> = {
+  prepare(ctx) {
+    const bundleID: string = ctx.app.bundleID;
+    const title: string = ctx.window.title;
+    const timelineSupported: boolean | undefined = ctx.uiFeatures?.timeline;
+    void [bundleID, title, timelineSupported];
+    return panelOutput;
+  },
+  render(ctx) {
+    const app: null = ctx.app;
+    const window: null = ctx.window;
+    const surface: "panel" = ctx.surface;
+    const lineChartSupported: boolean | undefined = ctx.uiFeatures?.lineChart;
+    const timelineSupported: boolean | undefined = ctx.uiFeatures?.timeline;
+    void [app, window, surface, lineChartSupported, timelineSupported];
+    return panelOutput;
+  },
+};
+const panelPlugin = definePanelPlugin(panelDefinition);
+const returnedPanelPlugin: PluginDefinition<PluginPanelContext> = panelPlugin;
+
+void panelNodes;
+void returnedPanelPlugin;
+void [manifest, negotiation];
 `);
   const tsc = spawnSync("tsc", [
     "--noEmit",

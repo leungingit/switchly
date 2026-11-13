@@ -1,0 +1,60 @@
+{
+  "originalSessionCount": 331,
+  "originalSHA256": "376bb3388dde9319ddd9adc6e9ba109d610e8ba05ad4437a01a4980cac755a5e",
+  "postIncidentSessionCount": 8,
+  "mergedSessionCount": 339,
+  "originalJPEGsRecovered": 3,
+  "originalJPEGsMissing": 1,
+  "missingSnapshotCapturedAt": 1794469461.546197,
+  "stageReady": true,
+  "writtenToApplication": true,
+  "restoredOriginalSessionsVerified": 331,
+  "activeSessionCount": 339,
+  "activeSnapshotCount": 3,
+  "activeActivitySHA256": "5ddc8dd1cb015cbcd8c469c703382441c66e8b57fe63a1d84c84489a3d7bc274",
+  "postRestart": {
+    "original331Unchanged": true,
+    "snapshotCount": 3,
+    "settingsRestored": true,
+    "appearanceRestored": true,
+    "activityGrantsRetained": true
+  },
+  "postRestartSessionCount": 339,
+  "process": "72669 <Switchly>/DerivedData/Build/Products/Debug/Switchly.app/Contents/MacOS/Switchly",
+  "unitTests": {
+    "total": 937,
+    "skipped": 11,
+    "failures": 0
+  },
+  "confirmationStateTests": 6,
+  "nativeConsentViewsSynthetic": true,
+  "formalLiveAcceptancePassed": false,
+  "sdkContractHash": "sha256:9095c65e5ba7baf42ddaa2a440db030631921e85680fbdce2b70f12c054feca1",
+  "rendererRevision": "sha256:24b612d38dafd4bb00a147dc83ebc5e3d22ce66ea688db5ed204dc4a92ddc7ac",
+  "binarySHA256": {
+    "Switchly": "47eb5e69dade04ab43985dfb4df241325ec293343d48e7aa3361767ca7b603f5",
+    "Switchly.debug.dylib": "513540182304337ec3e6b46a871f344227b1701cf666414fe3b3b6f85aad6807"
+  },
+  "otherChecks": {
+    "plugin-tests.log": {
+      "passed": 76,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sdk-tests.log": {
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0
+    },
+    "cli-safe.log": {
+      "passed": 73,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "workerPassed": true,
+  "verifyFailures": 0,
+  "verifyExistingWarnings": 2,
+  "codesignDeepStrictPassed": true,
+  "bothRepositoriesDiffCheckPassed": true
+}

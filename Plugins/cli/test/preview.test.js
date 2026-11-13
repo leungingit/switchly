@@ -181,7 +181,7 @@ test("覆盖项解析：枚举、数字、key=value、可重复项与 fixture �
   assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "weather"]),
     /--fixture weather 需要显式文件路径/);
   assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "video=./video.json"]),
-    /--fixture 只接受 media、weather 或 fs/);
+    /--fixture 只接受 media、weather、fs 或 activity/);
   assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "fs="]),
     /--fixture fs= 需要文件路径/);
   assert.throws(() => parsePreviewArguments("dev", [...base, "--fixture", "media="]),
@@ -798,4 +798,10 @@ test("inspect 的失败结果保留预览工具的状态与退出码映射", asy
   const output = parseSingleJSON(result.stdout);
   assert.equal(output.status, "unsupported");
   assert.equal(output.error.code, "plugin-api-unsupported");
+});
+
+
+test("活动夹具覆盖项保留种类与路径", () => {
+  const parsed = parsePreviewArguments("dev", ["./plugin", "--preview-tool", "./preview.app", "--fixture", "activity=./activity.json"]);
+  assert.deepEqual(parsed.overrides.fixtures, [{ kind: "activity", file: "./activity.json" }]);
 });

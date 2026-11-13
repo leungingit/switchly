@@ -41,7 +41,23 @@ private enum PluginPreviewWorkerTests {
         try testWorkerLifecycleAndFrames()
         try testVirtualClockAdvance()
         try testWindowCaptureIsSimulated()
+        try testActivityFixtureFirstPageNullCursorAndFieldBoundary()
         print("PluginPreviewWorker tests passed")
+    }
+
+    private static func testActivityFixtureFirstPageNullCursorAndFieldBoundary() throws {
+        let raw = #"{"schemaVersion":1,"sessions":[{"id":"A83A0194-847C-401B-BA39-66E2A623B821","bundleID":"com.example","appName":"合成样例","start":100,"end":200,"seconds":100,"endReason":"switched"}]}"#
+        let fixture = try JSONDecoder().decode(PluginPreviewActivityFixture.self, from: Data(raw.utf8)).validated()
+        let provider = PluginFixtureActivityProvider(fixture: fixture)
+        let result: Result<[String: Any], Error> = waitForAsync {
+            do { return .success(try await provider.query(method: "sessions", options: ["from": 0.0, "to": 300.0, "limit": 10.0, "cursor": NSNull()], pluginID: "test", snapshotsAllowed: false)) }
+            catch { return .failure(error) }
+        }
+        let items = try result.get()["items"] as? [[String: Any]]
+        try expect(items?.count == 1, "null cursor must be the first page")
+        let unsafe = raw.replacingOccurrences(of: "\"appName\":\"合成样例\"", with: "\"appName\":\"合成样例\",\"filePath\":\"/tmp/private\"")
+        do { _ = try JSONDecoder().decode(PluginPreviewActivityFixture.self, from: Data(unsafe.utf8)); throw WorkerTestFailure(description: "unknown private path must be rejected") }
+        catch is DecodingError { }
     }
 
     private static func testWindowCaptureIsSimulated() throws {

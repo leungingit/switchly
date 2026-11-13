@@ -629,8 +629,9 @@ class AccessibilityService: AccessibilityServiceProtocol {
         return bringWindowToFront(windowInfo)
     }
 
-    func focusedWindowID(for pid: pid_t) -> CGWindowID? {
+    func focusedWindowID(for pid: pid_t, allowCGFallback: Bool = true) -> CGWindowID? {
         let appElement = AXUIElementCreateApplication(pid)
+        if !allowCGFallback { AXUIElementSetMessagingTimeout(appElement, 0.5) }
         var focusedValue: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(
             appElement,
@@ -645,6 +646,7 @@ class AccessibilityService: AccessibilityServiceProtocol {
             return windowID
         }
 
+        guard allowCGFallback else { return nil }
         let fallbackWindowID = frontmostCGWindowID(for: pid)
         AppLogger.warning("Unable to read focused AX window; falling back to CG frontmost window. pid=\(pid), result=\(result.rawValue), fallbackWindowID=\(fallbackWindowID.map { "\($0)" } ?? "nil")")
         return fallbackWindowID

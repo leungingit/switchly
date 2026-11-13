@@ -63,6 +63,7 @@ enum PreviewLauncherFormat {
 
     static func slotName(_ slot: PluginSlot, language: AppLanguage) -> String {
         switch slot {
+        case .panel: return language.localizedString("Plugin Panels")
         case .center: return language.localizedString("Center")
         case .bottomBar: return language.localizedString("Bottom bar")
         case .topTrailing: return language.localizedString("Top trailing")

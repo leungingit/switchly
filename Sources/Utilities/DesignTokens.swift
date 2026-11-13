@@ -62,6 +62,31 @@ enum DesignTokens {
     /// Dock preview plugin overlays (docs/dock-preview-plugins-design.md §3.5).
     /// Plugins pick a named size; these are the only point values they get.
     enum Plugin {
+        static let activityImageSmallWidth: CGFloat = 88
+        static let activityImageMediumWidth: CGFloat = 160
+        static let activityImageLargeWidth: CGFloat = 300
+        static let activityImageAspectRatio: CGFloat = 16.0 / 9.0
+        static let panelWidth: CGFloat = 760
+        static let panelHeight: CGFloat = 820
+        static let confirmationWidth: CGFloat = 400
+        static let chartHeight: CGFloat = 148
+        static let chartLineWidth: CGFloat = 2
+        static let chartPointSize: CGFloat = 6
+        static let chartAreaOpacity: Double = 0.14
+        /// 按当前显示顺序轮换；系统色随视图外观解析，不表示应用身份或状态。
+        private static let sequencePalette: [Color] = [
+            Color(nsColor: .systemBlue), Color(nsColor: .systemPurple),
+            Color(nsColor: .systemPink), Color(nsColor: .systemOrange),
+            Color(nsColor: .systemGreen), Color(nsColor: .systemTeal),
+            Color(nsColor: .systemIndigo)
+        ]
+        static func sequenceColor(at index: Int) -> Color {
+            sequencePalette[max(0, index) % sequencePalette.count]
+        }
+        static let timelineTimeWidth: CGFloat = 96
+        static let timelineRailWidth: CGFloat = 16
+        static let timelineLineWidth: CGFloat = 1
+        static let timelineMarkerSize: CGFloat = 8
         static let controlSmall: CGFloat = 22
         static let controlMedium: CGFloat = 28
         static let controlLarge: CGFloat = 40

@@ -5,7 +5,7 @@
 #       contract-hash.sh --check  与 PluginPreviewContract.swift 中常量比对，不一致则非零退出
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
-files=(capabilities.json manifest.schema.json preview-fs-fixture.schema.json preview-media-fixture.schema.json preview-scenario.schema.json preview-weather-fixture.schema.json)
+files=(preview-activity-fixture.schema.json capabilities.json manifest.schema.json preview-fs-fixture.schema.json preview-media-fixture.schema.json preview-scenario.schema.json preview-weather-fixture.schema.json)
 hash=$(for f in "${files[@]}"; do (cd "$root/Plugins/api" && shasum -a 256 "$f"); done | shasum -a 256 | cut -d' ' -f1)
 hash="sha256:$hash"
 if [ "${1:-}" = "--check" ]; then

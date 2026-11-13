@@ -32,9 +32,9 @@ struct PluginAuthorization: Equatable {
         switch origin {
         case .builtin:
             // `fs.read` reaches the user's files, so even built-in plugins only get it once the user allowed it.
-            let allowed = declared.filter { ![PluginCapability.fsRead, .windowCapture].contains($0) || grant?.permissions.contains($0.rawValue) == true }
+            let allowed = declared.filter { ![PluginCapability.fsRead, .windowCapture, .activityRead, .activitySnapshots].contains($0) || grant?.permissions.contains($0.rawValue) == true }
             return PluginAuthorization(isEnabled: grant?.isEnabled ?? manifest.defaultEnabled ?? true,
-                                       permissions: Set(allowed), pendingPermissions: declared.filter { $0 == .windowCapture && !allowed.contains($0) })
+                                       permissions: Set(allowed), pendingPermissions: declared.filter { [PluginCapability.windowCapture, .activityRead, .activitySnapshots].contains($0) && !allowed.contains($0) })
         case .user:
             let confirmed = Set(grant?.permissions ?? [])
             let granted = declared.filter { confirmed.contains($0.rawValue) }
@@ -53,6 +53,8 @@ extension PluginCapability {
         case .mediaLibrary: return "Pick and play songs from your library"
         case .weatherCurrent: return "Read the current weather"
         case .windowFocus: return "Focus windows"
+        case .activityRead: return "Read local application activity"
+        case .activitySnapshots: return "Display local activity screenshots"
         case .windowCapture: return "Capture windows"
         case .fsRead: return "Read a folder (read-only)"
         case .appleScript: return "Run Switchly's built-in scripts for %@"
@@ -66,6 +68,8 @@ extension PluginCapability {
         case .mediaLibrary: return "music.note.list"
         case .weatherCurrent: return "cloud.sun"
         case .windowFocus: return "macwindow"
+        case .activityRead: return "clock"
+        case .activitySnapshots: return "photo.on.rectangle"
         case .windowCapture: return "camera"
         case .fsRead: return "folder"
         case .appleScript: return "applescript"
