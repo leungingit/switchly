@@ -17,6 +17,8 @@ enum PluginCapability: Hashable, Codable {
     /// Read the weather snapshot the host already has (no requests from JS).
     case weatherCurrent
     case windowFocus
+    case activityRead
+    case activitySnapshots
     case windowCapture
     /// Read-only access to the folders named by the manifest's `fsRoots` (design doc §8.6).
     /// Never implied: even built-in plugins need the user's explicit grant.
@@ -31,6 +33,8 @@ enum PluginCapability: Hashable, Codable {
         case "media.library": self = .mediaLibrary
         case "weather.current": self = .weatherCurrent
         case "window.focus": self = .windowFocus
+        case "activity.read": self = .activityRead
+        case "activity.snapshots": self = .activitySnapshots
         case "window.capture": self = .windowCapture
         case "fs.read": self = .fsRead
         default:
@@ -49,6 +53,8 @@ enum PluginCapability: Hashable, Codable {
         case .mediaLibrary: return "media.library"
         case .weatherCurrent: return "weather.current"
         case .windowFocus: return "window.focus"
+        case .activityRead: return "activity.read"
+        case .activitySnapshots: return "activity.snapshots"
         case .windowCapture: return "window.capture"
         case .fsRead: return "fs.read"
         case .appleScript(let bundleID): return "appleScript:\(bundleID)"
@@ -203,7 +209,7 @@ struct PluginFSRoot: Codable, Equatable {
 
     /// Home-relative folders that hold credentials or browser data; never grantable.
     private static let sensitive = [".ssh", ".aws", ".gnupg", ".codex", ".kube", ".docker", ".config/gcloud",
-                                    "Library/Keychains", "Library/Cookies", "Library/Safari",
+                                    "Library/Application Support/Switchly/Activity", "Library/Keychains", "Library/Cookies", "Library/Safari",
                                     "Library/Application Support/Google/Chrome", "Library/Application Support/Firefox",
                                     "Library/Application Support/BraveSoftware", "Library/Application Support/Microsoft Edge"]
     /// Files that mark a folder as holding secrets.
@@ -250,6 +256,9 @@ struct PluginManifest: Codable, Equatable {
     /// Whether a built-in plugin runs before the user touches its toggle; true when absent.
     var defaultEnabled: Bool? = nil
     var renderScope: PluginRenderScope? = nil
+    var surfaces: [String]? = nil
+    var supportsPanel: Bool { surfaces?.contains("panel") == true }
+    var supportsDock: Bool { surfaces?.contains("dockPreview") ?? true }
 
     enum ValidationError: Error, Equatable {
         case invalidID
@@ -267,6 +276,10 @@ struct PluginManifest: Codable, Equatable {
         guard Self.supportedAPIVersions.contains(apiVersion) else {
             throw ValidationError.unsupportedAPIVersion(apiVersion)
         }
+        if let surfaces {
+            guard apiVersion == 2, !surfaces.isEmpty, Set(surfaces).count == surfaces.count, surfaces.allSatisfy({ ["panel", "dockPreview"].contains($0) }) else { throw ValidationError.invalidMetadata }
+        }
+        guard apiVersion == 2 || !permissions.contains(where: { $0 == .activityRead || $0 == .activitySnapshots }) else { throw ValidationError.invalidMetadata }
         guard !matches.isEmpty else { throw ValidationError.emptyMatches }
         // Entry must stay inside the plugin directory.
         guard !entry.isEmpty, !entry.hasPrefix("/"), !entry.split(separator: "/").contains("..") else {

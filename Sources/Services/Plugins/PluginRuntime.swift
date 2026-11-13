@@ -29,6 +29,7 @@ struct PluginRenderContext: Equatable {
     /// Host-only identity. Never serialized to JavaScript or accepted from plugin input.
     var captureTarget: WindowCaptureTarget? = nil
     var presentationID: String? = nil
+    var surface: String = "dockPreview"
 
     static func summarize(title: String, limit: Int = 40) -> String {
         title.count <= limit ? title : String(title.prefix(limit)) + "…"
@@ -108,6 +109,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         var workItem: DispatchWorkItem?
     }
 
+    private let activityProvider: PluginActivityProviding?
+    private var activityTasks: [UUID: Task<Void, Never>] = [:]
+    private var activityCallIDs: [UUID: Int] = [:]
     private let package: PluginPackage
     private let timeout: TimeInterval
     private let captureRequester: WindowCaptureRequesting?
@@ -192,9 +196,12 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
          storage: PluginStorageProviding? = nil,
          virtualClock: PluginVirtualClock? = nil,
          captureRequester: WindowCaptureRequesting? = nil,
+         activityProvider: PluginActivityProviding? = nil,
          reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion },
          uiFeatures: [String: Bool] = ["scene3d": true]) {
-        self.uiFeatures = uiFeatures
+        self.activityProvider = activityProvider
+        self.uiFeatures = uiFeatures.merging(["panel": true, "activity": activityProvider != nil,
+                                             "lineChart": true, "lineChartSeries": true, "timeline": true]) { _, new in new }
         self.captureRequester = captureRequester
         self.virtualClock = virtualClock
         self.reduceMotion = reduceMotion
@@ -323,6 +330,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         return result.flatMap { json in
             do {
                 let slots = try PluginRenderOutput.decode(json: Data(json.utf8))
+                guard slots.allSatisfy({ ctxSurfaceAllowed($0.slot, context: context) && (context.surface == "panel" || !hasPanelContent($0.node)) }) else { return .failure(.invalidOutput("输出槽位与展示表面不匹配")) }
                 if manifest.renderScope == .window, slots.contains(where: { $0.slot == .center }) {
                     return .failure(.invalidOutput("窗口范围插件不能使用 center"))
                 }
@@ -369,7 +377,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
                 let ctxValue = makeContextValue(ctx, in: js, mediaRead: mediaRead,
                                                captureCallID: method == "onAction" ? callID : nil)
                 if method == "prepare" {
-                    for key in ["media", "weather", "fs", "storage", "invalidate", "capabilities"] {
+                    for key in ["media", "weather", "fs", "storage", "invalidate", "capabilities", "activity"] {
                         ctxValue?.deleteProperty(key)
                     }
                 }
@@ -384,6 +392,9 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         dispatchPrecondition(condition: .onQueue(queue))
         callTimeouts.removeValue(forKey: callID)?.cancel()
         guard let handler = pending.removeValue(forKey: callID) else { return }
+        for id in Array(activityCallIDs.keys) where activityCallIDs[id] == callID {
+            activityTasks.removeValue(forKey: id)?.cancel(); activityCallIDs.removeValue(forKey: id)
+        }
         if result != .failure(.timedOut) { consecutiveTimeouts = 0 }
         handler(result)
     }
@@ -429,6 +440,8 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
 
     private func failPendingCalls(reason: PluginRuntimeError) {
         dispatchPrecondition(condition: .onQueue(queue))
+        activityTasks.values.forEach { $0.cancel() }
+        activityTasks.removeAll(); activityCallIDs.removeAll()
         callTimeouts.values.forEach { $0.cancel() }
         callTimeouts.removeAll()
         let waiting = pending
@@ -810,7 +823,13 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             "reduceMotion": reduceMotion(),
             "uiFeatures": uiFeatures,
             "presentationID": ctx.presentationID ?? "",
+            "surface": ctx.surface,
         ] as [String: Any], in: js)
+        if ctx.surface == "panel" {
+            value?.setObject(NSNull(), forKeyedSubscript: "app" as NSString)
+            value?.setObject(NSNull(), forKeyedSubscript: "window" as NSString)
+        }
+        installActivity(on: value, in: js, callID: nextCallID - 1)
         let strings = self.strings
         let t: @convention(block) (String) -> String = { key in strings[key] ?? key }
         let invalidate: @convention(block) () -> Void = { [weak self] in self?.onInvalidate?() }
@@ -870,7 +889,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
     private func capabilitySnapshot(bundleID: String) -> [String: [String: Bool]] {
         var result: [String: [String: Bool]] = [:]
         let capabilities: [PluginCapability] = [.mediaNowPlaying, .mediaControl, .mediaLibrary,
-                                                .weatherCurrent, .fsRead, .windowFocus, .windowCapture]
+                                                .weatherCurrent, .fsRead, .windowFocus, .windowCapture, .activityRead, .activitySnapshots]
         for capability in Set(capabilities + manifest.permissions) {
             let supported: Bool
             let ready: Bool
@@ -881,6 +900,7 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
             case .weatherCurrent: supported = true; ready = weatherProvider?() != nil
             case .fsRead: supported = true; ready = fileReader != nil
             case .windowCapture: supported = true; ready = manifest.renderScope == .window && captureRequester?.isAvailable == true
+            case .activityRead, .activitySnapshots: supported = true; ready = activityProvider != nil && permissions.contains(.activityRead)
             case .windowFocus, .appleScript: supported = false; ready = false
             }
             let granted = permissions.contains(capability)
@@ -889,6 +909,75 @@ final class PluginRuntime: PluginRuntimeProtocol, @unchecked Sendable {
         }
         result["storage"] = ["supported": true, "granted": true, "available": storage != nil]
         return result
+    }
+
+
+    private func hasPanelContent(_ node: PluginUINode) -> Bool {
+        switch node {
+        case .segmented, .dateRange, .barChart, .lineChart, .timeline, .grid, .image(.activitySnapshot, _, _): return true
+        case .scene3d(let descriptor):
+            return hasPanelContent(descriptor.fallback) || descriptor.surfaces.contains { hasPanelContent($0.content) }
+        default: return node.children.contains { hasPanelContent($0) }
+        }
+    }
+
+    private func ctxSurfaceAllowed(_ slot: PluginSlot, context: PluginRenderContext) -> Bool {
+        context.surface == "panel" ? manifest.supportsPanel && slot == .panel : manifest.supportsDock && slot != .panel
+    }
+
+    /// JS引用只能由所属runtime.queue解引用；包装对象仅跨Task保存回调所有权。
+    private final class ActivityCallback: @unchecked Sendable {
+        weak var context: JSContext?
+        let resolve: JSValue
+        let reject: JSValue
+        init(context: JSContext, resolve: JSValue, reject: JSValue) { self.context = context; self.resolve = resolve; self.reject = reject }
+    }
+
+    private func installActivity(on value: JSValue?, in js: JSContext, callID: Int) {
+        guard permissions.contains(.activityRead), let provider = activityProvider else { return }
+        var calls = 0
+        let call: @convention(block) (String, JSValue, JSValue, JSValue) -> Void = { [weak self, weak js] method, options, resolve, reject in
+            guard let self, let js, self.context === js, self.pending[callID] != nil, !self.suspended,
+                  calls < 8, self.activityTasks.count < 4, let input = options.toDictionary() as? [String: Any],
+                  ["summary", "sessions", "snapshots"].contains(method),
+                  method != "snapshots" || self.permissions.contains(.activitySnapshots) else {
+                reject.call(withArguments: ["activityUnavailable"]); return
+            }
+            calls += 1
+            let id = UUID(), pluginID = self.manifest.id, snapshots = self.permissions.contains(.activitySnapshots)
+            let validity = provider.readValidity()
+            self.activityCallIDs[id] = callID
+            let callback = ActivityCallback(context: js, resolve: resolve, reject: reject)
+            self.activityTasks[id] = Task { [weak self] in
+                let result: Result<[String: Any], Error>
+                do { result = .success(try await provider.query(method: method, options: input, pluginID: pluginID, snapshotsAllowed: snapshots)) }
+                catch { result = .failure(error) }
+                guard !Task.isCancelled else { return }
+                self?.queue.async { [weak self] in
+                    guard let self else { return }
+                    self.activityTasks.removeValue(forKey: id); self.activityCallIDs.removeValue(forKey: id)
+                    guard let js = callback.context, self.context === js, self.pending[callID] != nil, !self.suspended else { return }
+                    guard validity.isCurrent() else { callback.reject.call(withArguments: ["activityInvalidated"]); return }
+                    switch result {
+                    case .success(let data): callback.resolve.call(withArguments: [data])
+                    case .failure(let error):
+                        let code = (error as? ActivityDataError) == .staleCursor
+                            ? "activityCursorExpired" : "activityQueryFailed"
+                        AppLogger.debug("Activity query rejected. method=\(method) reason=\(code)")
+                        callback.reject.call(withArguments: [code])
+                    }
+                }
+            }
+        }
+        let activity = JSValue(newObjectIn: js)
+        activity?.setObject(call, forKeyedSubscript: "__call" as NSString)
+        value?.setObject(activity, forKeyedSubscript: "activity" as NSString)
+        for method in ["summary", "sessions"] + (permissions.contains(.activitySnapshots) ? ["snapshots"] : []) {
+            let factory = js.evaluateScript("(function(a,m){return function(o){return new Promise(function(r,j){a.__call(m,o||{},r,j);});};})")
+            let function = factory?.call(withArguments: [activity as Any, method])
+            activity?.setObject(function, forKeyedSubscript: method as NSString)
+        }
+        // JS仅持有有界函数，不能取得真实Service或图片数据。
     }
 
     /// locales/<lang>.json, falling back to en.

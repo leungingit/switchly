@@ -75,7 +75,8 @@ final class PluginPreviewState: ObservableObject {
     @Published var virtualNowSeconds: Double?
 
     var capturedSlots: [PluginSlot] {
-        renderScope == .window ? [.titleAccessory, .topTrailing, .bottomBar] : [.center, .bottomBar]
+        if slots[.panel] != nil { return [.panel] }
+        return renderScope == .window ? [.titleAccessory, .topTrailing, .bottomBar] : [.center, .bottomBar]
     }
 
     var reloadHandler: (() -> Void)?

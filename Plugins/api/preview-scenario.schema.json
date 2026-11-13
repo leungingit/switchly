@@ -8,6 +8,7 @@
   "properties": {
     "schemaVersion": { "const": 1 },
     "id": { "type": "string", "minLength": 1 },
+    "surface": { "enum": ["dockPreview", "panel"] },
     "environment": {
       "type": "object", "additionalProperties": false,
       "required": ["locale", "appearance", "glass", "reduceMotion", "contentWidthPoints"],
@@ -34,7 +35,8 @@
       "properties": {
         "media": { "$ref": "#/$defs/relativePath" },
         "weather": { "$ref": "#/$defs/relativePath" },
-        "fs": { "$ref": "#/$defs/relativePath" }
+        "fs": { "$ref": "#/$defs/relativePath" },
+        "activity": { "$ref": "#/$defs/relativePath" }
       }
     },
     "clock": {

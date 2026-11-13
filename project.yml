@@ -37,6 +37,28 @@ configFiles:
   Release: Config/Base.xcconfig
 
 targets:
+  SwitchlyActivityProbe:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+        excludes: [App/SwitchlyApp.swift]
+      - Tools/ActivityTrackingProbe
+      - path: Resources/en.lproj
+        buildPhase: resources
+      - path: Resources/zh-Hans.lproj
+        buildPhase: resources
+    dependencies:
+      - package: HotKey
+      - package: GLTFKit2
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.switchly.activity-validation
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+    scheme:
+      gatherCoverageData: false
+
   SwitchlyCaptureProbe:
     type: application
     platform: macOS
@@ -153,6 +175,7 @@ targets:
         outputFiles:
           - "$(TARGET_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/SwitchlyPluginPreviewWorker"
     sources:
+      - Sources/Models/ActivityTrackingSettings.swift
       - Sources/Models/AppSettings.swift
       - Sources/Models/DockLayoutSpec.swift
       - Sources/Models/Enums/GridBackground.swift
@@ -175,6 +198,7 @@ targets:
       - Sources/Models/Plugins/PluginScene.swift
       - Sources/Models/Plugins/PluginScene3DDescriptor.swift
       - Sources/Models/Plugins/PluginUINode.swift
+      - Sources/Models/Plugins/PluginTimelineItem.swift
       - Sources/Models/Plugins/SceneEvaluator.swift
       - Sources/Services/Plugins/PluginRegistry.swift
       - Sources/Services/Plugins/PluginPackageValidator.swift
@@ -211,7 +235,11 @@ targets:
       - Sources/Utilities/NativeCrystalContainer.swift
       - Sources/Utilities/ThemeApplier.swift
       - Sources/Views/PluginSlotSurface.swift
+      - Sources/Services/Plugins/PluginActivityProviding.swift
+      - Sources/Views/PluginActivityImage.swift
       - Sources/Views/PluginOverlayView.swift
+      - Sources/Views/PluginLineChart.swift
+      - Sources/Views/PluginTimelineView.swift
       - Sources/Views/PluginSceneView.swift
       - Sources/Views/PluginSceneDrawing.swift
       # T05 SceneKit adapter behind Scene3DHitProviding; geometry only, action
@@ -278,10 +306,16 @@ targets:
       - Sources/Models/Plugins/PluginGrant.swift
       - Sources/Models/Plugins/PluginManifest.swift
       - Sources/Models/Plugins/PluginUINode.swift
+      - Sources/Models/Plugins/PluginTimelineItem.swift
       - Sources/Models/Plugins/PluginScene.swift
       - Sources/Services/Plugins/PluginRegistry.swift
       - Sources/Services/Plugins/PluginPackageValidator.swift
       - Sources/Services/Plugins/GLBPreflight.swift
+      - Sources/Models/ActivityApp.swift
+      - Sources/Models/ActivitySession.swift
+      - Sources/Models/ActivityQuery.swift
+      - Tools/PluginPreview/Worker/PluginFixtureActivityProvider.swift
+      - Sources/Services/Plugins/PluginActivityProviding.swift
       - Sources/Services/Plugins/PluginRuntime.swift
       - Sources/Models/WindowCapture.swift
       - Sources/Services/Plugins/PluginVirtualClock.swift

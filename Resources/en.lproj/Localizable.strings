@@ -654,3 +654,43 @@
 "Fit to window" = "Fit to window";
 "Image size" = "Image size";
 "Select again" = "Select again";
+
+// 应用活动记录与独立插件面板
+"Application activity" = "Application activity";
+"Record application activity" = "Record application activity";
+"Stored only on this Mac. No window titles or typed text. After 5 minutes without input, time since the last input is excluded, including reading and video playback." = "Stored only on this Mac. No window titles or typed text. After 5 minutes without input, time since the last input is excluded, including reading and video playback.";
+"Activity retention" = "Activity retention";
+"days" = "days";
+"Excluded applications" = "Excluded applications";
+"Sample activity screenshots" = "Sample activity screenshots";
+"Screenshots are limited to applications you choose below. Private windows cannot always be detected. Screen Recording and Accessibility access are required." = "Screenshots are limited to applications you choose below. Private windows cannot always be detected. Screen Recording and Accessibility access are required.";
+"Allow Screen Recording and Accessibility in System Settings." = "Allow Screen Recording and Accessibility in System Settings.";
+"Screenshot retention" = "Screenshot retention";
+"Applications allowed in screenshots" = "Applications allowed in screenshots";
+"Plugin Panels..." = "Plugin Panels...";
+"Plugin Panels" = "Plugin Panels";
+"Clear activity..." = "Clear activity...";
+"Enable application activity?" = "Enable application activity?";
+"This records application names and foreground time locally for up to 400 days (64 MiB). It never uploads data. You can stop recording or clear history at any time." = "This records application names and foreground time locally for up to 400 days (64 MiB). It never uploads data. You can stop recording or clear history at any time.";
+"Enable activity screenshots?" = "Enable activity screenshots?";
+"Only applications you explicitly select will be sampled. Images may contain private content. Small images stay on this Mac for 7 days by default, up to 256 MiB." = "Only applications you explicitly select will be sampled. Images may contain private content. Small images stay on this Mac for 7 days by default, up to 256 MiB.";
+"This deletes application intervals, screenshots and their backups. Recording will continue if enabled." = "This deletes application intervals, screenshots and their backups. Recording will continue if enabled.";
+"Add application..." = "Add application...";
+"None selected" = "None selected";
+"Read local application activity" = "Read local application activity";
+"Display local activity screenshots" = "Display local activity screenshots";
+"Activity data could not be saved. Check available disk space and try again." = "Activity data could not be saved. Check available disk space and try again.";
+"Enable this plugin in Preferences to open its panel." = "Enable this plugin in Preferences to open its panel.";
+"The plugin panel could not be loaded. Try reopening it." = "The plugin panel could not be loaded. Try reopening it.";
+"No panel plugins are installed." = "No panel plugins are installed.";
+
+"Start date" = "Start date";
+"End date (exclusive)" = "End date (exclusive)";
+
+"Plugin permissions need confirmation" = "Plugin permissions need confirmation";
+
+"Review permissions..." = "Review permissions...";
+
+"Recording settings and plugin access are separate. Review this plugin's permissions in Plugins settings." = "Recording settings and plugin access are separate. Review this plugin's permissions in Plugins settings.";
+"Type %@ to confirm deletion." = "Type %@ to confirm deletion.";
+"Deletion confirmation" = "Deletion confirmation";

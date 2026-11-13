@@ -654,3 +654,43 @@
 "Fit to window" = "适应窗口";
 "Image size" = "图像显示大小";
 "Select again" = "重新框选";
+
+// 应用活动记录与独立插件面板
+"Application activity" = "应用活动";
+"Record application activity" = "记录应用活动";
+"Stored only on this Mac. No window titles or typed text. After 5 minutes without input, time since the last input is excluded, including reading and video playback." = "仅保存在此 Mac，不记录窗口标题或输入内容。连续 5 分钟无输入后，最后输入后的时间不计入活动，包括阅读和视频播放。";
+"Activity retention" = "活动保留期";
+"days" = "天";
+"Excluded applications" = "排除的应用";
+"Sample activity screenshots" = "采样活动截图";
+"Screenshots are limited to applications you choose below. Private windows cannot always be detected. Screen Recording and Accessibility access are required." = "仅采样你在下方选择的应用，无法保证识别全部私密窗口。需要屏幕录制和辅助功能权限。";
+"Allow Screen Recording and Accessibility in System Settings." = "请在系统设置中允许屏幕录制和辅助功能。";
+"Screenshot retention" = "截图保留期";
+"Applications allowed in screenshots" = "允许截图的应用";
+"Plugin Panels..." = "插件面板…";
+"Plugin Panels" = "插件面板";
+"Clear activity..." = "清除活动记录…";
+"Enable application activity?" = "开启应用活动记录？";
+"This records application names and foreground time locally for up to 400 days (64 MiB). It never uploads data. You can stop recording or clear history at any time." = "将在本机保存应用名称和前台停留时间，最多保留 400 天（64 MiB），不会上传。可随时停止记录或清除历史。";
+"Enable activity screenshots?" = "开启活动截图采样？";
+"Only applications you explicitly select will be sampled. Images may contain private content. Small images stay on this Mac for 7 days by default, up to 256 MiB." = "只采样你明确选中的应用。图片可能含有隐私内容。小图默认在本机保留 7 天，总计最多 256 MiB。";
+"This deletes application intervals, screenshots and their backups. Recording will continue if enabled." = "将删除应用停留区间、截图及其备份。若记录仍开启，清除后会继续记录。";
+"Add application..." = "添加应用…";
+"None selected" = "尚未选择";
+"Read local application activity" = "读取本地应用活动";
+"Display local activity screenshots" = "展示本地活动截图";
+"Activity data could not be saved. Check available disk space and try again." = "无法保存活动数据。请检查可用磁盘空间后重试。";
+"Enable this plugin in Preferences to open its panel." = "请在偏好设置中启用此插件后打开面板。";
+"The plugin panel could not be loaded. Try reopening it." = "无法载入插件面板，请重新打开。";
+"No panel plugins are installed." = "尚未安装支持独立面板的插件。";
+
+"Start date" = "开始日期";
+"End date (exclusive)" = "结束日期（不含当天）";
+
+"Plugin permissions need confirmation" = "插件权限待确认";
+
+"Review permissions..." = "检查权限…";
+
+"Recording settings and plugin access are separate. Review this plugin's permissions in Plugins settings." = "记录开关控制本机采集；插件读取活动和展示截图还需单独允许。请在插件设置中确认下列权限。";
+"Type %@ to confirm deletion." = "输入 %@ 才能清除活动记录。";
+"Deletion confirmation" = "清除确认词";

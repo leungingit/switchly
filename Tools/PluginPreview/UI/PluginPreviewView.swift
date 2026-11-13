@@ -30,6 +30,7 @@ struct PluginPreviewView: View {
         .background(shellBackground)
         .preferredColorScheme(state.environment.theme.colorScheme)
         .environment(\.locale, Locale(identifier: state.environment.language.rawValue))
+        .onChange(of: state.slots) { slots in if slots[.panel] != nil { selectedSlot = .panel } }
         .onChange(of: state.renderScope) { scope in
             if scope == .window, selectedSlot == .center { selectedSlot = .titleAccessory }
             else if scope == .app, selectedSlot == .titleAccessory || selectedSlot == .topTrailing { selectedSlot = .center }
@@ -280,6 +281,7 @@ struct PluginPreviewView: View {
 
     private func slotName(_ slot: PluginSlot) -> String {
         switch slot {
+        case .panel: return t("Plugin Panels")
         case .center: return t("Center")
         case .bottomBar: return t("Bottom bar")
         case .topTrailing: return t("Top trailing")

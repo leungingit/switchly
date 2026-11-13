@@ -62,7 +62,9 @@
               "weather.current",
               "window.focus",
               "fs.read",
-              "window.capture"
+              "window.capture",
+              "activity.read",
+              "activity.snapshots"
             ]
           },
           {
@@ -117,6 +119,19 @@
         null
       ],
       "description": "默认app；window按每张窗口卡片分别渲染和绑定动作目标。"
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "dockPreview",
+          "panel"
+        ]
+      },
+      "description": "可选v2展示表面；默认dockPreview；panel通过菜单入口装载。"
     }
   },
   "allOf": [
@@ -147,6 +162,44 @@
         "properties": {
           "fsRoots": {
             "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "surfaces"
+        ]
+      },
+      "then": {
+        "properties": {
+          "apiVersion": {
+            "const": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "permissions": {
+            "contains": {
+              "enum": [
+                "activity.read",
+                "activity.snapshots"
+              ]
+            }
+          }
+        },
+        "required": [
+          "permissions"
+        ]
+      },
+      "then": {
+        "properties": {
+          "apiVersion": {
+            "const": 2
           }
         }
       }

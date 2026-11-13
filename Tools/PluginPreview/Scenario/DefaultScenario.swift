@@ -22,6 +22,7 @@ struct PreviewScenarioDraft: Equatable {
         case media
         case weather
         case fs
+        case activity
 
         /// 契约 §2.1：媒体类权限任一 → media；`weather.current` → weather；`fs.read` → fs。
         func isRequired(by manifest: PluginManifest) -> Bool {
@@ -37,6 +38,8 @@ struct PreviewScenarioDraft: Equatable {
                 return manifest.permissions.contains(.weatherCurrent)
             case .fs:
                 return manifest.permissions.contains(.fsRead)
+            case .activity:
+                return manifest.permissions.contains(.activityRead)
             }
         }
 
@@ -70,14 +73,15 @@ struct PreviewScenarioDraft: Equatable {
         var seed: UInt32
     }
 
-    /// 三种合成能力各自的来源；`none` 表示该能力不可用（场景中省略）。
+    /// 四种合成能力各自的来源；`none` 表示该能力不可用（场景中省略）。
     struct FixtureFiles: Equatable {
         var media: FixtureSource = .none
         var weather: FixtureSource = .none
         var fs: FixtureSource = .none
+        var activity: FixtureSource = .none
 
         var isEmpty: Bool {
-            media == .none && weather == .none && fs == .none
+            media == .none && weather == .none && fs == .none && activity == .none
         }
 
         subscript(kind: FixtureKind) -> FixtureSource {
@@ -86,6 +90,7 @@ struct PreviewScenarioDraft: Equatable {
                 case .media: return media
                 case .weather: return weather
                 case .fs: return fs
+                case .activity: return activity
                 }
             }
             set {
@@ -93,11 +98,13 @@ struct PreviewScenarioDraft: Equatable {
                 case .media: media = newValue
                 case .weather: weather = newValue
                 case .fs: fs = newValue
+                case .activity: activity = newValue
                 }
             }
         }
     }
 
+    var surface: String
     var id: String
     var locale: Locale
     var appearance: Appearance
@@ -125,8 +132,10 @@ struct PreviewScenarioDraft: Equatable {
         clock: Clock = Clock(isEnabled: true,
                              startEpochMs: PreviewScenarioDraft.defaultClockStartEpochMs,
                              seed: PreviewScenarioDraft.defaultClockSeed),
-        fixtures: FixtureFiles = FixtureFiles()
+        fixtures: FixtureFiles = FixtureFiles(),
+        surface: String = "dockPreview"
     ) {
+        self.surface = surface
         self.id = id
         self.locale = locale
         self.appearance = appearance
@@ -151,7 +160,8 @@ struct PreviewScenarioDraft: Equatable {
         return PreviewScenarioDraft(
             target: Target(bundleID: bundleID, appName: appName(for: bundleID)),
             grants: manifest.permissions.map(\.rawValue),
-            fixtures: fixtures
+            fixtures: fixtures,
+            surface: manifest.supportsPanel && !manifest.supportsDock ? "panel" : "dockPreview"
         )
     }
 
@@ -239,13 +249,15 @@ struct PreviewScenarioDraft: Equatable {
         let fixtures = fixtureRelativePaths.isEmpty ? nil : EncodedFixtures(
             media: fixtureRelativePaths[.media],
             weather: fixtureRelativePaths[.weather],
-            fs: fixtureRelativePaths[.fs]
+            fs: fixtureRelativePaths[.fs],
+            activity: fixtureRelativePaths[.activity]
         )
         let clock = clock.isEnabled
             ? EncodedClock(startEpochMs: clock.startEpochMs, seed: clock.seed)
             : nil
         let encoded = EncodedScenario(
             id: id,
+            surface: surface == "dockPreview" ? nil : surface,
             environment: EncodedEnvironment(
                 locale: locale.rawValue,
                 appearance: appearance.rawValue,
@@ -282,8 +294,10 @@ struct PreviewScenarioDraft: Equatable {
             fixtures: FixtureFiles(
                 media: Self.explicitFixture(scenario.fixtures?.media, scenarioDirectory),
                 weather: Self.explicitFixture(scenario.fixtures?.weather, scenarioDirectory),
-                fs: Self.explicitFixture(scenario.fixtures?.fs, scenarioDirectory)
-            )
+                fs: Self.explicitFixture(scenario.fixtures?.fs, scenarioDirectory),
+                activity: Self.explicitFixture(scenario.fixtures?.activity, scenarioDirectory)
+            ),
+            surface: scenario.surface ?? "dockPreview"
         )
     }
 
@@ -365,7 +379,7 @@ enum BuiltinFixtureSample {
         switch kind {
         case .media: return "PluginPreviewBuiltinMedia"
         case .weather: return "PluginPreviewBuiltinWeather"
-        case .fs: return nil
+        case .fs, .activity: return nil
         }
     }
 
@@ -413,6 +427,7 @@ struct PreviewScenarioOverrides: Equatable {
 private struct EncodedScenario: Encodable {
     let schemaVersion = 1
     let id: String
+    let surface: String?
     let environment: EncodedEnvironment
     let target: EncodedTarget
     let fixtures: EncodedFixtures?
@@ -438,6 +453,7 @@ private struct EncodedFixtures: Encodable {
     let media: String?
     let weather: String?
     let fs: String?
+    let activity: String?
 }
 
 private struct EncodedClock: Encodable {

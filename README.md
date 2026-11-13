@@ -78,6 +78,10 @@ After you enable and explicitly authorize Window Capture in Preferences, each Do
 
 框选时，冻结图像覆盖在原窗口的位置和大小上；裁剪后进入结果窗口，可按原尺寸查看、滚动或切换“适应窗口”。点击“重新框选”即可返回同一原位冻结图像。设置展开区会显示授权状态及相机入口用法。
 
+### 应用活动时间线（本地开发版本）
+
+「偏好设置 → 插件 → 活动时间线」可显式开启本机应用时长记录，与使用次数统计独立；记录和截图均默认关闭。菜单栏「活动时间线」直接打开活动面板，也可从「插件面板…」选择打开，支持上午/下午/日/月/年/自定义范围、按应用着色并含汇总线的活动趋势图、时长概览、多色应用排行、会话与截图的纵向时间线及分页；截图随当前会话页的时间范围更新。截图另需系统权限与允许应用名单，插件读取时长/展示截图也分别授权；插件卡片的「检查权限…」用于确认这些读取权限，采集开关不代替插件授权。时长默认400天/64 MiB，截图默认7天/256 MiB，可停止或清除；不保存标题、不上传。范围与实测边界见[实施合同](docs/plugins/activity-timeline-plan.md)。
+
 ### Preview plugins independently
 
 Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/preview/plugin-preview-guide.md) and [coverage matrix](docs/plugins/preview/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.

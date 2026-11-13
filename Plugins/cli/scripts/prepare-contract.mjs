@@ -8,6 +8,7 @@ const packageDirectory = path.resolve(scriptDirectory, "..");
 const repositoryRoot = path.resolve(packageDirectory, "../..");
 const contractDirectory = path.join(packageDirectory, "contract");
 const files = [
+  "preview-activity-fixture.schema.json",
   "capabilities.json",
   "manifest.schema.json",
   "preview-scenario.schema.json",

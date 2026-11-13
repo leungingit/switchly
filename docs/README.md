@@ -44,6 +44,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | [RELEASING.md](engineering/RELEASING.md) | 版本号规则与发布流程（版本真源是 `Resources/Info.plist`） |
+| [native-ui-automation.md](engineering/native-ui-automation.md) | 原生界面自动化：自行打开 Switchly 偏好设置、截图核验与失败定位 |
 | [performance-review-2026-10-20.md](engineering/performance-review-2026-10-20.md) | 性能检查与优化记录 |
 | [idle-performance.md](engineering/idle-performance.md) | 空闲截图开销排查（D01 已被 D02 部分取代） |
 | [thumbnail-cache.md](engineering/thumbnail-cache.md) | 缩略图跨次启动复用的目标、边界与生命周期 |
@@ -57,6 +58,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | [plugin-api-reference.md](plugins/plugin-api-reference.md) | 宿主插件公开 API 参考；机器可读清单在 `Plugins/api/` |
+| [activity-timeline-plan.md](plugins/activity-timeline-plan.md) | 活动记录、独立插件面板、截图采样与分层授权合同 |
 | [window-capture-plan.md](plugins/window-capture-plan.md) | 窗口截图合同、任务与范围；[验证记录](reviews/window-capture-validation-2026-11-11.md) |
 | [plugin-api-roadmap.md](plugins/plugin-api-roadmap.md) | API / SDK 能力开放路线 |
 | [plugin-ecosystem-plan.md](plugins/plugin-ecosystem-plan.md) | 插件外置化、管理机制与 API 标准化方案 |
@@ -105,6 +107,12 @@
 | --- | --- |
 | [all-spaces-window-preview.md](reviews/all-spaces-window-preview.md) | 跨桌面窗口发现的实现与验证记录 |
 | [glass-and-appearance-settings.md](reviews/glass-and-appearance-settings.md) | 玻璃与外观设置现状诊断 |
+| [menu-bar-appearance-2026-11-13.md](reviews/menu-bar-appearance-2026-11-13.md) | 菜单栏主题污染修正、真实状态项回归及正式合成色对照限制 |
+| [activity-timeline-integration-2026-11-13.md](reviews/activity-timeline-integration-2026-11-13.md) | 双仓提交前复核、单测隔离、历史截图及失效批次修正与验收边界 |
+| [activity-timeline-implementation-2026-11-12.md](reviews/activity-timeline-implementation-2026-11-12.md) | 活动时间线实现、937项单测、趋势图、纵向会话／截图及实机验收边界 |
+| [activity-tracking-incident-2026-11-13.md](reviews/activity-tracking-incident-2026-11-13.md) | AT-INC01：验收误清除、331条原始区间恢复、截图恢复限制及确认入口安全修正 |
+| [活动追踪连续实机验收窗口](../Tools/ActivityTrackingAcceptance/README.md) | 自动前台区间、撤权／恢复与真实600秒冷却的验收辅助窗口 |
+| [activity-tracking-plan-review-2026-11-12.md](reviews/activity-tracking-plan-review-2026-11-12.md) | 活动时间线分支方案评审、计时与隐私缺口、分阶段推进建议 |
 
 ### MediaRemote 媒体桥接入验收 (`docs/reviews/music-mediaremote/`)
 

@@ -54,7 +54,7 @@ enum PluginSurfaceSignature {
             return "marquee(\(string(value)))"
         case .badge(let value, let tone):
             return "badge(\(tone.rawValue),\(string(value)))"
-        case .surface, .button, .toggle, .slider, .wheel, .screen, .scene, .scene3d:
+        case .surface, .button, .toggle, .slider, .wheel, .screen, .scene, .scene3d, .segmented, .dateRange, .barChart, .lineChart, .timeline, .grid:
             // Forbidden by §9.4; the renderer rejects the request before it
             // gets here. The marker keeps the hash deterministic defensively.
             return forbiddenName(node)
@@ -79,6 +79,7 @@ enum PluginSurfaceSignature {
         switch source {
         case .symbol(let name): return "symbol:\(string(name))"
         case .pluginAsset(let name): return "asset:\(string(name))"
+        case .activitySnapshot: return "forbidden:activitySnapshot"
         case .artwork: return "artwork"
         }
     }

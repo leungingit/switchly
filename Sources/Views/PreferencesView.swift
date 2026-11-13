@@ -19,6 +19,7 @@ enum PreferencesTab: Hashable {
 }
 
 struct PreferencesView: View {
+    let activityTracking: ActivityTrackingService?
     @StateObject var viewModel: PreferencesViewModel
     /// Shares the statistics panel's picker component (and its persistence
     /// path) so the two surfaces can never disagree.
@@ -28,11 +29,14 @@ struct PreferencesView: View {
     @StateObject private var gridPrerequisites = GridPrerequisiteViewModel()
     @State private var appSearchText = ""
     @State private var selectedTab: PreferencesTab
+    @State private var requestedPluginID: String?
 
     @MainActor
-    init(initialTab: PreferencesTab = .general, viewModel: PreferencesViewModel = PreferencesViewModel()) {
+    init(initialTab: PreferencesTab = .general, initialPluginID: String? = nil, viewModel: PreferencesViewModel = PreferencesViewModel(), activityTracking: ActivityTrackingService? = nil) {
+        self.activityTracking = activityTracking
         _viewModel = StateObject(wrappedValue: viewModel)
         _selectedTab = State(initialValue: initialTab)
+        _requestedPluginID = State(initialValue: initialPluginID)
         _statisticsModel = StateObject(wrappedValue: StatisticsViewModel())
     }
 
@@ -78,6 +82,10 @@ struct PreferencesView: View {
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             viewModel.settings = SettingsService.shared.loadSettings()
             gridPrerequisites.applySettings(viewModel.settings)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openPreferences)) { notification in
+            if let tab = notification.userInfo?["tab"] as? PreferencesTab { selectedTab = tab }
+            requestedPluginID = notification.userInfo?["pluginID"] as? String
         }
         .onAppear {
             gridPrerequisites.startObserving()
@@ -534,7 +542,9 @@ struct PreferencesView: View {
                 PluginPreferencesSection(
                     settings: viewModel.settings,
                     onSettingsChange: { updated in viewModel.updateSettings { $0 = updated } },
-                    onOnlineWeatherChange: { new in viewModel.updateSettings { $0.onlineWeather = new } }
+                    onOnlineWeatherChange: { new in viewModel.updateSettings { $0.onlineWeather = new } },
+                    activityTracking: activityTracking,
+                    requestedPluginID: requestedPluginID
                 )
             }
             .padding(24)

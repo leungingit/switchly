@@ -28,10 +28,13 @@ struct PreviewScenario: Decodable {
         let media: String?
         let weather: String?
         let fs: String?
+        let activity: String?
     }
 
     let schemaVersion: Int
     let id: String
+    /// nil 保留旧场景的默认 Dock 预览语义。
+    let surface: String?
     let environment: Environment
     let target: Target
     let fixtures: Fixtures?
@@ -45,7 +48,7 @@ struct PreviewScenario: Decodable {
     private(set) var typedSteps: [PluginPreviewStep] = []
 
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, id, environment, target, fixtures, clock, grants, settings, storageSeed, steps
+        case schemaVersion, id, surface, environment, target, fixtures, clock, grants, settings, storageSeed, steps
     }
 
     enum Failure: Error, Equatable {
@@ -58,7 +61,7 @@ struct PreviewScenario: Decodable {
     static func decode(_ data: Data) throws -> PreviewScenario {
         guard let json = try? JSONSerialization.jsonObject(with: data),
               let object = json as? [String: Any],
-              hasOnly(object, ["schemaVersion", "id", "environment", "target", "fixtures", "clock", "grants", "settings", "storageSeed", "steps"]),
+              hasOnly(object, ["schemaVersion", "id", "surface", "environment", "target", "fixtures", "clock", "grants", "settings", "storageSeed", "steps"]),
               let environment = object["environment"] as? [String: Any],
               hasOnly(environment, ["locale", "appearance", "glass", "reduceMotion", "contentWidthPoints"]),
               let target = object["target"] as? [String: Any],
@@ -71,14 +74,17 @@ struct PreviewScenario: Decodable {
             }
         }
         if let fixtures = object["fixtures"] {
-            guard let fixtures = fixtures as? [String: Any], hasOnly(fixtures, ["media", "weather", "fs"]) else {
+            guard let fixtures = fixtures as? [String: Any], hasOnly(fixtures, ["media", "weather", "fs", "activity"]) else {
                 throw Failure.invalidScenario
             }
             guard fixtures.values.allSatisfy({ ($0 as? String).map(PreviewFixtureFile.isSafeRelativePath) == true }) else {
                 throw Failure.invalidFixturePath
             }
         }
-        for key in ["clock", "grants", "settings", "storageSeed", "steps"] where object[key] is NSNull {
+        for key in ["surface", "clock", "grants", "settings", "storageSeed", "steps"] where object[key] is NSNull {
+            throw Failure.invalidScenario
+        }
+        if let surface = object["surface"], !["dockPreview", "panel"].contains(surface as? String ?? "") {
             throw Failure.invalidScenario
         }
         if target["titleSummary"] is NSNull { throw Failure.invalidScenario }
@@ -86,6 +92,7 @@ struct PreviewScenario: Decodable {
         do { value = try JSONDecoder().decode(Self.self, from: data) }
         catch { throw Failure.invalidScenario }
         guard value.schemaVersion == 1, !value.id.isEmpty,
+              value.surface.map({ ["dockPreview", "panel"].contains($0) }) != false,
               ["en", "zh-Hans"].contains(value.environment.locale),
               ["light", "dark"].contains(value.environment.appearance),
               value.environment.contentWidthPoints.isFinite, value.environment.contentWidthPoints > 0,

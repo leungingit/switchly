@@ -28,7 +28,7 @@ test("契约准备复用相同文件且仍更新变化的来源", async (t) => {
   await mkdir(source, { recursive: true });
   await mkdir(path.dirname(script), { recursive: true });
   await copyFile(path.join(packageDirectory, "scripts/prepare-contract.mjs"), script);
-  const files = ["capabilities.json", "manifest.schema.json", "preview-scenario.schema.json",
+  const files = ["preview-activity-fixture.schema.json", "capabilities.json", "manifest.schema.json", "preview-scenario.schema.json",
     "preview-media-fixture.schema.json", "preview-weather-fixture.schema.json", "preview-fs-fixture.schema.json"];
   for (const name of files) await writeFile(path.join(source, name), JSON.stringify({ name }));
   execFileSync(process.execPath, [script]);

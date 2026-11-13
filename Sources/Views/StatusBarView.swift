@@ -10,15 +10,17 @@ import AppKit
 import Combine
 import QuartzCore
 
-class StatusBarController {
+class StatusBarController: NSObject, NSMenuDelegate {
     static let shared = StatusBarController()
     
     private var statusItem: NSStatusItem?
     private var popover = NSPopover()
     private var cancellables = Set<AnyCancellable>()
     private var statusIconRestoreWorkItem: DispatchWorkItem?
+    private var panelMenuTask: Task<Void, Never>?
     
-    private init() {
+    private override init() {
+        super.init()
         AppLogger.info("Initializing StatusBarController")
         setupStatusItem()
         setupPopover()
@@ -49,11 +51,14 @@ class StatusBarController {
         image?.isTemplate = true
         button.image = image
         button.contentTintColor = nil
+        button.setAccessibilityLabel("Switchly")
+        button.setAccessibilityIdentifier("switchly.status-menu")
     }
     
     private func setupMenu() {
         let settings = SettingsService.shared.loadSettings()
         let menu = NSMenu()
+        menu.delegate = self
         
         let openPreviewItem = NSMenuItem(title: settings.language.localizedString("Open Preview"), action: #selector(openPreview), keyEquivalent: "")
         openPreviewItem.target = self
@@ -80,6 +85,9 @@ class StatusBarController {
         statisticsItem.target = self
         menu.addItem(statisticsItem)
         
+        let panels = NSMenuItem(title: settings.language.localizedString("Plugin Panels..."), action: #selector(openPluginPanels), keyEquivalent: "")
+        panels.target = self; menu.addItem(panels)
+
         let aboutItem = NSMenuItem(title: settings.language.localizedString("About Switchly"), action: #selector(openAboutWindow), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
@@ -90,7 +98,39 @@ class StatusBarController {
         menu.addItem(quitItem)
         
         statusItem?.menu = menu
+        refreshPanelMenu(menu)
         AppLogger.info("Configured status menu. itemCount=\(menu.items.count), openPreviewEnabled=\(openPreviewItem.isEnabled), preferencesEnabled=\(preferencesItem.isEnabled), aboutEnabled=\(aboutItem.isEnabled), quitEnabled=\(quitItem.isEnabled)")
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        refreshPanelMenu(menu)
+    }
+
+    /// 仅发现声明了 panel 的包，不在打开菜单时启动插件或读取活动数据。
+    private func refreshPanelMenu(_ menu: NSMenu) {
+        panelMenuTask?.cancel()
+        panelMenuTask = Task { @MainActor [weak self, weak menu] in
+            let installed = await Task.detached(priority: .userInitiated) {
+                PluginHost.shared.installedPlugins().filter { $0.package.manifest.supportsPanel }
+            }.value
+            guard let self, let menu, !Task.isCancelled else { return }
+            for item in menu.items where item.action == #selector(openPluginPanel(_:)) {
+                menu.removeItem(item)
+            }
+            let language = SettingsService.shared.loadSettings().language
+            let panels = installed.sorted {
+                $0.package.manifest.displayName(preferredLanguages: [language.rawValue])
+                    .localizedStandardCompare($1.package.manifest.displayName(preferredLanguages: [language.rawValue])) == .orderedAscending
+            }
+            guard let launcher = menu.items.firstIndex(where: { $0.action == #selector(StatusBarController.openPluginPanels) }) else { return }
+            for (offset, plugin) in panels.enumerated() {
+                let item = NSMenuItem(title: plugin.package.manifest.displayName(preferredLanguages: [language.rawValue]),
+                                      action: #selector(openPluginPanel(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = plugin.id
+                menu.insertItem(item, at: launcher + offset)
+            }
+        }
     }
     
     private func setupPopover() {
@@ -200,6 +240,13 @@ class StatusBarController {
         NotificationCenter.default.post(name: .openStatistics, object: nil)
     }
     
+    @objc private func openPluginPanels() { NotificationCenter.default.post(name: .openPluginPanels, object: nil) }
+
+    @objc private func openPluginPanel(_ sender: NSMenuItem) {
+        guard let pluginID = sender.representedObject as? String else { return }
+        NotificationCenter.default.post(name: .openPluginPanel, object: pluginID, userInfo: ["title": sender.title])
+    }
+
     @objc private func openAboutWindow() {
         AppLogger.info("Status menu selected: About")
         NSApplication.shared.orderFrontStandardAboutPanel(nil)
@@ -277,5 +324,7 @@ struct StatusBarView: View {
 extension Notification.Name {
     static let openPreferences = Notification.Name("com.switchly.openPreferences")
     static let openWorkspaces = Notification.Name("com.switchly.openWorkspaces")
+    static let openPluginPanels = Notification.Name("com.switchly.openPluginPanels")
+    static let openPluginPanel = Notification.Name("com.switchly.openPluginPanel")
     static let openStatistics = Notification.Name("com.switchly.openStatistics")
 }

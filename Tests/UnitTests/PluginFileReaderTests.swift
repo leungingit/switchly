@@ -32,6 +32,21 @@ final class PluginFileReaderTests: XCTestCase {
         XCTAssertGreaterThan(stat.modified, 0)
     }
 
+    func testAncestorGrantCannotReadListOrScanPrivateActivity() throws {
+        let support = home.appendingPathComponent("Library/Application Support/Switchly")
+        let activity = support.appendingPathComponent("Activity/Snapshots")
+        let visible = support.appendingPathComponent("Public")
+        try FileManager.default.createDirectory(at: activity, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: visible, withIntermediateDirectories: true)
+        try "private fixture".write(to: activity.appendingPathComponent("index.json"), atomically: true, encoding: .utf8)
+        try "public fixture".write(to: visible.appendingPathComponent("data.json"), atomically: true, encoding: .utf8)
+        let r = reader(path: "~/Library/Application Support/Switchly")
+        XCTAssertThrowsError(try r.readText(root: "s", path: "Activity/Snapshots/index.json"))
+        XCTAssertThrowsError(try r.stat(root: "s", path: "Activity"))
+        XCTAssertEqual(try r.list(root: "s", path: "").map(\.name), ["Public"])
+        XCTAssertEqual(try r.scan(root: "s", path: "", depth: 3, suffix: ".json", modifiedWithin: nil).map(\.path), ["Public/data.json"])
+    }
+
     func testUnsafePathsAreDenied() {
         let r = reader()
         for path in ["../x", "nested/../../x", "/etc/passwd", "a//b", "a.txt/", "x\0y"] {

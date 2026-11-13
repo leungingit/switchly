@@ -16,12 +16,18 @@ xcrun swiftc -swift-version 5 -D PLUGIN_PREVIEW_WORKER_TESTS \
     Sources/Models/WindowCapture.swift \
     Sources/Models/Plugins/PluginGrant.swift \
     Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginTimelineItem.swift \
     Sources/Models/Plugins/PluginScene.swift \
     Sources/Models/Plugins/PluginScene3DDescriptor.swift \
     Sources/Services/Plugins/PluginSurfaceRequest.swift \
     Sources/Services/Plugins/GLBPreflight.swift \
     Sources/Services/Plugins/PluginRegistry.swift \
     Sources/Services/Plugins/PluginPackageValidator.swift \
+    Sources/Models/ActivityApp.swift \
+    Sources/Models/ActivitySession.swift \
+    Sources/Models/ActivityQuery.swift \
+    Sources/Services/Plugins/PluginActivityProviding.swift \
+    Tools/PluginPreview/Worker/PluginFixtureActivityProvider.swift \
     Sources/Services/Plugins/PluginRuntime.swift \
     Sources/Services/Plugins/PluginVirtualClock.swift \
     Sources/Services/Plugins/PluginFileReader.swift \

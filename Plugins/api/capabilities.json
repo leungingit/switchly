@@ -86,7 +86,15 @@
       "preparation": {
         "optional": true,
         "parallelWithMediaRead": true,
-        "contextFields": ["app", "window", "locale", "settings", "reduceMotion", "uiFeatures", "t"],
+        "contextFields": [
+          "app",
+          "window",
+          "locale",
+          "settings",
+          "reduceMotion",
+          "uiFeatures",
+          "t"
+        ],
         "actionsEnabled": false,
         "lateResultAfterRender": "discard"
       },
@@ -492,7 +500,9 @@
           "screen",
           "surface",
           "scene",
-          "scene3d"
+          "scene3d",
+          "lineChart",
+          "timeline"
         ],
         "origin": "top-left",
         "pixelFormat": "RGBA",
@@ -618,7 +628,7 @@
     },
     {
       "id": "ctx.uiFeatures",
-      "status": "unimplemented",
+      "status": "stable",
       "contractStatus": "frozen",
       "frozenAt": "2026-11-06",
       "decision": "D26",
@@ -626,19 +636,32 @@
         2
       ],
       "surface": "ctx.uiFeatures",
-      "injected": false,
+      "injected": true,
       "fields": [
-        "scene3d"
+        "scene3d",
+        "panel",
+        "activity",
+        "lineChart",
+        "lineChartSeries",
+        "timeline"
       ],
       "shape": {
-        "scene3d": "boolean"
+        "scene3d": "boolean",
+        "panel": "boolean",
+        "activity": "boolean",
+        "lineChart": "boolean",
+        "timeline": "boolean",
+        "lineChartSeries": "boolean"
       },
       "negotiation": {
         "scene3dAvailableWhen": "apiVersion === 2 && ctx.uiFeatures.scene3d === true",
         "missingMeans": "no-negotiation; plugin must return the 2d tree",
-        "separateFrom": "ctx.capabilities"
+        "separateFrom": "ctx.capabilities",
+        "lineChartAvailableWhen": "ctx.uiFeatures.lineChart === true",
+        "timelineAvailableWhen": "ctx.uiFeatures.timeline === true",
+        "lineChartSeriesAvailableWhen": "ctx.uiFeatures.lineChartSeries === true"
       },
-      "description": "宿主 UI 特性协商快照，不是用户权限表；缺失不表示权限拒绝。合同已冻结，T04–T07 前宿主不注入。"
+      "description": "宿主 UI 特性协商快照，与用户权限表分离。lineChart缺失或为false时回退已有2D节点，不另设ctx.ui协商入口。"
     },
     {
       "id": "ctx.capabilities",
@@ -690,6 +713,144 @@
       "surface": "ctx.presentationID",
       "injected": true,
       "description": "一次叠层展示的宿主标识；可重置展开状态，不用于窗口身份。"
+    },
+    {
+      "id": "ctx.activity",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "ctx.activity",
+      "injected": "when-authorized",
+      "permission": "activity.read",
+      "methods": [
+        "summary",
+        "sessions",
+        "snapshots"
+      ],
+      "description": "异步有界本地查询；snapshots另需activity.snapshots，只有不透明图片引用，无像素/路径。",
+      "limits": {
+        "queryDays": 400,
+        "sessionsPerPage": 100,
+        "snapshotsPerPage": 6,
+        "summaryRows": 1000,
+        "responseBytes": 1048576,
+        "callsPerInvocation": 8,
+        "inFlight": 4
+      },
+      "snapshotSessionID": {
+        "type": "optional UUID string",
+        "meaning": "关联已有会话ID；不含路径，旧响应可缺省"
+      },
+      "errors": {
+        "activityCursorExpired": "游标与当前查询、采集代次或已读前缀不一致；尾部追加不影响前缀时可继续，本批结束后可至多从第一页重载一次",
+        "activityQueryFailed": "其他查询失败，不按游标过期自动重试",
+        "activityInvalidated": "清除或撤权等使读取代次失效，不自动恢复",
+        "activityUnavailable": "当前调用无权限、已停止或超出调用预算"
+      }
+    },
+    {
+      "id": "manifest.surfaces",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "values": [
+        "dockPreview",
+        "panel"
+      ],
+      "default": [
+        "dockPreview"
+      ],
+      "description": "可选独立panel；ctx.surface、panel槽位；panel中ctx.app/window为null；隐藏复用可见性租约。"
+    },
+    {
+      "id": "ui.activity-panel-controls",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "nodes": [
+        "segmented",
+        "dateRange",
+        "barChart",
+        "lineChart",
+        "grid",
+        "timeline"
+      ],
+      "description": "仅panel，有界声明式节点，日期分别发id.from/id.to数字epoch动作；活动图片宿主解析，不用于scene3d。"
+    },
+    {
+      "id": "ui.lineChart",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "panel",
+      "requires": {
+        "context": "ctx.uiFeatures.lineChart === true",
+        "fallbackWhen": "ctx.uiFeatures?.lineChart !== true",
+        "seriesContext": "ctx.uiFeatures.lineChartSeries === true"
+      },
+      "node": {
+        "type": "lineChart",
+        "items": "readonly {label:string,value:number}[]",
+        "label": "optional string: total legend",
+        "series": "optional readonly {label:string,items:readonly {label:string,value:number}[]}[]"
+      },
+      "itemType": "PluginBarItem",
+      "limits": {
+        "maxItems": 64,
+        "labelMaxBytes": 200,
+        "labelEncoding": "UTF-8",
+        "value": "finite nonnegative number",
+        "maxAdditionalSeries": 6,
+        "seriesAlignment": "same item count and labels as items"
+      },
+      "placement": {
+        "allowedSurfaces": [
+          "panel"
+        ],
+        "forbiddenSurfaces": [
+          "dockPreview",
+          "scene3d.surface"
+        ],
+        "scene3dFallback": "allowed only in a panel 2d fallback; forbidden in Dock"
+      },
+      "description": "通用有界折线节点，复用barChart的label/value校验；仅panel槽位，不能用于scene3d纹理。panel的普通2D fallback可用，Dock fallback递归拒绝。整棵树仍遵守64节点和深度8预算。"
+    },
+    {
+      "id": "ui.timeline",
+      "status": "stable",
+      "apiVersions": [
+        2
+      ],
+      "surface": "panel",
+      "requires": {
+        "context": "ctx.uiFeatures.timeline === true",
+        "fallbackWhen": "ctx.uiFeatures?.timeline !== true"
+      },
+      "node": {
+        "type": "timeline",
+        "items": "readonly {timestamp:number,content:PluginNode}[]"
+      },
+      "limits": {
+        "maxItems": 12,
+        "timestamp": "finite nonnegative epoch seconds",
+        "maxNodes": 64,
+        "maxDepth": 8
+      },
+      "placement": {
+        "allowedSurfaces": [
+          "panel"
+        ],
+        "forbiddenSurfaces": [
+          "dockPreview",
+          "scene3d.surface"
+        ],
+        "scene3dFallback": "allowed only in a panel 2d fallback; forbidden in Dock"
+      },
+      "description": "通用纵向时间线，宿主绘制本地日期、秒级时间、轴线和节点，按items顺序展示content；内容递归计入整树预算，旧宿主回退同顺序纵向列表。"
     }
   ],
   "permissions": [
@@ -735,6 +896,18 @@
       "status": "stable",
       "injectedWhenGranted": true,
       "builtinRequiresExplicitGrant": true
+    },
+    {
+      "id": "activity.read",
+      "status": "stable",
+      "injectedWhenGranted": true,
+      "requiresExplicitBuiltinGrant": true
+    },
+    {
+      "id": "activity.snapshots",
+      "status": "stable",
+      "injectedWhenGranted": true,
+      "requiresExplicitBuiltinGrant": true
     }
   ],
   "forbiddenGlobals": [

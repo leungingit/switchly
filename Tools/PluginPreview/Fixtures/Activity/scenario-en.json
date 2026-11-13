@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "activity-en",
+  "surface": "panel",
+  "environment": {
+    "locale": "en",
+    "appearance": "dark",
+    "glass": true,
+    "reduceMotion": true,
+    "contentWidthPoints": 390
+  },
+  "target": {
+    "bundleID": "com.example.fixture",
+    "appName": "合成夹具"
+  },
+  "fixtures": {
+    "activity": "activity.json"
+  },
+  "clock": {
+    "startEpochMs": 1794452400000,
+    "seed": 1
+  },
+  "grants": [
+    "activity.read",
+    "activity.snapshots"
+  ],
+  "steps": [
+    {
+      "type": "expectText",
+      "contains": "Activity Timeline"
+    },
+    {
+      "type": "action",
+      "id": "timeline-preset",
+      "value": 5
+    },
+    {
+      "type": "expectText",
+      "contains": "Custom range"
+    }
+  ]
+}

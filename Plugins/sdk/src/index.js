@@ -9,6 +9,10 @@ function definePlugin(plugin) {
   return plugin;
 }
 
+function definePanelPlugin(plugin) {
+  return definePlugin(plugin);
+}
+
 function withType(type, props = {}) {
   return { ...props, type };
 }
@@ -68,6 +72,25 @@ const ui = Object.freeze({
   marquee(value) {
     return withType("marquee", { value });
   },
+  segmented(options) {
+    return withType("segmented", options);
+  },
+  dateRange(options) {
+    return withType("dateRange", options);
+  },
+  barChart(items) {
+    return withType("barChart", { items: [...items] });
+  },
+  lineChart(items, options = {}) {
+    return withType("lineChart", { ...options, items: [...items],
+      ...(options.series ? { series: options.series.map(series => ({ ...series, items: [...series.items] })) } : {}) });
+  },
+  timeline(items) {
+    return withType("timeline", { items: [...items] });
+  },
+  grid(children) {
+    return withType("grid", { children: [...children] });
+  },
   scene(scene) {
     return withType("scene", scene);
   },
@@ -76,4 +99,4 @@ const ui = Object.freeze({
   },
 });
 
-export { definePlugin, ui };
+export { definePanelPlugin, definePlugin, ui };

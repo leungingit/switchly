@@ -259,7 +259,11 @@ By contributing you agree that your contributions are licensed under the
 
 ## 插件开发与跨仓验证
 
-插件源码和业务测试只放在相邻的 `switchly-plugins` 仓库，宿主的公开能力以 [API 参考](docs/plugins/plugin-api-reference.md) 为准。构建需要 Node.js 20+ 和 Python 3；运行 App 不需要 Node 或 Python。外仓执行 `npm test && npm run build`，宿主执行 `make prepare-plugins`，按 `Plugins/bundled-plugins.lock.json` 校验每个文件的 SHA-256。自定义制品路径用 `SWITCHLY_PLUGIN_SOURCE`；构建不联网、不自动更新锁文件。
+插件源码和业务测试只放在相邻的 `switchly-plugins` 仓库，宿主的公开能力以 [API 参考](docs/plugins/plugin-api-reference.md) 为准。构建需要 Node.js 20+ 和 Python 3；运行 App 不需要 Node 或 Python。外仓执行 `npm test && npm run build`，宿主执行 `make prepare-plugins`，使用 `Plugins/bundled-plugins.lock.json` 的 `schemaVersion` 2 按每插件 `contentHash` 校验整体制品。自定义制品路径用 `SWITCHLY_PLUGIN_SOURCE`；构建不联网、不自动更新锁文件。
+
+锁文件用 `contentHash` 取代逐文件 `files` 清单，保留顶层 `sourceRevision` 和每插件 `id`、`version`、`apiVersion`。计算时仍生成「POSIX 相对路径 → 文件 SHA-256 小写 hex」的 `files` 映射，对 `json.dumps(files, ensure_ascii=True, sort_keys=True, separators=(',', ':')).encode('utf-8')` 再取 SHA-256，结果以 `sha256:` 为前缀；文件增删、重命名或内容变化都会改变摘要。逐文件明细不再写入锁文件，具体变更审查外仓源码与资产 diff。来源目录和 staging 副本各校验一次；仍拒绝符号链接、特殊文件及超过 1024 个文件／32 MiB 的制品。
+
+锁文件流程回归：`python3 Tests/test_plugin_lock.py`，覆盖摘要稳定性、制品增删改名与篡改拒绝、文件预算、复制期间变化、旧 schema 拒绝及更新后准备流程；夹具与输出均在系统临时目录。
 
 多个外仓任务并行时，可为本宿主创建独立的外仓 Git worktree，检出 `Plugins/bundled-plugins.lock.json` 的 `sourceRevision` 并按外仓说明准备依赖、构建制品。然后在宿主未跟踪的 `mise.local.toml` 中配置制品目录，例如：
 
@@ -270,7 +274,7 @@ SWITCHLY_PLUGIN_SOURCE = "{{config_root}}/../switchly-plugins-locked/dist/Plugin
 
 路径按实际 worktree 调整。`mise run app` 会使用该目录并继续校验锁文件；宿主锁更新后需在独立 worktree 检出新的锁定提交并重新构建。各 worktree 的未跟踪文件和制品相互独立，避免其他任务的素材影响构建。
 
-变更预装版本或增添插件时，先审核外仓源码与资产，再构建并显式执行 `make update-plugin-lock`，审查 lock 差异；发布构建要求来源是已提交且干净的外仓提交。开发期可使用未提交的本地制品，但不能据此发布。`make build PLUGIN_FLAGS=--empty` 用于无预装独立构建验证，验证后执行正常 `make build` 恢复制品。
+变更预装版本或增添插件时，先审核外仓源码与资产 diff，再构建并显式执行 `make update-plugin-lock`，审查 lock 中的来源提交、所选插件 `id`／`version`／`apiVersion` 和 `contentHash` 差异；发布构建要求来源是已提交且干净的外仓提交。开发期可使用未提交的本地制品，但不能据此发布。`make build PLUGIN_FLAGS=--empty` 用于无预装独立构建验证，验证后执行正常 `make build` 恢复制品。
 
 本地 SDK：`npm --prefix Plugins/sdk test`；CLI：`npm --prefix Plugins/cli test`。使用 `node Plugins/cli/bin/switchly-plugin.js --help` 查看真实命令。CLI 的 `build` 校验后复制单入口 JS，不负责 TypeScript 转译。发布前的类型消费验证需要 TypeScript 编译器，包自身无运行依赖。
 

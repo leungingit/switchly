@@ -18,7 +18,7 @@ test("制备契约时并行读者始终读到完整的旧版本或新版本", as
   await mkdir(api, { recursive: true });
   await mkdir(contract);
   await copyFile(fileURLToPath(new URL("../scripts/prepare-contract.mjs", import.meta.url)), script);
-  const names = ["capabilities.json", "manifest.schema.json", "preview-scenario.schema.json",
+  const names = ["preview-activity-fixture.schema.json", "capabilities.json", "manifest.schema.json", "preview-scenario.schema.json",
     "preview-media-fixture.schema.json", "preview-weather-fixture.schema.json", "preview-fs-fixture.schema.json"];
   const contents = new Map(names.map((name) => [name, JSON.stringify({ name, data: "x".repeat(256 * 1024) })]));
   for (const [name, content] of contents) {

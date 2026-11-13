@@ -1,0 +1,75 @@
+{
+  "decision": "AT-D23",
+  "trendColoring": "one fixed color per application plus total; neutral time labels",
+  "maxAdditionalSeries": 6,
+  "totalIncludesAllApps": true,
+  "queryCallsPerNormalRender": 4,
+  "fixturesRenderedAndViewed": [
+    "app-series-light-fixture-2026-11-13.png",
+    "app-series-dark-fixture-2026-11-13.png",
+    "app-series-compact-en-fixture-2026-11-13.png",
+    "multicolor-timeline-light-fixture-2026-11-13.png",
+    "multicolor-timeline-dark-fixture-2026-11-13.png",
+    "app-series-many-light-fixture-2026-11-13.png",
+    "app-series-many-compact-dark-fixture-2026-11-13.png"
+  ],
+  "fixturesAreSynthetic": true,
+  "fixturesActivatedApp": false,
+  "formalMultiSeriesScreenshotVerified": true,
+  "formalConsentScreenshot": "consent-clear-live-2026-11-13.png",
+  "formalConsentSafetyPassed": false,
+  "formalLiveAcceptancePassed": false,
+  "originalJPEGsMissing": 1,
+  "additionalNewIntervalsNotFullyRecoveredAtLeast": 2,
+  "restoredData": {
+    "original331Unchanged": true,
+    "currentSessions": 412,
+    "threeOriginalJPEGsUnchanged": true,
+    "snapshotIndexCount": 3,
+    "settingsAndGrantsUnchanged": true
+  },
+  "unitTests": {
+    "total": 938,
+    "skipped": 9,
+    "failures": 0
+  },
+  "plugins": {
+    "tests": 79,
+    "pass": 79,
+    "fail": 0,
+    "skipped": 0
+  },
+  "sdk": {
+    "tests": 14,
+    "pass": 14,
+    "fail": 0,
+    "skipped": 0
+  },
+  "cli": {
+    "tests": 73,
+    "pass": 73,
+    "fail": 0,
+    "skipped": 0
+  },
+  "workerTestsPassed": true,
+  "verifyPassed": true,
+  "codesignVerified": true,
+  "bothRepositoriesDiffCheckPassed": true,
+  "sdkContractHash": "sha256:3232f69f69becf3125f399abf8693a31dfc3f6d132f2b4d7e173903aa05332a9",
+  "rendererRevision": "sha256:da8626bc10f3f3801761c86d4c643cd2646143e6c406b4937d61545f45d01149",
+  "process": "65322 <Switchly>/DerivedData/Build/Products/Debug/Switchly.app/Contents/MacOS/Switchly",
+  "formalRestoredThreePhotosVerified": true,
+  "formalMultiColorTimelineVerified": true,
+  "formalViewRestored": "day",
+  "legendCrashFixedByVerticalStack": true,
+  "initialLegendCrash": {
+    "signal": "SIGTRAP",
+    "topFrame": "specialized HVGrid.minorGeometry(updatingSize:)",
+    "PID": 39134
+  },
+  "formalScreenshots": [
+    "app-series-live-2026-11-13.png",
+    "multicolor-timeline-live-2026-11-13.png",
+    "restored-three-photos-live-2026-11-13.png"
+  ]
+}

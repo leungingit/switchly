@@ -215,6 +215,31 @@ final class GlassAppearanceTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testThemePreservesSystemStatusItemAppearanceAndRepairsOldOverride() throws {
+        let original = NSApp.appearance
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        defer {
+            NSStatusBar.system.removeStatusItem(item)
+            NSApp.appearance = original
+        }
+        let button = try XCTUnwrap(item.button)
+        let window = try XCTUnwrap(button.window)
+        let systemAppearance = button.effectiveAppearance.name
+        XCTAssertTrue(NSApp.windows.contains(window))
+
+        // Reproduce the old all-windows override, including the content view.
+        window.appearance = NSAppearance(named: .aqua)
+        window.contentView?.appearance = NSAppearance(named: .aqua)
+        for theme in [AppTheme.dark, .light, .system, .dark] {
+            ThemeApplier.apply(theme)
+            XCTAssertNil(window.appearance)
+            XCTAssertNil(window.contentView?.appearance)
+            XCTAssertEqual(button.effectiveAppearance.name, systemAppearance,
+                           "The menu bar must keep its system appearance under \(theme)")
+        }
+    }
+
     func testTransparentFallbackDoesNotRetainHiddenFrostedHighlights() {
         var material = CrystalMaterial.legacyDefault
         material.glassStyle = .transparent

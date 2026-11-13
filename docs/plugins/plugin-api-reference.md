@@ -1,6 +1,6 @@
 # Switchly 插件 API 参考
 
-> 更新日期：2026-11-06。本文以当前宿主的 Swift 解码、运行时、资源读取与包校验实现为准。机器可读能力清单见 [`Plugins/api/capabilities.json`](../../Plugins/api/capabilities.json)，manifest Schema 见 [`Plugins/api/manifest.schema.json`](../../Plugins/api/manifest.schema.json)。`scene3d` 与 `ctx.uiFeatures` 是 D26 冻结的合同，宿主当前尚未实现（T04–T07）；在能力清单仍标记 `unimplemented` 前，不得把它们宣传为已可用能力。
+> 更新日期：2026-11-06。本文以当前宿主的 Swift 解码、运行时、资源读取与包校验实现为准。机器可读能力清单见 [`Plugins/api/capabilities.json`](../../Plugins/api/capabilities.json)，manifest Schema 见 [`Plugins/api/manifest.schema.json`](../../Plugins/api/manifest.schema.json)。`scene3d` 章节保留 D26 冻结时的历史实现状态；当前宿主已注入 `ctx.uiFeatures` 快照，本轮扩展其中的 `lineChart`／`lineChartSeries` 字段，不新增平行协商入口。UI 特性可用性仍以每次快照为准。
 
 ## 1. 当前兼容状态
 
@@ -17,7 +17,7 @@
 | `media.nowPlaying/control/library` | 稳定 | 当前桥接目标是 Apple Music，受用户授权限制。 |
 | `ctx.fs` | 稳定 | 只读、根目录白名单、调用预算与路径解析限制。 |
 | 声明式 UI | 稳定 | `render()` 返回经过解码校验的槽位树。 |
-| `ctx.uiFeatures` | 未实现 | D26 合同冻结：`{ scene3d: boolean }`，与 `ctx.capabilities` 权限表分离；当前宿主不注入。 |
+| `ctx.uiFeatures` | 稳定 | 宿主 UI 特性快照，包含 scene3d、panel、activity、lineChart、lineChartSeries、timeline；缺失或 false 时回退，与用户权限分离。 |
 | `scene3d` | 未实现 | D26 合同冻结：仅 `apiVersion: 2` 且 `ctx.uiFeatures.scene3d === true` 可用；当前宿主解码器仍按未知节点拒绝。 |
 | Scene | 稳定 | 宿主本地播放，JS 不逐帧参与。 |
 | 普通 `image.pluginAsset` | 稳定 | 复用 SceneAssets 路径与纹理预算，已通过真实图片渲染回归。 |
@@ -260,7 +260,7 @@ export default definePlugin({
 
 `render` 和 `onAction` 可以同步返回、返回 Promise 或抛错。宿主通过 `JSON.stringify` 接收返回值；`undefined` 按 `null` 处理。
 
-可选 `prepare(ctx)` 与首次媒体读取并行，返回同格式的初始 UI；旧宿主忽略该方法，没有声明时行为不变。`ctx` 仅提供 `app`、`window`、`locale`、`settings`、`reduceMotion`、`uiFeatures` 和 `t`，不提供媒体、文件、存储、天气或 invalidate 接口。准备界面不代表播放状态，宿主不注册其动作；只有正式 render 的媒体批次通过校验后才启用动作并原子替换。初始界面复用完整 UI／Scene3D 解码和预算，关闭、切目标或正式批次已提交后会丢弃迟到结果。该阶段沿用软超时，不增加硬隔离保证。
+可选 `prepare(ctx)` 与首次媒体读取并行，返回同格式的初始 UI；旧宿主忽略该方法，没有声明时行为不变。`ctx` 仅提供 `app`、`window`、`locale`、`settings`、`reduceMotion`、`uiFeatures`、`ui` 和 `t`，不提供媒体、文件、存储、天气或 invalidate 接口。准备界面不代表播放状态，宿主不注册其动作；只有正式 render 的媒体批次通过校验后才启用动作并原子替换。初始界面复用完整 UI／Scene3D 解码和预算，关闭、切目标或正式批次已提交后会丢弃迟到结果。该阶段沿用软超时，不增加硬隔离保证。
 
 生产 Dock 预览的调用超时为 1 秒。JavaScriptCore 没有公开的硬中断 API，因此这是软超时：
 
@@ -287,7 +287,7 @@ node Plugins/cli/bin/switchly-plugin.js verify ../switchly-plugins/plugins/com.s
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `ctx.capabilities` | object | 能力名到 `{ supported, granted, available }` 的映射；含媒体、天气、文件、未实现窗口能力及基础 storage；未知键为空。available 不代表已获得系统自动化许可或实际文件存在，调用仍须处理错误。 |
-| `ctx.uiFeatures` | object，可选 | 宿主 UI 能力协商快照，与权限表分离。当前唯一字段为 `scene3d: boolean`。字段缺失表示宿主没有该协商，插件必须返回 2D 树；不能据 `apiVersion: 2` 推断 3D 可用。 |
+| `ctx.uiFeatures` | object，可选 | 宿主 UI 能力协商快照，与权限表分离。字段为 `scene3d: boolean` 及可选的 `panel`、`activity`、`lineChart`、`lineChartSeries`、`timeline` 布尔值。字段缺失表示宿主没有该协商，插件必须返回 2D 树；不能据 `apiVersion: 2` 推断 3D 可用。 |
 | `ctx.app` | object | `{ bundleID, pid, name, lastActiveAt }`。`lastActiveAt` 为 Unix 秒或 `null`。 |
 | `ctx.window` | object | `{ windowID, title }`；`title` 最多约 40 个字符。 |
 | `ctx.locale` | string | 首选语言，例如 `zh-Hans-CN`。 |
@@ -783,6 +783,8 @@ Scene 总预算：
 - `ui.text/progress/image/badge/marquee`
 - `ui.scene`
 - `ui.scene3d`（合同冻结，宿主未实现；仅 v2 且 `ctx.uiFeatures.scene3d === true` 时由插件返回）
+- `ui.lineChart(items)`（仅 panel 且 `ctx.uiFeatures?.lineChart === true` 时由插件返回，否则回退）
+- `ui.segmented/dateRange/barChart/grid`
 - `index.d.ts`：完整 ctx、manifest、UI、Scene、`scene3d` 类型。
 
 示例：
@@ -888,3 +890,60 @@ manifest 可声明 `renderScope: "window"`，缺省仍为 `"app"`。窗口范围
 窗口入口支持 button.variant=labeled（显示标签并扩大同一按钮点击区）；ctx.presentationID 为一次叠层展示的宿主标识，可重置展开状态，不用于窗口身份。
 
 窗口范围的 ctx.app.pid 表示当前卡片窗口的实际拥有进程，bundleID/name 仍表示 Dock 目标产品；宿主将拥有进程、进程启动时间与 windowID 绑定。window 范围不接受 center 输出；卡片标题行固定容纳小尺寸控件，面板高度预算共用同一几何值。
+
+## 应用活动与独立插件面板（v2 可选增量）
+
+契约真源为 [活动时间线计划](activity-timeline-plan.md) AT-D08～D17。`apiVersion: 2` 的 manifest 可声明 `surfaces: ["panel"]` 或同时包含 `"dockPreview"`，省略保持原 Dock 行为；`matches: ["*"]` 仍必填。菜单栏「插件面板…」按插件身份打开独立面板，不按前台应用匹配。仅声明 panel 的插件不在 Dock 装载。
+
+`ctx.surface` 为 `"panel"` 或 `"dockPreview"`；panel 的 `ctx.app`、`ctx.window` 是 `null`，不能冒充某个应用的目标上下文。面板输出 `[{slot:"panel",node:...}]`，`presentationID` 标识一次展示。Dock 槽位行为不变；两个表面共享现有 VM 与可见性租约，插件须按 surface/presentationID 隔离自身展示状态。旧宿主没有 `ctx.surface` 时，新面板插件返回空树。SDK 以 `PluginPanelContext` 和 `definePanelPlugin` 表达新上下文，旧 `PluginContext` 的 app/window 类型保持不变。
+
+### 分层授权
+
+记录应用活动、活动截图采样都由宿主设置显式开启，均默认关闭。`activity.read` 授权读取时长；`activity.snapshots` 还允许展示历史小图，需同时获得前者。预装也需明确批准；权限读取不自动开启采集，也不与 `window.capture` 合并。未获 activity.read 时不注入 `ctx.activity`；缺少截图授权时不提供 `snapshots`。supported/granted/available 分开判断，采集关闭不等于已保留历史不可读取。
+
+### 查询接口
+
+全部方法返回 Promise，时间为 epoch 秒、半开范围 `[from,to)`，最大400天；每次 render/action 最多8次活动调用、全 VM 同时最多4次。响应不超过1 MiB；非法范围、超预算或过期游标明确失败，不伪造完整结果。查询过程中撤权、清除或卸载会丢弃旧结果。
+
+```typescript
+summary({from, to, groupBy?: "app"|"hour"|"day"|"month", timeZone?: string})
+// {items:[{bundleID,name,seconds,sessions,bucketStart?,bucketEnd?}],
+//  availableFrom:number|null,revision:number,recording:boolean,screenshotsEnabled:boolean}
+sessions({from, to, bundleID?, limit?, cursor?})
+// {items:[{id,bundleID,appName,start,end,seconds,endReason}],nextCursor:string|null,revision:number}
+snapshots({from, to, bundleID?, limit?, cursor?})
+// {items:[{ref,capturedAt,bundleID,sessionID?}],nextCursor:string|null,revision:number}
+```
+
+summary 最多1000行，每行对应一个应用及可选时间桶；时区为 IANA 名称，缺省使用本机时区。跨日与夏令时由 Calendar 裁剪；区间单调时长按墙钟片段比例分配。sessions 每页最多100条，snapshots最多6条，游标绑定查询、页大小、采集代次与已读前缀摘要；尾部追加且已读前缀不变时可继续翻页，修改／删除／插入已读记录、保留期裁剪或清除换代后应从第一页获取。revision 继续表示数据更新，不单独使历史游标失效。`availableFrom` 表示当前保留范围下界，无任何保留记录时为 null，不能据空结果推断更早没有使用。
+
+过期游标的 Promise 拒绝值为字符串 `activityCursorExpired`；其他查询失败仍为 `activityQueryFailed`。插件可以在本批请求全部结束后，清除旧游标并至多从第一页重新加载一次；不能绕过每次 render/action 的 8 次调用和同时 4 次预算。清除、撤权等失效仍拒绝为 `activityInvalidated`，不得按游标过期自动恢复。
+
+图片 ref 是短期不透明 UUID，宿主绑定插件身份、数据代次、有效期；只供 `image.source.activitySnapshot` 使用。不能读像素或路径，不能跨插件解析；清除、撤权或文件过期后失效。文件读取桥拒绝 Activity 目录及其后代，祖先目录也不能用于穿透读取。
+
+### 面板节点
+
+以下节点仅面板输出可用，仍受总节点64、深度8限制；不能出现在 scene3d 纹理中。
+
+| type | 主要字段 | 动作与限制 |
+| --- | --- | --- |
+| segmented | id、options、selected | 最多6个选项；动作值是选项索引 |
+| dateRange | id、from、to、label | `id.from`/`id.to` 分别发送数字 epoch 秒；范围最多400天 |
+| barChart | items:[{label,value}] | 最多12行，value为非负有限数；按秒展示时长 |
+| lineChart | items:[{label,value}] | 最多64点；label≤200 UTF-8 bytes，value为非负有限秒数；复用 `PluginBarItem` |
+| timeline | items:[{timestamp,content}] | 最多12项；timestamp为非负有限epoch秒，content递归计入整树预算 |
+| grid | children | 最多6个子节点，用于分页小图 |
+| image | source:{activitySnapshot:ref} | 宿主注入解析器，权限不足只显示占位 |
+
+`lineChart` 是 v2 的通用有界折线节点，`items` 复用 `PluginBarItem` 的 `{label,value}` 形状；宿主按 UTF-8 检查 label 最多 200 字节，value 必须有限且非负，最多 64 点。SDK 的 `ui.lineChart(items)` 只生成 wire shape 并复制数组，和 `ui.barChart` 一样不重复做运行时限制校验，越界数据由宿主解码器拒绝。它只能在 `panel` 槽位出现：Dock 预览和 `scene3d` 纹理 surface 不接受；panel 的普通 2D fallback 可用，Dock fallback 则递归拒绝；整棵树仍受 64 节点、深度 8 预算限制。`ctx.uiFeatures?.lineChart === true` 时才返回该节点，旧宿主缺少 `ctx.uiFeatures`、字段缺失或为 `false` 时须回退到已有 2D 节点，不能根据 `apiVersion: 2` 推断可用。`prepare(ctx)` 也注入这个静态协商字段，但动作注册与迟到结果规则不变。机器可读约束见 `Plugins/api/capabilities.json` 的 `ctx.uiFeatures` 与 `ui.lineChart`。
+
+当 `ctx.uiFeatures.lineChartSeries === true` 时，可用 `ui.lineChart(items, {label, series})` 追加固定色线条和图例：`label` 命名汇总，`series` 为最多 6 个 `{label, items}`。每列最多 64 点，必须与汇总的时间标签逐项一致；所有系列标签非空且不超过 200 UTF-8 字节，各 value 沿用非负有限约束。宿主使用共同纵轴，每条线全程保持一种色，汇总以虚线和淡面积辅助区分，横轴不换色。缺少此协商字段时只发送原来的 `items`，不推断旧宿主支持多线。附加列和总列均只用于 panel，其他预算与拒绝规则不变。
+
+Preview/Worker 只使用合成夹具，不能实例化 ActivityTrackingService、ActivityStore 或真实截图服务。主 App 系统行为和权限撤销仍须单独验收。
+
+
+### 会话与截图的纵向时间线（AT-D17）
+
+`ui.timeline(items)` 返回 `{type:"timeline",items:[{timestamp,content}]}`；`PluginTimelineItem.content` 沿用普通 `PluginNode`，时间戳为非负有限 epoch 秒，最多 12 项，容器及全部内容共同计入 64 节点／深度 8。宿主按输入顺序绘制左侧本地日期与秒级时间、中央连续轴线和节点、右侧内容，不自动猜测排序或会话归属。只在 `ctx.uiFeatures?.timeline === true` 时返回此节点，缺失或 false 时由插件按同顺序回退为纵向内容列表，内容须保留可读的时间。仅允许 panel，scene3d 纹理拒绝，panel 普通 2D fallback 可用，Dock fallback 递归拒绝。
+
+`snapshots()` 的可选 `sessionID` 是对应会话的不透明 UUID，与 `sessions()` 的 `id` 对应，不是文件路径或图片像素。旧宿主未提供该字段，或所属会话不在当前加载页时，截图按 `capturedAt` 独立排列；不能按同一应用或时间近似猜测归属。活动插件保留独立的会话页和截图页，并明确说明当前只显示已经加载的页。

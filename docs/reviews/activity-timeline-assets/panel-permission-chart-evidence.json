@@ -1,0 +1,38 @@
+{
+  "说明": "本轮代码、权限、测试与实机边界；所有时间按 Asia/Singapore。主题和最终图表看图仍待解锁补齐。",
+  "date": "2026-11-12",
+  "appBundle": "DerivedData/Build/Products/Debug/Switchly.app",
+  "sha256": {
+    "Switchly": "112603271f115aa18b688bd5b5d00d455e54ff9e9ae6299e127635830ceb103f",
+    "Switchly.debug.dylib": "0638036b90789c7a91b48475880da8bdcc0e26fbe5d7264adc90dcc96a18fbbb"
+  },
+  "permission": {
+    "priorActivityGrantMissing": true,
+    "userApprovedActivityReadAndSnapshots": true,
+    "grantPersisted": true,
+    "otherPluginGrantsUnchanged": true,
+    "trackingSettingsUnchanged": true,
+    "appearanceSettingsUnchanged": true
+  },
+  "checks": {
+    "unit": {
+      "total": 927,
+      "skipped": 11,
+      "failures": 0
+    },
+    "cardLifecycleRepeatedPasses": 10,
+    "pluginTests": 66,
+    "sdkTests": 11,
+    "cliTests": 72,
+    "workerTestsPassed": true,
+    "codesignDeepStrictPassed": true
+  },
+  "visual": {
+    "authorizedPluginCard": "plugin-settings-authorized.png",
+    "liveLauncher": "plugin-launcher-live-light.png",
+    "liveDayAndMonthChartsObservedBeforeSecondPrecisionAdjustment": true,
+    "finalDarkAndOpaquePendingMacUnlock": true,
+    "statusMenuAutomation": "当前自动化层未发现状态栏控件；用户已按上一轮菜单栏操作请求打开活动面板并提供附图，不记为 Agent 自动点击通过。",
+    "initialLiveDayChartBeforeSecondPrecisionAdjustment": "activity-chart-live-light.png"
+  }
+}

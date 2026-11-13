@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// One observable overlay per card; old app-scoped plugins keep their original mount.
 struct DockWindowPluginCard: View {
@@ -10,6 +11,7 @@ struct DockWindowPluginCard: View {
     let appBottomBar: AnyView?
     private let thumbnail: NSImage?
     @StateObject private var overlay: DockPluginOverlayModel
+    @State private var isMounted = false
     private struct Presentation: Equatable {
         let context: PluginRenderContext?
         let visible: Bool
@@ -43,12 +45,16 @@ struct DockWindowPluginCard: View {
             },
             thumbnailRefresh: DockWindowCardHostDefaults.thumbnailRefresh
         )
-        .onAppear { update(presentation) }
-        .onChange(of: presentation) { update($0) }
+        .onAppear { isMounted = true; update(presentation) }
+        // task(id:) 内部同样依赖 onChange；在主队列下一轮处理输入，避免同步发布递归进当前帧。
+        .onReceive(Just(presentation).receive(on: DispatchQueue.main)) { value in
+            guard isMounted else { return }
+            update(value)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .settingsDidChange)) { _ in
             overlay.reloadCurrentContext()
         }
-        .onDisappear { overlay.stop() }
+        .onDisappear { isMounted = false; overlay.stop() }
     }
 
     private func slot(_ slot: PluginSlot) -> some View {

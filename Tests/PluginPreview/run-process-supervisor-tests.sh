@@ -20,7 +20,7 @@ xcrun swiftc \
     -target "$arch-apple-macosx12.0" \
     -parse-as-library \
     Sources/Models/Plugins/PluginScene.swift \
-    Sources/Models/Plugins/PluginUINode.swift \
+    Sources/Models/Plugins/PluginTimelineItem.swift Sources/Models/Plugins/PluginUINode.swift \
     Sources/Models/Plugins/PluginScene3DDescriptor.swift \
     Sources/Services/Plugins/PluginSurfaceRequest.swift \
     Sources/Models/Plugins/PluginManifest.swift \

@@ -21,9 +21,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Last observed value of `AppSettings.gridEnabled`, so the ⌃1–9 hotkeys
     /// are only re-registered when the master switch actually flips.
     private var gridEnabledAtLaunch = false
+    private var activityTracking: ActivityTrackingService?
+    private var activityProvider: ActivityDataProvider?
+    private var pluginPanels: PluginPanelCoordinator?
+    private var terminationReplied = false
     private var captureCoordinator: WindowCaptureCoordinator?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Hosted unit tests inject their own services and disposable stores.
+        // Never start real collectors or permission prompts in that process.
+        guard NSClassFromString("XCTestCase") == nil else {
+            AppLogger.info("Skipping application services in unit test host")
+            return
+        }
         AppLogger.isFileLoggingEnabled = SettingsService.shared.loadSettings().fileLoggingEnabled
         AppLogger.info("Application did finish launching. pid=\(ProcessInfo.processInfo.processIdentifier), bundleID=\(Bundle.main.bundleIdentifier ?? "nil"), appPath=\(Bundle.main.bundlePath)")
         setupApplication()
@@ -32,9 +42,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupObservers()
         promptRequiredPermissionsIfNeeded()
     }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { openPreferences() }
+        return true
+    }
     
     func applicationWillTerminate(_ notification: Notification) {
         AppLogger.info("Application will terminate")
+        activityTracking?.stop()
+        pluginPanels?.closeAll()
         captureCoordinator?.shutdown()
         DesktopGridCoordinator.shared.stop()
         DockHoverMonitor.shared.stop()
@@ -48,6 +65,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         UsageStatisticsService.shared.flushSync(timeout: 0.5)
     }
     
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let activityTracking else { return .terminateNow }
+        activityTracking.stop()
+        terminationReplied = false
+        let reply: @MainActor @Sendable () -> Void = { [weak self] in
+            guard let self, !self.terminationReplied else { return }
+            self.terminationReplied = true; sender.reply(toApplicationShouldTerminate: true)
+        }
+        Task { await activityTracking.flushAndWait(); reply() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: reply)
+        return .terminateLater
+    }
+
     private func setupApplication() {
         let lsUIElement = Bundle.main.object(forInfoDictionaryKey: "LSUIElement") ?? "nil"
         AppLogger.info("Configuring activation policy. previous=\(NSApp.activationPolicy().rawValue), LSUIElement=\(lsUIElement)")
@@ -126,6 +156,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DockHoverMonitor.shared.updateSettings()
         PreviewTriggerMonitor.shared.updateSettings()
         AppActivationTracker.shared.start()
+        let activity = ActivityTrackingService(store: ActivityStore(), snapshots: ActivitySnapshotStore(), tracker: AppActivationTracker.shared)
+        let activityData = ActivityDataProvider(tracking: activity) { id, capability in PluginHost.shared.isAuthorized(pluginID: id, capability: capability) }
+        activityTracking = activity; activityProvider = activityData
+        PluginHost.shared.configureActivity(activityData)
+        pluginPanels = PluginPanelCoordinator(host: PluginHost.shared, activityImages: activityData)
+        activity.apply(settings.activityTracking)
+
         AppLogger.info("Dock preview initialized")
     }
     
@@ -137,9 +174,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupObservers() {
         AppLogger.debug("Setting up app-level observers")
         NotificationCenter.default.publisher(for: .openPreferences)
-            .sink { [weak self] _ in
+            .sink { [weak self] notification in
                 AppLogger.info("Received openPreferences notification")
-                self?.openPreferences()
+                self?.openPreferences(selectedTab: notification.userInfo?["tab"] as? PreferencesTab ?? .general,
+                                      pluginID: notification.userInfo?["pluginID"] as? String)
             }
             .store(in: &cancellables)
 
@@ -260,6 +298,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     // also how they disappear when it is turned off.
                     ShortcutService.shared.setupGlobalShortcuts()
                 }
+                self.activityTracking?.apply(latest.activityTracking)
                 UsageStatisticsService.shared.isEnabled = latest.usageStatisticsEnabled
                 if !latest.usageStatisticsEnabled {
                     // Switching off stops recording; whatever was already
@@ -269,6 +308,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        NotificationCenter.default.publisher(for: .openPluginPanels)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.pluginPanels?.showLauncher() }
+            .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: .openPluginPanel)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let id = notification.object as? String,
+                      let title = notification.userInfo?["title"] as? String else { return }
+                self?.pluginPanels?.show(pluginID: id, title: title)
+            }
+            .store(in: &cancellables)
         setupStatisticsKeyHandling()
     }
 
@@ -375,7 +426,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func openPreferences(selectedTab: PreferencesTab = .general) {
+    private func openPreferences(selectedTab: PreferencesTab = .general, pluginID: String? = nil) {
         AppLogger.info("Opening preferences. existingWindow=\(preferencesWindow != nil)")
         if let window = preferencesWindow {
             window.makeKeyAndOrderFront(nil)
@@ -407,7 +458,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // windows (the setting rows' question marks among them). Opt the
         // window out so hover hints show regardless of the app's state.
         window.allowsToolTipsWhenApplicationIsInactive = true
-        window.contentView = NSHostingView(rootView: PreferencesView(initialTab: selectedTab))
+        window.contentView = NSHostingView(rootView: PreferencesView(initialTab: selectedTab, initialPluginID: pluginID, activityTracking: activityTracking))
         window.isReleasedWhenClosed = false
         
         window.delegate = self

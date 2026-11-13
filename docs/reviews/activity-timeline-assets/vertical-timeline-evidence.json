@@ -1,0 +1,60 @@
+{
+  "说明": "正式插件经正式宿主解码和时间轴渲染器生成的合成布局，不是个人活动记录或桌面合成实机截图。",
+  "date": "2026-11-12",
+  "checks": {
+    "unit": {
+      "total": 929,
+      "skipped": 11,
+      "failures": 0
+    },
+    "pluginTests": 71,
+    "sdkTests": 13,
+    "cliTests": 73,
+    "workerPassed": true,
+    "codesignDeepStrictPassed": true
+  },
+  "render": {
+    "timeline-light": {
+      "file": "vertical-timeline-light.png",
+      "pixelSize": [
+        1520,
+        1640
+      ],
+      "synthetic": true,
+      "hiddenNativeRender": true
+    },
+    "timeline-dark": {
+      "file": "vertical-timeline-dark.png",
+      "pixelSize": [
+        1520,
+        1640
+      ],
+      "synthetic": true,
+      "hiddenNativeRender": true
+    },
+    "timeline-compact-en": {
+      "file": "vertical-timeline-compact-en.png",
+      "pixelSize": [
+        800,
+        1640
+      ],
+      "synthetic": true,
+      "hiddenNativeRender": true
+    }
+  },
+  "sha256": {
+    "Switchly": "103722dfd9832582be404817d25366766713d7ea465b3a7f502b5d45c9eb73dc",
+    "Switchly.debug.dylib": "bea05b7862878931ba7f201144ce75f12429c24ca247549162587b0286d46cd1"
+  },
+  "limits": {
+    "maxTimelineItems": 12,
+    "maxTreeNodes": 64,
+    "maxTreeDepth": 8
+  },
+  "realDesktopPendingMacUnlock": true,
+  "settings": {
+    "trackingSettingsUnchanged": true,
+    "appearanceSettingsUnchanged": true,
+    "activityGrantRetained": true
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "activity-zh-Hans",
+  "surface": "panel",
+  "environment": {
+    "locale": "zh-Hans",
+    "appearance": "light",
+    "glass": false,
+    "reduceMotion": true,
+    "contentWidthPoints": 600
+  },
+  "target": {
+    "bundleID": "com.example.fixture",
+    "appName": "合成夹具"
+  },
+  "fixtures": {
+    "activity": "activity.json"
+  },
+  "clock": {
+    "startEpochMs": 1794452400000,
+    "seed": 1
+  },
+  "grants": [
+    "activity.read",
+    "activity.snapshots"
+  ],
+  "steps": [
+    {
+      "type": "expectText",
+      "contains": "活动时间线"
+    },
+    {
+      "type": "action",
+      "id": "timeline-preset",
+      "value": 5
+    },
+    {
+      "type": "expectText",
+      "contains": "自定义范围"
+    }
+  ]
+}
