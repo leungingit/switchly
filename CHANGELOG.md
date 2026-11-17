@@ -5,7 +5,13 @@ All notable changes to Switchly are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 未发布
+## [Unreleased]
+
+## [1.4.0] - 2026-11-17
+
+### Added
+
+- README 与官网新增活动时间线原生合成样例、窗口截图与独立插件预览流程图，精简重复功能文字并说明图像来源。
 
 - 修正亮色／暗色主题覆盖系统菜单栏窗口外观的问题；菜单栏模板图标始终跟随菜单栏背景着色，应用内容仍使用所选主题。
 
@@ -22,7 +28,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - 独立插件面板改为标准窗口，支持系统“窗口”菜单选择，统一主窗口与无障碍导航行为。
 - 活动确认改为单一状态并校验呈现标识；清除需准确输入 `CLEAR`，旧“允许”回调及未输入确认词的动作均不能执行清除。
 
-## [Unreleased]
+### Fixed
 
 - 修复窗口截图设置展开为空，以及部分应用缺少 AppKit 启动日期时相机入口消失；框选图像保持原窗口位置和尺寸，操作栏独立显示；相机及展开按钮靠右对齐，结果图可原尺寸滚动／适应窗口查看，裁剪后可返回同一原位冻结图像重新框选。
 
@@ -469,7 +475,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - English and Simplified Chinese localizations.
 - MIT license and privacy policy.
 
-[Unreleased]: https://github.com/leungingit/switchly/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/leungingit/switchly/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/leungingit/switchly/releases/tag/v1.4.0
 [1.3.0]: https://github.com/leungingit/switchly/releases/tag/v1.3.0
 [1.2.1]: https://github.com/leungingit/switchly/releases/tag/v1.2.1
 [1.2.0]: https://github.com/leungingit/switchly/releases/tag/v1.2.0

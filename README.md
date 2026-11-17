@@ -48,10 +48,6 @@ Hover a Dock icon to see that app’s window thumbnails. Choose a horizontal, ve
 
 Hovering Apple Music also shows play / pause, previous, next and Love controls, even when its window is closed. The first time, macOS asks you to allow Switchly to control Music (Automation).
 
-音乐插件的初始界面与歌曲／封面读取并行准备，3D 模型可提前加载，媒体校验完成后再启用控制；普通 Dock 预览按目标产品查询窗口，并合并重复布局，减少快速划过图标时的主线程工作。
-
-音乐插件默认使用本地 MediaRemote／AppleScript 组合桥：流媒体封面与歌曲信息配对后同批发布，控制、喜欢与资料库仍定向使用 AppleScript。`mise run app`／正常主 App 构建离线编译并打包固定 Adapter，只有获授权的可见消费者才启动采集；浏览器抢占时回退，避免串用封面。Preview／Worker 仍使用夹具。已验证本机真实 Dock 悬停，完整发行兼容验收仍待完成，详见[接入设计](docs/plugins/mediaremote/music-mediaremote-integration-plan.md)。
-
 ### Make room for different kinds of work
 
 Group apps into named workspaces—for example, **Build**, **Write**, and **Plan**. Give each workspace a shortcut and choose its window ordering, then access it from a centered workspace bar.
@@ -68,25 +64,33 @@ Add useful controls directly to Dock previews. The built-in Music plugin shows p
 
 Manage built-in and locally installed plugins in **Preferences → Plugins**. Search and filter the list, inspect details and permissions, reload plugins, or remove user-installed packages. User plugins start disabled, require renewed authorization after an update, and cannot replace a built-in plugin with the same ID. Plugins have no direct network or process access; read-only folder access requires explicit permission.
 
-音乐插件默认使用本地 MediaRemote／AppleScript 组合桥：流媒体封面与歌曲信息配对后同批发布，控制、喜欢与资料库仍定向使用 AppleScript。`mise run app`／正常主 App 构建离线编译并打包固定 Adapter，只有获授权的可见消费者才启动采集；浏览器抢占时回退，避免串用封面。Preview／Worker 仍使用夹具。已验证本机真实 Dock 悬停，完整发行兼容验收仍待完成，详见[接入设计](docs/plugins/mediaremote/music-mediaremote-integration-plan.md)。
-
 Built-in plugin source and assets live in the separate [switchly-plugins repository](https://github.com/leungingit/switchly-plugins); the app bundles hash-locked artifacts for offline use. The local SDK and CLI are not published to npm. See the [API reference](docs/plugins/plugin-api-reference.md) and [roadmap](docs/plugins/plugin-api-roadmap.md).
 
-### Window capture plugin (local development build)
+### New features, at a glance
 
-After you enable and explicitly authorize Window Capture in Preferences, each Dock window card offers a full-resolution capture or a region selected from a frozen capture. Copy, save, or share the image using macOS services. Edit annotations in Preview, save and close the image, then explicitly reload the changes in Switchly. Screen Recording permission is required; minimized or unreadable windows report failure. See the [validation record](docs/reviews/window-capture-validation-2026-11-11.md) for the tested scope.
+#### Activity timeline: see the shape of your day
 
-框选时，冻结图像覆盖在原窗口的位置和大小上；裁剪后进入结果窗口，可按原尺寸查看、滚动或切换“适应窗口”。点击“重新框选”即可返回同一原位冻结图像。设置展开区会显示授权状态及相机入口用法。
+![Native activity timeline with sample app trends, duration ranking, sessions and snapshots](Website/images/shots/activity.png)
 
-### 应用活动时间线（本地开发版本）
+*Native view rendered with synthetic data, not personal history or a live desktop capture.*
 
-「偏好设置 → 插件 → 活动时间线」可显式开启本机应用时长记录，与使用次数统计独立；记录和截图均默认关闭。菜单栏「活动时间线」直接打开活动面板，也可从「插件面板…」选择打开，支持上午/下午/日/月/年/自定义范围、按应用着色并含汇总线的活动趋势图、时长概览、多色应用排行、会话与截图的纵向时间线及分页；截图随当前会话页的时间范围更新。截图另需系统权限与允许应用名单，插件读取时长/展示截图也分别授权；插件卡片的「检查权限…」用于确认这些读取权限，采集开关不代替插件授权。时长默认400天/64 MiB，截图默认7天/256 MiB，可停止或清除；不保存标题、不上传。范围与实测边界见[实施合同](docs/plugins/activity-timeline-plan.md)。
+Compare app trends and time spent, then follow sessions and snapshots down the timeline. Snapshots follow the current session page. Enable it in **Preferences → Plugins → Activity Timeline**. **Recording and snapshots are off by default; collection and plugin access require separate consent.** Snapshots also need system permission and an app allowlist. No window titles or uploads. Default retention: 400 days / 64 MiB for durations, 7 days / 256 MiB for snapshots; stop or clear at any time. [Setup and data boundaries →](docs/plugins/activity-timeline-plan.md)
 
-### Preview plugins independently
+#### Window capture: keep just what matters
 
-Developers can preview a plugin without running Switchly: the standalone preview app uses the same runtime, decoder, and renderer with synthetic data. The launcher offers a simulated Dock, while scenarios can exercise actions, capture images and reports, and compare visual baselines. Default scenarios and launcher improvements are still being developed; the toolkit is a local candidate, not an npm release. Build it with `make plugin-preview-package` and see the [preview guide](docs/plugins/preview/plugin-preview-guide.md) and [coverage matrix](docs/plugins/preview/plugin-preview-coverage.md). Real Dock behavior, Accessibility window switching, multi-display behavior, and desktop glass still require testing in Switchly itself.
+![Illustrated capture flow: camera entry, frozen region selection, results and reselect](Website/images/shots/capture-flow.svg)
 
-Agent 可为 `switchly-plugin run` 显式添加 `--background`，在不显示预览窗口、不激活预览 App 的路径中截图、按可访问标签点击，以及在真实 3D 视图内按截图坐标点击／拖动。输入与截图使用同一共享 Renderer，不发送全局键鼠；仍需图形会话与屏幕录制授权，图像或隔离自检失败直接报环境错误。该路线目前在本机 arm64／macOS 27.2 验证，兼容性及输入范围见[预览指南](docs/plugins/preview/plugin-preview-guide.md)。
+*Illustrated workflow, not a product screenshot; diagram labels are in Chinese.*
+
+Enable and explicitly authorize the plugin, then capture a Dock window card or select a region at its original position. Copy, save, or use macOS sharing. View at original size, fit to window, or reselect; edit in Preview, save and close, then explicitly reload. Screen Recording permission is required; minimized or unreadable windows report failure. [Tested scope →](docs/reviews/window-capture-validation-2026-11-11.md)
+
+#### Standalone preview: try plugins with sample data
+
+![Illustrated plugin preview pipeline from synthetic scenarios through the production runtime to images and reports](Website/images/shots/preview-flow.svg)
+
+*Illustrated workflow, not a product screenshot; diagram labels are in Chinese.*
+
+Use the same runtime and renderer without running Switchly: exercise actions, export screenshots and reports, and compare visual baselines. Build the local toolkit with `make plugin-preview-package`; it is not published to npm. `run --background` avoids visible windows and global input, but still needs a graphical session and Screen Recording permission. Tested on arm64 / macOS 27.2 only; real Dock, multiple displays and older systems need separate acceptance. [Preview guide →](docs/plugins/preview/plugin-preview-guide.md) · [Coverage →](docs/plugins/preview/plugin-preview-coverage.md)
 
 ## Desktop Grid: all your desktops, one glance away
 

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Switchly — 看得见的窗口切换 · macOS 菜单栏工具</title>
-<meta name="description" content="Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具：全局预览、Dock 悬停预览、工作区、九宫格桌面与 Dock 预览插件系统。">
+<meta name="description" content="Switchly 是完全本地运行的 macOS 菜单栏窗口预览与切换工具：全局预览、Dock 悬停预览、工作区、九宫格桌面、窗口截图与本地活动时间线。">
 <link rel="icon" href="images/app-icon.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="nav"><div>
   <b>Switchly</b>
-  <a href="#features">功能</a><a href="#grid">九宫格桌面</a><a href="#start">快速开始</a><a href="#privacy">隐私</a>
+  <a href="#new">新增功能</a><a href="#features">功能</a><a href="#grid">九宫格桌面</a><a href="#start">快速开始</a><a href="#privacy">隐私</a>
   <a href="plugins.html">插件 API</a>
   <a href="https://github.com/leungingit/switchly">GitHub</a>
 </div></header>
@@ -58,37 +58,44 @@
 </script>
 
 
-<h2 id="features">功能详解</h2>
-<p>你知道要找哪个窗口：浏览器后面的文档、另一个编辑器窗口、刚打开的参考资料。Switchly 把窗口预览摆在眼前，让你按“看到的”来选，而不是按标题去猜。</p>
+<section id="new" class="showcase" aria-labelledby="new-title">
+<p class="eyebrow">本次更新</p>
+<h2 id="new-title">看回一天，也截下这一刻。</h2>
+<p class="intro">活动时间线、窗口截图、独立插件预览。先看图，再上手。</p>
+<article class="feature-story activity-story">
+  <div class="story-copy"><h3>一天的脉络，一眼看清。</h3>
+    <p>按应用看趋势与时长，沿时间轴回看会话和截图。翻页时，截图跟随当前会话范围。</p>
+    <p class="feature-meta">记录与截图默认关闭 · 独立授权 · 仅在本机</p>
+    <a href="https://github.com/leungingit/switchly/blob/main/docs/plugins/activity-timeline-plan.md">开启方式与数据边界 →</a>
+  </div>
+  <figure><a href="images/shots/activity.png"><img src="images/shots/activity.png" width="1520" height="1640" loading="lazy" alt="活动时间线原生样例：按应用着色的趋势、时长排行和会话截图"></a><figcaption>正式原生视图 + 合成数据；非个人历史或桌面实拍。点击查看大图。</figcaption></figure>
+</article>
+<article class="feature-story">
+  <div class="story-copy"><h3>截取窗口，留住重点。</h3>
+    <p>从 Dock 卡片拍下窗口，或在原位冻结图像上框选。复制、保存、系统分享；裁剪后随时重新框选。</p>
+    <p class="feature-meta">需明确授权与屏幕录制权限 · 插件不接收像素或路径</p>
+    <a href="https://github.com/leungingit/switchly/blob/main/docs/reviews/window-capture-validation-2026-11-11.md">查看支持范围 →</a>
+  </div>
+  <figure><a href="images/shots/capture-flow.svg"><img src="images/shots/capture-flow.svg" width="1200" height="650" loading="lazy" alt="窗口截图流程示意：相机入口、原位冻结框选、复制保存与重新框选"></a><figcaption>功能流程示意，非产品截图；点击查看大图。标注由系统「预览」完成，保存关闭后显式重读。</figcaption></figure>
+</article>
+<article class="feature-story">
+  <div class="story-copy"><h3>插件开发，先在样例里试。</h3>
+    <p>独立预览复用正式 Runtime 与渲染器。场景驱动交互，导出截图与报告，比较视觉基线。</p>
+    <p class="feature-meta">本地工具 · 尚未发布 npm · 后台路线已测 arm64 / macOS 27.2</p>
+    <a href="plugins.html">插件 API 与开发入口 →</a>
+  </div>
+  <figure><a href="images/shots/preview-flow.svg"><img src="images/shots/preview-flow.svg" width="1200" height="650" loading="lazy" alt="独立插件预览示意：合成场景经过正式运行时，导出图像、界面树、动作和报告"></a><figcaption>工具流程示意，点击查看大图。后台截图仍需图形会话与屏幕录制授权，不代替真实 Dock 和跨屏验收。</figcaption></figure>
+</article>
+</section>
 
+<h2 id="features">顺手的窗口入口</h2>
 <div class="grid">
-  <div class="card"><h3>全局窗口预览</h3>
-    <p>全局快捷键（默认 <code>⌘ ⌥ P</code>）呼出所有打开窗口的缩略图，支持标题搜索；同一应用的多个窗口也能一眼区分。</p>
-    <p><b>窗口来源</b>：「预览全部窗口」或默认的「仅已配置应用」。</p>
-    <p><b>预览模式</b>：「窗口复刻」在原位置与原尺寸预览高亮窗口；「仅高亮」保持紧凑。可在预览上直接关闭、最小化、缩放窗口。</p>
-    <p><b>桌面范围</b>：「全部桌面／当前桌面」，其他桌面、最小化、隐藏状态分别标记；无法截图时保留图标与标题。跨桌面切换仍待实机验收，详见<a href="https://github.com/leungingit/switchly/blob/main/docs/reviews/all-spaces-window-preview.md">验证记录</a>。</p></div>
-  <div class="card"><h3>Dock 悬停预览</h3>
-    <p>鼠标悬停 Dock 图标，即显示该应用所有窗口缩略图，直达需要的文档，无需打开完整面板。</p>
-    <p>也可启用<b>屏幕边缘热区</b>或<b>摇动鼠标</b>触发；卡片布局可选横向、纵向或网格，窗口过多时滚动并受目标屏幕 <code>visibleFrame</code> 约束。</p>
-    <p>悬停 Apple Music 还会通过<a href="plugins.html">插件系统</a>显示封面、曲名与播放控制。</p></div>
-  <div class="card"><h3>工作区（Workspace）</h3>
-    <p>把应用编组为命名工作区，如 <b>Build</b>、<b>Write</b>、<b>Plan</b>；为每个工作区设置快捷键与窗口排序，通过屏幕居中的工作区栏访问。</p>
-    <p>工作区只组织应用分组与窗口入口，不创建 macOS 桌面，也不保存／还原桌面布局。</p></div>
-  <div class="card"><h3>音乐插件（Dock 预览）</h3>
-    <p>内置插件：悬停 Apple Music 显示封面、曲名、播放 / 暂停、上一首、下一首与喜欢；Music 窗口关闭时也可使用。可选“只显示组件”或点按转盘布局。</p>
-    <p>首次使用需允许 Switchly 控制「音乐」。插件由 JavaScript 编写、声明式界面、按权限授权，详见<a href="plugins.html">插件 API</a>。</p></div>
-  <div class="card"><h3>让 Dock 预览更有用</h3>
-    <p>内置「天气抽卡」可根据手动天气或可选在线天气揭晓卡片，并从 Music 资料库播放歌曲。在线天气默认关闭。</p>
-    <p>在「偏好设置 → 插件」搜索、筛选和管理插件，也可安装本地插件；用户插件默认关闭，更新后重新授权。<a href="plugins.html">了解插件与独立预览工具</a>。</p></div>
-  <div class="card"><h3>应用专属快捷键</h3>
-    <p>为常用应用分配专属快捷键，多个应用可共用同一快捷键。</p>
-    <p>目标应用只有一个窗口时，可开启<b>自动直达</b>跳过选择。</p></div>
-  <div class="card"><h3>外观与主题</h3>
-    <p>浅色、深色或跟随系统；透明玻璃、磨砂或关闭玻璃，共享密度与染色。macOS 26+ 使用原生 <code>NSGlassEffectView</code>，旧系统自动降级，并可「清除玻璃叠层」。</p>
-    <p>「窗口卡片」可单独设置预览网格、Dock 预览与工作区栏的卡片衬底色。动画遵循系统「减少动态效果」。</p></div>
-  <div class="card"><h3>使用统计</h3>
-    <p>仅在本地记录键鼠次数与估算节省时间，估算不代表真实生产力提升；可随时清除，永不上传。</p>
-    <p>界面内置英文与简体中文；可选开机启动、仅菜单栏（无 Dock 图标）。</p></div>
+  <div class="card"><h3>全局窗口预览</h3><p><code>⌘ ⌥ P</code> 展开缩略图，搜索并切换；支持全部／当前桌面、原位窗口复刻。跨桌面切换仍待实机验收。</p></div>
+  <div class="card"><h3>Dock 悬停预览</h3><p>悬停看窗口，横排、竖排或网格；可选边缘热区与摇动鼠标触发。</p></div>
+  <div class="card"><h3>工作区</h3><p>把应用编为 Build / Write / Plan，用快捷键进入。组织窗口入口，不改动系统桌面。</p></div>
+  <div class="card"><h3>音乐与天气抽卡</h3><p>封面、3D 点按转盘与播放控制；翻卡听歌。在线天气可选，默认关闭。</p></div>
+  <div class="card"><h3>原生外观</h3><p>浅色、深色、跟随系统；透明、磨砂或关闭玻璃。支持减少动态效果。</p></div>
+  <div class="card"><h3>本地插件与统计</h3><p>搜索和管理插件，安装本地包；查看键鼠计数与估算节省时间，可随时清除。</p></div>
 </div>
 
 <h2 id="grid">九宫格桌面：所有桌面一眼看全</h2>
