@@ -167,6 +167,13 @@ targets:
       - target: SwitchlyPluginPreviewWorker
       - package: GLTFKit2
     postBuildScripts:
+      - name: Sync preview bundle version from host
+        basedOnDependencyAnalysis: false
+        script: |
+          python3 -B "${SRCROOT}/Scripts/bundle-version.py" --sync "${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+        inputFiles:
+          - "$(SRCROOT)/Resources/Info.plist"
+          - "$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)"
       - name: Bundle preview worker
         script: |
           cp "${BUILT_PRODUCTS_DIR}/SwitchlyPluginPreviewWorker" "${TARGET_BUILD_DIR}/${EXECUTABLE_FOLDER_PATH}/SwitchlyPluginPreviewWorker"

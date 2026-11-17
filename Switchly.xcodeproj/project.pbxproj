@@ -1881,6 +1881,7 @@
 				50C63E8DF6C60E1160FB8683 /* Sources */,
 				62881A0E4E0EEA2B9D593BA6 /* Resources */,
 				D84783E6D5A03B0756B35F8B /* Frameworks */,
+				F7DADA89EFD94EDF6D605993 /* Sync preview bundle version from host */,
 				ACD49FDAA58AF9C1BA63D8FC /* Bundle preview worker */,
 			);
 			buildRules = (
@@ -2065,6 +2066,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "cp \"${BUILT_PRODUCTS_DIR}/SwitchlyPluginPreviewWorker\" \"${TARGET_BUILD_DIR}/${EXECUTABLE_FOLDER_PATH}/SwitchlyPluginPreviewWorker\"\n";
+		};
+		F7DADA89EFD94EDF6D605993 /* Sync preview bundle version from host */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Resources/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
+			);
+			name = "Sync preview bundle version from host";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "python3 -B \"${SRCROOT}/Scripts/bundle-version.py\" --sync \"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

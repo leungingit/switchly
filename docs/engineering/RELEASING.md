@@ -22,6 +22,21 @@ Nothing else may hold a version. `Makefile`, `Scripts/version.sh`,
 `verify.sh`, the release workflow and the app itself all *read* the plist; no
 file duplicates the number, so they cannot drift apart.
 
+### REL-D05：独立预览 App 的系统版本（2026-11-17）
+
+`SwitchlyPluginPreview.app` 的 `CFBundleShortVersionString` 与 `CFBundleVersion`
+在每次构建的签名前由 `Scripts/bundle-version.py --sync` 从 `Resources/Info.plist`
+同步，不另存版本常量。构建阶段依赖最终生成的预览 plist，保留其他自动生成字段。
+工具协议的 `toolVersion` 独立描述兼容性，不作为 App 系统版本来源。
+
+CI 构建两个 Debug App 后检查两个字段；Release 在打包和公证前检查两个发行 App，
+缺失或与真源不一致均停止发布。下载解压后可复用只读检查（不使用 `--sync`）：
+
+```sh
+python3 -B Tests/test_bundle_version.py
+python3 -B Scripts/bundle-version.py /path/to/Switchly.app/Contents/Info.plist /path/to/SwitchlyPluginPreview.app/Contents/Info.plist
+```
+
 ### Why the plist is kept alphabetically sorted
 
 `PlistBuddy` and `plutil` re-serialise a plist with its keys sorted. By keeping

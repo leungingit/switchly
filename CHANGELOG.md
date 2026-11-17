@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-17
+
+### Fixed
+
+- 独立插件预览 App 的版本号与构建号现在跟随主应用；CI 与发布流程检查两个 App 的最终版本，拒绝缺失或不一致的下载包。
+
 ## [1.4.0] - 2026-11-17
 
 ### Added
@@ -475,7 +481,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - English and Simplified Chinese localizations.
 - MIT license and privacy policy.
 
-[Unreleased]: https://github.com/leungingit/switchly/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/leungingit/switchly/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/leungingit/switchly/releases/tag/v1.4.1
 [1.4.0]: https://github.com/leungingit/switchly/releases/tag/v1.4.0
 [1.3.0]: https://github.com/leungingit/switchly/releases/tag/v1.3.0
 [1.2.1]: https://github.com/leungingit/switchly/releases/tag/v1.2.1
