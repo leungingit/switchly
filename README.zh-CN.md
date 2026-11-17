@@ -68,23 +68,31 @@ Dock 卡片可选择横向、纵向或网格布局，窗口较多时可以滚动
 
 预装插件源码与素材位于独立的 [switchly-plugins 仓库](https://github.com/leungingit/switchly-plugins)，App 使用哈希锁定的预装制品，支持离线使用。本地 SDK 和 CLI 尚未发布到 npm；详见 [API 参考](docs/plugins/plugin-api-reference.md)和[发展路线](docs/plugins/plugin-api-roadmap.md)。
 
-音乐插件默认通过本地 MediaRemote／AppleScript 组合桥读取歌曲和流媒体封面，定向控制、喜欢与资料库仍使用 AppleScript。主 App 离线打包固定 Adapter，仅获授权的可见消费者启动采集；当前机器已完成真实 Dock 悬停验收。近期封面在同一读取会话内最多缓存 8 张／8 MiB，来源变化或面板全部关闭时清理。详见[接入设计](docs/plugins/mediaremote/music-mediaremote-integration-plan.md)。
+### 新增功能，看图上手
 
-### 窗口截图插件（本地开发版本）
+#### 活动时间线：一天的脉络，一眼看清
 
-在偏好设置中启用并明确授权窗口截图插件后，各 Dock 窗口卡片提供快速截图与自定义选区。原始图片在本机处理，可复制、保存或使用系统分享；标注交给「预览」，保存并关闭后回到截图窗口读取修改。需要屏幕录制权限，最小化或不可读取的窗口会提示失败；完整支持范围见[验证记录](docs/reviews/window-capture-validation-2026-11-11.md)。
+![正式原生视图渲染的活动时间线：应用趋势、时长排行与会话截图](Website/images/shots/activity.png)
 
-框选时，冻结图像覆盖在原窗口的位置和大小上；裁剪后进入结果窗口，可按原尺寸查看、滚动或切换“适应窗口”。点击“重新框选”即可返回同一原位冻结图像。设置展开区会显示授权状态及相机入口用法。
+*原生视图与合成数据，非个人历史或桌面实拍。*
 
-### 应用活动时间线（本地开发版本）
+按应用看趋势和时长，沿纵向时间轴回看会话与截图；翻页时截图跟随当前会话范围。在「偏好设置 → 插件 → 活动时间线」开启。**记录与截图均默认关闭，采集和插件读取分别授权**；截图还需系统权限与允许应用名单。不保存窗口标题、不上传。时长默认保留 400 天／64 MiB，截图 7 天／256 MiB，可停止或清除。[启用与数据边界 →](docs/plugins/activity-timeline-plan.md)
 
-「偏好设置 → 插件 → 活动时间线」可显式开启本机应用时长记录，与使用次数统计独立；记录和截图均默认关闭。菜单栏「活动时间线」直接打开活动面板，也可从「插件面板…」选择打开，支持上午/下午/日/月/年/自定义范围、按应用着色并含汇总线的活动趋势图、时长概览、多色应用排行、会话与截图的纵向时间线及分页；截图随当前会话页的时间范围更新。截图另需系统权限与允许应用名单，插件读取时长/展示截图也分别授权；插件卡片的「检查权限…」用于确认这些读取权限，采集开关不代替插件授权。时长默认400天/64 MiB，截图默认7天/256 MiB，可停止或清除；不保存标题、不上传。范围与实测边界见[实施合同](docs/plugins/activity-timeline-plan.md)。
+#### 窗口截图：截下窗口，框出重点
 
-### 独立预览插件
+![窗口截图功能示意：相机入口、原位冻结框选、结果与重新框选](Website/images/shots/capture-flow.svg)
 
-开发者无需运行 Switchly 本体，即可使用独立预览 App 和合成数据查看插件；它复用本体的 Runtime、解码器和渲染代码。启动器提供模拟 Dock，场景支持执行动作、导出截图和报告、比较视觉基线。默认场景和启动器改进仍在开发中，工具包目前是本地候选，尚未发布到 npm。可用 `make plugin-preview-package` 构建，具体用法与边界见[使用指南](docs/plugins/preview/plugin-preview-guide.md)和[覆盖矩阵](docs/plugins/preview/plugin-preview-coverage.md)。真实 Dock、辅助功能切窗、跨屏与桌面玻璃仍需在本体验证。
+*功能流程示意，非产品截图。*
 
-Agent 可为 `switchly-plugin run` 显式添加 `--background`，在不显示预览窗口、不激活预览 App 的路径中截图、按可访问标签点击，以及在真实 3D 视图内按截图坐标点击／拖动。输入与截图使用同一共享 Renderer，不发送全局键鼠；仍需图形会话与屏幕录制授权，捕获或隔离自检失败直接报错。目前后台路线只在本机 arm64／macOS 27.2 验证，旧系统、Intel、跨 Space 与完整输入尚未验收。
+启用并明确授权后，从 Dock 窗口卡片截图或框选，复制、保存或使用系统分享。结果支持原尺寸滚动、适应窗口与重新框选；「预览」编辑后保存关闭，再显式重读。需屏幕录制权限，最小化或不可读取的窗口会提示失败。[支持范围 →](docs/reviews/window-capture-validation-2026-11-11.md)
+
+#### 独立预览：先在样例里试好插件
+
+![独立插件预览流程示意：合成场景、正式运行时与图像和报告产物](Website/images/shots/preview-flow.svg)
+
+*工具流程示意，非产品截图。*
+
+无需运行本体，用同一 Runtime／渲染器预览合成数据、执行动作并导出截图和报告。`make plugin-preview-package` 构建本地工具包，尚未发布 npm。`run --background` 不显示窗口或发送全局键鼠，仍需图形会话与屏幕录制授权；目前只在 arm64／macOS 27.2 验证，不代替真实 Dock、跨屏或旧系统验收。[使用指南 →](docs/plugins/preview/plugin-preview-guide.md) · [覆盖矩阵 →](docs/plugins/preview/plugin-preview-coverage.md)
 
 ## 九宫格桌面：所有桌面，一眼看全
 

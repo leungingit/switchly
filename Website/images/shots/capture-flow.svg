@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">窗口截图流程示意图</title>
+  <desc id="desc">从 Dock 卡片相机入口，到原位冻结框选，再到复制、保存、系统分享、预览编辑与重新框选的结果流程。此图为功能示意，不是真实界面截图。</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1D1D1F" flood-opacity=".10"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#0A6CFF"/>
+    </marker>
+    <linearGradient id="resultGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#EAF3FF"/>
+      <stop offset="1" stop-color="#D8E9FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="650" fill="#FAFAF7"/>
+  <rect x="56" y="38" width="1088" height="574" rx="28" fill="none" stroke="#E4E4DF"/>
+
+  <text x="88" y="84" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="30" font-weight="700">窗口截图：从入口到可控结果</text>
+  <text x="88" y="115" fill="#6E6E73" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="15">本地处理 · 用户主动触发 · 结果由你决定如何使用</text>
+  <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif">
+    <rect x="934" y="56" width="174" height="34" rx="17" fill="#FFF3E2" stroke="#F0C887"/>
+    <circle cx="956" cy="73" r="5" fill="#D97706"/>
+    <text x="970" y="78" fill="#8A4B00" font-size="13" font-weight="600">流程示意 · 非截图</text>
+  </g>
+
+  <!-- Stage 1 -->
+  <g>
+    <rect x="56" y="150" width="336" height="346" rx="20" fill="#FFFFFF" stroke="#E4E4DF" filter="url(#shadow)"/>
+    <circle cx="89" cy="183" r="16" fill="#0A6CFF"/>
+    <text x="89" y="188" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="14" font-weight="700">1</text>
+    <text x="116" y="189" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">相机入口</text>
+
+    <rect x="82" y="212" width="284" height="206" rx="14" fill="#F7F8FA" stroke="#DADDE3"/>
+    <rect x="82" y="212" width="284" height="36" rx="14" fill="#FFFFFF"/>
+    <rect x="82" y="234" width="284" height="14" fill="#FFFFFF"/>
+    <circle cx="101" cy="230" r="4" fill="#D9DCE2"/>
+    <circle cx="115" cy="230" r="4" fill="#D9DCE2"/>
+    <circle cx="129" cy="230" r="4" fill="#D9DCE2"/>
+    <rect x="151" y="225" width="82" height="9" rx="4.5" fill="#C8CDD5"/>
+    <rect x="327" y="218" width="28" height="24" rx="8" fill="#0A6CFF"/>
+    <path d="M334 229h3l2-3h7l2 3h3a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-17a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Z" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+    <circle cx="341" cy="234.5" r="3.2" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+
+    <rect x="100" y="266" width="248" height="128" rx="10" fill="#EAF3FF"/>
+    <rect x="122" y="288" width="72" height="8" rx="4" fill="#8DB7FF"/>
+    <rect x="122" y="307" width="154" height="7" rx="3.5" fill="#BFD7FF"/>
+    <rect x="122" y="326" width="126" height="7" rx="3.5" fill="#BFD7FF"/>
+    <circle cx="312" cy="304" r="18" fill="#FFFFFF" stroke="#DCE8F8"/>
+    <path d="M304 304h16M312 296v16" stroke="#0A6CFF" stroke-width="2" stroke-linecap="round"/>
+
+    <rect x="104" y="434" width="240" height="42" rx="14" fill="#E9EAED"/>
+    <rect x="114" y="441" width="28" height="28" rx="8" fill="#FF8A65"/>
+    <rect x="151" y="441" width="28" height="28" rx="8" fill="#7C9CFF"/>
+    <rect x="188" y="441" width="28" height="28" rx="8" fill="#77C79A"/>
+    <rect x="225" y="441" width="28" height="28" rx="8" fill="#F2C45E"/>
+    <rect x="262" y="441" width="28" height="28" rx="8" fill="#B897E8"/>
+    <text x="224" y="504" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">从 Dock 卡片点击相机</text>
+  </g>
+
+  <path d="M403 320H432" fill="none" stroke="#0A6CFF" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- Stage 2 -->
+  <g>
+    <rect x="444" y="150" width="306" height="346" rx="20" fill="#FFFFFF" stroke="#E4E4DF" filter="url(#shadow)"/>
+    <circle cx="477" cy="183" r="16" fill="#0A6CFF"/>
+    <text x="477" y="188" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="14" font-weight="700">2</text>
+    <text x="504" y="189" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">原位冻结框选</text>
+
+    <rect x="470" y="212" width="254" height="226" rx="16" fill="url(#resultGlow)" stroke="#CFE0F8"/>
+    <rect x="470" y="212" width="254" height="34" rx="16" fill="#FFFFFF"/>
+    <rect x="470" y="230" width="254" height="16" fill="#FFFFFF"/>
+    <circle cx="488" cy="229" r="4" fill="#D9DCE2"/>
+    <circle cx="502" cy="229" r="4" fill="#D9DCE2"/>
+    <circle cx="516" cy="229" r="4" fill="#D9DCE2"/>
+
+    <rect x="486" y="260" width="222" height="148" rx="10" fill="#A9C9F8" fill-opacity=".38" stroke="#0A6CFF" stroke-width="2.5"/>
+    <rect x="486" y="260" width="222" height="148" rx="10" fill="none" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1"/>
+    <circle cx="486" cy="260" r="6" fill="#FFFFFF" stroke="#0A6CFF" stroke-width="2"/>
+    <circle cx="708" cy="260" r="6" fill="#FFFFFF" stroke="#0A6CFF" stroke-width="2"/>
+    <circle cx="486" cy="408" r="6" fill="#FFFFFF" stroke="#0A6CFF" stroke-width="2"/>
+    <circle cx="708" cy="408" r="6" fill="#FFFFFF" stroke="#0A6CFF" stroke-width="2"/>
+    <rect x="549" y="238" width="96" height="22" rx="8" fill="#1D1D1F"/>
+    <text x="597" y="253" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="11">框选可见区域</text>
+    <rect x="544" y="320" width="104" height="9" rx="4.5" fill="#7FAEF5"/>
+    <rect x="544" y="339" width="142" height="7" rx="3.5" fill="#B5D0F7"/>
+    <rect x="544" y="355" width="120" height="7" rx="3.5" fill="#B5D0F7"/>
+
+    <rect x="484" y="432" width="226" height="25" rx="12.5" fill="#F3F4F6"/>
+    <circle cx="498" cy="444.5" r="5" fill="#0A6CFF"/>
+    <text x="511" y="449" fill="#5B6068" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="11">冻结图像覆盖原窗口位置</text>
+    <text x="597" y="504" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">拖动框线选择区域</text>
+  </g>
+
+  <path d="M759 320H788" fill="none" stroke="#0A6CFF" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- Stage 3 -->
+  <g>
+    <rect x="800" y="150" width="344" height="346" rx="20" fill="#FFFFFF" stroke="#E4E4DF" filter="url(#shadow)"/>
+    <circle cx="833" cy="183" r="16" fill="#0A6CFF"/>
+    <text x="833" y="188" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="14" font-weight="700">3</text>
+    <text x="860" y="189" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">结果与后续操作</text>
+
+    <rect x="826" y="212" width="292" height="158" rx="14" fill="#F4F6F8" stroke="#D9DDE3"/>
+    <rect x="826" y="212" width="292" height="34" rx="14" fill="#FFFFFF"/>
+    <rect x="826" y="230" width="292" height="16" fill="#FFFFFF"/>
+    <circle cx="845" cy="229" r="4" fill="#D9DCE2"/>
+    <circle cx="859" cy="229" r="4" fill="#D9DCE2"/>
+    <circle cx="873" cy="229" r="4" fill="#D9DCE2"/>
+    <text x="972" y="234" fill="#8C9199" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="10">结果图 · 示意</text>
+
+    <rect x="842" y="260" width="260" height="94" rx="8" fill="#DCEBFF"/>
+    <circle cx="895" cy="307" r="28" fill="#0A6CFF" fill-opacity=".16"/>
+    <path d="M880 307l10 10 21-24" fill="none" stroke="#0A6CFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="940" y="286" width="98" height="9" rx="4.5" fill="#8DB7FF"/>
+    <rect x="940" y="306" width="72" height="7" rx="3.5" fill="#B5D0F7"/>
+    <rect x="940" y="323" width="84" height="7" rx="3.5" fill="#B5D0F7"/>
+
+    <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="11" font-weight="600">
+      <rect x="826" y="388" width="64" height="30" rx="15" fill="#EEF4FF" stroke="#C9DDFF"/>
+      <text x="858" y="408" fill="#235DB5" text-anchor="middle">复制</text>
+      <rect x="898" y="388" width="64" height="30" rx="15" fill="#EEF4FF" stroke="#C9DDFF"/>
+      <text x="930" y="408" fill="#235DB5" text-anchor="middle">保存</text>
+      <rect x="970" y="388" width="78" height="30" rx="15" fill="#EEF4FF" stroke="#C9DDFF"/>
+      <text x="1009" y="408" fill="#235DB5" text-anchor="middle">系统分享</text>
+      <rect x="1056" y="388" width="62" height="30" rx="15" fill="#EEF4FF" stroke="#C9DDFF"/>
+      <text x="1087" y="408" fill="#235DB5" text-anchor="middle">重新框选</text>
+    </g>
+
+    <path d="M858 436v18H1009v-18" fill="none" stroke="#96A0AD" stroke-width="1.8" stroke-dasharray="5 5"/>
+    <rect x="887" y="447" width="182" height="30" rx="15" fill="#FFF8EA" stroke="#EBCB92"/>
+    <text x="978" y="467" fill="#78510F" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="11" font-weight="600">预览编辑 → 返回后重读</text>
+    <text x="972" y="504" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">明确动作，不自动外发</text>
+  </g>
+
+  <rect x="88" y="540" width="1024" height="48" rx="16" fill="#F1F5FA"/>
+  <circle cx="115" cy="564" r="10" fill="#DDEBFF"/>
+  <path d="M110 564l4 4 7-8" fill="none" stroke="#0A6CFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="136" y="569" fill="#4D5968" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">截图与裁剪在内存中完成，系统分享仅在用户选择服务后触发。</text>
+  <text x="1090" y="570" fill="#0A6CFF" text-anchor="end" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="12" font-weight="600">LOCAL-FIRST</text>
+</svg>

@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">独立插件预览流程示意图</title>
+  <desc id="desc">合成场景 JSON 进入正式 Runtime 与 Renderer，输出 PNG、界面树、动作和报告。后台路径不显示预览窗口，也不发送全局键盘鼠标事件；工具尚未发布到 npm。</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1D1D1F" flood-opacity=".10"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#0A6CFF"/>
+    </marker>
+    <linearGradient id="runtimeFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A6CFF"/>
+      <stop offset="1" stop-color="#4A8DFF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="650" fill="#FAFAF7"/>
+  <rect x="56" y="38" width="1088" height="574" rx="28" fill="none" stroke="#E4E4DF"/>
+
+  <text x="88" y="84" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="30" font-weight="700">独立插件预览：同一实现，合成输入</text>
+  <text x="88" y="115" fill="#6E6E73" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="15">不启动真实 Dock，用可重复场景验证插件界面与行为</text>
+  <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif">
+    <rect x="970" y="56" width="138" height="34" rx="17" fill="#EEF4FF" stroke="#C9DDFF"/>
+    <circle cx="991" cy="73" r="5" fill="#0A6CFF"/>
+    <text x="1003" y="78" fill="#235DB5" font-size="13" font-weight="600">本地工具候选</text>
+  </g>
+
+  <!-- Stage 1 -->
+  <g>
+    <rect x="56" y="150" width="304" height="346" rx="20" fill="#FFFFFF" stroke="#E4E4DF" filter="url(#shadow)"/>
+    <circle cx="89" cy="183" r="16" fill="#0A6CFF"/>
+    <text x="89" y="188" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="14" font-weight="700">1</text>
+    <text x="116" y="189" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">合成场景 JSON</text>
+
+    <rect x="82" y="212" width="252" height="225" rx="16" fill="#1F2329"/>
+    <g font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12">
+      <circle cx="100" cy="231" r="4" fill="#FF8A65"/>
+      <circle cx="114" cy="231" r="4" fill="#F2C45E"/>
+      <circle cx="128" cy="231" r="4" fill="#77C79A"/>
+      <path d="M105 261h-9v50h9M311 261h9v50h-9" fill="none" stroke="#9BB8E8" stroke-width="2" stroke-linecap="round"/>
+      <text x="110" y="280" fill="#8EB7FF">"scene"</text>
+      <text x="189" y="280" fill="#D6D9DF">: </text>
+      <text x="200" y="280" fill="#F2C45E">"music"</text>
+      <text x="110" y="304" fill="#8EB7FF">"actions"</text>
+      <text x="189" y="304" fill="#D6D9DF">: [</text>
+      <text x="202" y="304" fill="#F2C45E">"play"</text>
+      <text x="250" y="304" fill="#D6D9DF">]</text>
+      <text x="110" y="328" fill="#8EB7FF">"fixture"</text>
+      <text x="189" y="328" fill="#D6D9DF">: </text>
+      <text x="200" y="328" fill="#77C79A">true</text>
+    </g>
+    <rect x="104" y="354" width="208" height="56" rx="12" fill="#F4F6F9"/>
+    <circle cx="130" cy="382" r="12" fill="#DDE8F9"/>
+    <path d="M126 377v10M130 378v8M134 380v4" stroke="#0A6CFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="151" y="378" fill="#4D5968" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="12" font-weight="600">可重复、可固定</text>
+    <text x="151" y="396" fill="#7A818C" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="11">无真实用户数据</text>
+    <text x="208" y="504" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">场景声明输入</text>
+  </g>
+
+  <path d="M369 320H403" fill="none" stroke="#0A6CFF" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- Stage 2 -->
+  <g>
+    <rect x="414" y="150" width="382" height="346" rx="20" fill="#FFFFFF" stroke="#E4E4DF" filter="url(#shadow)"/>
+    <circle cx="447" cy="183" r="16" fill="#0A6CFF"/>
+    <text x="447" y="188" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="14" font-weight="700">2</text>
+    <text x="474" y="189" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">正式 Runtime / Renderer</text>
+
+    <rect x="440" y="212" width="330" height="225" rx="18" fill="url(#runtimeFill)"/>
+    <circle cx="605" cy="266" r="30" fill="#FFFFFF" fill-opacity=".16"/>
+    <path d="M589 263l-11 10 11 10M621 263l11 10-11 10M613 253l-16 40" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="605" y="321" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">同一套宿主实现</text>
+    <text x="605" y="344" fill="#DCEAFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="12">正式解码 · 正式渲染 · 正式动作分发</text>
+
+    <rect x="468" y="369" width="122" height="42" rx="12" fill="#FFFFFF" fill-opacity=".18" stroke="#FFFFFF" stroke-opacity=".25"/>
+    <text x="529" y="395" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="12" font-weight="600">场景解码</text>
+    <rect x="598" y="369" width="122" height="42" rx="12" fill="#FFFFFF" fill-opacity=".18" stroke="#FFFFFF" stroke-opacity=".25"/>
+    <text x="659" y="395" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="12" font-weight="600">共享渲染</text>
+    <text x="605" y="504" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">减少预览与产品的行为偏差</text>
+  </g>
+
+  <path d="M809 320H843" fill="none" stroke="#0A6CFF" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- Stage 3 -->
+  <g>
+    <rect x="854" y="150" width="290" height="346" rx="20" fill="#FFFFFF" stroke="#E4E4DF" filter="url(#shadow)"/>
+    <circle cx="887" cy="183" r="16" fill="#0A6CFF"/>
+    <text x="887" y="188" fill="#FFFFFF" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="14" font-weight="700">3</text>
+    <text x="914" y="189" fill="#1D1D1F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="18" font-weight="700">可审查输出</text>
+
+    <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif">
+      <rect x="880" y="216" width="112" height="96" rx="14" fill="#EEF4FF" stroke="#C9DDFF"/>
+      <rect x="896" y="232" width="80" height="50" rx="8" fill="#FFFFFF"/>
+      <path d="M908 270l14-14 10 9 12-15 18 24" fill="none" stroke="#0A6CFF" stroke-width="2.5" stroke-linejoin="round"/>
+      <text x="936" y="300" fill="#235DB5" text-anchor="middle" font-size="12" font-weight="700">PNG</text>
+
+      <rect x="1006" y="216" width="112" height="96" rx="14" fill="#F3F0FF" stroke="#D9D0FF"/>
+      <circle cx="1035" cy="249" r="8" fill="none" stroke="#7D64D9" stroke-width="2"/>
+      <circle cx="1072" cy="249" r="8" fill="none" stroke="#7D64D9" stroke-width="2"/>
+      <path d="M1043 249h21M1035 257v13M1072 257v13M1027 270h57" fill="none" stroke="#7D64D9" stroke-width="2" stroke-linecap="round"/>
+      <text x="1062" y="300" fill="#5D49AA" text-anchor="middle" font-size="12" font-weight="700">界面树</text>
+
+      <rect x="880" y="330" width="112" height="96" rx="14" fill="#FFF5E8" stroke="#F0D1A4"/>
+      <path d="M915 374l16-22 13 18 8-10 13 20" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="947" cy="352" r="5" fill="#D97706"/>
+      <text x="936" y="414" fill="#8A4B00" text-anchor="middle" font-size="12" font-weight="700">动作</text>
+
+      <rect x="1006" y="330" width="112" height="96" rx="14" fill="#EBF8F1" stroke="#BEE5D0"/>
+      <path d="M1025 359h50v42h-50zM1034 371h32M1034 382h24M1034 393h28" fill="none" stroke="#329B68" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="1062" y="414" fill="#23764E" text-anchor="middle" font-size="12" font-weight="700">报告</text>
+    </g>
+    <text x="999" y="464" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">可供人工审查与基线比较</text>
+    <text x="999" y="504" fill="#6E6E73" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">输出保留为本地文件</text>
+  </g>
+
+  <rect x="88" y="540" width="648" height="48" rx="16" fill="#F1F5FA"/>
+  <g transform="translate(110 551)">
+    <path d="M2 13c5-8 17-8 22 0-5 8-17 8-22 0Z" fill="none" stroke="#4D5968" stroke-width="1.8"/>
+    <circle cx="13" cy="13" r="3.5" fill="#4D5968"/>
+    <path d="M1 2l24 22" stroke="#D97706" stroke-width="2.3" stroke-linecap="round"/>
+  </g>
+  <text x="143" y="569" fill="#4D5968" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">后台路径不显示预览窗口</text>
+  <path d="M349 548v32" stroke="#D5DCE6"/>
+  <g transform="translate(368 551)">
+    <rect x="1" y="3" width="18" height="20" rx="5" fill="none" stroke="#4D5968" stroke-width="1.8"/>
+    <path d="M10 8v7M7 12l3 3 3-3M1 2l20 23" fill="none" stroke="#D97706" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="400" y="569" fill="#4D5968" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13">不发送全局键盘鼠标事件</text>
+
+  <rect x="752" y="540" width="360" height="48" rx="16" fill="#FFF7E9" stroke="#EFD4A5"/>
+  <circle cx="777" cy="564" r="5" fill="#D97706"/>
+  <text x="792" y="569" fill="#78510F" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif" font-size="13" font-weight="600">本地工具候选 · 尚未发布 npm</text>
+</svg>
