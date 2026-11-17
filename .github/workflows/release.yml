@@ -194,6 +194,13 @@ jobs:
           test -x build/SwitchlyPluginPreview.app/Contents/MacOS/SwitchlyPluginPreviewWorker
           codesign --verify --deep --strict build/SwitchlyPluginPreview.app
 
+      - name: 检查发行 App 的版本号与构建号
+        run: |
+          python3 -B Tests/test_bundle_version.py
+          python3 -B Scripts/bundle-version.py \
+            build/Switchly.app/Contents/Info.plist \
+            build/SwitchlyPluginPreview.app/Contents/Info.plist
+
       - name: Notarize
         id: notarize
         if: steps.signing.outputs.signed == 'true'

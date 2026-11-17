@@ -107,6 +107,15 @@ jobs:
       - name: Run unit tests
         run: make test-unit
 
+      - name: 检查两个 App 的版本号与构建号
+        run: |
+          python3 -B Tests/test_bundle_version.py
+          make plugin-preview-build
+          python3 -B Scripts/bundle-version.py \
+            DerivedData/Build/Products/Debug/Switchly.app/Contents/Info.plist \
+            DerivedData/PluginPreview/Build/Products/Debug/SwitchlyPluginPreview.app/Contents/Info.plist
+          codesign --verify --deep --strict DerivedData/PluginPreview/Build/Products/Debug/SwitchlyPluginPreview.app
+
       - name: Guard — no build artifacts committed
         run: |
           if git ls-files --error-unmatch build/Switchly.app >/dev/null 2>&1; then
