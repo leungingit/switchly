@@ -95,14 +95,6 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// and is then replaced again by its own application.
     private static let maxRaiseAttempts = 3
 
-    /// Upper bound on raise+verify attempts for a single switch, shared by the
-    /// heuristic candidates and the probe fallback. Bounded so that a window
-    /// which cannot be raised at all still returns quickly instead of stalling
-    /// the caller: worst case is the activation wait plus
-    /// `maxFocusAttempts` × `frontmostSampleCount` × `frontmostSampleInterval`
-    /// ≈ 1.2 s.
-    private static let maxFocusAttempts = 5
-
     /// Frontmost sampling after a raise: 5 × 60 ms = 300 ms per attempt, long
     /// enough to notice an app that re-asserts its own key window after
     /// activation (Chromium does).
@@ -153,9 +145,12 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// Resolves the Accessibility elements that could be the requested window,
     /// best candidate first.
     func windowCandidates(for window: WindowInfo) -> [WindowFocusCandidate] {
+        windowCandidates(for: window, in: enumerateAXWindows(window.ownerPID).elements)
+    }
+
+    private func windowCandidates(for window: WindowInfo, in axWindows: [AXUIElement]) -> [WindowFocusCandidate] {
         let ownerPID = window.ownerPID
-        let appElement = AXUIElementCreateApplication(ownerPID)
-        guard let axWindows = copyAXWindows(for: appElement, ownerPID: ownerPID), !axWindows.isEmpty else {
+        guard !axWindows.isEmpty else {
             AppLogger.warning("Candidate lookup found no AX windows. windowID=\(window.id), pid=\(ownerPID)")
             return []
         }
@@ -336,79 +331,27 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// A wrong guess now costs one bounded attempt instead of failing the switch.
     func resolveAndFocus(_ target: WindowInfo) -> Bool {
         let window = withFreshSpaceMembership(target)
-        // 跨桌面目标只提升精确身份，禁止失败后探测同应用的其他窗口。
+        let resolver = WindowFocusResolver(
+            enumerate: enumerateAXWindows,
+            candidates: windowCandidates(for:in:),
+            remoteWindow: { WindowSystemIdentity.remoteAXWindow(pid: $0.ownerPID, windowID: $0.id) },
+            requestFront: WindowSystemIdentity.requestFront,
+            forgetRemoteWindow: { WindowSystemIdentity.forgetRemoteAXWindow(pid: $0.ownerPID, windowID: $0.id) },
+            ensureFrontmost: { self.ensureApplicationFrontmost(pid: $0) },
+            focus: focus(candidate:window:),
+            awaitLateFront: awaitLateFront
+        )
+        guard let failure = resolver.resolveAndFocus(window) else { return true }
+        let desktop: String
         if window.isOnOtherSpace {
-            guard let exact = windowCandidates(for: window).first?.element
-                    ?? WindowSystemIdentity.remoteAXWindow(pid: window.ownerPID, windowID: window.id) else {
-                AppLogger.error("Other-space target has no exact AX element. windowID=\(window.id)")
-                return false
-            }
-            guard WindowSystemIdentity.requestFront(window) else {
-                AppLogger.error("Other-space front request failed. windowID=\(window.id), pid=\(window.ownerPID)")
-                return false
-            }
-            if focus(candidate: WindowFocusCandidate(element: exact, reason: "exactOtherSpace", needsUnminimize: window.isMinimized), window: window) { return true }
-            if awaitLateFront(window) { return true }
-            // The switch service skips app activation for other-desktop targets
-            // to avoid flashing the app's last-active desktop. When the bare
-            // front request did not take, fall back once to activating the app.
-            // Re-sending the request alone comes first: activation jumps to the
-            // app's last-active desktop, which is the flash this path avoids.
-            for (reason, activate) in [("exactOtherSpaceRetry", false), ("exactOtherSpaceActivated", true)] {
-                AppLogger.info("Other-space front request did not take; retrying. windowID=\(window.id), activate=\(activate), frontmostApp=\(NSWorkspace.shared.frontmostApplication?.localizedName ?? "nil")")
-                if activate { ensureApplicationFrontmost(pid: window.ownerPID) }
-                if WindowSystemIdentity.requestFront(window),
-                   focus(candidate: WindowFocusCandidate(element: exact, reason: reason, needsUnminimize: window.isMinimized), window: window) { return true }
-                if awaitLateFront(window) { return true }
-            }
-            WindowSystemIdentity.forgetRemoteAXWindow(pid: window.ownerPID, windowID: window.id)
-            return false
+            desktop = "other"
+        } else {
+            desktop = window.isOnCurrentSpace ? "current" : "unknown"
         }
-        let candidates = windowCandidates(for: window)
-        AppLogger.info("Resolved focus candidates. windowID=\(window.id), count=\(candidates.count), order=\(candidates.map { $0.reason }.joined(separator: ","))")
-
-        var tried: [AXUIElement] = []
-        func claim(_ element: AXUIElement) -> Bool {
-            if tried.contains(where: { CFEqual($0, element) }) { return false }
-            tried.append(element)
-            return true
-        }
-
-        var attempts = 0
-        for candidate in candidates where claim(candidate.element) {
-            guard attempts < Self.maxFocusAttempts else { break }
-            attempts += 1
-            ensureApplicationFrontmost(pid: window.ownerPID)
-            if focus(candidate: candidate, window: window) { return true }
-            Thread.sleep(forTimeInterval: 0.04)
-        }
-
-        // Fallback: every window of the app we have not raised yet. Bounded, and
-        // only reached when identification could not be trusted.
-        let appElement = AXUIElementCreateApplication(window.ownerPID)
-        let remaining = (copyAXWindows(for: appElement, ownerPID: window.ownerPID) ?? [])
-            .filter { element in !tried.contains(where: { CFEqual($0, element) }) }
-
-        if !remaining.isEmpty, attempts < Self.maxFocusAttempts {
-            AppLogger.info("Heuristic candidates did not match; probing remaining AX windows. windowID=\(window.id), remaining=\(remaining.count)")
-        }
-
-        for element in remaining {
-            guard attempts < Self.maxFocusAttempts else { break }
-            attempts += 1
-            tried.append(element)
-            ensureApplicationFrontmost(pid: window.ownerPID)
-            let probe = WindowFocusCandidate(element: element, reason: "probe", needsUnminimize: false)
-            if focus(candidate: probe, window: window) {
-                AppLogger.info("Focused window by probing AX windows. windowID=\(window.id), attempt=\(attempts)")
-                return true
-            }
-        }
-
-        if awaitLateFront(window) { return true }
-
-        let frontmostApp = NSWorkspace.shared.frontmostApplication
-        AppLogger.error("Failed to focus window after all attempts. windowID=\(window.id), owner=\(window.ownerName), title=\"\(window.windowTitle)\", attempts=\(attempts), frontmostApp=\(frontmostApp?.localizedName ?? "nil")")
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
+        AppLogger.error(
+            "Window focus failed. windowID=\(window.id), targetPID=\(window.ownerPID), hostPID=\(ProcessInfo.processInfo.processIdentifier), desktop=\(desktop), axTrusted=\(AXIsProcessTrusted()), frontPID=\(frontPID), \(failure.logFields)"
+        )
         return false
     }
 
@@ -466,8 +409,7 @@ class AccessibilityService: AccessibilityServiceProtocol {
     /// probe fallback can still reach a window that every heuristic rejects
     /// (missing subrole, unexpected size, no title).
     func allAXWindows(for pid: pid_t) -> [AXUIElement] {
-        let appElement = AXUIElementCreateApplication(pid)
-        return copyAXWindows(for: appElement, ownerPID: pid) ?? []
+        enumerateAXWindows(pid).elements
     }
 
     /// Brings one candidate to the front and verifies the result against the
@@ -757,8 +699,10 @@ class AccessibilityService: AccessibilityServiceProtocol {
 
     // MARK: - Accessibility queries
 
-    private func copyAXWindows(for appElement: AXUIElement, ownerPID: pid_t) -> [AXUIElement]? {
+    private func enumerateAXWindows(_ ownerPID: pid_t) -> AXWindowEnumeration {
+        let appElement = AXUIElementCreateApplication(ownerPID)
         let timeouts: [Float] = [0.6, 1.5, 3.0]
+        var failure: AXWindowEnumeration = .invalidResponse
 
         for (attempt, timeout) in timeouts.enumerated() {
             AXUIElementSetMessagingTimeout(appElement, timeout)
@@ -774,23 +718,25 @@ class AccessibilityService: AccessibilityServiceProtocol {
                 if attempt > 0 {
                     AppLogger.info("Copied AX windows after retry. pid=\(ownerPID), attempt=\(attempt + 1), timeout=\(timeout), count=\(windows.count)")
                 }
-                return windows
+                return .windows(windows)
             }
 
+            failure = result == .success ? .invalidResponse : .failed(result)
             AppLogger.warning("Failed to copy AX windows. pid=\(ownerPID), attempt=\(attempt + 1), timeout=\(timeout), result=\(result.rawValue), hasValue=\(windowsValue != nil)")
             // Electron 应用未开启辅助功能树时返回 apiDisabled；开启后立即重读，不消耗后续重试。
             if result == .apiDisabled, AXManualAccessibility.enableOnce(appElement, pid: ownerPID) {
                 var retried: CFTypeRef?
-                if AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &retried) == .success,
-                   let windows = retried as? [AXUIElement] {
-                    return windows
+                let retryResult = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &retried)
+                if retryResult == .success, let windows = retried as? [AXUIElement] {
+                    return .windows(windows)
                 }
+                failure = retryResult == .success ? .invalidResponse : .failed(retryResult)
             }
             Thread.sleep(forTimeInterval: 0.08)
         }
 
-        AppLogger.error("Failed to copy AX windows after retries. pid=\(ownerPID)")
-        return nil
+        AppLogger.error("Failed to copy AX windows after retries. pid=\(ownerPID), finalAX=\(failure.diagnosticValue)")
+        return failure
     }
 
     /// Score of an Accessibility window against the requested window, using the

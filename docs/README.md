@@ -45,6 +45,7 @@
 | --- | --- |
 | [RELEASING.md](engineering/RELEASING.md) | 版本号规则与发布流程（版本真源是 `Resources/Info.plist`） |
 | [native-ui-automation.md](engineering/native-ui-automation.md) | 原生界面自动化：自行打开 Switchly 偏好设置、截图核验与失败定位 |
+| [window-focus-diagnostics.md](engineering/window-focus-diagnostics.md) | AX 枚举、跨桌面目标及焦点校验的失败阶段与回归方法 |
 | [performance-review-2026-10-20.md](engineering/performance-review-2026-10-20.md) | 性能检查与优化记录 |
 | [idle-performance.md](engineering/idle-performance.md) | 空闲截图开销排查（D01 已被 D02 部分取代） |
 | [thumbnail-cache.md](engineering/thumbnail-cache.md) | 缩略图跨次启动复用的目标、边界与生命周期 |
@@ -106,6 +107,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | [all-spaces-window-preview.md](reviews/all-spaces-window-preview.md) | 跨桌面窗口发现的实现与验证记录 |
+| [zed-window-focus-2026-11-19.md](reviews/zed-window-focus-2026-11-19.md) | Zed 的 AX 失败、旧进程与当前构建对照 |
 | [glass-and-appearance-settings.md](reviews/glass-and-appearance-settings.md) | 玻璃与外观设置现状诊断 |
 | [menu-bar-appearance-2026-11-13.md](reviews/menu-bar-appearance-2026-11-13.md) | 菜单栏主题污染修正、真实状态项回归及正式合成色对照限制 |
 | [activity-timeline-integration-2026-11-13.md](reviews/activity-timeline-integration-2026-11-13.md) | 双仓提交前复核、单测隔离、历史截图及失效批次修正与验收边界 |
