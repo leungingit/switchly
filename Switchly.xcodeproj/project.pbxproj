@@ -203,6 +203,7 @@
 		4363AF62EBC89AF2297717CA /* WindowImageCaptureBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588355C30A5DC6217E139C35 /* WindowImageCaptureBackend.swift */; };
 		43827FFC8318DD5B2E97C483 /* PluginTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56973FF9FEF1A8CF76DE4AC /* PluginTimelineView.swift */; };
 		43893C8052DAB950A653AB1A /* DesktopNavigationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2088C6955F53556540DA482 /* DesktopNavigationService.swift */; };
+		4412C937EF2DC5E5ABDE017B /* WindowFocusResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C940C6D380BF58BB70D619 /* WindowFocusResolver.swift */; };
 		4438CCF114741B6129EEFC53 /* PluginRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D791C69C143FFC836D4387 /* PluginRegistry.swift */; };
 		448D44B3AEF74EE5CD55EDF5 /* PluginScene3DAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58DE5B2614077DF64E4551D /* PluginScene3DAsset.swift */; };
 		4498552FC0B076F95BDEC983 /* MediaRemoteAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33503D980C0678ECA4A199B6 /* MediaRemoteAssembly.swift */; };
@@ -286,6 +287,7 @@
 		5D15FE84F9959CDF04E43942 /* PluginManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FB8EA60D0B9A1C9EC83B3F /* PluginManifest.swift */; };
 		5D16C6B621A7EA08B3FF11CB /* AppActivationTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5052EF0E08EDCF930ED33444 /* AppActivationTrackerTests.swift */; };
 		5D367BB984BE3BECE548C818 /* SystemGestureInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675FFA2025D1CB31A3797360 /* SystemGestureInterceptor.swift */; };
+		5E1E46DEC32A8FF211B7C649 /* WindowFocusResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C940C6D380BF58BB70D619 /* WindowFocusResolver.swift */; };
 		5E2CFF21614879DB9FD1D453 /* StatisticsPanelSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F459A9C5CB20F8069298E9 /* StatisticsPanelSnapshotTests.swift */; };
 		5E2D82D4E87877780699A6B8 /* PreviewLauncherSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E072F86C6583776C0106965 /* PreviewLauncherSidebarView.swift */; };
 		5EB558842D0F26345D4FDBB6 /* PluginTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56973FF9FEF1A8CF76DE4AC /* PluginTimelineView.swift */; };
@@ -403,9 +405,11 @@
 		809C6A3CF27D70626E1164C3 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1A84D8D818EDE634FF2752 /* AppLogger.swift */; };
 		80E4662C17B887225DC73A54 /* ActivityQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE40576871E11648D3CF882 /* ActivityQuery.swift */; };
 		81176EB6BDA3B62C1AB698EE /* PluginPreviewPipeIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2AD5087B5317017E4CDEA23 /* PluginPreviewPipeIO.swift */; };
+		813DB41D43F5FBE606DEF9F4 /* WindowFocusResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C940C6D380BF58BB70D619 /* WindowFocusResolver.swift */; };
 		8160D0B853F19964EB598808 /* PluginSurfaceDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F6B459E688BBC4383E7B69 /* PluginSurfaceDrawing.swift */; };
 		818BDEA72F22F8D096790616 /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3575EDA7C8EE65E6C09D459F /* AccessibilityService.swift */; };
 		81AD0B07D05A179F3E27DDD3 /* GlassRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A0065EF7AD96AD5AC8F291 /* GlassRenderingTests.swift */; };
+		82174742DE4FFD34E4A236BA /* WindowFocusResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BD946719617490592ED1BE /* WindowFocusResolverTests.swift */; };
 		82244C9CA11FDEF3B399521B /* OnlineWeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8074193F76394A790BB5109A /* OnlineWeatherService.swift */; };
 		824C81A38F164260DEE4BFE4 /* ActivityConsentStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0ADB48B9685F9BB2EC2BD2C /* ActivityConsentStateTests.swift */; };
 		82677B99BB10457B6211615B /* AppSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 279A55BC2D30608EC032F116 /* AppSettingsTests.swift */; };
@@ -835,6 +839,7 @@
 		0825D59E2CB3FC6DEED64044 /* WindowCaptureSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCaptureSessionTests.swift; sourceTree = "<group>"; };
 		083F15E25667A3A36F1B83B6 /* DockWindowCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockWindowCard.swift; sourceTree = "<group>"; };
 		090B72A10C5CDFCA5B38106D /* SwitchlyActivityProbe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwitchlyActivityProbe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		09BD946719617490592ED1BE /* WindowFocusResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFocusResolverTests.swift; sourceTree = "<group>"; };
 		0A0E934187DEB607F48EBA15 /* MediaRemoteStreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRemoteStreamTests.swift; sourceTree = "<group>"; };
 		0A5011A846F79118AE9F9090 /* GridOverviewViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverviewViewModelTests.swift; sourceTree = "<group>"; };
 		0BAE04B75198D4E1889F2B47 /* PreviewDockLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewDockLayout.swift; sourceTree = "<group>"; };
@@ -980,6 +985,7 @@
 		714A347C989B61E7853F090A /* PluginScene3DAssetCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScene3DAssetCacheTests.swift; sourceTree = "<group>"; };
 		71A2896AD2896FD27EA98679 /* MediaRemoteStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRemoteStream.swift; sourceTree = "<group>"; };
 		71B17A9A95A81A1713DD7FAE /* PreviewDockPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewDockPanelView.swift; sourceTree = "<group>"; };
+		73C940C6D380BF58BB70D619 /* WindowFocusResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFocusResolver.swift; sourceTree = "<group>"; };
 		746F7409E95098A3C5E8D524 /* SwitchlyCaptureProbe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwitchlyCaptureProbe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7475F57032F8244F1A75EB4A /* StatisticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewModel.swift; sourceTree = "<group>"; };
 		754DE8009E91F21997FC4C47 /* MonitoredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoredApp.swift; sourceTree = "<group>"; };
@@ -1353,6 +1359,7 @@
 				45C6C759F8D990E7E4945B8A /* WindowCaptureServiceTests.swift */,
 				0825D59E2CB3FC6DEED64044 /* WindowCaptureSessionTests.swift */,
 				911787F7B561D8323F960236 /* WindowCaptureTests.swift */,
+				09BD946719617490592ED1BE /* WindowFocusResolverTests.swift */,
 				8FAF909D81DF47F4EBD6AB41 /* WindowInfoTests.swift */,
 				57ADF863014E5B7B89C44978 /* WindowMatchRulesTests.swift */,
 				68F713C8680F2216BAB1D055 /* WindowMonitorIdleTests.swift */,
@@ -1526,6 +1533,7 @@
 				A98BCE9526962898B2041E0B /* WindowCaptureCoordinator.swift */,
 				AE051D5DE3FDBD4688326A3D /* WindowCaptureDocumentService.swift */,
 				59EADA245273F123383B1FED /* WindowCaptureWorkPool.swift */,
+				73C940C6D380BF58BB70D619 /* WindowFocusResolver.swift */,
 				588355C30A5DC6217E139C35 /* WindowImageCaptureBackend.swift */,
 				21ED0E6E01FE67AB823F1195 /* WindowMonitorService.swift */,
 				29D6A65A2D7FCE137A451532 /* WindowSwitchService.swift */,
@@ -2264,6 +2272,7 @@
 				F606F16DB177709A52BCD1AF /* WindowCaptureSessionModel.swift in Sources */,
 				0597B1D91AE6CCCE6674B4A0 /* WindowCaptureView.swift in Sources */,
 				89429AE37B15564CC4B845A2 /* WindowCaptureWorkPool.swift in Sources */,
+				5E1E46DEC32A8FF211B7C649 /* WindowFocusResolver.swift in Sources */,
 				27211D166EF4C1B270F698CB /* WindowImageCaptureBackend.swift in Sources */,
 				2E1800852D36B6B738D99058 /* WindowInfo.swift in Sources */,
 				88A66042AF51EF9F0E84DDF1 /* WindowMatchRules.swift in Sources */,
@@ -2483,6 +2492,7 @@
 				13AE021714C96E9795D3EB0C /* WindowCaptureServiceTests.swift in Sources */,
 				7A97FA32FD024ECD5E44B0F7 /* WindowCaptureSessionTests.swift in Sources */,
 				39976B05BCB9DE007C7473CD /* WindowCaptureTests.swift in Sources */,
+				82174742DE4FFD34E4A236BA /* WindowFocusResolverTests.swift in Sources */,
 				9FE640E635B96D317B6346E4 /* WindowInfoTests.swift in Sources */,
 				349A573C5AB6EEE332EEB3DE /* WindowMatchRulesTests.swift in Sources */,
 				9F828F9C5B96E35E83D48D9A /* WindowMonitorIdleTests.swift in Sources */,
@@ -2706,6 +2716,7 @@
 				E15CB96A0EC327B36A0DC701 /* WindowCaptureSessionModel.swift in Sources */,
 				AC2DD3FBF73B7ACE0AC0FDF1 /* WindowCaptureView.swift in Sources */,
 				21ED10FD57A433AEAE8DADF6 /* WindowCaptureWorkPool.swift in Sources */,
+				4412C937EF2DC5E5ABDE017B /* WindowFocusResolver.swift in Sources */,
 				4363AF62EBC89AF2297717CA /* WindowImageCaptureBackend.swift in Sources */,
 				0E47A62426A0238434F723DA /* WindowInfo.swift in Sources */,
 				4EBC53F8A4C9CEBAE16087D2 /* WindowMatchRules.swift in Sources */,
@@ -2893,6 +2904,7 @@
 				B2B9DBCF26C996D7E35A1BBB /* WindowCaptureSessionModel.swift in Sources */,
 				017F690946645463CEEBBF8A /* WindowCaptureView.swift in Sources */,
 				8EFAFF12B899973113B7E886 /* WindowCaptureWorkPool.swift in Sources */,
+				813DB41D43F5FBE606DEF9F4 /* WindowFocusResolver.swift in Sources */,
 				24947C9D59D9D44CF549A4CD /* WindowImageCaptureBackend.swift in Sources */,
 				B4F1EC29416BF976B6C2ED51 /* WindowInfo.swift in Sources */,
 				B17FD7B62068C238A4D84244 /* WindowMatchRules.swift in Sources */,
